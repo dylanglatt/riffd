@@ -1,0 +1,552 @@
+"""
+music_intelligence.py
+Key detection (Krumhansl-Schmuckler), BPM estimation, chord progression via
+template matching against diatonic chord pitch-class sets.
+"""
+
+import numpy as np
+import pandas as pd
+from collections import Counter
+
+NOTE_NAMES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"]
+
+MAJOR_INTERVALS = [0, 2, 4, 5, 7, 9, 11]
+MINOR_INTERVALS = [0, 2, 3, 5, 7, 8, 10]
+
+MAJOR_NUMERALS = ["I", "ii", "iii", "IV", "V", "vi", "vii\u00b0"]
+MINOR_NUMERALS = ["i", "ii\u00b0", "III", "iv", "v", "VI", "VII"]
+
+MAJOR_PROFILE = np.array([6.35, 2.23, 3.48, 2.33, 4.38, 4.09, 2.52, 5.19, 2.39, 3.66, 2.29, 2.88])
+MINOR_PROFILE = np.array([6.33, 2.68, 3.52, 5.38, 2.60, 3.53, 2.54, 4.75, 3.98, 2.69, 3.34, 3.17])
+
+# Triad intervals relative to root (in semitones)
+MAJOR_TRIAD = [0, 4, 7]
+MINOR_TRIAD = [0, 3, 7]
+DIM_TRIAD = [0, 3, 6]
+
+# For each scale degree in a major key, the chord quality
+MAJOR_KEY_CHORDS = [
+    (MAJOR_TRIAD, "I"),     # I
+    (MINOR_TRIAD, "ii"),    # ii
+    (MINOR_TRIAD, "iii"),   # iii
+    (MAJOR_TRIAD, "IV"),    # IV
+    (MAJOR_TRIAD, "V"),     # V
+    (MINOR_TRIAD, "vi"),    # vi
+    (DIM_TRIAD, "vii\u00b0"),  # vii°
+]
+
+MINOR_KEY_CHORDS = [
+    (MINOR_TRIAD, "i"),     # i
+    (DIM_TRIAD, "ii\u00b0"),   # ii°
+    (MAJOR_TRIAD, "III"),   # III
+    (MINOR_TRIAD, "iv"),    # iv
+    (MINOR_TRIAD, "v"),     # v
+    (MAJOR_TRIAD, "VI"),    # VI
+    (MAJOR_TRIAD, "VII"),   # VII
+]
+
+# Stems to exclude from harmonic analysis
+NON_HARMONIC = {"vocals", "lead_vocal", "backing_vocals", "drums"}
+
+# Stem priority for harmonic content (higher = preferred)
+STEM_PRIORITY = {
+    "piano": 10, "keys": 10,
+    "rhythm_guitar": 8, "acoustic_guitar": 8,
+    "guitar": 7, "other": 5,
+    "lead_guitar": 4, "lead_guitar_1": 4, "lead_guitar_2": 4,
+    "banjo": 6,
+}
+
+# Minimum confidence to report a progression
+MIN_PROGRESSION_CONFIDENCE = 0.25
+
+
+# ─── Key Detection ────────────────────────────────────────────────────────────
+
+def detect_key_from_notes(note_events_df):
+    if note_events_df is None or len(note_events_df) == 0:
+        return -1, -1, 0.0
+    pitches = note_events_df["pitch_midi"].values.astype(int)
+    durations = (note_events_df["end_time_s"].values - note_events_df["start_time_s"].values).clip(0.01)
+    pc_hist = np.zeros(12)
+    for p, d in zip(pitches, durations):
+        pc_hist[p % 12] += d
+    if pc_hist.sum() < 0.01:
+        return -1, -1, 0.0
+    pc_hist /= pc_hist.sum()
+    best_key, best_mode, best_corr = 0, 1, -1.0
+    for root in range(12):
+        for mode, profile in [(1, MAJOR_PROFILE), (0, MINOR_PROFILE)]:
+            rotated = np.roll(profile, root)
+            corr = np.corrcoef(pc_hist, rotated)[0, 1]
+            if corr > best_corr:
+                best_corr, best_key, best_mode = corr, root, mode
+    return best_key, best_mode, float(max(best_corr, 0))
+
+
+def format_key(key_num, mode_num):
+    if key_num < 0 or key_num > 11:
+        return "Unknown"
+    return f"{NOTE_NAMES[key_num]} {'Major' if mode_num == 1 else 'Minor'}"
+
+
+# ─── BPM Estimation ──────────────────────────────────────────────────────────
+
+def estimate_bpm(note_events_df):
+    if note_events_df is None or len(note_events_df) < 10:
+        return 120.0
+    onsets = np.sort(np.unique(np.round(note_events_df["start_time_s"].values, 3)))
+    iois = np.diff(onsets)
+    iois = iois[(iois > 0.05) & (iois < 4.0)]
+    if len(iois) < 5:
+        return 120.0
+    bin_res = 0.005
+    bins = np.arange(0, 2.0, bin_res)
+    hist, _ = np.histogram(iois, bins=bins)
+    kernel = np.array([0.25, 0.5, 0.25])
+    hist_s = np.convolve(hist, kernel, mode="same").astype(float)
+    best_bpm, best_sc = 120.0, 0
+    for bpm in range(70, 201, 2):
+        beat = 60.0 / bpm
+        sc = 0
+        for mult in [0.5, 1.0, 2.0]:
+            idx = int(beat * mult / bin_res)
+            if 0 <= idx < len(hist_s):
+                sc += hist_s[idx] * (1.5 if mult == 1.0 else 0.8)
+        if sc > best_sc:
+            best_sc, best_bpm = sc, bpm
+    return float(best_bpm)
+
+
+# ─── Chord Template Matching ─────────────────────────────────────────────────
+
+def _build_chord_templates(key_num, mode_num):
+    """
+    Build the 7 diatonic chord templates for a key.
+    Each template is a (pitch_class_set, numeral, root_pc).
+    """
+    if mode_num == 1:
+        scale_intervals = MAJOR_INTERVALS
+        chord_defs = MAJOR_KEY_CHORDS
+    else:
+        scale_intervals = MINOR_INTERVALS
+        chord_defs = MINOR_KEY_CHORDS
+
+    templates = []
+    for degree, (triad_intervals, numeral) in enumerate(chord_defs):
+        root_pc = (key_num + scale_intervals[degree]) % 12
+        chord_pcs = frozenset((root_pc + i) % 12 for i in triad_intervals)
+        templates.append({
+            "numeral": numeral,
+            "root_pc": root_pc,
+            "pcs": chord_pcs,
+            "degree": degree,
+        })
+
+    return templates
+
+
+def _score_chord_against_histogram(template, pc_hist, bass_pc_hist):
+    """
+    Score how well a chord template matches the observed pitch-class distribution.
+
+    Uses three signals:
+    1. Overlap: how much of the window's energy is on chord tones
+    2. Bass match: does the bass agree with the chord root
+    3. Completeness: are all chord tones present
+    """
+    total = pc_hist.sum()
+    if total < 0.001:
+        return 0.0
+
+    chord_pcs = template["pcs"]
+    root_pc = template["root_pc"]
+
+    # 1. Overlap: fraction of total energy on chord tones (0-1)
+    chord_energy = sum(pc_hist[pc] for pc in chord_pcs)
+    overlap = chord_energy / total
+
+    # 2. Bass agreement: does the bass note match the root? (0 or 1)
+    bass_total = bass_pc_hist.sum()
+    bass_match = 0.0
+    if bass_total > 0.01:
+        bass_match = bass_pc_hist[root_pc] / bass_total
+
+    # 3. Completeness: are all 3 chord tones present? (0-1)
+    present = sum(1 for pc in chord_pcs if pc_hist[pc] > total * 0.02)
+    completeness = present / len(chord_pcs)
+
+    # Weighted score: bass is most important, then overlap, then completeness
+    score = bass_match * 0.45 + overlap * 0.35 + completeness * 0.20
+
+    return score
+
+
+# ─── Progression Estimation ──────────────────────────────────────────────────
+
+def estimate_progression_from_stems(stem_events, key_num, mode_num, bpm=120.0):
+    """
+    Estimate chord progression using template matching against diatonic chords.
+
+    1. Select best harmonic stem(s)
+    2. Window the song into ~2s segments
+    3. Build pitch-class histogram per window
+    4. Score each diatonic chord template against the histogram
+    5. Pick best chord per window
+    6. Collapse, find pattern, compute confidence
+
+    Returns: (progression_string, confidence) or just string
+    """
+    if not stem_events or key_num < 0:
+        return "Unknown"
+
+    # ── Select stems ──
+    bass_df = None
+    harmony_df = None
+    harmony_name = None
+
+    # Find bass
+    for name, df in stem_events.items():
+        if isinstance(df, pd.DataFrame) and len(df) > 0 and "bass" in name.lower():
+            bass_df = df
+            break
+
+    # Find best harmonic stem by priority
+    best_priority = -1
+    best_frames = []
+    for name, df in stem_events.items():
+        if not isinstance(df, pd.DataFrame) or len(df) == 0:
+            continue
+        name_lower = name.lower()
+        # Skip non-harmonic
+        if any(excl in name_lower for excl in NON_HARMONIC):
+            continue
+        if "bass" in name_lower:
+            continue  # bass handled separately
+
+        priority = 0
+        for stem_key, p in STEM_PRIORITY.items():
+            if stem_key in name_lower:
+                priority = max(priority, p)
+                break
+        if not priority:
+            priority = 3  # unknown harmonic stem
+
+        if priority > best_priority:
+            best_priority = priority
+            best_frames = [df]
+            harmony_name = name
+        elif priority == best_priority:
+            best_frames.append(df)
+
+    if best_frames:
+        harmony_df = pd.concat(best_frames, ignore_index=True)
+
+    # Fallback: use all non-vocal/drum stems
+    if harmony_df is None and bass_df is None:
+        fallback = []
+        for name, df in stem_events.items():
+            if isinstance(df, pd.DataFrame) and len(df) > 0:
+                if not any(excl in name.lower() for excl in NON_HARMONIC):
+                    fallback.append(df)
+        if fallback:
+            harmony_df = pd.concat(fallback, ignore_index=True)
+            harmony_name = "fallback"
+
+    if harmony_df is None and bass_df is None:
+        return "Unknown"
+
+    print(f"[progression] using stems: bass={'yes' if bass_df is not None else 'no'}, harmony={harmony_name} ({len(harmony_df) if harmony_df is not None else 0} notes)")
+
+    # ── Build chord templates ──
+    templates = _build_chord_templates(key_num, mode_num)
+    print(f"[progression] chord templates for {format_key(key_num, mode_num)}:")
+    for t in templates:
+        pcs_str = ",".join(NOTE_NAMES[pc] for pc in sorted(t['pcs']))
+        print(f"[progression]   {t['numeral']:6s} root={NOTE_NAMES[t['root_pc']]:2s} pcs={{{pcs_str}}}")
+
+    # ── Window the song ──
+    max_time = 0
+    if bass_df is not None:
+        max_time = max(max_time, bass_df["end_time_s"].max())
+    if harmony_df is not None:
+        max_time = max(max_time, harmony_df["end_time_s"].max())
+
+    if max_time < 2:
+        return "Unknown"
+
+    # Use ~2 second windows, but try to align with beats
+    window = 2.0
+    n_windows = min(int(max_time / window), 300)
+
+    # ── Per-window chord detection ──
+    window_chords = []  # list of (numeral, score)
+    MIN_NOTE_DUR = 0.1  # ignore notes shorter than 100ms
+
+    for wi in range(n_windows):
+        t0 = wi * window
+        t1 = t0 + window
+
+        # Build pitch-class histograms
+        harmony_hist = np.zeros(12)
+        bass_hist = np.zeros(12)
+
+        # Harmony histogram (filter short notes, weight by duration + register)
+        if harmony_df is not None:
+            mask = (harmony_df["start_time_s"] < t1) & (harmony_df["end_time_s"] > t0)
+            notes = harmony_df[mask]
+            if len(notes) > 0:
+                pitches = notes["pitch_midi"].values.astype(int)
+                durs = (np.minimum(notes["end_time_s"].values, t1) -
+                        np.maximum(notes["start_time_s"].values, t0)).clip(0.001)
+                # Filter short ornamental notes
+                keep = durs >= MIN_NOTE_DUR
+                if keep.any():
+                    pitches, durs = pitches[keep], durs[keep]
+                for p, d in zip(pitches, durs):
+                    harmony_hist[p % 12] += d
+
+        # Bass histogram (strong root signal)
+        if bass_df is not None:
+            mask = (bass_df["start_time_s"] < t1) & (bass_df["end_time_s"] > t0)
+            notes = bass_df[mask]
+            if len(notes) > 0:
+                pitches = notes["pitch_midi"].values.astype(int)
+                durs = (np.minimum(notes["end_time_s"].values, t1) -
+                        np.maximum(notes["start_time_s"].values, t0)).clip(0.001)
+                keep = durs >= 0.05
+                if keep.any():
+                    pitches, durs = pitches[keep], durs[keep]
+                for p, d in zip(pitches, durs):
+                    bass_hist[p % 12] += d
+
+        # Combined histogram for chord matching
+        combined_hist = harmony_hist + bass_hist * 0.5  # bass also contributes to pitch content
+
+        if combined_hist.sum() < 0.01:
+            continue
+
+        # Score each chord template
+        scores = []
+        for t in templates:
+            sc = _score_chord_against_histogram(t, combined_hist, bass_hist)
+            scores.append((sc, t["numeral"]))
+
+        scores.sort(key=lambda x: -x[0])
+        best_score, best_numeral = scores[0]
+
+        # Only accept if score exceeds minimum
+        if best_score >= 0.15:
+            window_chords.append((best_numeral, best_score))
+
+    if not window_chords:
+        print("[progression] no chords detected above threshold")
+        return "Unknown"
+
+    # ── Collapse consecutive duplicates ──
+    collapsed = []
+    collapsed_scores = []
+    prev = None
+    for numeral, score in window_chords:
+        if numeral != prev:
+            collapsed.append(numeral)
+            collapsed_scores.append(score)
+            prev = numeral
+        else:
+            # Update score with max
+            collapsed_scores[-1] = max(collapsed_scores[-1], score)
+
+    print(f"[progression] collapsed sequence ({len(collapsed)} chords): {' '.join(collapsed[:24])}{'...' if len(collapsed)>24 else ''}")
+
+    # ── Remove one-off noise: chords that appear only once and have low score ──
+    if len(collapsed) > 4:
+        chord_counts = Counter(collapsed)
+        cleaned = []
+        cleaned_scores = []
+        for ch, sc in zip(collapsed, collapsed_scores):
+            if chord_counts[ch] >= 2 or sc >= 0.35:
+                cleaned.append(ch)
+                cleaned_scores.append(sc)
+        if len(cleaned) >= 3:
+            collapsed = cleaned
+            collapsed_scores = cleaned_scores
+
+    if len(collapsed) < 2:
+        print("[progression] too few chords after cleaning")
+        return "Unknown"
+
+    # ── Find repeating pattern ──
+    pattern = _find_pattern(collapsed)
+
+    # ── Compute confidence ──
+    # Based on: average chord score, pattern repetition count, sequence length
+    avg_score = np.mean(collapsed_scores)
+    pattern_count = _count_pattern_occurrences(collapsed, pattern)
+    confidence = min(1.0, avg_score * 0.5 + (pattern_count / max(len(collapsed), 1)) * 0.5)
+
+    print(f"[progression] pattern: {pattern}, repeats={pattern_count}, avg_score={avg_score:.2f}, confidence={confidence:.2f}")
+
+    if confidence < MIN_PROGRESSION_CONFIDENCE:
+        print(f"[progression] SUPPRESSED — confidence {confidence:.2f} < {MIN_PROGRESSION_CONFIDENCE}")
+        return None
+
+    # ── Format output ──
+    matched = _match_known(pattern)
+    result = matched if matched else " – ".join(pattern)
+    print(f"[progression] RESULT: {result}")
+    return result
+
+
+def _count_pattern_occurrences(sequence, pattern):
+    """Count how many times a pattern appears in the sequence."""
+    if not pattern or not sequence:
+        return 0
+    n = len(pattern)
+    count = 0
+    for i in range(len(sequence) - n + 1):
+        if sequence[i:i + n] == pattern:
+            count += 1
+    return count
+
+
+def _find_pattern(seq, min_len=3, max_len=5):
+    if len(seq) <= max_len:
+        return seq
+    best, best_score = None, 0
+    for length in range(min_len, max_len + 1):
+        pats = Counter()
+        for i in range(len(seq) - length + 1):
+            pats[tuple(seq[i:i + length])] += 1
+        if pats:
+            top_pat, top_count = pats.most_common(1)[0]
+            # Score: repetitions * preference for length 4
+            sc = top_count * (1.15 if length == 4 else 1.0)
+            if sc > best_score:
+                best_score = sc
+                best = list(top_pat)
+    if best and best_score >= 2:
+        return best
+    # Fallback: most common 3-4 chords by frequency
+    counts = Counter(seq)
+    top = [c for c, _ in counts.most_common(4)]
+    return top if len(top) >= 3 else seq[:4]
+
+
+KNOWN_PROGRESSIONS = [
+    (["I", "V", "vi", "IV"], "I – V – vi – IV"),
+    (["I", "IV", "V", "IV"], "I – IV – V – IV"),
+    (["I", "IV", "vi", "V"], "I – IV – vi – V"),
+    (["vi", "IV", "I", "V"], "vi – IV – I – V"),
+    (["I", "vi", "IV", "V"], "I – vi – IV – V"),
+    (["I", "IV", "V", "I"], "I – IV – V – I"),
+    (["I", "V", "IV", "V"], "I – V – IV – V"),
+    (["I", "IV", "V"], "I – IV – V"),
+    (["I", "V", "IV"], "I – V – IV"),
+    (["I", "iii", "IV", "V"], "I – iii – IV – V"),
+    (["I", "V", "vi", "iii", "IV"], "I – V – vi – iii – IV"),
+    (["ii", "V", "I"], "ii – V – I"),
+    (["i", "VI", "III", "VII"], "i – VI – III – VII"),
+    (["i", "iv", "v", "i"], "i – iv – v – i"),
+    (["i", "VII", "VI", "V"], "i – VII – VI – V"),
+    (["i", "iv", "VII", "III"], "i – iv – VII – III"),
+    (["I", "IV", "I", "V"], "I – IV – I – V"),
+    (["I", "V", "I", "IV"], "I – V – I – IV"),
+]
+
+
+def _match_known(pattern):
+    for known, label in KNOWN_PROGRESSIONS:
+        n = len(known)
+        if pattern[:n] == known:
+            return label
+        doubled = known * 2
+        for i in range(n):
+            if pattern[:n] == doubled[i:i + n]:
+                return label
+    return None
+
+
+# ─── Full Analysis (hybrid: external chords → audio fallback) ─────────────
+
+def analyze_song_from_notes(all_note_events, song_name="", artist=""):
+    """
+    Complete song analysis.
+    1. Detect key from note data
+    2. Try external chord source for progression
+    3. Fall back to audio-based estimation
+    4. Suppress low-confidence results
+
+    Returns dict with key, bpm, progression, progression_source, confidence.
+    """
+    frames = []
+    if isinstance(all_note_events, dict):
+        for df in all_note_events.values():
+            if isinstance(df, pd.DataFrame) and len(df) > 0:
+                frames.append(df)
+    elif isinstance(all_note_events, pd.DataFrame):
+        frames = [all_note_events]
+
+    if not frames:
+        return {"key": "Unknown", "key_num": -1, "mode_num": -1, "bpm": 120, "progression": None}
+
+    merged = pd.concat(frames, ignore_index=True)
+
+    # Key detection
+    key_num, mode_num, key_conf = detect_key_from_notes(merged)
+    key_str = format_key(key_num, mode_num)
+    print(f"[intel] key: {key_str} (confidence={key_conf:.2f})")
+
+    # BPM
+    bpm = estimate_bpm(merged)
+    print(f"[intel] bpm: {bpm}")
+
+    # ── Progression: try external source first ──
+    progression = None
+    prog_source = "none"
+    prog_confidence = 0.0
+
+    if song_name and artist and key_num >= 0:
+        try:
+            from chord_source import get_chord_progression
+            ext_prog, ext_source, ext_conf = get_chord_progression(
+                song_name, artist, key_num, mode_num
+            )
+            if ext_prog and ext_conf >= 0.4:
+                progression = ext_prog
+                prog_source = ext_source
+                prog_confidence = ext_conf
+                print(f"[intel] progression from {ext_source}: {ext_prog} (confidence={ext_conf:.2f})")
+        except Exception as e:
+            print(f"[intel] external chord lookup failed: {e}")
+
+    # ── Fallback: audio-based estimation ──
+    if progression is None and key_num >= 0:
+        print("[intel] falling back to audio-based progression estimation")
+        if isinstance(all_note_events, dict):
+            audio_prog = estimate_progression_from_stems(all_note_events, key_num, mode_num, bpm)
+        else:
+            audio_prog = estimate_progression_from_stems({"other": merged}, key_num, mode_num, bpm)
+
+        if audio_prog and audio_prog != "Unknown":
+            progression = audio_prog
+            prog_source = "audio"
+            prog_confidence = 0.3  # lower confidence for audio-derived
+            print(f"[intel] progression from audio: {audio_prog} (confidence=0.30)")
+        else:
+            print("[intel] audio fallback also failed — no progression")
+
+    # ── Final: suppress if confidence too low ──
+    if progression and prog_confidence < MIN_PROGRESSION_CONFIDENCE:
+        print(f"[intel] progression SUPPRESSED (confidence {prog_confidence:.2f} < {MIN_PROGRESSION_CONFIDENCE})")
+        progression = None
+        prog_source = "none"
+
+    return {
+        "key": key_str,
+        "key_num": key_num,
+        "mode_num": mode_num,
+        "bpm": bpm,
+        "progression": progression,  # None if unavailable
+        "progression_source": prog_source,
+        "confidence": round(key_conf, 2),
+    }
