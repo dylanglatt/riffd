@@ -8,3 +8,5 @@ dist/
 build/
 uploads/
 outputs/
+
+.DS_Store
