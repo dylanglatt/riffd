@@ -120,16 +120,53 @@ def process_audio(job_id):
             stems = separate_stems(audio_path, job_id, progress_callback=on_progress)
             jobs[job_id]["stems"] = stems
 
-            # 2. Generate tabs + collect note events
+            # 2. Quick BPM detection from first harmonic stem
+            #    (needed before tab generation for correct grid quantization)
+            on_progress("Detecting tempo...")
+            active_stems = {k: v for k, v in stems.items() if v.get("active", True)}
+            detected_bpm = 120.0  # default fallback
+
+            # Find a harmonic stem for BPM — prefer guitar/piano/bass over vocals/drums
+            bpm_stem_key = None
+            for priority_list in [["guitar", "piano", "bass", "other"], list(active_stems.keys())]:
+                for k in priority_list:
+                    if k in active_stems and k not in ("drums",):
+                        bpm_stem_key = k
+                        break
+                if bpm_stem_key:
+                    break
+
+            if bpm_stem_key:
+                try:
+                    from basic_pitch import ICASSP_2022_MODEL_PATH
+                    from basic_pitch.inference import predict as bp_predict
+                    _, _, bpm_notes = bp_predict(
+                        active_stems[bpm_stem_key]["path"],
+                        ICASSP_2022_MODEL_PATH,
+                        minimum_note_length=80,
+                        minimum_frequency=40,
+                        maximum_frequency=2000,
+                    )
+                    if bpm_notes and len(bpm_notes) > 10:
+                        import pandas as pd
+                        bpm_df = pd.DataFrame(bpm_notes, columns=["start_time_s", "end_time_s", "pitch_midi", "confidence", "pitch_bends"][:len(bpm_notes[0])])
+                        from music_intelligence import estimate_bpm
+                        est_bpm, bpm_conf = estimate_bpm(bpm_df)
+                        if est_bpm > 0 and bpm_conf >= 0.15:
+                            detected_bpm = est_bpm
+                            print(f"[process] early BPM detection: {detected_bpm} (confidence={bpm_conf:.2f}, from {bpm_stem_key})")
+                except Exception as e:
+                    print(f"[process] early BPM detection failed: {e}")
+
+            # 3. Generate tabs + collect note events (with BPM for grid)
             on_progress("Generating tabs...")
             tabs = {}
             note_events_all = {}
-            active_stems = {k: v for k, v in stems.items() if v.get("active", True)}
 
             for stem_key, stem_info in active_stems.items():
                 label = stem_info.get("label", stem_key)
                 on_progress(f"Tabbing {label}...")
-                tab_result = generate_tabs(stem_info["path"], job_id, stem_key, label=label)
+                tab_result = generate_tabs(stem_info["path"], job_id, stem_key, label=label, bpm=detected_bpm)
                 tabs[stem_key] = tab_result
                 csv_path = tab_result.get("notes_csv")
                 if csv_path:
@@ -145,9 +182,9 @@ def process_audio(job_id):
             artist_name = track_meta.get("artist", "")
             track_name = track_meta.get("name", "")
 
-            # 3. Song intelligence
+            # 4. Song intelligence (full analysis — key, BPM refinement, chords)
             on_progress("Analyzing key and progression...")
-            intelligence = {"key": "Unknown", "key_num": -1, "mode_num": -1, "bpm": 120, "progression": None}
+            intelligence = {"key": "Unknown", "key_num": -1, "mode_num": -1, "bpm": detected_bpm, "progression": None}
             if note_events_all:
                 try:
                     intelligence = analyze_song_from_notes(

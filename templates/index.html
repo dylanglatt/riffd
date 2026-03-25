@@ -673,6 +673,8 @@ let _searchCache={};  // normalized query → {results, timestamp}
 let _searchController=null;  // AbortController for in-flight request
 const SEARCH_CACHE_TTL = 60000;  // 1 minute
 const SEARCH_DEBOUNCE = 450;  // ms
+let _searchBackoffUntil=0;  // timestamp (ms) when rate limit cooldown expires
+const _MAX_SEARCH_COOLDOWN=15; // seconds — never allow longer cooldown
 
 const searchInput = document.getElementById("search-input");
 
@@ -696,6 +698,14 @@ async function doSearch(q) {
 
   console.log(`[search] query="${q}"`);
 
+  // Respect rate limit backoff — don't even try during cooldown
+  if(Date.now() < _searchBackoffUntil) {
+    const secs = Math.ceil((_searchBackoffUntil - Date.now()) / 1000);
+    console.log(`[search] blocked — rate limit backoff (${secs}s remaining)`);
+    c.innerHTML=`<div class="empty-state" style="color:var(--text-muted)">Search available in ${secs}s...</div>`;
+    return;
+  }
+
   // Check cache
   const cached=_searchCache[cacheKey];
   if(cached && Date.now()-cached.ts < SEARCH_CACHE_TTL) {
@@ -715,6 +725,22 @@ async function doSearch(q) {
     console.log(`[search] fetching from API...`);
     const r=await fetch(`/api/spotify/search?q=${encodeURIComponent(q)}`, {signal:_searchController.signal});
     if(q!==lastQuery) { console.log(`[search] stale response, ignoring`); return; }
+
+    // Handle rate limit: set cooldown (clamped), auto-retry when it clears
+    if(r.status===429) {
+      const d=await r.json();
+      const retryAfter = Math.min(Math.max(d.retry_after || 5, 1), _MAX_SEARCH_COOLDOWN);
+      _searchBackoffUntil = Date.now() + retryAfter * 1000;  // always replace, never accumulate
+      console.warn(`[search] rate limited — cooldown ${retryAfter}s`);
+      c.innerHTML=`<div class="empty-state" style="color:var(--text-muted)">Search available in ${retryAfter}s...</div>`;
+      setTimeout(() => {
+        _searchBackoffUntil = 0;
+        console.log(`[search] cooldown cleared`);
+        if(lastQuery===q) doSearch(q);
+      }, retryAfter * 1000 + 300);
+      return;
+    }
+
     const d=await r.json();
     if(d.error) {
       console.warn(`[search] API error: ${d.error}`);

@@ -35,6 +35,64 @@ SILENCE_THRESHOLD = 0.003
 MIN_RELATIVE_ENERGY = 0.08
 
 
+# ─── Note Detection Configuration ────────────────────────────────────────────
+# Per-instrument Basic Pitch parameters and confidence thresholds.
+# Structure allows easy tuning without code changes.
+
+INSTRUMENT_CONFIGS = {
+    "bass_tab": {
+        "min_freq": 27,       # E1 = 41 Hz, but allow some headroom
+        "max_freq": 350,      # Cut above G3 range — eliminates guitar/vocal bleed
+        "onset_threshold": 0.5,
+        "frame_threshold": 0.3,
+        "min_note_length": 127,  # Bass notes are sustained, keep default
+        "confidence_threshold": 0.30,  # Bass in isolated stems has lower confidence but usually correct
+    },
+    "guitar_tab": {
+        "min_freq": 75,       # E2 = 82 Hz, slight headroom
+        "max_freq": 1400,     # Covers fundamentals + first harmonics, cuts cymbal/vocal bleed
+        "onset_threshold": 0.5,
+        "frame_threshold": 0.3,
+        "min_note_length": 80,   # Faster picking needs shorter min
+        "confidence_threshold": 0.35,  # Median guitar confidence ~0.40, this drops the bottom quartile
+    },
+    "drum_tab": {
+        # Basic Pitch is fundamentally wrong for drums (A3 will replace this).
+        # For now, keep wide parameters and very low threshold to not lose the few hits we get.
+        "min_freq": 40,
+        "max_freq": 4000,
+        "onset_threshold": 0.5,
+        "frame_threshold": 0.3,
+        "min_note_length": 58,
+        "confidence_threshold": 0.15,  # Drums have very low confidence in Basic Pitch — don't filter yet
+    },
+    "note_list": {
+        # Vocals, keys, other
+        "min_freq": 80,
+        "max_freq": 2000,
+        "onset_threshold": 0.5,
+        "frame_threshold": 0.3,
+        "min_note_length": 80,
+        "confidence_threshold": 0.35,
+    },
+}
+
+# Fallback for any renderer type not in the dict
+_DEFAULT_CONFIG = {
+    "min_freq": 40,
+    "max_freq": 4000,
+    "onset_threshold": 0.5,
+    "frame_threshold": 0.3,
+    "min_note_length": 58,
+    "confidence_threshold": 0.35,
+}
+
+
+def _get_instrument_config(renderer_type: str) -> dict:
+    """Get Basic Pitch parameters + confidence threshold for an instrument type."""
+    return INSTRUMENT_CONFIGS.get(renderer_type, _DEFAULT_CONFIG)
+
+
 # ─── WAV I/O ─────────────────────────────────────────────────────────────────
 
 def _detect_wav_format(filepath):
@@ -566,22 +624,27 @@ _NO_TAB_STEMS = {"vocals", "lead_vocal", "backing_vocal", "harmony_vocal",
                   "vocal_double", "vocal_layer", "vocal_pad"}
 
 
-def generate_tabs(stem_path: str, song_id: str, stem_name: str, label: str = "") -> dict:
+def generate_tabs(stem_path: str, song_id: str, stem_name: str, label: str = "", bpm: float = 120.0) -> dict:
     """
-    Run Basic Pitch on a stem audio file.
+    Run Basic Pitch on a stem audio file with per-instrument parameters.
     Returns paths to: MIDI file, note events CSV, and rendered tab text.
-    Skips tab rendering for stems that shouldn't produce guitar tab.
     """
     stem_path = Path(stem_path)
     tab_dir = OUTPUT_DIR / song_id / "tabs"
     tab_dir.mkdir(parents=True, exist_ok=True)
 
+    # Select Basic Pitch parameters based on instrument type
+    renderer = _get_tab_renderer(label or stem_name)
+    config = _get_instrument_config(renderer)
+
     model_output, midi_data, note_events = predict(
         str(stem_path),
         ICASSP_2022_MODEL_PATH,
-        minimum_note_length=58,
-        minimum_frequency=40,
-        maximum_frequency=4000,
+        onset_threshold=config["onset_threshold"],
+        frame_threshold=config["frame_threshold"],
+        minimum_note_length=config["min_note_length"],
+        minimum_frequency=config["min_freq"],
+        maximum_frequency=config["max_freq"],
     )
 
     midi_path = tab_dir / f"{stem_name}.mid"
@@ -591,21 +654,24 @@ def generate_tabs(stem_path: str, song_id: str, stem_name: str, label: str = "")
     note_events = _normalize_note_events(note_events)
     note_events.to_csv(str(csv_path), index=False)
 
+    # Log confidence distribution for tuning
+    _log_confidence_stats(stem_name, label, renderer, note_events, config["confidence_threshold"])
+
     # Determine if this stem should get full tab or just a note summary
-    renderer = _get_tab_renderer(label or stem_name)
     stem_key_lower = stem_name.lower()
 
     # Quality gate: if renderer says note_list, don't force a fake guitar tab
     if renderer == "note_list" or stem_key_lower in _NO_TAB_STEMS:
-        tab_text = render_ascii_tab(note_events, stem_name, label)
+        tab_text = render_ascii_tab(note_events, stem_name, label, bpm=bpm, confidence_threshold=config["confidence_threshold"])
     elif renderer == "drum_tab":
-        tab_text = render_ascii_tab(note_events, stem_name, label)
+        tab_text = render_ascii_tab(note_events, stem_name, label, bpm=bpm, confidence_threshold=config["confidence_threshold"])
     else:
-        # Guitar/bass tab — check if there are enough notes for useful tab
-        if len(note_events) < 5:
+        # Guitar/bass tab — check if there are enough confident notes
+        confident_notes = _count_confident_notes(note_events, config["confidence_threshold"])
+        if confident_notes < 5:
             tab_text = f"=== {(label or stem_name).upper()} ===\n\n(insufficient note data for tab)"
         else:
-            tab_text = render_ascii_tab(note_events, stem_name, label)
+            tab_text = render_ascii_tab(note_events, stem_name, label, bpm=bpm, confidence_threshold=config["confidence_threshold"])
 
     tab_txt_path = tab_dir / f"{stem_name}_tab.txt"
     tab_txt_path.write_text(tab_text)
@@ -618,10 +684,47 @@ def generate_tabs(stem_path: str, song_id: str, stem_name: str, label: str = "")
     }
 
 
+def _count_confident_notes(note_events, threshold: float) -> int:
+    """Count notes above the confidence threshold."""
+    if "confidence" not in note_events.columns:
+        return len(note_events)
+    return int((note_events["confidence"] >= threshold).sum())
+
+
+def _log_confidence_stats(stem_name: str, label: str, renderer: str, note_events, threshold: float):
+    """Log confidence distribution for a stem — helps tune thresholds from real data."""
+    display = label or stem_name
+    total = len(note_events)
+    if total == 0:
+        print(f"[notes] {display}: 0 notes")
+        return
+
+    if "confidence" not in note_events.columns:
+        print(f"[notes] {display}: {total} notes (no confidence data)")
+        return
+
+    conf = note_events["confidence"]
+    kept = int((conf >= threshold).sum())
+    dropped = total - kept
+
+    # Compute percentile buckets
+    bins = [0, 0.25, 0.35, 0.45, 0.55, 0.70, 1.01]
+    labels_b = ["<0.25", "0.25-0.35", "0.35-0.45", "0.45-0.55", "0.55-0.70", ">0.70"]
+    hist = pd.cut(conf, bins=bins, labels=labels_b, right=False).value_counts().sort_index()
+    dist_str = "  ".join(f"{l}:{int(v)}" for l, v in hist.items() if v > 0)
+
+    print(f"[notes] {display} ({renderer}): {total} total, {kept} kept, {dropped} dropped (threshold={threshold})")
+    print(f"[notes]   confidence: min={conf.min():.2f} median={conf.median():.2f} max={conf.max():.2f}")
+    print(f"[notes]   distribution: {dist_str}")
+
+
 def _normalize_note_events(note_events) -> pd.DataFrame:
     """
     Normalize Basic Pitch note events into a DataFrame with at least:
-    start_time_s, end_time_s, pitch_midi
+    start_time_s, end_time_s, pitch_midi, confidence
+
+    Basic Pitch returns tuples of (start, end, pitch, confidence, pitch_bends).
+    The confidence (column index 3 / extra_0) is critical for filtering ghost notes.
     """
     required_cols = ["start_time_s", "end_time_s", "pitch_midi"]
 
@@ -630,7 +733,7 @@ def _normalize_note_events(note_events) -> pd.DataFrame:
 
     elif isinstance(note_events, list):
         if len(note_events) == 0:
-            df = pd.DataFrame(columns=required_cols)
+            df = pd.DataFrame(columns=required_cols + ["confidence"])
 
         elif isinstance(note_events[0], dict):
             df = pd.DataFrame(note_events)
@@ -655,42 +758,56 @@ def _normalize_note_events(note_events) -> pd.DataFrame:
     if missing:
         raise ValueError(f"Missing required note event columns: {missing}")
 
+    # Rename extra_0 to confidence if present (Basic Pitch's 4th output column)
+    if "extra_0" in df.columns and "confidence" not in df.columns:
+        df = df.rename(columns={"extra_0": "confidence"})
+
+    # Ensure confidence column exists with a default of 1.0 (trust all notes if no data)
+    if "confidence" not in df.columns:
+        df["confidence"] = 1.0
+
     return df
 
 
-def render_ascii_tab(note_events, stem_name: str, label: str = "") -> str:
+def render_ascii_tab(note_events, stem_name: str, label: str = "", bpm: float = 120.0, confidence_threshold: float = 0.35) -> str:
     """
     Render ASCII tab. Uses the label (e.g. "Lead Guitar 1") to pick the renderer.
-    Falls back to stem_name-based heuristics.
+    Filters notes by confidence before rendering.
+    Uses BPM for grid quantization.
     """
     display_name = label or stem_name
     lines = [f"=== {display_name.upper()} TAB ===\n"]
 
     renderer = _get_tab_renderer(label or stem_name)
 
+    # Filter by confidence before rendering
+    df = _filter_by_confidence(note_events, confidence_threshold)
+
     if renderer == "bass_tab":
-        lines.append(_render_string_tab(note_events, "bass"))
+        lines.append(_render_string_tab(df, "bass", bpm=bpm))
     elif renderer == "guitar_tab":
-        lines.append(_render_string_tab(note_events, "guitar"))
+        lines.append(_render_string_tab(df, "guitar", bpm=bpm))
     elif renderer == "drum_tab":
-        lines.append(_render_drum_tab(note_events))
+        lines.append(_render_drum_tab(df, bpm=bpm))
     else:
-        lines.append(_render_note_list(note_events))
+        lines.append(_render_note_list(df))
 
     return "\n".join(lines)
 
 
-def _render_string_tab(note_events, instrument_type: str) -> str:
+def _filter_by_confidence(note_events, threshold: float) -> pd.DataFrame:
+    """Filter out low-confidence notes. Returns filtered DataFrame."""
+    if "confidence" not in note_events.columns:
+        return note_events.copy()
+    return note_events[note_events["confidence"] >= threshold].copy()
+
+
+def _render_string_tab(note_events, instrument_type: str, bpm: float = 120.0) -> str:
     """
     Render guitar (6-string) or bass (4-string) ASCII tab.
 
-    Key improvements over naive approach:
-    - 2-char columns to handle double-digit frets (e.g. "12") without collision
-    - Quantization to an 8th-note grid for readable timing
-    - Note density filtering: skip very short notes (< 80ms)
-    - Playable position preference: prefer lower frets
-    - Bar lines and measure structure
-    - Limited output (first ~30s) to prevent massive unreadable output
+    Uses BPM for grid quantization instead of hardcoded timing.
+    Confidence filtering happens before this function is called.
     """
     is_bass = (instrument_type == "bass")
 
@@ -723,10 +840,12 @@ def _render_string_tab(note_events, instrument_type: str) -> str:
     max_render_time = min(df["end_time_s"].max(), 32.0)
     df = df[df["start_time_s"] < max_render_time].copy()
 
-    # Quantization grid: 8th notes at ~120 BPM = 0.25s per slot
-    slot_dur = 0.25
+    # BPM-based quantization grid: 8th notes at actual tempo
+    effective_bpm = max(40.0, min(300.0, bpm)) if bpm and bpm > 0 else 120.0
+    beat_dur = 60.0 / effective_bpm               # seconds per beat
+    slot_dur = beat_dur / 2                        # 8th note grid
+    slots_per_measure = 8                          # 8 eighth notes per 4/4 measure
     n_slots = int(max_render_time / slot_dur) + 1
-    slots_per_measure = 8  # 8 eighth notes per 4/4 measure
 
     # Each column is 3 chars wide: "xx-" — handles up to fret 24 cleanly
     COL_WIDTH = 3
@@ -791,8 +910,9 @@ def _render_string_tab(note_events, instrument_type: str) -> str:
     return "\n".join(output_lines)
 
 
-def _render_drum_tab(note_events) -> str:
-    """Render a basic drum tab using General MIDI percussion mapping."""
+def _render_drum_tab(note_events, bpm: float = 120.0) -> str:
+    """Render a basic drum tab using General MIDI percussion mapping.
+    Uses BPM for grid timing instead of hardcoded values."""
     drum_map = {
         36: "BD", 38: "SN", 42: "HH", 46: "OH",
         49: "CC", 51: "RC", 43: "FT", 45: "MT", 48: "HT",
@@ -801,7 +921,9 @@ def _render_drum_tab(note_events) -> str:
     if len(note_events) == 0:
         return "(no drum hits detected)"
 
-    beat_duration = 0.5
+    # BPM-based timing
+    effective_bpm = max(40.0, min(300.0, bpm)) if bpm and bpm > 0 else 120.0
+    beat_duration = 60.0 / effective_bpm
     measure_duration = beat_duration * 4
     cols_per_measure = 16
 
