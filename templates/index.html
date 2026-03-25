@@ -174,7 +174,7 @@
 
     /* Hero CTA button */
     .hero-cta {
-      padding:14px 40px; font-size:.95rem; font-weight:700; border-radius:var(--radius-sm);
+      padding:14px 44px; font-size:.95rem; font-weight:700; border-radius:var(--radius-sm);
       background:var(--accent-gradient); color:white; border:none; cursor:pointer;
       box-shadow:0 4px 24px rgba(124,92,255,.35); transition:all .3s ease;
     }
@@ -182,13 +182,13 @@
     .hero-cta:disabled { opacity:.35; cursor:not-allowed; transform:none; box-shadow:none; }
 
     .hero-back {
-      margin-top:12px; background:none; border:none; color:var(--text-muted);
-      font-size:.82rem; cursor:pointer; padding:6px 12px; transition:color .2s;
+      margin-top:16px; background:none; border:none; color:var(--text-muted);
+      font-size:.76rem; cursor:pointer; padding:0; transition:color .2s; font-family:inherit;
+      letter-spacing:0.01em;
     }
     .hero-back:hover { color:var(--text-secondary); transform:none; }
 
-    /* Smooth state transition */
-    .hero-actions { transition:opacity .3s ease; }
+    .hero-actions { display:flex; flex-direction:column; align-items:center; transition:opacity .3s ease; }
     .hero-actions.hidden { opacity:0; pointer-events:none; height:0; overflow:hidden; margin:0; }
     .hero-loading { transition:opacity .3s ease .15s; }
     .hero-loading.hidden { opacity:0; pointer-events:none; height:0; overflow:hidden; margin:0; }
@@ -269,10 +269,9 @@
 
     /* Header inside results */
     .results-header { padding:20px 22px 0; }
-    .results-meta { display:flex; gap:8px; flex-wrap:wrap; margin-top:12px; }
-    .meta-chip { display:inline-flex; align-items:center; gap:5px; padding:5px 12px; background:rgba(124,92,255,.06); border:1px solid rgba(124,92,255,.12); border-radius:999px; font-size:.74rem; font-weight:600; }
+    .results-meta { display:flex; gap:10px; flex-wrap:wrap; margin-top:14px; align-items:center; }
+    .meta-chip { display:inline-flex; align-items:center; gap:6px; padding:6px 14px; background:rgba(124,92,255,.06); border:1px solid rgba(124,92,255,.1); border-radius:999px; font-size:.78rem; font-weight:600; }
     .meta-chip .mc-label { color:var(--text-muted); } .meta-chip .mc-val { color:var(--accent-2); }
-    .tag-chip { padding:4px 10px; background:rgba(255,255,255,.03); border:1px solid var(--border); border-radius:999px; font-size:.7rem; color:var(--text-muted); font-weight:500; }
 
     /* Primary nav tabs */
     .results-nav { display:flex; gap:0; border-bottom:1px solid var(--border); margin-top:16px; padding:0 22px; }
@@ -294,7 +293,7 @@
     .transport-seek::-webkit-slider-thumb { -webkit-appearance:none; width:12px; height:12px; border-radius:50%; background:var(--accent-2); cursor:pointer; box-shadow:0 0 8px rgba(94,234,212,.4); }
 
     .mixer-channels { margin-top:4px; }
-    .channel { display:grid; grid-template-columns:76px 1fr 30px 30px; align-items:center; gap:8px; padding:6px 0; }
+    .channel { display:grid; grid-template-columns:140px 1fr 30px 30px; align-items:center; gap:8px; padding:6px 0; }
     .channel-name { font-size:.78rem; font-weight:600; color:var(--text-secondary); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
     .channel.muted .channel-name { color:var(--text-muted); opacity:.4; }
     .channel-volume { display:flex; align-items:center; gap:8px; }
@@ -392,7 +391,7 @@
 
     @media(max-width:640px) {
       main { padding:28px 14px 60px; }
-      .channel { grid-template-columns:64px 1fr 26px 26px; gap:5px; }
+      .channel { grid-template-columns:100px 1fr 26px 26px; gap:5px; }
       .action-row { flex-direction:column; } .action-row button { width:100%; }
       .results-nav-btn { padding:10px 10px; font-size:.78rem; }
       .top-nav { padding:12px 16px; }
@@ -441,6 +440,12 @@
         <div class="upload-subtitle">MP3, WAV, FLAC, M4A, OGG, AAC</div>
       </div>
       <div class="search-hint">Try "Hotel California" or upload your own track</div>
+    </div>
+
+    <!-- Recent Songs (hidden until populated) -->
+    <div class="landing-section" id="history-section" style="display:none">
+      <div class="landing-section-title">Recent songs</div>
+      <div class="try-grid" id="history-grid"></div>
     </div>
 
     <!-- Capability band -->
@@ -549,7 +554,7 @@ One says she's a friend of mine...</div>
       <!-- STATE: Pre-process (CTA) -->
       <div class="hero-actions" id="hero-actions">
         <button class="hero-cta" id="process-btn" onclick="startProcessing()">Dive In</button>
-        <button class="hero-back" onclick="resetApp()">&#8592; Choose a different song</button>
+        <button class="hero-back" onclick="resetApp()">Pick another song</button>
         <div id="error-msg" class="error-msg" style="text-align:center;margin-top:10px"></div>
       </div>
 
@@ -664,16 +669,68 @@ function valueRoute(tab) {
 
 // ─── Search ─────────────────────────────────────────────────────────────────
 let searchResults=[], searchTimer=null, lastQuery="";
+let _searchCache={};  // normalized query → {results, timestamp}
+let _searchController=null;  // AbortController for in-flight request
+const SEARCH_CACHE_TTL = 60000;  // 1 minute
+const SEARCH_DEBOUNCE = 450;  // ms
+
 const searchInput = document.getElementById("search-input");
-searchInput.addEventListener("input", ()=>{ clearTimeout(searchTimer); const q=searchInput.value.trim(); if(!q){document.getElementById("search-results").innerHTML="";lastQuery="";return;} if(q===lastQuery)return; if(q.length>=2) searchTimer=setTimeout(()=>doSearch(q),300); });
-searchInput.addEventListener("keydown", e=>{ if(e.key==="Enter"){clearTimeout(searchTimer);const q=searchInput.value.trim();if(q)doSearch(q);} });
+
+searchInput.addEventListener("input", ()=>{
+  clearTimeout(searchTimer);
+  const q=searchInput.value.trim();
+  if(!q){ document.getElementById("search-results").innerHTML=""; lastQuery=""; return; }
+  if(q===lastQuery) return;
+  if(q.length>=2) searchTimer=setTimeout(()=>doSearch(q), SEARCH_DEBOUNCE);
+});
+
+searchInput.addEventListener("keydown", e=>{
+  if(e.key==="Enter"){ clearTimeout(searchTimer); const q=searchInput.value.trim(); if(q&&q.length>=2) doSearch(q); }
+});
 
 async function doSearch(q) {
-  if(!q)return; lastQuery=q;
+  if(!q) return;
+  lastQuery=q;
   const c=document.getElementById("search-results");
-  if(!c.children.length) c.innerHTML='<div class="empty-state">Searching...</div>';
-  try { const r=await fetch(`/api/spotify/search?q=${encodeURIComponent(q)}`); if(q!==lastQuery)return; const d=await r.json(); if(d.error)throw new Error(d.error); searchResults=d||[]; renderSearchResults(); }
-  catch(e){ if(q!==lastQuery)return; c.innerHTML=`<div class="empty-state" style="color:var(--red)">Search failed: ${esc(e.message)}</div>`; }
+  const cacheKey=q.trim().toLowerCase();
+
+  console.log(`[search] query="${q}"`);
+
+  // Check cache
+  const cached=_searchCache[cacheKey];
+  if(cached && Date.now()-cached.ts < SEARCH_CACHE_TTL) {
+    console.log(`[search] cache hit for "${cacheKey}" (${cached.results.length} results)`);
+    searchResults=cached.results;
+    renderSearchResults();
+    return;
+  }
+
+  c.innerHTML='<div class="empty-state">Searching...</div>';
+
+  // Cancel any in-flight request
+  if(_searchController) { try{_searchController.abort();}catch{} }
+  _searchController=new AbortController();
+
+  try {
+    console.log(`[search] fetching from API...`);
+    const r=await fetch(`/api/spotify/search?q=${encodeURIComponent(q)}`, {signal:_searchController.signal});
+    if(q!==lastQuery) { console.log(`[search] stale response, ignoring`); return; }
+    const d=await r.json();
+    if(d.error) {
+      console.warn(`[search] API error: ${d.error}`);
+      c.innerHTML=`<div class="empty-state" style="color:var(--text-muted)">${esc(d.error)}</div>`;
+      return;
+    }
+    console.log(`[search] got ${d.length} results`);
+    searchResults=d||[];
+    _searchCache[cacheKey]={results:searchResults, ts:Date.now()};
+    renderSearchResults();
+  } catch(e) {
+    if(e.name==="AbortError") { console.log(`[search] aborted (superseded)`); return; }
+    if(q!==lastQuery) return;
+    console.warn(`[search] network error:`, e.message);
+    c.innerHTML='<div class="empty-state" style="color:var(--text-muted)">Search temporarily unavailable. Try again in a moment.</div>';
+  }
 }
 
 function renderSearchResults() {
@@ -789,27 +846,42 @@ async function renderResults(data) {
   const activeNames=Object.keys(tabs).filter(n=>{const i=stems[n];return !i||i.active!==false;});
   if(!activeNames.length){setError("No stems detected.");showView("confirm");return;}
 
-  // Metadata chips
+  // Metadata chips — BPM, Key, Progression (confidence-gated display)
   const metaEl=document.getElementById("results-meta");
   let chips="";
-  if(intel.key&&intel.key!=="Unknown") chips+=`<span class="meta-chip"><span class="mc-label">Key</span><span class="mc-val">${esc(intel.key)}</span></span>`;
-  if(intel.bpm&&intel.bpm>0) chips+=`<span class="meta-chip"><span class="mc-label">BPM</span><span class="mc-val">${Math.round(intel.bpm)}</span></span>`;
-  if(intel.progression&&intel.progression!=="Unknown") chips+=`<span class="meta-chip"><span class="mc-label">Prog</span><span class="mc-val">${esc(intel.progression)}</span></span>`;
-  for(const tag of tags.slice(0,4)) chips+=`<span class="tag-chip">${esc(tag)}</span>`;
-  // Detected stems as chips
-  activeNames.forEach(n=>{const l=(stems[n]&&stems[n].label)||capitalize(n);chips+=`<span class="tag-chip">${esc(l)}</span>`;});
+
+  // BPM: suppress if 0 or very low confidence
+  const bpmConf = intel.bpm_confidence || 0;
+  const bpmVal = Math.round(intel.bpm || 0);
+  if(bpmVal > 0 && bpmConf >= 0.15) {
+    const bpmLabel = bpmConf >= 0.4 ? "BPM" : "Likely BPM";
+    chips+=`<span class="meta-chip"><span class="mc-label">${bpmLabel}</span><span class="mc-val">${bpmVal}</span></span>`;
+  }
+
+  // Key: show if detected
+  if(intel.key&&intel.key!=="Unknown") {
+    chips+=`<span class="meta-chip"><span class="mc-label">Key</span><span class="mc-val">${esc(intel.key)}</span></span>`;
+  }
+
+  // Progression: show only if present and above threshold
+  const progConf = intel.progression_confidence || 0;
+  if(intel.progression&&intel.progression!=="Unknown"&&intel.progression!==null&&progConf>=0.35) {
+    const progLabel = progConf >= 0.55 ? "Progression" : "Likely progression";
+    chips+=`<span class="meta-chip"><span class="mc-label">${progLabel}</span><span class="mc-val">${esc(intel.progression)}</span></span>`;
+  }
+
   metaEl.innerHTML=chips;
   songKey=(intel.key_num>=0)?{num:intel.key_num,mode:intel.mode_num,name:intel.key}:null;
 
   // Mix panel
-  document.getElementById("mixer-channels").innerHTML=activeNames.map(n=>{const l=(stems[n]&&stems[n].label)||capitalize(n);return`<div class="channel" id="ch-${n}"><div class="channel-name">${esc(l)}</div><div class="channel-volume"><input type="range" class="vol-slider" min="0" max="100" value="100" oninput="setVolume('${n}',this.value)" id="vol-${n}"/><span class="vol-label" id="vol-label-${n}">100</span></div><button class="ch-btn" id="mute-${n}" onclick="toggleMute('${n}')">M</button><button class="ch-btn" id="solo-${n}" onclick="toggleSolo('${n}')">S</button></div>`;}).join("");
+  document.getElementById("mixer-channels").innerHTML=activeNames.map(n=>{const l=formatStemLabel(n,(stems[n]&&stems[n].label)||"");return`<div class="channel" id="ch-${n}"><div class="channel-name">${esc(l)}</div><div class="channel-volume"><input type="range" class="vol-slider" min="0" max="100" value="100" oninput="setVolume('${n}',this.value)" id="vol-${n}"/><span class="vol-label" id="vol-label-${n}">100</span></div><button class="ch-btn" id="mute-${n}" onclick="toggleMute('${n}')">M</button><button class="ch-btn" id="solo-${n}" onclick="toggleSolo('${n}')">S</button></div>`;}).join("");
   document.getElementById("loop-start").value="0:00";document.getElementById("loop-end").value="";loopActive=false;document.getElementById("loop-btn").classList.remove("active");
   transposeAmount=0;document.getElementById("transpose-display").textContent="0";document.getElementById("transposed-key").textContent="";
 
   // Tab panel
-  document.getElementById("tab-pills").innerHTML=activeNames.map((n,i)=>{const l=(stems[n]&&stems[n].label)||capitalize(n);return`<button class="tab-pill ${i===0?'active':''}" onclick="showTab('${n}',this)">${esc(l)}</button>`;}).join("");
+  document.getElementById("tab-pills").innerHTML=activeNames.map((n,i)=>{const l=formatStemLabel(n,(stems[n]&&stems[n].label)||"");return`<button class="tab-pill ${i===0?'active':''}" onclick="showTab('${n}',this)">${esc(l)}</button>`;}).join("");
   document.getElementById("tab-display").textContent=tabs[activeNames[0]]?.tab_text||"(no tab data)";
-  document.getElementById("midi-actions").innerHTML=activeNames.map(n=>{const l=(stems[n]&&stems[n].label)||capitalize(n);return`<a href="/api/download_midi/${currentJobId}/${n}"><button class="secondary">MIDI: ${esc(l)}</button></a>`;}).join("");
+  document.getElementById("midi-actions").innerHTML=activeNames.map(n=>{const l=formatStemLabel(n,(stems[n]&&stems[n].label)||"");return`<a href="/api/download_midi/${currentJobId}/${n}"><button class="secondary">MIDI: ${esc(l)}</button></a>`;}).join("");
 
   // Lyrics panel
   const lyricsEl=document.getElementById("lyrics-content");
@@ -826,6 +898,9 @@ async function renderResults(data) {
   await loadStemAudio(activeNames);
   document.getElementById("process-btn").disabled=false;document.getElementById("process-btn").textContent="Dive In";
   showView("results");
+
+  // Refresh history so new song appears immediately
+  loadHistory();
 }
 
 function showTab(n,btn){document.querySelectorAll(".tab-pill").forEach(p=>p.classList.remove("active"));btn.classList.add("active");document.getElementById("tab-display").textContent=(jobData?.tabs||{})[n]?.tab_text||"(no tab data)";}
@@ -907,6 +982,24 @@ function resetApp(){
 function fmtMs(ms){const s=Math.floor((ms||0)/1000);return`${Math.floor(s/60)}:${String(s%60).padStart(2,"0")}`;}
 function fmtSec(s){s=Math.max(0,Math.floor(s||0));return`${Math.floor(s/60)}:${String(s%60).padStart(2,"0")}`;}
 function capitalize(s){return s.charAt(0).toUpperCase()+s.slice(1);}
+
+function formatStemLabel(rawKey, label) {
+  // If backend provides a clean label, use it
+  if (label && !label.includes("_")) return label;
+  // Otherwise format the raw key: lead_guitar_electric → Lead Guitar (Electric)
+  let parts = (label || rawKey).replace(/_/g, " ").split(" ");
+  // Capitalize each word
+  parts = parts.map(w => w.charAt(0).toUpperCase() + w.slice(1));
+  // If last part is a number, format as "Name N"
+  // If last part is a descriptor (electric, acoustic), wrap in parens
+  const descriptors = ["electric","acoustic","overdub","layer","double","comping","fingerpicking","pad"];
+  const last = parts[parts.length - 1].toLowerCase();
+  if (descriptors.includes(last) && parts.length > 1) {
+    const desc = parts.pop();
+    return parts.join(" ") + " (" + desc.charAt(0).toUpperCase() + desc.slice(1) + ")";
+  }
+  return parts.join(" ");
+}
 function esc(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");}
 function sleep(ms){return new Promise(r=>setTimeout(r,ms));}
 
@@ -1041,11 +1134,17 @@ function _renderDiscovery() {
   const grid = document.getElementById("try-grid");
   if (!grid || !_discoverySongs.length) return;
 
+  // Debug: log each card's data binding
+  console.log("[discovery] rendering cards:");
+  _discoverySongs.forEach((t, i) => console.log(`  [${i}] ${t.name} by ${t.artist} img=${(t.image_url||"none").slice(-20)}`));
+
   grid.innerHTML = _discoverySongs.map((t, i) => {
+    // Each card renders from a single track object — title, artist, and image are bound together
+    const tid = t.id || i;
     const imgHtml = t.image_url
-      ? `<img src="${esc(t.image_url)}" alt="" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" /><div class="try-card-ph" style="display:none"></div>`
+      ? `<img src="${esc(t.image_url)}" alt="${esc(t.name)}" crossorigin="anonymous" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" /><div class="try-card-ph" style="display:none"></div>`
       : `<div class="try-card-ph"></div>`;
-    return `<div class="try-card" onclick="pickDiscovery(${i})">
+    return `<div class="try-card" data-track-id="${esc(tid)}" onclick="pickDiscovery(${i})">
       ${imgHtml}
       <div class="try-card-name">${esc(t.name || "")}</div>
       <div class="try-card-artist">${esc(t.artist || "")}</div>
@@ -1059,6 +1158,90 @@ function pickDiscovery(i) {
 }
 
 loadDiscovery();
+
+// ─── History / Recent Songs ──────────────────────────────────────────────────
+let _historySongs = [];
+
+async function loadHistory() {
+  try {
+    const res = await fetch("/api/history");
+    const data = await res.json();
+    if (!data || !data.length) return;
+    _historySongs = data;
+    const section = document.getElementById("history-section");
+    const grid = document.getElementById("history-grid");
+    grid.innerHTML = data.map((t, i) => {
+      const imgHtml = t.image_url
+        ? `<img src="${esc(t.image_url)}" alt="${esc(t.name||"")}" crossorigin="anonymous" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" /><div class="try-card-ph" style="display:none"></div>`
+        : '<div class="try-card-ph"></div>';
+      return `<div class="try-card" data-track-id="${esc(t.track_id||"")}" onclick="pickHistory(${i})">${imgHtml}<div class="try-card-name">${esc(t.name||"")}</div><div class="try-card-artist">${esc(t.artist||"")}</div></div>`;
+    }).join("");
+    section.style.display = "block";
+  } catch { /* silent */ }
+}
+
+async function pickHistory(i) {
+  const entry = _historySongs[i];
+  if (!entry) return;
+
+  // Build a track object from history entry
+  const track = {
+    id: entry.track_id,
+    name: entry.name,
+    artist: entry.artist,
+    image_url: entry.image_url,
+    year: entry.year || "",
+    artist_id: entry.artist_id,
+    yt_query: entry.yt_query || `${entry.artist} - ${entry.name} official audio`,
+  };
+
+  selectedTrack = track;
+  currentJobId = null;
+  _showHeroPreProcess();
+  showView("confirm");
+
+  // Try cache first
+  if (entry.track_id && entry.has_cache) {
+    try {
+      const res = await fetch(`/api/cache/${entry.track_id}`);
+      if (res.ok) {
+        const cached = await res.json();
+        if (cached && !cached.error) {
+          // Restore job_id for audio serving
+          currentJobId = cached.job_id || entry.job_id;
+          // Put cached result into jobs-like format for renderResults
+          jobData = {
+            status: "complete",
+            tabs: cached.tabs || {},
+            stems: cached.stems || {},
+            intelligence: cached.intelligence || {},
+            lyrics: cached.lyrics || null,
+            tags: cached.tags || [],
+            recommendations: cached.recommendations || {},
+          };
+          // Load audio buffers need the job_id set
+          _showHeroLoading();
+          startLoadingMessages();
+          setProgress(null, 80);
+          _fadeLT("Loading cached results...");
+
+          // Small delay for smooth transition
+          await sleep(600);
+          stopLoadingMessages();
+          renderResults(jobData);
+          return;
+        }
+      }
+    } catch (e) {
+      console.warn("Cache miss, will reprocess:", e);
+    }
+  }
+
+  // No cache hit — process normally
+  startProcessing();
+}
+
+loadHistory();
 
 // ─── Spotify Connect (UI placeholder) ────────────────────────────────────────
 let _tooltipTimer = null;

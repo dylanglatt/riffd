@@ -72,6 +72,13 @@ def _dedupe(tracks, exclude_id, limit=6):
     return out
 
 
+class RateLimitError(Exception):
+    """Raised when Spotify returns 429."""
+    def __init__(self, retry_after=5):
+        self.retry_after = retry_after
+        super().__init__(f"Rate limited. Retry after {retry_after}s.")
+
+
 def search_spotify(query: str, limit: int = 8) -> list[dict]:
     resp = requests.get(
         "https://api.spotify.com/v1/search",
@@ -79,13 +86,28 @@ def search_spotify(query: str, limit: int = 8) -> list[dict]:
         params={"q": query, "type": "track", "limit": limit},
         timeout=10,
     )
+    if resp.status_code == 429:
+        retry_after = int(resp.headers.get("Retry-After", 5))
+        print(f"[spotify] 429 rate limited, retry-after={retry_after}s")
+        raise RateLimitError(retry_after)
     resp.raise_for_status()
     return [_format_track(t) for t in resp.json().get("tracks", {}).get("items", [])]
 
 
+_rate_limit_until = 0  # timestamp when rate limit expires
+
 def _safe_search(query, limit=8):
+    """Search that never throws. Respects rate limit backoff."""
+    global _rate_limit_until
+    import time
+    if time.time() < _rate_limit_until:
+        return []  # still in backoff window
     try:
         return search_spotify(query, limit)
+    except RateLimitError as e:
+        _rate_limit_until = time.time() + e.retry_after
+        print(f"[spotify] backing off for {e.retry_after}s")
+        return []
     except Exception:
         return []
 

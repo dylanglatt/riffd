@@ -1,100 +1,289 @@
 """
 chord_source.py
-Fetch chord progressions from external sources, parse into roman numerals.
-Primary source for progression data — audio analysis is fallback only.
+Chord progression detection via web scraping + functional harmony analysis.
+
+Pipeline:
+1. Fetch raw chord names from web
+2. Simplify chords (strip extensions, inversions)
+3. Parse to (root_pc, quality)
+4. Estimate key using diatonic fitness scoring
+5. Convert to scale degrees (1-7)
+6. Normalize (remove consecutive dupes, find repeating loop)
+7. Fuzzy-match against canonical templates
+8. Return structured result with confidence
 """
 
 import re
 import requests
+from collections import Counter
 
 NOTE_NAMES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"]
+FLAT_TO_SHARP = {"Db":"C#","Eb":"D#","Fb":"E","Gb":"F#","Ab":"G#","Bb":"A#","Cb":"B"}
 
-# Enharmonic map for flats
-FLAT_TO_SHARP = {
-    "Db": "C#", "Eb": "D#", "Fb": "E", "Gb": "F#",
-    "Ab": "G#", "Bb": "A#", "Cb": "B",
+MAJOR_SCALE = [0, 2, 4, 5, 7, 9, 11]       # semitones from root
+NATURAL_MINOR_SCALE = [0, 2, 3, 5, 7, 8, 10]
+
+# Diatonic chord qualities in major key: M m m M M m dim
+MAJOR_QUALITIES = [0, 1, 1, 0, 0, 1, 2]  # 0=major, 1=minor, 2=dim
+# In minor key: m dim M m m M M
+MINOR_QUALITIES = [1, 2, 0, 1, 1, 0, 0]
+
+# Roman numeral labels indexed by (degree, quality)
+ROMAN = {
+    (1,0):"I",  (1,1):"i",  (2,0):"II", (2,1):"ii", (2,2):"ii\u00b0",
+    (3,0):"III",(3,1):"iii",(4,0):"IV", (4,1):"iv", (5,0):"V",  (5,1):"v",
+    (6,0):"VI", (6,1):"vi", (7,0):"VII",(7,1):"vii",(7,2):"vii\u00b0",
 }
 
-MAJOR_INTERVALS = [0, 2, 4, 5, 7, 9, 11]
-MINOR_INTERVALS = [0, 2, 3, 5, 7, 8, 10]
+# ─── Canonical progression templates (degree-based, transposition-invariant) ──
+TEMPLATES = [
+    {"name":"I – V – vi – IV",      "degrees":[1,5,6,4]},
+    {"name":"vi – IV – I – V",      "degrees":[6,4,1,5]},
+    {"name":"I – vi – IV – V",      "degrees":[1,6,4,5]},
+    {"name":"I – IV – V – IV",      "degrees":[1,4,5,4]},
+    {"name":"I – IV – vi – V",      "degrees":[1,4,6,5]},
+    {"name":"I – IV – V",           "degrees":[1,4,5]},
+    {"name":"I – IV – V – I",       "degrees":[1,4,5,1]},
+    {"name":"I – V – IV – V",       "degrees":[1,5,4,5]},
+    {"name":"I – V – IV",           "degrees":[1,5,4]},
+    {"name":"ii – V – I",           "degrees":[2,5,1]},
+    {"name":"I – iii – IV – V",     "degrees":[1,3,4,5]},
+    {"name":"I – V – vi – iii – IV","degrees":[1,5,6,3,4]},
+    {"name":"I – IV – I – V",       "degrees":[1,4,1,5]},
+    {"name":"I – V – I – IV",       "degrees":[1,5,1,4]},
+    {"name":"i – VI – III – VII",   "degrees":[1,6,3,7]},  # minor context
+    {"name":"i – iv – v – i",       "degrees":[1,4,5,1]},
+    {"name":"i – VII – VI – V",     "degrees":[1,7,6,5]},
+    {"name":"i – iv – VII – III",   "degrees":[1,4,7,3]},
+    {"name":"12-bar blues",          "degrees":[1,1,1,1,4,4,1,1,5,4,1,5]},
+]
 
-MAJOR_NUMERALS = ["I", "ii", "iii", "IV", "V", "vi", "vii\u00b0"]
-MINOR_NUMERALS = ["i", "ii\u00b0", "III", "iv", "v", "VI", "VII"]
 
+# ═══════════════════════════════════════════════════════════════════════════════
+# STEP 3: Chord Simplification
+# ═══════════════════════════════════════════════════════════════════════════════
 
-# ─── Chord name parsing ──────────────────────────────────────────────────────
-
-def _parse_chord_name(chord_str):
+def simplify_chord(chord: str) -> str:
     """
-    Parse a chord string like "Am", "F#m", "Gsus4", "Bb", "C/G"
-    Returns (root_pc, is_minor) or None if unparsable.
+    Reduce a chord to its essential root + quality.
+    Cmaj7 → C, Am7 → Am, Gsus4 → G, F/C → F, Dm9 → Dm
     """
-    chord_str = chord_str.strip()
-    if not chord_str or len(chord_str) > 10:
-        return None
+    chord = chord.strip()
+    if "/" in chord:
+        chord = chord.split("/")[0]
 
-    # Remove slash bass notes: "C/G" → "C"
-    if "/" in chord_str:
-        chord_str = chord_str.split("/")[0]
-
-    # Extract root note
-    m = re.match(r"^([A-G][b#]?)", chord_str)
+    m = re.match(r"^([A-G][b#]?)(.*)", chord)
     if not m:
-        return None
+        return chord
 
-    root_str = m.group(1)
-    suffix = chord_str[len(root_str):]
+    root = m.group(1)
+    suffix = m.group(2).lower()
+
+    # Determine if minor
+    is_minor = (
+        suffix.startswith("m") and not suffix.startswith("maj")
+    ) or "min" in suffix
 
     # Normalize flats
-    if root_str in FLAT_TO_SHARP:
-        root_str = FLAT_TO_SHARP[root_str]
+    if root in FLAT_TO_SHARP:
+        root = FLAT_TO_SHARP[root]
 
+    return root + ("m" if is_minor else "")
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# STEP 3b: Parse chord to (root_pitch_class, quality)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+def parse_chord(chord_str: str):
+    """
+    Parse a simplified chord string.
+    Returns (root_pc: int 0-11, quality: int 0=major 1=minor) or None.
+    """
+    simplified = simplify_chord(chord_str)
+    m = re.match(r"^([A-G][#]?)(m?)$", simplified)
+    if not m:
+        return None
+    root_str = m.group(1)
     if root_str not in NOTE_NAMES:
         return None
-
     root_pc = NOTE_NAMES.index(root_str)
-
-    # Determine quality from suffix
-    suffix_lower = suffix.lower()
-    is_minor = suffix_lower.startswith("m") and not suffix_lower.startswith("maj")
-    # Also catch "min"
-    if "min" in suffix_lower:
-        is_minor = True
-
-    return root_pc, is_minor
+    quality = 1 if m.group(2) == "m" else 0
+    return root_pc, quality
 
 
-def _chord_to_numeral(root_pc, is_minor, key_num, mode_num):
-    """Convert a chord root + quality to a roman numeral in the given key."""
-    if mode_num == 1:
-        scale = [(key_num + i) % 12 for i in MAJOR_INTERVALS]
-        numerals = MAJOR_NUMERALS
-    else:
-        scale = [(key_num + i) % 12 for i in MINOR_INTERVALS]
-        numerals = MINOR_NUMERALS
+# ═══════════════════════════════════════════════════════════════════════════════
+# STEP 4: Key Estimation
+# ═══════════════════════════════════════════════════════════════════════════════
 
-    if root_pc in scale:
-        degree = scale.index(root_pc)
-        expected_numeral = numerals[degree]
-        # Check if the actual quality matches the diatonic expectation
-        # If minor chord on a major degree, use lowercase
-        if is_minor and expected_numeral[0].isupper():
-            return expected_numeral.lower()
-        elif not is_minor and expected_numeral[0].islower():
-            return expected_numeral.upper()
-        return expected_numeral
-    else:
-        # Non-diatonic — find nearest and mark
-        dists = [min(abs(root_pc - s), 12 - abs(root_pc - s)) for s in scale]
-        nearest = int(min(range(len(dists)), key=lambda i: dists[i]))
-        base = numerals[nearest]
-        return base  # approximate to nearest diatonic
+def estimate_key(parsed_chords: list[tuple[int, int]]) -> list[tuple[int, int, float]]:
+    """
+    Estimate the most likely keys for a set of (root_pc, quality) chords.
+    Tries all 24 keys (12 major + 12 minor), scores by diatonic fitness.
+
+    Returns top 3 candidates as [(key_pc, mode, score), ...].
+    mode: 1=major, 0=minor.
+    """
+    candidates = []
+
+    for key_pc in range(12):
+        for mode in [1, 0]:
+            scale = MAJOR_SCALE if mode == 1 else NATURAL_MINOR_SCALE
+            expected_qualities = MAJOR_QUALITIES if mode == 1 else MINOR_QUALITIES
+            scale_pcs = [(key_pc + interval) % 12 for interval in scale]
+
+            score = 0.0
+            for root_pc, quality in parsed_chords:
+                if root_pc in scale_pcs:
+                    degree_idx = scale_pcs.index(root_pc)
+                    # Bonus for matching expected quality
+                    if quality == expected_qualities[degree_idx]:
+                        score += 2.0  # perfect diatonic match
+                    else:
+                        score += 0.8  # root is diatonic but quality differs
+                else:
+                    score -= 0.5  # chromatic chord = slight penalty
+
+            # Bias toward major keys slightly (more common)
+            if mode == 1:
+                score += 0.3
+
+            candidates.append((key_pc, mode, score))
+
+    candidates.sort(key=lambda x: -x[2])
+    return candidates[:3]
 
 
-# ─── Chord text extraction from web ──────────────────────────────────────────
+# ═══════════════════════════════════════════════════════════════════════════════
+# STEP 5: Chord → Scale Degree
+# ═══════════════════════════════════════════════════════════════════════════════
+
+def chord_to_degree(root_pc: int, quality: int, key_pc: int, mode: int) -> int | None:
+    """
+    Convert a chord root to a scale degree (1-7) in the given key.
+    Returns None if the chord root is not in the scale.
+    """
+    scale = MAJOR_SCALE if mode == 1 else NATURAL_MINOR_SCALE
+    scale_pcs = [(key_pc + interval) % 12 for interval in scale]
+
+    if root_pc in scale_pcs:
+        return scale_pcs.index(root_pc) + 1  # 1-indexed
+    return None
+
+
+def degree_to_roman(degree: int, quality: int) -> str:
+    """Convert degree (1-7) + quality (0=maj,1=min,2=dim) to roman numeral."""
+    return ROMAN.get((degree, quality), str(degree))
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# STEP 6: Normalize Progression
+# ═══════════════════════════════════════════════════════════════════════════════
+
+def normalize_progression(degrees: list[int]) -> list[int]:
+    """
+    Clean up a degree sequence:
+    1. Remove consecutive duplicates: [1,1,5,5,6,4] → [1,5,6,4]
+    2. Extract the shortest repeating loop
+    """
+    if not degrees:
+        return []
+
+    # Remove consecutive dupes
+    deduped = [degrees[0]]
+    for d in degrees[1:]:
+        if d != deduped[-1]:
+            deduped.append(d)
+
+    # Find shortest repeating unit
+    for length in range(2, len(deduped) // 2 + 1):
+        candidate = deduped[:length]
+        is_repeating = True
+        for i in range(length, len(deduped)):
+            if deduped[i] != candidate[i % length]:
+                is_repeating = False
+                break
+        if is_repeating:
+            return candidate
+
+    # No exact repeat found — return up to 6 elements
+    return deduped[:min(len(deduped), 6)]
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# STEP 8: Fuzzy Template Matching
+# ═══════════════════════════════════════════════════════════════════════════════
+
+def score_progression(input_degrees: list[int], template: dict) -> float:
+    """
+    Score how well input_degrees matches a template.
+    Handles: exact match, rotation, repetition, partial overlap.
+    Returns 0.0–1.0.
+    """
+    t = template["degrees"]
+    inp = input_degrees
+
+    if not inp or not t:
+        return 0.0
+
+    # Exact match
+    if inp == t:
+        return 1.0
+
+    # Check if input is a rotation of template
+    doubled_t = t + t
+    for i in range(len(t)):
+        if doubled_t[i:i + len(t)] == inp[:len(t)]:
+            return 0.95
+
+    # Check if input is a repeated version of template
+    if len(inp) >= len(t):
+        match_count = 0
+        for i in range(len(inp)):
+            if inp[i] == t[i % len(t)]:
+                match_count += 1
+        repeat_score = match_count / len(inp)
+        if repeat_score > 0.8:
+            return 0.85 + repeat_score * 0.1
+
+    # Subsequence alignment: how many of the first len(t) degrees match in order
+    match_len = min(len(inp), len(t))
+    positional_matches = sum(1 for i in range(match_len) if inp[i] == t[i])
+    positional_score = positional_matches / len(t)
+
+    # Shared degree content (order-independent)
+    inp_set = set(inp)
+    t_set = set(t)
+    overlap = len(inp_set & t_set) / max(len(t_set), 1)
+
+    # Weighted combination
+    score = positional_score * 0.65 + overlap * 0.35
+
+    return score
+
+
+def match_templates(input_degrees: list[int]) -> tuple[dict | None, float]:
+    """
+    Find the best matching template for a degree sequence.
+    Returns (best_template, confidence).
+    """
+    best = None
+    best_score = 0.0
+
+    for template in TEMPLATES:
+        s = score_progression(input_degrees, template)
+        if s > best_score:
+            best_score = s
+            best = template
+
+    return best, best_score
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# Web chord extraction (reused from before, with simplification)
+# ═══════════════════════════════════════════════════════════════════════════════
 
 def _clean_song_name(name):
-    """Remove remaster/version suffixes for search."""
     name = re.sub(r"\s*[-–]\s*\d{4}\s*remaster(ed)?", "", name, flags=re.I)
     name = re.sub(r"\s*[-–]\s*remaster(ed)?(\s*\d{4})?", "", name, flags=re.I)
     name = re.sub(r"\([^)]*\)", "", name)
@@ -102,27 +291,14 @@ def _clean_song_name(name):
     return name.strip()
 
 
-def _clean_artist(artist):
-    """Take first artist."""
-    return artist.split(",")[0].strip()
-
-
-def fetch_chords_from_web(song_name, artist):
-    """
-    Search for chord data by scraping a search engine for chord sheet content.
-    Returns list of chord name strings, or empty list.
-    """
+def fetch_chords_from_web(song_name: str, artist: str) -> list[str]:
+    """Fetch raw chord names from web search. Returns ordered list."""
     clean_name = _clean_song_name(song_name)
-    clean_artist = _clean_artist(artist)
-
-    print(f"[chords] searching for: {clean_artist} - {clean_name}")
-
-    # Try fetching from a chord API / search
-    # Use guitarparty or similar open chord sources via search
+    clean_artist = artist.split(",")[0].strip()
     query = f"{clean_artist} {clean_name} chords"
+    print(f"[chords] searching: {query}")
 
     try:
-        # Search via DuckDuckGo lite for chord pages
         resp = requests.get(
             "https://lite.duckduckgo.com/lite/",
             params={"q": query},
@@ -130,225 +306,169 @@ def fetch_chords_from_web(song_name, artist):
             timeout=10,
         )
         if resp.status_code != 200:
-            print(f"[chords] search failed: {resp.status_code}")
             return []
 
-        # Find URLs that look like chord sites
+        # Try chord site URLs first
         urls = re.findall(r'href="(https?://[^"]+)"', resp.text)
-        chord_urls = [u for u in urls if any(site in u for site in
-            ["ultimate-guitar.com", "e-chords.com", "chordie.com", "tabs.ultimate-guitar.com"])]
+        chord_urls = [u for u in urls if any(s in u for s in
+            ["ultimate-guitar.com", "e-chords.com", "chordie.com"])]
 
-        if not chord_urls:
-            print("[chords] no chord site URLs found")
-            # Fallback: try to extract chord-like content from the search results page itself
-            return _extract_chords_from_text(resp.text)
-
-        # Try the first chord URL
         for url in chord_urls[:2]:
-            print(f"[chords] trying: {url}")
             try:
                 page = requests.get(url, timeout=10, headers={
-                    "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)"
-                })
+                    "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)"})
                 if page.status_code == 200:
-                    chords = _extract_chords_from_text(page.text)
+                    chords = _extract_chords(page.text)
                     if len(chords) >= 3:
                         return chords
             except Exception:
                 continue
 
-        return []
+        # Fallback: extract from search page
+        return _extract_chords(resp.text)
 
     except Exception as e:
-        print(f"[chords] ERROR: {e}")
+        print(f"[chords] fetch error: {e}")
         return []
 
 
-def _extract_chords_from_text(text):
-    """
-    Extract chord names from HTML/text content.
-    Looks for common chord patterns: Am, G, D, F#m, Bb, etc.
-    """
-    # Remove HTML tags
-    clean = re.sub(r"<[^>]+>", " ", text)
+def _extract_chords(html: str) -> list[str]:
+    """Extract and simplify chord names from HTML text."""
+    clean = re.sub(r"<[^>]+>", " ", html)
+    pattern = r'\b([A-G][b#]?(?:m(?:aj)?|min|dim|aug|sus[24]?|add[0-9]?|[0-9])*(?:/[A-G][b#]?)?)\b'
+    raw = re.findall(pattern, clean)
 
-    # Find chord-like tokens
-    # Pattern: A-G optionally followed by # or b, optionally followed by m/maj/7/sus/dim/add/aug
-    chord_pattern = r'\b([A-G][b#]?(?:m(?:aj)?|min|dim|aug|sus[24]?|add[0-9]?|[0-9])?(?:/[A-G][b#]?)?)\b'
-    candidates = re.findall(chord_pattern, clean)
-
-    if not candidates:
-        return []
-
-    # Filter: must be parseable as a chord
+    # Simplify and filter
     valid = []
-    for c in candidates:
-        parsed = _parse_chord_name(c)
+    for c in raw:
+        parsed = parse_chord(c)
         if parsed is not None:
-            valid.append(c)
+            simplified = simplify_chord(c)
+            valid.append(simplified)
 
-    # Remove duplicates while preserving order
-    seen = set()
-    ordered = []
-    for c in valid:
-        if c not in seen:
-            seen.add(c)
-            ordered.append(c)
+    # Preserve order, remove consecutive dupes (keep all occurrences for ordering)
+    if not valid:
+        return []
 
-    print(f"[chords] extracted {len(ordered)} unique chords: {ordered[:12]}")
-    return ordered
+    print(f"[chords] raw extracted: {len(valid)} chords, unique: {len(set(valid))}")
+    return valid
 
 
-# ─── Main API ────────────────────────────────────────────────────────────────
+# ═══════════════════════════════════════════════════════════════════════════════
+# MAIN API: get_chord_progression
+# ═══════════════════════════════════════════════════════════════════════════════
 
-def get_chord_progression(song_name, artist, key_num, mode_num):
+def get_chord_progression(song_name: str, artist: str, key_num: int = -1, mode_num: int = 1):
     """
-    Fetch chords from web and convert to roman numerals.
-    Since web scraping gives chord vocabulary (not ordered sequence),
-    we identify the diatonic chords used and match against known progressions.
+    Full pipeline: fetch → simplify → key → degrees → normalize → match.
 
-    Returns (progression_string, source, confidence) or (None, None, 0)
+    Returns: (result_dict_or_None, source_str, confidence_float)
+    result_dict: {key, chords, degrees, roman, matched_progression, confidence}
     """
     if not song_name or not artist:
         return None, "none", 0.0
 
-    # Step 1: Fetch raw chords
+    # 1. Fetch raw chords
     raw_chords = fetch_chords_from_web(song_name, artist)
-
-    if len(raw_chords) < 2:
-        print(f"[chords] insufficient chord data ({len(raw_chords)} chords)")
+    if len(raw_chords) < 3:
+        print(f"[chords] insufficient data: {len(raw_chords)} chords")
         return None, "none", 0.0
 
-    # Step 2: Parse each chord
-    parsed = []
-    for chord_str in raw_chords:
-        result = _parse_chord_name(chord_str)
-        if result:
-            root_pc, is_minor = result
-            parsed.append((chord_str, root_pc, is_minor))
+    # 2. Parse all chords
+    parsed_sequence = []  # [(root_pc, quality), ...]
+    chord_names = []
+    for c in raw_chords:
+        p = parse_chord(c)
+        if p:
+            parsed_sequence.append(p)
+            chord_names.append(c)
 
-    if len(parsed) < 2:
+    if len(parsed_sequence) < 3:
         return None, "none", 0.0
 
-    # Step 3: Infer key from chords if not provided
-    if key_num < 0:
-        key_num, mode_num = _infer_key_from_chords(parsed)
-        print(f"[chords] inferred key: {NOTE_NAMES[key_num]} {'Major' if mode_num == 1 else 'Minor'}")
-
-    # Step 4: Convert to numeral set
-    numeral_set = set()
-    for chord_str, root_pc, is_minor in parsed:
-        numeral = _chord_to_numeral(root_pc, is_minor, key_num, mode_num)
-        numeral_set.add(numeral)
-        print(f"[chords]   {chord_str:6s} → {numeral}")
-
-    print(f"[chords] chord vocabulary: {numeral_set}")
-
-    # Step 5: Match against known progressions
-    # Score each known progression by how many of its chords appear in our set
-    best_match = None
-    best_score = 0
-
-    for known_pattern, known_label in KNOWN_PROGS_FOR_MATCHING:
-        known_set = set(known_pattern)
-        overlap = len(known_set & numeral_set)
-        total = len(known_set)
-        # Score: fraction of known prog chords that we found
-        score = overlap / total if total > 0 else 0
-        # Bonus if all chords match
-        if overlap == total:
-            score += 0.2
-        # Bonus for I being present (strong tonic evidence)
-        tonic = "I" if mode_num == 1 else "i"
-        if tonic in numeral_set and tonic in known_set:
-            score += 0.1
-
-        if score > best_score:
-            best_score = score
-            best_match = known_label
-
-    print(f"[chords] best known match: {best_match} (score={best_score:.2f})")
-
-    # Require high overlap to claim a match
-    if best_score >= 0.75 and best_match:
-        confidence = min(0.8, best_score)
-        print(f"[chords] RESULT: {best_match} (source=web, confidence={confidence:.2f})")
-        return best_match, "web", confidence
-
-    # If no strong known match, report the chord vocabulary as a simple list
-    # sorted by diatonic order (I, ii, iii, IV, V, vi)
-    if mode_num == 1:
-        order = MAJOR_NUMERALS
+    # 3. Estimate key (use provided key or compute from chords)
+    if key_num >= 0:
+        best_key_pc, best_mode = key_num, mode_num
+        print(f"[chords] using provided key: {NOTE_NAMES[key_num]} {'Major' if mode_num==1 else 'Minor'}")
     else:
-        order = MINOR_NUMERALS
+        candidates = estimate_key(parsed_sequence)
+        best_key_pc, best_mode, best_score = candidates[0]
+        print(f"[chords] estimated key: {NOTE_NAMES[best_key_pc]} {'Major' if best_mode==1 else 'Minor'} (score={best_score:.1f})")
+        # Try top candidates and pick the one that produces best template match
+        best_overall = None
+        for kpc, kmode, kscore in candidates[:3]:
+            degrees = _chords_to_degrees(parsed_sequence, kpc, kmode)
+            norm = normalize_progression(degrees)
+            tmpl, tscore = match_templates(norm)
+            if best_overall is None or tscore > best_overall[0]:
+                best_overall = (tscore, kpc, kmode, degrees, norm, tmpl)
 
-    sorted_numerals = sorted(numeral_set, key=lambda n: order.index(n) if n in order else 99)
+        if best_overall:
+            _, best_key_pc, best_mode, _, _, _ = best_overall
+            print(f"[chords] best key after template fitting: {NOTE_NAMES[best_key_pc]} {'Major' if best_mode==1 else 'Minor'}")
 
-    if len(sorted_numerals) >= 2:
-        result = " – ".join(sorted_numerals)
-        confidence = 0.5  # moderate — we know the chords but not the order
-        print(f"[chords] RESULT (vocabulary): {result} (confidence={confidence:.2f})")
-        return result, "web_vocab", confidence
+    # 4. Convert to degrees
+    degree_sequence = _chords_to_degrees(parsed_sequence, best_key_pc, best_mode)
 
-    return None, "none", 0.0
+    if len(degree_sequence) < 2:
+        print("[chords] too few diatonic chords")
+        return None, "none", 0.0
+
+    # 5. Normalize
+    normalized = normalize_progression(degree_sequence)
+    print(f"[chords] degree sequence: {degree_sequence[:20]}{'...' if len(degree_sequence)>20 else ''}")
+    print(f"[chords] normalized: {normalized}")
+
+    # 6. Match against templates
+    best_template, match_score = match_templates(normalized)
+
+    # 7. Build roman numeral output
+    scale = MAJOR_SCALE if best_mode == 1 else NATURAL_MINOR_SCALE
+    expected_q = MAJOR_QUALITIES if best_mode == 1 else MINOR_QUALITIES
+    roman_list = []
+    for d in normalized:
+        q = expected_q[d - 1] if 1 <= d <= 7 else 0
+        roman_list.append(degree_to_roman(d, q))
+
+    # 8. Compute final confidence
+    confidence = match_score * 0.85  # scale down slightly — web chords are noisy
+    if best_template and match_score >= 0.6:
+        progression_str = best_template["name"]
+        print(f"[chords] MATCHED: {progression_str} (score={match_score:.2f}, conf={confidence:.2f})")
+    elif roman_list:
+        progression_str = " – ".join(roman_list)
+        confidence = min(confidence, 0.5)  # unmatched = lower confidence
+        print(f"[chords] UNMATCHED: {progression_str} (conf={confidence:.2f})")
+    else:
+        return None, "none", 0.0
+
+    key_str = f"{NOTE_NAMES[best_key_pc]} {'Major' if best_mode==1 else 'Minor'}"
+
+    # Build unique chord list for display
+    unique_chords = []
+    seen = set()
+    for c in chord_names:
+        if c not in seen:
+            seen.add(c)
+            unique_chords.append(c)
+
+    result = {
+        "key": key_str,
+        "chords": unique_chords[:8],
+        "degrees": normalized,
+        "roman": roman_list,
+        "matched_progression": progression_str,
+        "confidence": round(confidence, 2),
+    }
+
+    return result, "web", confidence
 
 
-# Known progressions for vocabulary matching
-KNOWN_PROGS_FOR_MATCHING = [
-    (["I", "V", "vi", "IV"], "I – V – vi – IV"),
-    (["I", "IV", "V"], "I – IV – V"),
-    (["I", "IV", "V", "I"], "I – IV – V – I"),
-    (["I", "IV", "vi", "V"], "I – IV – vi – V"),
-    (["vi", "IV", "I", "V"], "vi – IV – I – V"),
-    (["I", "vi", "IV", "V"], "I – vi – IV – V"),
-    (["I", "V", "IV", "V"], "I – V – IV – V"),
-    (["I", "iii", "IV", "V"], "I – iii – IV – V"),
-    (["ii", "V", "I"], "ii – V – I"),
-    (["I", "V", "vi", "iii", "IV"], "I – V – vi – iii – IV"),
-    (["i", "VI", "III", "VII"], "i – VI – III – VII"),
-    (["i", "iv", "v", "i"], "i – iv – v – i"),
-    (["i", "VII", "VI", "V"], "i – VII – VI – V"),
-    (["I", "IV", "I", "V"], "I – IV – I – V"),
-]
-
-
-def _infer_key_from_chords(parsed_chords):
-    """Infer the key from a set of chords using pitch class frequency."""
-    pc_counts = {}
-    for _, root_pc, _ in parsed_chords:
-        pc_counts[root_pc] = pc_counts.get(root_pc, 0) + 1
-
-    # The most common root is likely I or sometimes V/IV
-    most_common_pc = max(pc_counts, key=pc_counts.get)
-
-    # Check if it's major or minor by looking at the quality of the most common chord
-    is_minor = False
-    for _, root_pc, minor in parsed_chords:
-        if root_pc == most_common_pc:
-            is_minor = minor
-            break
-
-    return most_common_pc, 0 if is_minor else 1
-
-
-def _find_chord_pattern(seq, min_len=3, max_len=5):
-    """Find repeating pattern in chord sequence."""
-    if len(seq) <= max_len:
-        return seq
-
-    from collections import Counter
-    best, best_count = None, 0
-    for length in range(min_len, max_len + 1):
-        pats = Counter()
-        for i in range(len(seq) - length + 1):
-            pats[tuple(seq[i:i + length])] += 1
-        if pats:
-            top_pat, top_count = pats.most_common(1)[0]
-            sc = top_count * (1.15 if length == 4 else 1.0)
-            if sc > best_count:
-                best_count = sc
-                best = list(top_pat)
-
-    if best and best_count >= 1.5:
-        return best
-    return seq[:4]
+def _chords_to_degrees(parsed_sequence, key_pc, mode):
+    """Convert a sequence of (root_pc, quality) to scale degrees, skipping non-diatonic."""
+    degrees = []
+    for root_pc, quality in parsed_sequence:
+        d = chord_to_degree(root_pc, quality, key_pc, mode)
+        if d is not None:
+            degrees.append(d)
+    return degrees

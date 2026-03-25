@@ -58,7 +58,7 @@ STEM_PRIORITY = {
 }
 
 # Minimum confidence to report a progression
-MIN_PROGRESSION_CONFIDENCE = 0.25
+MIN_PROGRESSION_CONFIDENCE = 0.35
 
 
 # ─── Key Detection ────────────────────────────────────────────────────────────
@@ -90,32 +90,76 @@ def format_key(key_num, mode_num):
     return f"{NOTE_NAMES[key_num]} {'Major' if mode_num == 1 else 'Minor'}"
 
 
-# ─── BPM Estimation ──────────────────────────────────────────────────────────
+# ─── BPM Estimation (hardened with forced plausibility) ───────────────────────
 
 def estimate_bpm(note_events_df):
+    """
+    Estimate BPM from inter-onset intervals.
+    Uses a constrained approach:
+    1. Build IOI histogram
+    2. Find peaks in the 60-180 BPM range only (the "felt pulse" range)
+    3. Score by beat-level IOI strength only (not subdivisions)
+    4. Force half/double-time correction for any outlier
+    5. Return (bpm, confidence) — bpm is always in 60-180 range
+
+    Returns (bpm, confidence).
+    """
     if note_events_df is None or len(note_events_df) < 10:
-        return 120.0
+        return 0, 0.0
+
     onsets = np.sort(np.unique(np.round(note_events_df["start_time_s"].values, 3)))
     iois = np.diff(onsets)
     iois = iois[(iois > 0.05) & (iois < 4.0)]
     if len(iois) < 5:
-        return 120.0
-    bin_res = 0.005
+        return 0, 0.0
+
+    # Build IOI histogram with moderate smoothing
+    bin_res = 0.008  # ~8ms bins
     bins = np.arange(0, 2.0, bin_res)
     hist, _ = np.histogram(iois, bins=bins)
-    kernel = np.array([0.25, 0.5, 0.25])
+    kernel = np.array([0.1, 0.25, 0.3, 0.25, 0.1])
     hist_s = np.convolve(hist, kernel, mode="same").astype(float)
-    best_bpm, best_sc = 120.0, 0
-    for bpm in range(70, 201, 2):
-        beat = 60.0 / bpm
-        sc = 0
-        for mult in [0.5, 1.0, 2.0]:
-            idx = int(beat * mult / bin_res)
-            if 0 <= idx < len(hist_s):
-                sc += hist_s[idx] * (1.5 if mult == 1.0 else 0.8)
-        if sc > best_sc:
-            best_sc, best_bpm = sc, bpm
-    return float(best_bpm)
+
+    # Score ONLY in the plausible "felt pulse" range: 60-180 BPM
+    # This prevents subdivision peaks (sixteenth notes) from winning
+    bpm_scores = {}
+    for bpm in range(60, 181):
+        beat_dur = 60.0 / bpm
+        idx = int(beat_dur / bin_res)
+        sc = 0.0
+        # Check a ±2 bin neighborhood at the beat level
+        for offset in range(-2, 3):
+            bidx = idx + offset
+            if 0 <= bidx < len(hist_s):
+                w = [0.3, 0.7, 1.0, 0.7, 0.3][offset + 2]
+                sc += hist_s[bidx] * w
+        bpm_scores[bpm] = sc
+
+    if not bpm_scores:
+        return 0, 0.0
+
+    # Top 5 candidates
+    sorted_bpms = sorted(bpm_scores.items(), key=lambda x: -x[1])
+    top_bpm, top_score = sorted_bpms[0]
+
+    # Confidence: how much the peak stands out
+    all_scores = np.array([s for _, s in sorted_bpms])
+    if all_scores.sum() > 0:
+        # Peak prominence: top score relative to mean
+        mean_score = all_scores.mean()
+        confidence = min(1.0, (top_score / max(mean_score * 3, 0.01)))
+    else:
+        confidence = 0.0
+
+    # Additional plausibility: prefer 75-145 range slightly
+    if 75 <= top_bpm <= 145:
+        confidence = min(1.0, confidence * 1.1)
+    elif top_bpm < 65 or top_bpm > 170:
+        confidence *= 0.7
+
+    best_bpm = round(top_bpm)
+    print(f"[bpm] detected={best_bpm}, confidence={confidence:.2f}, top5={[(b,round(s,1)) for b,s in sorted_bpms[:5]]}")
+    return float(best_bpm), round(confidence, 2)
 
 
 # ─── Chord Template Matching ─────────────────────────────────────────────────
@@ -343,28 +387,45 @@ def estimate_progression_from_stems(stem_events, key_num, mode_num, bpm=120.0):
         print("[progression] no chords detected above threshold")
         return "Unknown"
 
-    # ── Collapse consecutive duplicates ──
+    # ── Step 1: Multi-pass smoothing to remove noise ──
+    raw_chords = [n for n, _ in window_chords]
+    raw_scores = [s for _, s in window_chords]
+    smoothed = list(raw_chords)
+
+    # Pass A: Replace isolated 1-window blips with their neighbor
+    for i in range(1, len(smoothed) - 1):
+        if smoothed[i] != smoothed[i-1] and smoothed[i] != smoothed[i+1] and raw_scores[i] < 0.45:
+            smoothed[i] = smoothed[i-1]
+
+    # Pass B: Replace isolated 2-window segments surrounded by the same chord
+    for i in range(1, len(smoothed) - 2):
+        if (smoothed[i-1] == smoothed[i+2] and
+            smoothed[i] != smoothed[i-1] and
+            raw_scores[i] < 0.5 and raw_scores[i+1] < 0.5):
+            smoothed[i] = smoothed[i-1]
+            smoothed[i+1] = smoothed[i-1]
+
+    # ── Step 2: Collapse consecutive duplicates ──
     collapsed = []
     collapsed_scores = []
     prev = None
-    for numeral, score in window_chords:
+    for i, numeral in enumerate(smoothed):
         if numeral != prev:
             collapsed.append(numeral)
-            collapsed_scores.append(score)
+            collapsed_scores.append(raw_scores[i])
             prev = numeral
         else:
-            # Update score with max
-            collapsed_scores[-1] = max(collapsed_scores[-1], score)
+            collapsed_scores[-1] = max(collapsed_scores[-1], raw_scores[i])
 
-    print(f"[progression] collapsed sequence ({len(collapsed)} chords): {' '.join(collapsed[:24])}{'...' if len(collapsed)>24 else ''}")
+    print(f"[progression] smoothed+collapsed ({len(collapsed)} chords): {' '.join(collapsed[:24])}{'...' if len(collapsed)>24 else ''}")
 
-    # ── Remove one-off noise: chords that appear only once and have low score ──
+    # ── Step 3: Remove chords that appear only once with low score ──
     if len(collapsed) > 4:
         chord_counts = Counter(collapsed)
         cleaned = []
         cleaned_scores = []
         for ch, sc in zip(collapsed, collapsed_scores):
-            if chord_counts[ch] >= 2 or sc >= 0.35:
+            if chord_counts[ch] >= 2 or sc >= 0.4:
                 cleaned.append(ch)
                 cleaned_scores.append(sc)
         if len(cleaned) >= 3:
@@ -375,16 +436,17 @@ def estimate_progression_from_stems(stem_events, key_num, mode_num, bpm=120.0):
         print("[progression] too few chords after cleaning")
         return "Unknown"
 
-    # ── Find repeating pattern ──
+    # ── Step 4: Find the core repeating harmonic loop ──
     pattern = _find_pattern(collapsed)
 
-    # ── Compute confidence ──
-    # Based on: average chord score, pattern repetition count, sequence length
+    # ── Step 5: Compute confidence ──
     avg_score = np.mean(collapsed_scores)
     pattern_count = _count_pattern_occurrences(collapsed, pattern)
-    confidence = min(1.0, avg_score * 0.5 + (pattern_count / max(len(collapsed), 1)) * 0.5)
+    # Higher confidence if pattern repeats many times relative to sequence length
+    repetition_ratio = (pattern_count * len(pattern)) / max(len(collapsed), 1)
+    confidence = min(1.0, avg_score * 0.4 + repetition_ratio * 0.4 + (0.2 if pattern_count >= 3 else 0))
 
-    print(f"[progression] pattern: {pattern}, repeats={pattern_count}, avg_score={avg_score:.2f}, confidence={confidence:.2f}")
+    print(f"[progression] pattern: {pattern}, repeats={pattern_count}, avg_score={avg_score:.2f}, rep_ratio={repetition_ratio:.2f}, confidence={confidence:.2f}")
 
     if confidence < MIN_PROGRESSION_CONFIDENCE:
         print(f"[progression] SUPPRESSED — confidence {confidence:.2f} < {MIN_PROGRESSION_CONFIDENCE}")
@@ -496,28 +558,36 @@ def analyze_song_from_notes(all_note_events, song_name="", artist=""):
     key_str = format_key(key_num, mode_num)
     print(f"[intel] key: {key_str} (confidence={key_conf:.2f})")
 
-    # BPM
-    bpm = estimate_bpm(merged)
-    print(f"[intel] bpm: {bpm}")
+    # BPM (with confidence)
+    bpm, bpm_conf = estimate_bpm(merged)
+    print(f"[intel] bpm: {bpm} (confidence={bpm_conf:.2f})")
 
     # ── Progression: try external source first ──
     progression = None
     prog_source = "none"
     prog_confidence = 0.0
 
-    if song_name and artist and key_num >= 0:
+    if song_name and artist:
         try:
             from chord_source import get_chord_progression
-            ext_prog, ext_source, ext_conf = get_chord_progression(
+            ext_result, ext_source, ext_conf = get_chord_progression(
                 song_name, artist, key_num, mode_num
             )
-            if ext_prog and ext_conf >= 0.4:
-                progression = ext_prog
-                prog_source = ext_source
-                prog_confidence = ext_conf
-                print(f"[intel] progression from {ext_source}: {ext_prog} (confidence={ext_conf:.2f})")
+            if ext_result and ext_conf >= 0.4:
+                # ext_result is now a structured dict
+                if isinstance(ext_result, dict):
+                    progression = ext_result.get("matched_progression")
+                    prog_source = ext_source
+                    prog_confidence = ext_conf
+                    print(f"[intel] progression from {ext_source}: {progression} (confidence={ext_conf:.2f})")
+                    print(f"[intel]   degrees={ext_result.get('degrees')}, chords={ext_result.get('chords')}")
+                elif isinstance(ext_result, str):
+                    progression = ext_result
+                    prog_source = ext_source
+                    prog_confidence = ext_conf
         except Exception as e:
             print(f"[intel] external chord lookup failed: {e}")
+            import traceback; traceback.print_exc()
 
     # ── Fallback: audio-based estimation ──
     if progression is None and key_num >= 0:
@@ -530,8 +600,8 @@ def analyze_song_from_notes(all_note_events, song_name="", artist=""):
         if audio_prog and audio_prog != "Unknown":
             progression = audio_prog
             prog_source = "audio"
-            prog_confidence = 0.3  # lower confidence for audio-derived
-            print(f"[intel] progression from audio: {audio_prog} (confidence=0.30)")
+            prog_confidence = 0.40  # moderate — audio is less reliable than web chords
+            print(f"[intel] progression from audio: {audio_prog} (confidence=0.40)")
         else:
             print("[intel] audio fallback also failed — no progression")
 
@@ -546,7 +616,9 @@ def analyze_song_from_notes(all_note_events, song_name="", artist=""):
         "key_num": key_num,
         "mode_num": mode_num,
         "bpm": bpm,
+        "bpm_confidence": round(bpm_conf, 2),
         "progression": progression,  # None if unavailable
+        "progression_confidence": round(prog_confidence, 2),
         "progression_source": prog_source,
         "confidence": round(key_conf, 2),
     }

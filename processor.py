@@ -252,10 +252,8 @@ def _spectral_features(mono, sr):
 
 def _classify_component(features, stem_category, position):
     """
-    Classify a stereo component based on spectral features and context.
-    stem_category: which Demucs stem it came from (guitar, other, vocals, piano)
-    position: center, left, right
-    Returns a human-readable label.
+    Classify a stereo component into a musically meaningful label.
+    Uses spectral features + Demucs stem category + stereo position.
     """
     c = features["centroid"]
     bw = features["bandwidth"]
@@ -265,25 +263,27 @@ def _classify_component(features, stem_category, position):
     if stem_category == "vocals":
         if position == "center":
             return "Lead Vocal"
-        return "Backing Vocals"
+        elif position == "left":
+            return "Backing Vocal"
+        else:
+            return "Harmony Vocal"
 
     if stem_category == "guitar":
-        # Banjo: very bright, high ZCR, plucky transients
         if c > 3000 and zcr > 0.15:
             return "Banjo"
-        # Acoustic guitar: bright but less than banjo, wider bandwidth
         if c > 2200 and bw > 1200 and zcr > 0.10:
+            if position == "center":
+                return "Acoustic Guitar"
             return "Acoustic Guitar"
-        # Lead guitar: mid-high centroid, can vary
         if c > 1800 and c_std > 400:
-            return "Lead Guitar"
-        # Rhythm guitar: more consistent centroid, moderate brightness
+            if position == "center":
+                return "Lead Guitar"
+            return "Guitar Layer"
         if c > 1000:
             return "Rhythm Guitar"
         return "Guitar"
 
     if stem_category == "other":
-        # Check for string instruments first
         if c > 3000 and zcr > 0.15:
             return "Banjo"
         if c > 2200 and bw > 1200 and zcr > 0.10:
@@ -295,15 +295,13 @@ def _classify_component(features, stem_category, position):
         if c > 1200 and bw > 1800:
             return "Keys"
         if c > 800:
-            return "Other"
-        return "Synth"
+            return "Instrument"
+        return "Synth Pad"
 
     if stem_category == "piano":
         if c > 1500 and bw > 1500:
             return "Piano"
-        if c > 800:
-            return "Keys"
-        return "Piano"
+        return "Keys"
 
     return stem_category.title()
 
@@ -394,7 +392,7 @@ def separate_stems(audio_path: str, song_id: str, progress_callback=None) -> dic
                 "path": str(dest),
                 "energy": round(energy, 6),
                 "active": energy > SILENCE_THRESHOLD,
-                "label": "Drums" if stem_name == "drums" else "Bass",
+                "label": "Drum Kit" if stem_name == "drums" else "Bass Guitar",
             }
             continue
 
@@ -499,35 +497,55 @@ def _label_to_key(label):
     return label.lower().replace(" ", "_")
 
 
+# Variation names for duplicates within an instrument family
+_FAMILY_VARIATIONS = {
+    "Lead Guitar": ["Lead Guitar", "Guitar Overdub", "Guitar Layer"],
+    "Rhythm Guitar": ["Rhythm Guitar", "Strumming Guitar", "Guitar Comping"],
+    "Acoustic Guitar": ["Acoustic Guitar", "Acoustic Layer", "Fingerpicking Guitar"],
+    "Guitar": ["Guitar", "Guitar Layer", "Guitar Part"],
+    "Guitar Layer": ["Guitar Layer", "Guitar Overdub", "Guitar Part"],
+    "Lead Vocal": ["Lead Vocal", "Vocal Double", "Vocal Layer"],
+    "Backing Vocal": ["Backing Vocal", "Harmony Vocal", "Vocal Pad"],
+    "Harmony Vocal": ["Harmony Vocal", "Backing Vocal", "Vocal Layer"],
+    "Keys": ["Keys", "Synth", "Pad"],
+    "Instrument": ["Instrument", "Texture", "Layer"],
+}
+
+
 def _save_sub_parts(parts, sr, out_dir, refined):
-    """Save multiple sub-parts, numbering duplicate labels."""
-    # Count label occurrences to decide numbering
+    """Save multiple sub-parts with musically meaningful variation labels."""
+    # Count label occurrences
     label_counts = {}
     for part in parts:
         base = part["label"]
         label_counts[base] = label_counts.get(base, 0) + 1
 
-    # Track how many of each label we've emitted so far
     label_index = {}
 
     for part in parts:
         base_label = part["label"]
-        needs_number = label_counts[base_label] > 1
+        count = label_counts[base_label]
 
-        if needs_number:
-            idx = label_index.get(base_label, 0) + 1
-            label_index[base_label] = idx
-            label = f"{base_label} {idx}"
+        if count > 1:
+            idx = label_index.get(base_label, 0)
+            label_index[base_label] = idx + 1
+            # Use variation names instead of numbered duplicates
+            variations = _FAMILY_VARIATIONS.get(base_label, [base_label])
+            if idx < len(variations):
+                label = variations[idx]
+            else:
+                label = f"{base_label} {idx + 1}"
         else:
             label = base_label
 
         key = _label_to_key(label)
 
-        # Avoid collisions with existing keys
+        # Avoid key collisions
         orig_key = key
         n = 2
         while key in refined:
             key = f"{orig_key}_{n}"
+            label = f"{label} {n}" if not label[-1].isdigit() else label
             n += 1
 
         dest = out_dir / f"{key}.wav"
@@ -543,10 +561,16 @@ def _save_sub_parts(parts, sr, out_dir, refined):
 
 # ─── Tab Generation ──────────────────────────────────────────────────────────
 
+# Stems that should NOT get guitar/bass tab — only note list or nothing
+_NO_TAB_STEMS = {"vocals", "lead_vocal", "backing_vocal", "harmony_vocal",
+                  "vocal_double", "vocal_layer", "vocal_pad"}
+
+
 def generate_tabs(stem_path: str, song_id: str, stem_name: str, label: str = "") -> dict:
     """
     Run Basic Pitch on a stem audio file.
     Returns paths to: MIDI file, note events CSV, and rendered tab text.
+    Skips tab rendering for stems that shouldn't produce guitar tab.
     """
     stem_path = Path(stem_path)
     tab_dir = OUTPUT_DIR / song_id / "tabs"
@@ -567,7 +591,22 @@ def generate_tabs(stem_path: str, song_id: str, stem_name: str, label: str = "")
     note_events = _normalize_note_events(note_events)
     note_events.to_csv(str(csv_path), index=False)
 
-    tab_text = render_ascii_tab(note_events, stem_name, label)
+    # Determine if this stem should get full tab or just a note summary
+    renderer = _get_tab_renderer(label or stem_name)
+    stem_key_lower = stem_name.lower()
+
+    # Quality gate: if renderer says note_list, don't force a fake guitar tab
+    if renderer == "note_list" or stem_key_lower in _NO_TAB_STEMS:
+        tab_text = render_ascii_tab(note_events, stem_name, label)
+    elif renderer == "drum_tab":
+        tab_text = render_ascii_tab(note_events, stem_name, label)
+    else:
+        # Guitar/bass tab — check if there are enough notes for useful tab
+        if len(note_events) < 5:
+            tab_text = f"=== {(label or stem_name).upper()} ===\n\n(insufficient note data for tab)"
+        else:
+            tab_text = render_ascii_tab(note_events, stem_name, label)
+
     tab_txt_path = tab_dir / f"{stem_name}_tab.txt"
     tab_txt_path.write_text(tab_text)
 
@@ -642,61 +681,112 @@ def render_ascii_tab(note_events, stem_name: str, label: str = "") -> str:
 
 
 def _render_string_tab(note_events, instrument_type: str) -> str:
-    """Render guitar (6-string) or bass (4-string) ASCII tab."""
+    """
+    Render guitar (6-string) or bass (4-string) ASCII tab.
+
+    Key improvements over naive approach:
+    - 2-char columns to handle double-digit frets (e.g. "12") without collision
+    - Quantization to an 8th-note grid for readable timing
+    - Note density filtering: skip very short notes (< 80ms)
+    - Playable position preference: prefer lower frets
+    - Bar lines and measure structure
+    - Limited output (first ~30s) to prevent massive unreadable output
+    """
     is_bass = (instrument_type == "bass")
 
     if is_bass:
-        open_notes = [40, 45, 50, 55]
+        # Bass: E1=28, A1=33, D2=38, G2=43 (standard bass tuning)
+        open_notes = [28, 33, 38, 43]
         string_names = ["G", "D", "A", "E"]
     else:
+        # Guitar: E2=40, A2=45, D3=50, G3=55, B3=59, E4=64
         open_notes = [40, 45, 50, 55, 59, 64]
         string_names = ["e", "B", "G", "D", "A", "E"]
 
+    # Reverse so lowest string is at bottom (standard tab layout)
     string_names = string_names[::-1]
     open_notes = open_notes[::-1]
-
-    max_fret = 24
-    beat_duration = 0.5
-    measure_duration = beat_duration * 4
-    cols_per_beat = 4
+    n_strings = len(string_names)
 
     if len(note_events) == 0:
         return "(no notes detected)"
 
-    max_time = note_events["end_time_s"].max()
-    num_measures = max(1, int(max_time / measure_duration) + 1)
-    total_cols = num_measures * cols_per_beat * 4
+    # Filter: remove very short notes (likely detection noise)
+    df = note_events.copy()
+    df["duration"] = df["end_time_s"] - df["start_time_s"]
+    df = df[df["duration"] >= 0.08].copy()
 
-    tab_grid = [["-"] * total_cols for _ in string_names]
+    if len(df) == 0:
+        return "(no significant notes detected)"
 
-    for _, row in note_events.iterrows():
+    # Limit to first 32 seconds for readability
+    max_render_time = min(df["end_time_s"].max(), 32.0)
+    df = df[df["start_time_s"] < max_render_time].copy()
+
+    # Quantization grid: 8th notes at ~120 BPM = 0.25s per slot
+    slot_dur = 0.25
+    n_slots = int(max_render_time / slot_dur) + 1
+    slots_per_measure = 8  # 8 eighth notes per 4/4 measure
+
+    # Each column is 3 chars wide: "xx-" — handles up to fret 24 cleanly
+    COL_WIDTH = 3
+    max_fret = 22
+
+    # Build grid: n_strings rows × n_slots columns, each cell is a string of COL_WIDTH
+    EMPTY = "-" * COL_WIDTH
+    grid = [[EMPTY] * n_slots for _ in range(n_strings)]
+
+    # Place notes
+    for _, row in df.iterrows():
         pitch = int(row["pitch_midi"])
         start = row["start_time_s"]
+        slot = int(start / slot_dur)
+        if slot >= n_slots:
+            continue
 
+        # Find best string/fret — prefer lower frets, open strings
         best_string, best_fret = None, None
-        for i, open_note in enumerate(open_notes):
+        for si, open_note in enumerate(open_notes):
             fret = pitch - open_note
             if 0 <= fret <= max_fret:
+                # Prefer: open string > low fret > high fret
                 if best_fret is None or fret < best_fret:
-                    best_string, best_fret = i, fret
+                    best_string, best_fret = si, fret
 
         if best_string is None:
             continue
 
-        col = min(int(start / measure_duration * cols_per_beat * 4), total_cols - 1)
-        fret_str = str(best_fret)
-        for k, ch in enumerate(fret_str):
-            if col + k < total_cols:
-                tab_grid[best_string][col + k] = ch
+        # Don't overwrite an existing note in the same slot/string
+        if grid[best_string][slot] != EMPTY:
+            continue
 
+        # Format fret number: left-pad to COL_WIDTH, fill rest with dashes
+        fret_str = str(best_fret)
+        cell = fret_str + "-" * (COL_WIDTH - len(fret_str))
+        grid[best_string][slot] = cell
+
+    # Render output with bar lines and line wrapping
     output_lines = []
-    chunk = 80
-    for start_col in range(0, total_cols, chunk):
-        end_col = min(start_col + chunk, total_cols)
-        for i, name in enumerate(string_names):
-            row_str = "".join(tab_grid[i][start_col:end_col])
-            output_lines.append(f"{name}|{row_str}|")
-        output_lines.append("")
+    slots_per_line = slots_per_measure * 4  # 4 measures per line
+
+    for line_start in range(0, n_slots, slots_per_line):
+        line_end = min(line_start + slots_per_line, n_slots)
+
+        for si, name in enumerate(string_names):
+            parts = [f"{name}|"]
+            for slot in range(line_start, line_end):
+                # Add bar line at measure boundaries
+                if slot > line_start and (slot - line_start) % slots_per_measure == 0:
+                    parts.append("|")
+                parts.append(grid[si][slot])
+            parts.append("|")
+            output_lines.append("".join(parts))
+
+        output_lines.append("")  # blank line between systems
+
+    # Trim trailing blank lines
+    while output_lines and output_lines[-1] == "":
+        output_lines.pop()
 
     return "\n".join(output_lines)
 

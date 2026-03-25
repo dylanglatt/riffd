@@ -8,5 +8,6 @@ dist/
 build/
 uploads/
 outputs/
+history.json
 
 .DS_Store
