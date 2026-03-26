@@ -8,14 +8,14 @@
 ## Next Priorities
 
 ### A0. Audio acquisition — replace yt-dlp as default source
-- [ ] Add `preview_url` to Spotify track format (`_format_track()`)
-- [ ] Add iTunes preview URL lookup (extend existing iTunes function in `external_apis.py`)
-- [ ] Create `resolve_audio()` waterfall: cached → yt-dlp (hardened) → Spotify preview → iTunes preview → upload prompt
-- [ ] Harden yt-dlp: user-agent, player_client=web, retries, socket timeout
+- [x] Add `preview_url` to Spotify track format (`_format_track()`) (2026-03-26)
+- [x] Add iTunes preview URL lookup (`get_itunes_preview_url()` in `downloader.py`) (2026-03-26)
+- [x] Create `resolve_audio()` waterfall: YouTube → Spotify preview → iTunes preview → upload prompt (2026-03-26)
+- [x] Harden yt-dlp: user-agent, player_client=web, retries, socket timeout (2026-03-26)
 - [ ] Add Node.js to Render build for yt-dlp JS runtime
-- [ ] Frontend: handle `upload_required` status gracefully (not as error)
-- [ ] Frontend: pass `preview_url`, `artist`, `name` in download POST body
-- [ ] Isolate yt-dlp to direct-URL-only path (not default for Spotify tracks)
+- [x] Frontend: handle `upload_required` status gracefully (not as error) (2026-03-26)
+- [x] Frontend: pass `preview_url`, `artist`, `name` in download POST body (2026-03-26)
+- [x] Isolate yt-dlp to direct-URL-only path for direct YouTube URLs (2026-03-26)
 
 ### A2. Rebuild fret assignment for playable tab
 - [ ] Implement position-tracking: maintain "hand position" (4-fret span)

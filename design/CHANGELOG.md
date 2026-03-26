@@ -4,6 +4,36 @@
 
 ---
 
+## [2026-03-26 — Audio acquisition waterfall + timeout UX]
+
+### Change Summary
+- Replaced direct yt-dlp download with multi-source waterfall: YouTube → Spotify preview → iTunes preview → upload prompt
+- Rewrote `downloader.py` as audio source router with `resolve_audio()`, `download_preview()`, `get_itunes_preview_url()`, and `AudioUnavailableError`
+- Hardened yt-dlp: user-agent, `player_client=web`, retries, socket timeout, subprocess timeout
+- Added `preview_url` field to all track formats (Spotify results, discovery data, history)
+- New `upload_required` job status — frontend shows friendly upload prompt instead of error
+- Reduced backend job timeout from 600s → 300s to match frontend
+- Reduced frontend poll timeout from 10min → 5min
+- Download `waitForReady` now throws descriptive timeout message after 2 minutes
+- Added elapsed timer during loading (shows `0:45`, `2:15` etc.)
+- Added "Taking too long? Try a different song" cancel button after 30 seconds
+- Download POST now sends `preview_url`, `artist`, `name` alongside `query`
+- Audio source (`youtube`, `preview`, `cache`) tracked in job dict for logging
+
+### Files Modified
+- `downloader.py`: full rewrite — audio source router with waterfall logic
+- `app.py`: refactored `/api/download` route, added `AudioUnavailableError` handling, added `preview_url` to discovery data, reduced `JOB_TIMEOUT` to 300
+- `spotify_search.py`: added `preview_url` to `_format_track()`, `_load_history_tracks()`, and `_DISCOVERY_TRACKS`
+- `templates/decompose.html`: waterfall download body, `upload_required` UI, elapsed timer, cancel button, reduced poll timeout
+
+### Impact
+- Users never stare at a dead spinner — they get feedback, fallback sources, or a clear upload prompt
+- YouTube failures are recoverable (preview fallback) instead of fatal
+- Backend and frontend timeouts are synchronized at 5 minutes
+- No changes to processing pipeline, auth, or any analysis logic
+
+---
+
 ## Current State (as of 2026-03-26)
 
 ### What the app does now
@@ -30,7 +60,7 @@
 - Practice page (blurred preview modules, non-functional)
 
 ### What is broken or incomplete
-- **Audio acquisition broken in production** — yt-dlp fails on Render (missing JS runtime + YouTube bot detection). Needs hardening + preview fallback waterfall. See TODO A0.
+- **Audio acquisition improved but YouTube still fragile** — waterfall now tries Spotify/iTunes previews as fallback, but preview audio is 30-second clips only. Full song requires working yt-dlp.
 - `recommendations.py` — unused scoring framework, never called (dead code)
 - `templates/index.html` — legacy single-page frontend, superseded by decompose.html (dead code)
 - Fret assignment not position-aware (unplayable jumps)

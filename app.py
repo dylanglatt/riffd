@@ -15,7 +15,7 @@ from processor import separate_stems, generate_tabs
 from spotify_search import search_spotify, get_recommendations_for_track, RateLimitError
 from music_intelligence import analyze_song_from_notes
 from external_apis import get_lyrics, get_track_tags, enrich_recommendations_with_lastfm
-from downloader import download_audio_from_youtube
+from downloader import download_audio_from_youtube, resolve_audio, AudioUnavailableError
 from history import add_to_history, get_recent, get_cached_result, save_cached_result, touch_history
 from db import init_db, migrate_from_history_json, get_track, upsert_track, set_track_status, touch_track, get_recent_tracks, get_analysis_for_track
 
@@ -217,8 +217,9 @@ def download_track():
                 if audio_files:
                     job_id = str(uuid.uuid4())[:8]
                     audio_path = str(audio_files[0])
-                    jobs[job_id] = {"status": "ready", "audio_path": audio_path, "progress": "Download complete"}
+                    jobs[job_id] = {"status": "ready", "audio_path": audio_path, "audio_source": "cache", "progress": "Download complete"}
                     print(f"[job {job_id}] DOWNLOAD REUSED from job {old_job} → {audio_path}")
+                    print(f"[job {job_id}] AUDIO SOURCE SELECTED: cache")
                     return jsonify({"job_id": job_id})
 
     job_id = str(uuid.uuid4())[:8]
@@ -226,12 +227,52 @@ def download_track():
     print(f"[job {job_id}] DOWNLOAD START query='{query or url}'")
 
     def run():
+        def _on_progress(msg):
+            jobs[job_id]["progress"] = msg
+            print(f"[job {job_id}] download progress: {msg}")
+
         try:
-            print(f"[job {job_id}] yt-dlp starting...")
-            audio_path = download_audio_from_youtube(query or url, job_id)
-            print(f"[job {job_id}] yt-dlp finished → {audio_path}")
-            jobs[job_id].update({"status": "ready", "audio_path": str(audio_path), "progress": "Download complete"})
+            # Direct YouTube URL — skip waterfall
+            source_input = url if url else query
+            is_direct_yt = (url and url.startswith("http") and
+                            ("youtube.com" in url or "youtu.be" in url))
+
+            if is_direct_yt:
+                _on_progress("Downloading from YouTube...")
+                audio_path = download_audio_from_youtube(url, job_id)
+                audio_source = "youtube"
+                print(f"[job {job_id}] AUDIO SOURCE SELECTED: youtube (direct URL)")
+            else:
+                track_data = {
+                    "query": query or url,
+                    "preview_url": data.get("preview_url"),
+                    "artist": data.get("artist", ""),
+                    "name": data.get("name", ""),
+                }
+                audio_path = resolve_audio(track_data, job_id, on_progress=_on_progress)
+                # Determine which source succeeded
+                audio_source = "youtube"
+                if str(audio_path).endswith("preview.mp3"):
+                    audio_source = "preview"
+
+            print(f"[job {job_id}] download finished → {audio_path} (source={audio_source})")
+            jobs[job_id].update({
+                "status": "ready",
+                "audio_path": str(audio_path),
+                "audio_source": audio_source,
+                "progress": "Download complete",
+            })
             print(f"[job {job_id}] STATUS → ready")
+
+        except AudioUnavailableError as e:
+            print(f"[job {job_id}] ALL SOURCES FAILED: {e}")
+            jobs[job_id].update({
+                "status": "upload_required",
+                "audio_source": None,
+                "error": str(e),
+            })
+            print(f"[job {job_id}] STATUS → upload_required")
+
         except Exception as e:
             print(f"[job {job_id}] DOWNLOAD ERROR: {e}")
             traceback.print_exc()
@@ -330,6 +371,7 @@ def process_audio(job_id):
                 "lyrics": lyrics,
                 "tags": tags,
                 "recommendations": recs,
+                "audio_source": jobs[job_id].get("audio_source"),
                 "progress": "Done!" if not partial else "Completed with errors",
             }
             if partial:
@@ -349,6 +391,7 @@ def process_audio(job_id):
                         "lyrics": lyrics,
                         "tags": tags,
                         "recommendations": recs,
+                        "audio_source": jobs[job_id].get("audio_source"),
                         "job_id": job_id,
                         "track_id": spotify_track_id,
                     })
@@ -524,7 +567,7 @@ def process_audio(job_id):
     return jsonify({"status": "processing", "job_id": job_id})
 
 
-JOB_TIMEOUT = 600  # 10 minutes — if a job is still "processing" after this, force error
+JOB_TIMEOUT = 300  # 5 minutes — if a job is still "processing" after this, force error
 
 @app.route("/api/status/<job_id>")
 def job_status(job_id):
@@ -580,17 +623,17 @@ _discovery_cache = {"tracks": None, "fetched": False}
 # Pre-built discovery data — no Spotify API calls needed
 # These are static entries with enough data to select and process
 _STATIC_DISCOVERY = [
-    {"id":"40riOy7x9W7GXjyGp4pjAv","name":"Hotel California","artist":"Eagles","artist_id":"0ECwFtbIWEVNwjlrfc6xoL","year":"1977","image_url":"https://image-cdn-ak.spotifycdn.com/image/ab67616d00001e024637341b9f507521afa9a778","yt_query":"Eagles - Hotel California official audio","album":"Hotel California","duration_ms":391376},
-    {"id":"4u7EnebtmKWzUH433cf5Qv","name":"Bohemian Rhapsody","artist":"Queen","artist_id":"1dfeR4HaWDbWqFHLkxsg1d","year":"1975","image_url":"https://i.scdn.co/image/ab67616d00001e02ce4f1737bc8a646c8c4bd25a","yt_query":"Queen - Bohemian Rhapsody official audio","album":"A Night at the Opera","duration_ms":354947},
-    {"id":"5CQ30WqJwcep0pYcV4AMNc","name":"Stairway to Heaven","artist":"Led Zeppelin","artist_id":"36QJpDe2go2KgaRleHCDTp","year":"1971","image_url":"https://i.scdn.co/image/ab67616d00001e02c8a11e48c91a982d086afc69","yt_query":"Led Zeppelin - Stairway to Heaven official audio","album":"Led Zeppelin IV","duration_ms":482830},
-    {"id":"7J1uxwnxfQLu4APicE5Rnj","name":"Billie Jean","artist":"Michael Jackson","artist_id":"3fMbdgg4jU18AjLCKBhRSm","year":"1982","image_url":"https://i.scdn.co/image/ab67616d00001e024121faee8df82c526cbab2be","yt_query":"Michael Jackson - Billie Jean official audio","album":"Thriller","duration_ms":293827},
-    {"id":"1h2xVEoJORqrg71HocgqXd","name":"Superstition","artist":"Stevie Wonder","artist_id":"7guDJrEfX3qb6FEbdPA5qi","year":"1972","image_url":"https://image-cdn-ak.spotifycdn.com/image/ab67616d00001e029e447b59bd3e2cbefaa31d91","yt_query":"Stevie Wonder - Superstition official audio","album":"Talking Book","duration_ms":245493},
-    {"id":"3EYOJ1ST5O5ZQNBKuYh9VQ","name":"Wonderwall","artist":"Oasis","artist_id":"2DaxqgrOhkeH0fpeiQq2f4","year":"1995","image_url":"https://i.scdn.co/image/ab67616d00001e02ff5429125128b43572dbdccd","yt_query":"Oasis - Wonderwall official audio","album":"(What's the Story) Morning Glory?","duration_ms":258773},
-    {"id":"2RnPATK05MTl8pVGObsqm4","name":"Come As You Are","artist":"Nirvana","artist_id":"6olE6TJLqED3rqDCT0FyPh","year":"1991","image_url":"https://i.scdn.co/image/ab67616d00001e02e175a19e530c898d167d39bf","yt_query":"Nirvana - Come As You Are official audio","album":"Nevermind","duration_ms":219219},
-    {"id":"4yugZvBYaoREkJKtbG08Qr","name":"Take It Easy","artist":"Eagles","artist_id":"0ECwFtbIWEVNwjlrfc6xoL","year":"1972","image_url":"https://i.scdn.co/image/ab67616d00001e0284243a01af3c77b56fe01ab1","yt_query":"Eagles - Take It Easy official audio","album":"Eagles","duration_ms":211760},
-    {"id":"7snQQk1zcKl8gGSbzO08Cs","name":"Purple Rain","artist":"Prince","artist_id":"5a2EaR3hamoenG9rDuVn8j","year":"1984","image_url":"https://i.scdn.co/image/ab67616d00001e02d4daf28d55fe4197ede848be","yt_query":"Prince - Purple Rain official audio","album":"Purple Rain","duration_ms":520000},
-    {"id":"3AhXZa8sUQht0UEdBJgpGc","name":"Let It Be","artist":"The Beatles","artist_id":"3WrFJ7ztbogyGnTHbHJFl2","year":"1970","image_url":"https://image-cdn-fa.spotifycdn.com/image/ab67616d00001e020cb0884829c5503b2e242541","yt_query":"The Beatles - Let It Be official audio","album":"Let It Be","duration_ms":243027},
-    {"id":"0vFOzaXqZHahrZp6enQwQb","name":"Blinding Lights","artist":"The Weeknd","artist_id":"1Xyo4u8uXC1ZmMpatF05PJ","year":"2020","image_url":"https://i.scdn.co/image/ab67616d00001e028863bc11d2aa12b54f5aeb36","yt_query":"The Weeknd - Blinding Lights official audio","album":"After Hours","duration_ms":200040},
+    {"id":"40riOy7x9W7GXjyGp4pjAv","name":"Hotel California","artist":"Eagles","artist_id":"0ECwFtbIWEVNwjlrfc6xoL","year":"1977","image_url":"https://image-cdn-ak.spotifycdn.com/image/ab67616d00001e024637341b9f507521afa9a778","yt_query":"Eagles - Hotel California official audio","album":"Hotel California","preview_url":None,"duration_ms":391376},
+    {"id":"4u7EnebtmKWzUH433cf5Qv","name":"Bohemian Rhapsody","artist":"Queen","artist_id":"1dfeR4HaWDbWqFHLkxsg1d","year":"1975","image_url":"https://i.scdn.co/image/ab67616d00001e02ce4f1737bc8a646c8c4bd25a","yt_query":"Queen - Bohemian Rhapsody official audio","album":"A Night at the Opera","preview_url":None,"duration_ms":354947},
+    {"id":"5CQ30WqJwcep0pYcV4AMNc","name":"Stairway to Heaven","artist":"Led Zeppelin","artist_id":"36QJpDe2go2KgaRleHCDTp","year":"1971","image_url":"https://i.scdn.co/image/ab67616d00001e02c8a11e48c91a982d086afc69","yt_query":"Led Zeppelin - Stairway to Heaven official audio","album":"Led Zeppelin IV","preview_url":None,"duration_ms":482830},
+    {"id":"7J1uxwnxfQLu4APicE5Rnj","name":"Billie Jean","artist":"Michael Jackson","artist_id":"3fMbdgg4jU18AjLCKBhRSm","year":"1982","image_url":"https://i.scdn.co/image/ab67616d00001e024121faee8df82c526cbab2be","yt_query":"Michael Jackson - Billie Jean official audio","album":"Thriller","preview_url":None,"duration_ms":293827},
+    {"id":"1h2xVEoJORqrg71HocgqXd","name":"Superstition","artist":"Stevie Wonder","artist_id":"7guDJrEfX3qb6FEbdPA5qi","year":"1972","image_url":"https://image-cdn-ak.spotifycdn.com/image/ab67616d00001e029e447b59bd3e2cbefaa31d91","yt_query":"Stevie Wonder - Superstition official audio","album":"Talking Book","preview_url":None,"duration_ms":245493},
+    {"id":"3EYOJ1ST5O5ZQNBKuYh9VQ","name":"Wonderwall","artist":"Oasis","artist_id":"2DaxqgrOhkeH0fpeiQq2f4","year":"1995","image_url":"https://i.scdn.co/image/ab67616d00001e02ff5429125128b43572dbdccd","yt_query":"Oasis - Wonderwall official audio","album":"(What's the Story) Morning Glory?","preview_url":None,"duration_ms":258773},
+    {"id":"2RnPATK05MTl8pVGObsqm4","name":"Come As You Are","artist":"Nirvana","artist_id":"6olE6TJLqED3rqDCT0FyPh","year":"1991","image_url":"https://i.scdn.co/image/ab67616d00001e02e175a19e530c898d167d39bf","yt_query":"Nirvana - Come As You Are official audio","album":"Nevermind","preview_url":None,"duration_ms":219219},
+    {"id":"4yugZvBYaoREkJKtbG08Qr","name":"Take It Easy","artist":"Eagles","artist_id":"0ECwFtbIWEVNwjlrfc6xoL","year":"1972","image_url":"https://i.scdn.co/image/ab67616d00001e0284243a01af3c77b56fe01ab1","yt_query":"Eagles - Take It Easy official audio","album":"Eagles","preview_url":None,"duration_ms":211760},
+    {"id":"7snQQk1zcKl8gGSbzO08Cs","name":"Purple Rain","artist":"Prince","artist_id":"5a2EaR3hamoenG9rDuVn8j","year":"1984","image_url":"https://i.scdn.co/image/ab67616d00001e02d4daf28d55fe4197ede848be","yt_query":"Prince - Purple Rain official audio","album":"Purple Rain","preview_url":None,"duration_ms":520000},
+    {"id":"3AhXZa8sUQht0UEdBJgpGc","name":"Let It Be","artist":"The Beatles","artist_id":"3WrFJ7ztbogyGnTHbHJFl2","year":"1970","image_url":"https://image-cdn-fa.spotifycdn.com/image/ab67616d00001e020cb0884829c5503b2e242541","yt_query":"The Beatles - Let It Be official audio","album":"Let It Be","preview_url":None,"duration_ms":243027},
+    {"id":"0vFOzaXqZHahrZp6enQwQb","name":"Blinding Lights","artist":"The Weeknd","artist_id":"1Xyo4u8uXC1ZmMpatF05PJ","year":"2020","image_url":"https://i.scdn.co/image/ab67616d00001e028863bc11d2aa12b54f5aeb36","yt_query":"The Weeknd - Blinding Lights official audio","album":"After Hours","preview_url":None,"duration_ms":200040},
 ]
 
 
