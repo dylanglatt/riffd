@@ -454,21 +454,7 @@ def process_audio(job_id):
             except Exception as e:
                 _fail("tab_generation", e)
 
-            # ── Stage 4: Song intelligence (key, chords) ──
-            on_progress("Analyzing key and progression...")
-            print(f"[job {job_id}] [{_elapsed()}] INTELLIGENCE starting...")
-            try:
-                if note_events_all:
-                    intelligence = analyze_song_from_notes(
-                        note_events_all, song_name=track_name, artist=artist_name,
-                    )
-                    print(f"[job {job_id}] [{_elapsed()}] INTELLIGENCE finished → key={intelligence['key']}, bpm={intelligence['bpm']}, prog={intelligence['progression']}")
-                else:
-                    print(f"[job {job_id}] [{_elapsed()}] INTELLIGENCE skipped (no note events)")
-            except Exception as e:
-                _fail("intelligence", e)
-
-            # ── Stage 5: Lyrics (Genius) ──
+            # ── Stage 4: Lyrics (Genius) — moved before intelligence for section analysis ──
             if artist_name and track_name:
                 on_progress("Fetching lyrics...")
                 print(f"[job {job_id}] [{_elapsed()}] LYRICS starting...")
@@ -477,6 +463,21 @@ def process_audio(job_id):
                     print(f"[job {job_id}] [{_elapsed()}] LYRICS finished → {'found' if lyrics else 'not found'} ({len(lyrics) if lyrics else 0} chars)")
                 except Exception as e:
                     _fail("lyrics", e)
+
+            # ── Stage 5: Song intelligence + harmonic analysis ──
+            on_progress("Analyzing harmony and structure...")
+            print(f"[job {job_id}] [{_elapsed()}] INTELLIGENCE starting...")
+            try:
+                if note_events_all:
+                    intelligence = analyze_song_from_notes(
+                        note_events_all, song_name=track_name, artist=artist_name,
+                        lyrics_text=lyrics,
+                    )
+                    print(f"[job {job_id}] [{_elapsed()}] INTELLIGENCE finished → key={intelligence['key']}, bpm={intelligence['bpm']}, sections={len(intelligence.get('harmonic_sections',[]))}")
+                else:
+                    print(f"[job {job_id}] [{_elapsed()}] INTELLIGENCE skipped (no note events)")
+            except Exception as e:
+                _fail("intelligence", e)
 
             # ── Stage 6: Tags (Last.fm) ──
             if artist_name and track_name:

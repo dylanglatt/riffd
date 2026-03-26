@@ -530,15 +530,16 @@ def _match_known(pattern):
 
 # ─── Full Analysis (hybrid: external chords → audio fallback) ─────────────
 
-def analyze_song_from_notes(all_note_events, song_name="", artist=""):
+def analyze_song_from_notes(all_note_events, song_name="", artist="", lyrics_text=None):
     """
     Complete song analysis.
     1. Detect key from note data
     2. Try external chord source for progression
     3. Fall back to audio-based estimation
-    4. Suppress low-confidence results
+    4. Build section-based harmonic analysis
+    5. Suppress low-confidence results
 
-    Returns dict with key, bpm, progression, progression_source, confidence.
+    Returns dict with key, bpm, progression, harmonic_sections, etc.
     """
     frames = []
     if isinstance(all_note_events, dict):
@@ -611,14 +612,45 @@ def analyze_song_from_notes(all_note_events, song_name="", artist=""):
         progression = None
         prog_source = "none"
 
+    # ── Section-based harmonic analysis ──
+    harmonic_sections = []
+    try:
+        from harmonic_analysis import build_harmonic_analysis
+        # Get raw chord sequence from the external result if available
+        raw_chords = None
+        if song_name and artist:
+            try:
+                from chord_source import fetch_chords_from_web
+                raw_chords = fetch_chords_from_web(song_name, artist)
+                if raw_chords and len(raw_chords) >= 3:
+                    print(f"[intel] fetched {len(raw_chords)} raw chords for section analysis")
+                else:
+                    raw_chords = None
+            except Exception:
+                raw_chords = None
+
+        ha = build_harmonic_analysis(
+            chord_sequence=raw_chords,
+            lyrics_text=lyrics_text,
+            key_num=key_num,
+            mode_num=mode_num,
+            key_confidence=key_conf,
+        )
+        harmonic_sections = ha.get("harmonic_sections", [])
+        print(f"[intel] harmonic analysis: {len(harmonic_sections)} sections")
+    except Exception as e:
+        print(f"[intel] harmonic analysis failed: {e}")
+        import traceback; traceback.print_exc()
+
     return {
         "key": key_str,
         "key_num": key_num,
         "mode_num": mode_num,
         "bpm": bpm,
         "bpm_confidence": round(bpm_conf, 2),
-        "progression": progression,  # None if unavailable
+        "progression": progression,  # Legacy — kept for backward compat
         "progression_confidence": round(prog_confidence, 2),
         "progression_source": prog_source,
         "confidence": round(key_conf, 2),
+        "harmonic_sections": harmonic_sections,
     }

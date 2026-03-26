@@ -26,3 +26,4 @@ Thumbs.db
 
 # IDE / tooling
 .claude/settings.local.json
+*.xlsx

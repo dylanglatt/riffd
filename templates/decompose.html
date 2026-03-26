@@ -124,6 +124,22 @@
     .meta-chip { display:inline-flex; align-items:center; gap:8px; padding:6px 12px; border:1px solid rgba(255,255,255,0.08); font-size:0.8125rem; }
     .meta-chip .mc-label { color:rgba(245,245,245,0.4); font-size:0.6875rem; font-weight:400; letter-spacing:0.03em; text-transform:uppercase; }
     .meta-chip .mc-val { color:#F5F5F5; font-weight:500; letter-spacing:-0.01em; }
+    /* Harmonic sections */
+    .harmonic-panel { padding:20px 24px; border-bottom:1px solid rgba(255,255,255,0.08); }
+    .harmonic-label { font-size:0.6875rem; font-weight:500; letter-spacing:0.06em; text-transform:uppercase; color:rgba(245,245,245,0.3); margin-bottom:14px; }
+    .harmonic-grid { display:flex; flex-direction:column; gap:8px; }
+    .harmonic-section { border:1px solid rgba(255,255,255,0.06); padding:14px 18px; }
+    .harmonic-section:hover { border-color:rgba(255,255,255,0.10); }
+    .hs-header { margin-bottom:8px; display:flex; align-items:center; justify-content:space-between; }
+    .hs-label { font-size:0.8125rem; font-weight:500; color:#F5F5F5; letter-spacing:-0.01em; }
+    .hs-conf { font-size:0.625rem; color:rgba(245,245,245,0.25); letter-spacing:0.02em; }
+    .hs-row { display:flex; gap:8px; align-items:baseline; margin-bottom:3px; }
+    .hs-row-label { font-size:0.6875rem; color:rgba(245,245,245,0.3); min-width:60px; flex-shrink:0; }
+    .hs-chords { font-family:monospace; font-size:0.8125rem; color:rgba(245,245,245,0.65); letter-spacing:-0.005em; }
+    .hs-numerals { font-family:monospace; font-size:0.75rem; color:#D4691F; opacity:0.7; }
+    .hs-summary { font-size:0.6875rem; color:rgba(245,245,245,0.25); margin-top:4px; }
+    .harmonic-empty { padding:20px 24px; color:rgba(245,245,245,0.3); font-size:0.8125rem; border-bottom:1px solid rgba(255,255,255,0.08); }
+
     .results-nav { display:flex; gap:32px; border-bottom:1px solid rgba(255,255,255,0.08); margin-top:0; padding:0 24px; }
     .results-nav-btn { background:none; border:none; border-bottom:1px solid transparent; padding:16px 0; font-size:0.9375rem; font-weight:400; color:rgba(245,245,245,0.5); cursor:pointer; transition:color .15s; letter-spacing:-0.01em; position:relative; }
     .results-nav-btn:hover { color:rgba(245,245,245,0.7); transform:none; }
@@ -334,6 +350,7 @@
         <div class="track-banner" id="results-banner"></div>
         <div id="result-warning" style="display:none;margin-top:12px;padding:10px 14px;background:rgba(251,191,36,.08);border:1px solid rgba(251,191,36,.2);border-radius:var(--radius-xs);color:var(--yellow);font-size:.78rem;line-height:1.5;white-space:pre-wrap;"></div>
         <div class="results-meta" id="results-meta"></div>
+        <div id="harmonic-sections"></div>
       </div>
       <div class="results-nav" id="results-nav">
         <button class="results-nav-btn active" data-panel="mix" onclick="switchPanel('mix',this)">Mix</button>
@@ -906,17 +923,10 @@ async function renderResults(data) {
     chips+=`<span class="meta-chip"><span class="mc-label">Key</span><span class="mc-val">${esc(intel.key)}</span></span>`;
   }
 
-  // Progression — only show if confidence is meaningful
-  // Web-sourced progressions with template match: confidence typically 0.50-0.85
-  // Audio-fallback: hardcoded 0.40 — too unreliable to display
-  // Threshold: 0.50 minimum, and must have a non-null source
-  const progConf = intel.progression_confidence || 0;
-  const progSrc = intel.progression_source || "none";
-  if(intel.progression && intel.progression !== "Unknown" && intel.progression !== null && progConf >= 0.50) {
-    chips+=`<span class="meta-chip"><span class="mc-label">Progression</span><span class="mc-val">${esc(intel.progression)}</span></span>`;
-  }
-
   metaEl.innerHTML=chips;
+
+  // Render section-based harmonic analysis
+  _renderHarmonicSections(intel.harmonic_sections || []);
   songKey=(intel.key_num>=0)?{num:intel.key_num,mode:intel.mode_num,name:intel.key}:null;
   document.getElementById("mixer-channels").innerHTML=activeNames.map(n=>{const l=formatStemLabel(n,(stems[n]&&stems[n].label)||"");return`<div class="channel" id="ch-${n}"><div class="channel-name">${esc(l)}</div><div class="channel-volume"><input type="range" class="vol-slider" min="0" max="100" value="100" oninput="setVolume('${n}',this.value)" id="vol-${n}"/><span class="vol-label" id="vol-label-${n}">100</span></div><button class="ch-btn" id="mute-${n}" onclick="toggleMute('${n}')">M</button><button class="ch-btn" id="solo-${n}" onclick="toggleSolo('${n}')">S</button></div>`;}).join("");
   document.getElementById("loop-start").value="0:00";document.getElementById("loop-end").value="";loopActive=false;document.getElementById("loop-btn").classList.remove("active");
@@ -1052,7 +1062,7 @@ function resetApp(){
   const wvFg=document.getElementById("wv-fg");if(wvFg)wvFg.style.width="0%";
   document.getElementById("progress-label").textContent="Analyzing the track...";document.getElementById("progress-label").classList.remove("fading");
   document.getElementById("seek-bar").value=0;document.getElementById("time-display").textContent="0:00 / 0:00";
-  document.getElementById("results-meta").innerHTML="";document.getElementById("lyrics-content").innerHTML="";
+  document.getElementById("results-meta").innerHTML="";document.getElementById("harmonic-sections").innerHTML="";document.getElementById("lyrics-content").innerHTML="";
   document.getElementById("loop-btn").classList.remove("active");document.getElementById("transpose-display").textContent="0";document.getElementById("transposed-key").textContent="";
   document.getElementById("proc-estimate").classList.remove("visible");
   _hideResultWarning();setError("");showView("search");
@@ -1069,6 +1079,60 @@ function formatStemLabel(rawKey, label) {
   return parts.join(" ");
 }
 function esc(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");}
+
+function _renderHarmonicSections(sections) {
+  const el = document.getElementById('harmonic-sections');
+  if (!el) return;
+
+  // DEBUG: remove after confirming
+  console.log('[harmony] rendering sections:', sections ? sections.length : 'null', sections);
+
+  // Fallback: no data
+  if (!sections || !sections.length) {
+    el.innerHTML = '<div class="harmonic-empty">Section analysis not available for this track.</div>';
+    return;
+  }
+
+  // Filter sections that actually have chords
+  const valid = sections.filter(s => s.chords && s.chords.length > 0);
+  if (!valid.length) {
+    el.innerHTML = '<div class="harmonic-empty">Section analysis not available for this track.</div>';
+    return;
+  }
+
+  function confLabel(c) { return c >= 0.85 ? 'High' : c >= 0.65 ? 'Medium' : c >= 0.3 ? 'Low' : ''; }
+
+  let html = '<div class="harmonic-panel"><div class="harmonic-label">Harmony</div><div class="harmonic-grid">';
+
+  const maxVisible = 6;
+  function renderSection(sec) {
+    const chords = (sec.chords || []).join(' \u2013 ');
+    const numerals = (sec.roman_numerals || []).join(' \u2013 ');
+    const conf = confLabel(sec.confidence || 0);
+    let s = `<div class="harmonic-section">`;
+    s += `<div class="hs-header"><span class="hs-label">${esc(sec.label)}</span>${conf ? `<span class="hs-conf">${conf}</span>` : ''}</div>`;
+    if (chords) s += `<div class="hs-row"><span class="hs-row-label">Chords</span><span class="hs-chords">${esc(chords)}</span></div>`;
+    if (numerals && numerals !== chords) s += `<div class="hs-row"><span class="hs-row-label">Numerals</span><span class="hs-numerals">${esc(numerals)}</span></div>`;
+    if (sec.summary && sec.summary.is_repeating_pattern && sec.summary.summary_numerals) {
+      s += `<div class="hs-summary">Repeating: ${sec.summary.summary_numerals.join(' \u2013 ')} \u00d7${sec.summary.repeated_units || ''}</div>`;
+    }
+    s += '</div>';
+    return s;
+  }
+
+  valid.slice(0, maxVisible).forEach(sec => { html += renderSection(sec); });
+
+  if (valid.length > maxVisible) {
+    const remaining = valid.length - maxVisible;
+    html += `<div class="harmonic-section" style="text-align:center;cursor:pointer;color:rgba(245,245,245,0.3);font-size:0.8125rem" onclick="this.parentElement.querySelectorAll('.hs-more').forEach(e=>e.style.display='');this.style.display='none'">+ ${remaining} more section${remaining > 1 ? 's' : ''}</div>`;
+    valid.slice(maxVisible).forEach(sec => {
+      html += renderSection(sec).replace('class="harmonic-section"', 'class="harmonic-section hs-more" style="display:none"');
+    });
+  }
+
+  html += '</div></div>';
+  el.innerHTML = html;
+}
 
 function _formatLyrics(raw) {
   if (!raw) return '';
