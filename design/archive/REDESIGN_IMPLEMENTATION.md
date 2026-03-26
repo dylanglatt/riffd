@@ -1,6 +1,9 @@
 # Riffd — Redesign Implementation Guide
 
-> **For Claude Code.** This document is the single source of truth for restyling the entire Riffd web app to match the Figma design reference. Read this fully before making any changes.
+> **Status: COMPLETE.** This redesign has been fully implemented across all templates.
+> Kept as historical reference for the design decisions and values applied.
+>
+> **For Claude Code.** This document was the source of truth for restyling the entire Riffd web app to match the Figma design reference.
 
 ---
 

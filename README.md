@@ -1,8 +1,9 @@
-# Stem & Tab — Setup Guide
+# Riffd — Setup Guide
 
-A personal app that separates songs into isolated stems (vocals, bass, drums, guitar)
-and generates tabs/MIDI for each part. Uses Spotify for search/metadata, yt-dlp
-to pull audio from YouTube, Demucs for stem separation, and Basic Pitch for tabbing.
+A music analysis and learning tool that separates songs into isolated stems,
+analyzes harmonic structure (section-based chords, roman numerals, key detection),
+generates tabs/MIDI, and fetches lyrics. Uses Spotify for search, yt-dlp for audio,
+Demucs for stem separation, Basic Pitch for tabbing, and Genius/Last.fm for metadata.
 
 ---
 
@@ -59,22 +60,22 @@ python app.py
 
 Then open your browser and go to: **http://localhost:5000**
 
+You'll need to enter the site password (set via `SITE_PASSWORD` in your `.env` file).
+
 ---
 
 ## How to Use
 
-1. **Search** for a song using the Spotify search bar (or skip to step 3)
-2. **Click a result** to select it
-3. **Choose which stems** you want (vocals, bass, drums, guitar)
-4. Click **"Separate & Tab"**
-   - If you selected a Spotify track, it'll automatically find and download
-     the audio from YouTube (~30 seconds)
-   - Then Demucs runs stem separation (~2–5 minutes depending on your computer)
-   - Then Basic Pitch generates tabs (~1 minute per stem)
-5. **Listen** to each isolated stem and **view the tab** for each part
-6. **Download MIDI** files if you want to open them in GarageBand, Logic, etc.
-
-**Or: upload your own file** by dragging & dropping an MP3/WAV/FLAC directly.
+1. **Search** for a song using the Spotify search bar (or upload your own audio)
+2. **Click a result** to select it — audio is downloaded automatically from YouTube
+3. **Processing** runs automatically: stem separation → tab generation → harmonic analysis → lyrics
+4. **Explore results:**
+   - **Mix** — stem audio player with per-channel volume/mute/solo, seek, loop, transpose
+   - **Harmony** — section-based chords with roman numerals (Verse, Chorus, etc.)
+   - **Lyrics** — full lyrics with section markers
+   - **Tab** — ASCII tablature (coming soon improvements)
+5. **Download MIDI** files if you want to open them in GarageBand, Logic, etc.
+6. **Learn** — explore music theory (chords, scales, progressions, keys) in the Studio page
 
 ---
 
@@ -83,7 +84,8 @@ Then open your browser and go to: **http://localhost:5000**
 - Processing is done **entirely on your computer** — nothing is uploaded anywhere
 - Stem separation quality is best for clearly mixed songs; dense mixes are harder
 - Bass tabs tend to be most accurate; distorted guitar is the trickiest
-- The "Guitar / Other" stem contains everything that isn't vocals, drums, or bass
+- Harmonic analysis shows chords per song section (Verse, Chorus, etc.) with roman numerals
+- Results are cached — returning to a previously processed song loads instantly
 - MIDI files can be opened in GarageBand, Logic, Ableton, etc. for further editing
 
 ---

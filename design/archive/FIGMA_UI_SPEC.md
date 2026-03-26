@@ -1,5 +1,9 @@
 # Riffd — Complete UI Specification for Figma
 
+> **Note:** This spec was written before the Figma redesign was implemented. The color palette
+> below (purple/teal scheme) is **outdated** — the app now uses a burnt orange (#D4691F) accent
+> on flat dark backgrounds. See `REDESIGN_IMPLEMENTATION.md` for the current design system values.
+>
 > Exhaustive description of every page, component, state, and interaction in the Riffd web app.
 > Use this as a prompt/reference to recreate the full UI in Figma.
 
