@@ -21,11 +21,21 @@ from db import init_db, migrate_from_history_json, get_track, upsert_track, set_
 
 load_dotenv()
 
+# ─── Startup checks ──────────────────────────────────────────────────────────
+SITE_PASSWORD = os.getenv("SITE_PASSWORD")
+FLASK_SECRET = os.getenv("FLASK_SECRET_KEY")
+
+print(f"[auth] SITE_PASSWORD set: {bool(SITE_PASSWORD)}")
+print(f"[auth] FLASK_SECRET_KEY set: {bool(FLASK_SECRET)}")
+
+if not SITE_PASSWORD:
+    raise RuntimeError("SITE_PASSWORD environment variable is required. Set it in .env or your hosting platform.")
+if not FLASK_SECRET:
+    raise RuntimeError("FLASK_SECRET_KEY environment variable is required. Set it in .env or your hosting platform.")
+
 app = Flask(__name__)
 app.config["MAX_CONTENT_LENGTH"] = 200 * 1024 * 1024
-app.secret_key = os.getenv("FLASK_SECRET_KEY", "dev-fallback-key-change-me")
-
-SITE_PASSWORD = os.getenv("SITE_PASSWORD", "")
+app.secret_key = FLASK_SECRET
 
 UPLOAD_DIR = Path("uploads")
 OUTPUT_DIR = Path("outputs")
@@ -48,8 +58,9 @@ def allowed_file(filename: str) -> bool:
 
 @app.before_request
 def require_login():
-    if not SITE_PASSWORD:
-        return  # No password set — open access
+    # DEBUG: remove after confirming production auth works
+    print(f"[auth] before_request: endpoint={request.endpoint} authenticated={session.get('authenticated', False)} path={request.path}")
+
     allowed = ("login", "static")
     if request.endpoint in allowed:
         return
@@ -59,14 +70,14 @@ def require_login():
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
-    if not SITE_PASSWORD:
-        return redirect(url_for("index"))
     error = None
     if request.method == "POST":
         if request.form.get("password") == SITE_PASSWORD:
             session["authenticated"] = True
+            print(f"[auth] login SUCCESS")
             return redirect(url_for("index"))
         error = "Incorrect password"
+        print(f"[auth] login FAILED")
     return render_template("login.html", error=error)
 
 

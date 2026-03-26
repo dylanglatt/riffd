@@ -101,14 +101,20 @@
 
     /* ═══ Responsive ═══ */
     @media(max-width:768px) {
-      .global-nav { padding:0 16px; }
-      .nav-logo { margin-right:20px; }
-      .nav-link { padding:8px 10px; font-size:.78rem; }
-      .page-content { padding:28px 16px 60px; }
+      .global-nav { padding:0 14px; height:auto; min-height:48px; flex-wrap:wrap; gap:4px; padding-top:8px; padding-bottom:8px; }
+      .nav-logo { margin-right:auto; font-size:1rem; }
+      .nav-links { width:100%; order:2; overflow-x:auto; -webkit-overflow-scrolling:touch; }
+      .nav-link { padding:6px 10px; font-size:.76rem; white-space:nowrap; flex-shrink:0; }
+      .nav-spacer { display:none; }
+      .page-body { padding-top:80px; }
+      .page-content { padding:20px 14px 48px; }
+      .section-title { font-size:1.2rem; }
+      .section-sub { font-size:.82rem; }
     }
     @media(max-width:480px) {
-      .nav-links { gap:0; }
-      .nav-link { padding:8px 8px; font-size:.74rem; }
+      .nav-link { padding:6px 8px; font-size:.72rem; }
+      .nav-badge { font-size:.48rem; padding:1px 4px; }
+      .page-content { padding:16px 12px 40px; }
     }
 
     {% block extra_css %}{% endblock %}
@@ -140,5 +146,8 @@
 </div>
 
 {% block extra_js %}{% endblock %}
+
+<!-- TEMP: deploy marker — remove after confirming production auth -->
+<div style="position:fixed;bottom:6px;right:8px;font-size:.5rem;color:rgba(255,255,255,.15);font-family:monospace;pointer-events:none;z-index:9999">auth-build-v1</div>
 </body>
 </html>
