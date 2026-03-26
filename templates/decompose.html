@@ -145,6 +145,8 @@
     @keyframes wvBounce { 0%,100% { height:var(--h-min); } 40% { height:var(--h-max); } 60% { height:var(--h-max); } }
     .proc-status { margin-top:20px; color:var(--text-muted); font-size:.84rem; font-weight:500; min-height:1.4em; transition:opacity .3s; }
     .proc-status.fading { opacity:0; }
+    .proc-estimate { margin-top:12px; color:var(--text-muted); font-size:.72rem; opacity:0; transition:opacity .8s ease .6s; letter-spacing:.01em; }
+    .proc-estimate.visible { opacity:.4; }
 
     .view { display:none; }
     .view.active { display:block; animation:viewIn .3s cubic-bezier(.16,1,.3,1); }
@@ -321,6 +323,7 @@
           <div class="waveform-fg" id="wv-fg"></div>
         </div>
         <div class="proc-status" id="progress-label">Analyzing the track...</div>
+        <div class="proc-estimate" id="proc-estimate">Usually takes 1–2 minutes</div>
       </div>
     </div>
   </div>
@@ -500,7 +503,29 @@ function renderSearchResults() {
 }
 
 function selectByIndex(i){const t=searchResults[i];if(t)selectTrack(t);}
-function selectTrack(t){selectedTrack=t;currentJobId=null;setError("");_showHeroPreProcess();showView("confirm");}
+async function selectTrack(t){
+  selectedTrack=t; currentJobId=null; setError("");
+  // Check DB for existing analysis
+  if (t.id) {
+    try {
+      const r = await fetch(`/api/track/${encodeURIComponent(t.id)}`);
+      const d = await r.json();
+      if (d.analysis_status === 'available' && d.analysis) {
+        currentJobId = d.job_id;
+        jobData = { status:"complete", tabs:d.analysis.tabs||{}, stems:d.analysis.stems||{}, intelligence:d.analysis.intelligence||{}, lyrics:d.analysis.lyrics||null, tags:d.analysis.tags||[] };
+        renderResults(jobData);
+        return;
+      }
+      if (d.analysis_status === 'pending') {
+        _showHeroPreProcess(); showView("confirm");
+        document.getElementById("process-btn").textContent = "Processing...";
+        document.getElementById("process-btn").disabled = true;
+        return;
+      }
+    } catch(e) { console.warn("[track] lookup failed:", e); }
+  }
+  _showHeroPreProcess(); showView("confirm");
+}
 function selectAndProcess(t){selectedTrack=t;currentJobId=null;setError("");_showHeroPreProcess();startProcessing();}
 function buildBanner(id,t){const el=document.getElementById(id);if(!el)return;const img=t.image_url?`<img src="${esc(t.image_url)}" alt="" onerror="_artFailBanner(this)">`:'<div class="cover-placeholder"><svg viewBox="0 0 24 24" width="20" height="20" style="opacity:.3"><path d="M12 3v10.55A4 4 0 1 0 14 17V7h4V3h-6Z" fill="currentColor"/></svg></div>';el.innerHTML=`${img}<div><div class="track-banner-title">${esc(t.name||"Untitled")}</div><div class="track-banner-sub">${esc(t.artist||"Unknown")}${t.year?" &middot; "+esc(String(t.year)):""}</div></div>`;}
 
@@ -661,6 +686,10 @@ function _showHeroLoading() {
   document.getElementById("hero-actions").classList.add("hidden");
   document.getElementById("hero-loading").classList.remove("hidden");
   document.getElementById("wv-fg").style.width = "0%";
+  // Fade in estimate after a brief delay
+  const est = document.getElementById("proc-estimate");
+  est.classList.remove("visible");
+  setTimeout(() => est.classList.add("visible"), 100);
 }
 
 function buildProcessingBanner() { _showHeroLoading(); }
@@ -687,6 +716,7 @@ function _resetLoadingUI() {
   stopLoadingMessages();
   document.getElementById("process-btn").disabled = false;
   document.getElementById("process-btn").textContent = "Dive In";
+  document.getElementById("proc-estimate").classList.remove("visible");
 }
 
 async function startProcessing(){
@@ -992,6 +1022,7 @@ function resetApp(){
   document.getElementById("seek-bar").value=0;document.getElementById("time-display").textContent="0:00 / 0:00";
   document.getElementById("results-meta").innerHTML="";document.getElementById("lyrics-content").innerHTML="";
   document.getElementById("loop-btn").classList.remove("active");document.getElementById("transpose-display").textContent="0";document.getElementById("transposed-key").textContent="";
+  document.getElementById("proc-estimate").classList.remove("visible");
   _hideResultWarning();setError("");showView("search");
 }
 function fmtMs(ms){const s=Math.floor((ms||0)/1000);return`${Math.floor(s/60)}:${String(s%60).padStart(2,"0")}`;}

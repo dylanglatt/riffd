@@ -15,6 +15,7 @@ from music_intelligence import analyze_song_from_notes
 from external_apis import get_lyrics, get_track_tags, enrich_recommendations_with_lastfm
 from downloader import download_audio_from_youtube
 from history import add_to_history, get_recent, get_cached_result, save_cached_result, touch_history
+from db import init_db, migrate_from_history_json, get_track, upsert_track, set_track_status, touch_track, get_recent_tracks, get_analysis_for_track
 
 app = Flask(__name__)
 app.config["MAX_CONTENT_LENGTH"] = 200 * 1024 * 1024
@@ -23,6 +24,10 @@ UPLOAD_DIR = Path("uploads")
 OUTPUT_DIR = Path("outputs")
 UPLOAD_DIR.mkdir(exist_ok=True)
 OUTPUT_DIR.mkdir(exist_ok=True)
+
+# Initialize database on startup
+init_db()
+migrate_from_history_json()
 
 ALLOWED_EXTENSIONS = {".mp3", ".wav", ".flac", ".m4a", ".ogg", ".aac"}
 jobs = {}
@@ -78,6 +83,41 @@ def spotify_search_route():
     except Exception as e:
         print(f"[search] ERROR: {type(e).__name__}: {e}")
         return jsonify({"error": "Search temporarily unavailable. Please try again."}), 500
+
+
+@app.route("/api/track/<track_id>")
+def track_lookup(track_id):
+    """
+    Look up a track by Spotify ID. Returns:
+    - analysis_status: available | pending | unavailable
+    - track metadata (title, artist, artwork, etc.)
+    - analysis payload if status is available
+    """
+    track = get_track(track_id)
+    if not track:
+        return jsonify({"analysis_status": "unavailable", "spotify_track_id": track_id})
+
+    result = {
+        "spotify_track_id": track["spotify_track_id"],
+        "title": track["title"],
+        "artist": track["artist"],
+        "album": track.get("album", ""),
+        "artwork_url": track.get("artwork_url"),
+        "duration_ms": track.get("duration_ms", 0),
+        "analysis_status": track["analysis_status"],
+    }
+
+    if track["analysis_status"] == "available":
+        analysis = get_analysis_for_track(track_id)
+        if analysis:
+            touch_track(track_id)
+            result["analysis"] = analysis
+            result["job_id"] = track.get("job_id")
+        else:
+            # Cache disappeared — downgrade status
+            result["analysis_status"] = "unavailable"
+
+    return jsonify(result)
 
 
 @app.route("/api/download", methods=["POST"])
@@ -166,6 +206,20 @@ def process_audio(job_id):
     jobs[job_id]["_started_at"] = _time_mod.time()
     print(f"[job {job_id}] PROCESS START audio={audio_path}")
 
+    # Mark track as pending in DB
+    if spotify_track_id:
+        upsert_track(
+            spotify_track_id,
+            track_meta.get("name", ""),
+            track_meta.get("artist", ""),
+            artwork_url=track_meta.get("image_url"),
+            duration_ms=track_meta.get("duration_ms", 0),
+            year=track_meta.get("year", ""),
+            artist_id=track_meta.get("artist_id"),
+            yt_query=track_meta.get("yt_query", ""),
+        )
+        set_track_status(spotify_track_id, "pending")
+
     def run():
         import time as _time
         _t0 = _time.time()
@@ -211,7 +265,7 @@ def process_audio(job_id):
             status_label = result["status"]
             print(f"[job {job_id}] [{_elapsed()}] STATUS → {status_label}" + (f" (failed: {[s['step'] for s in failed_steps]})" if partial else ""))
 
-            # Save to cache + history
+            # Save to cache + history + DB
             if spotify_track_id and (not partial or stems):
                 try:
                     save_cached_result(job_id, {
@@ -225,9 +279,26 @@ def process_audio(job_id):
                         "track_id": spotify_track_id,
                     })
                     add_to_history(spotify_track_id, track_meta, job_id)
-                    print(f"[job {job_id}] [{_elapsed()}] cache+history saved")
+
+                    # Update DB: mark as available
+                    from db import upsert_track, set_track_status, ANALYSIS_VERSION
+                    upsert_track(
+                        spotify_track_id,
+                        track_meta.get("name", ""),
+                        track_meta.get("artist", ""),
+                        album=track_meta.get("album", ""),
+                        artwork_url=track_meta.get("image_url"),
+                        duration_ms=track_meta.get("duration_ms", 0),
+                        year=track_meta.get("year", ""),
+                        artist_id=track_meta.get("artist_id"),
+                        yt_query=track_meta.get("yt_query", ""),
+                    )
+                    set_track_status(spotify_track_id, "available",
+                                     job_id=job_id, analysis_version=ANALYSIS_VERSION)
+
+                    print(f"[job {job_id}] [{_elapsed()}] cache+history+db saved")
                 except Exception as e:
-                    print(f"[job {job_id}] [{_elapsed()}] cache/history save error: {e}")
+                    print(f"[job {job_id}] [{_elapsed()}] save error: {e}")
 
         try:
             # ── Stage 1: Stem separation (Demucs) ──

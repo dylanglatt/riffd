@@ -2,118 +2,133 @@
 {% block title %}Library{% endblock %}
 
 {% block extra_css %}
-  .library-header { margin-bottom:36px; }
-  .lib-section { margin-bottom:40px; }
-  .lib-section-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; }
-  .lib-section-title { font-size:1.05rem; font-weight:700; }
-  .lib-count { font-size:.76rem; color:var(--text-muted); }
+  .lib-head { text-align:center; padding:24px 0 8px; }
+  .lib-title-row { display:flex; align-items:center; justify-content:center; gap:10px; margin-bottom:6px; }
+  .lib-title { font-size:1.8rem; font-weight:900; letter-spacing:-.04em; }
+  .lib-coming { font-size:.6rem; font-weight:600; text-transform:uppercase; letter-spacing:.08em; padding:3px 10px; border-radius:999px; background:rgba(124,92,255,.08); color:var(--accent); border:1px solid rgba(124,92,255,.15); }
+  .lib-sub { color:var(--text-muted); font-size:.88rem; margin-bottom:8px; }
+  .lib-note { color:var(--text-muted); font-size:.76rem; opacity:.6; margin-bottom:36px; }
 
-  .song-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:16px; }
+  .lib-section { margin-bottom:40px; position:relative; }
+  .lib-section-title { font-size:.92rem; font-weight:700; color:var(--text-primary); margin-bottom:14px; }
+
+  /* Preview overlay */
+  .lib-preview-wrap { position:relative; }
+  .lib-preview-wrap .song-grid {
+    filter:blur(2px); opacity:.45; pointer-events:none; user-select:none;
+  }
+  .lib-preview-overlay {
+    position:absolute; inset:0; z-index:1;
+    background:linear-gradient(180deg, transparent 0%, rgba(5,6,10,.4) 100%);
+    pointer-events:none;
+  }
+
+  .song-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:14px; }
   .song-card {
-    padding:16px; border-radius:var(--radius); background:rgba(255,255,255,.015);
-    border:1px solid var(--border); transition:all .25s; cursor:pointer;
+    padding:14px; border-radius:var(--radius); background:rgba(255,255,255,.012);
+    border:1px solid rgba(255,255,255,.04); cursor:default; position:relative;
   }
-  .song-card:hover { background:rgba(124,92,255,.04); border-color:rgba(124,92,255,.15); transform:translateY(-3px); box-shadow:0 12px 32px rgba(124,92,255,.1); }
   .sc-art {
-    width:100%; aspect-ratio:1; border-radius:var(--radius-sm); margin-bottom:14px; object-fit:cover;
+    width:100%; aspect-ratio:1; border-radius:10px; margin-bottom:12px; object-fit:cover;
     background:linear-gradient(135deg,var(--surface-3),var(--surface-4));
+    filter:saturate(.85);
   }
-  .sc-art-ph {
-    width:100%; aspect-ratio:1; border-radius:var(--radius-sm); margin-bottom:14px;
-    background:linear-gradient(135deg,var(--surface-3),var(--surface-4));
-    display:flex; align-items:center; justify-content:center; font-size:2rem; color:var(--text-muted);
+  .sc-name { font-size:.84rem; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; line-height:1.3; }
+  .sc-detail { font-size:.72rem; color:var(--text-muted); margin-top:3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .sc-album { font-size:.68rem; color:var(--text-muted); margin-top:2px; opacity:.5; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .sc-preview {
+    position:absolute; top:10px; right:10px; font-size:.56rem; font-weight:600;
+    text-transform:uppercase; letter-spacing:.06em; padding:2px 7px; border-radius:4px;
+    background:rgba(0,0,0,.5); color:var(--text-muted); backdrop-filter:blur(4px);
   }
-  .sc-name { font-size:.88rem; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-  .sc-artist { font-size:.78rem; color:var(--text-muted); margin-top:3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-  .sc-tags { display:flex; gap:5px; flex-wrap:wrap; margin-top:10px; }
-  .sc-tag { font-size:.64rem; padding:2px 8px; border-radius:999px; background:rgba(124,92,255,.06); color:var(--accent); border:1px solid rgba(124,92,255,.1); font-weight:600; }
 
-  .empty-lib {
-    text-align:center; padding:60px 20px; color:var(--text-muted);
-  }
-  .empty-lib-icon { font-size:2.4rem; margin-bottom:12px; }
-  .empty-lib-title { font-size:1rem; font-weight:600; color:var(--text-secondary); margin-bottom:6px; }
-  .empty-lib-desc { font-size:.84rem; line-height:1.5; max-width:360px; margin:0 auto; }
+  @media(max-width:640px) { .song-grid { grid-template-columns:repeat(2,1fr); } }
 {% endblock %}
 
 {% block body %}
 <div class="page-content">
-  <div class="library-header">
-    <div class="section-title">Library</div>
-    <div class="section-sub">Your analyzed songs and saved charts. Sample library shown below.</div>
-  </div>
-
-  <!-- Recent -->
-  <div class="lib-section">
-    <div class="lib-section-head">
-      <div class="lib-section-title">Recent</div>
-      <div class="lib-count">6 songs</div>
+  <div class="lib-head">
+    <div class="lib-title-row">
+      <div class="lib-title">Library</div>
+      <span class="lib-coming">Coming Soon</span>
     </div>
-    <div class="song-grid">
-      <div class="song-card" onclick="window.location='/decompose'">
-        <img class="sc-art" src="https://image-cdn-ak.spotifycdn.com/image/ab67616d00001e024637341b9f507521afa9a778" alt="" />
-        <div class="sc-name">Hotel California</div>
-        <div class="sc-artist">Eagles</div>
-        <div class="sc-tags"><span class="sc-tag">Rock</span><span class="sc-tag">6 stems</span></div>
-      </div>
-      <div class="song-card" onclick="window.location='/decompose'">
-        <img class="sc-art" src="https://i.scdn.co/image/ab67616d00001e02ce4f1737bc8a646c8c4bd25a" alt="" />
-        <div class="sc-name">Bohemian Rhapsody</div>
-        <div class="sc-artist">Queen</div>
-        <div class="sc-tags"><span class="sc-tag">Rock</span><span class="sc-tag">6 stems</span></div>
-      </div>
-      <div class="song-card" onclick="window.location='/decompose'">
-        <img class="sc-art" src="https://i.scdn.co/image/ab67616d00001e02c8a11e48c91a982d086afc69" alt="" />
-        <div class="sc-name">Stairway to Heaven</div>
-        <div class="sc-artist">Led Zeppelin</div>
-        <div class="sc-tags"><span class="sc-tag">Rock</span><span class="sc-tag">Classic</span></div>
-      </div>
-      <div class="song-card" onclick="window.location='/decompose'">
-        <img class="sc-art" src="https://i.scdn.co/image/ab67616d00001e024121faee8df82c526cbab2be" alt="" />
-        <div class="sc-name">Billie Jean</div>
-        <div class="sc-artist">Michael Jackson</div>
-        <div class="sc-tags"><span class="sc-tag">Pop</span><span class="sc-tag">Funk</span></div>
-      </div>
-      <div class="song-card" onclick="window.location='/decompose'">
-        <img class="sc-art" src="https://image-cdn-ak.spotifycdn.com/image/ab67616d00001e029e447b59bd3e2cbefaa31d91" alt="" />
-        <div class="sc-name">Superstition</div>
-        <div class="sc-artist">Stevie Wonder</div>
-        <div class="sc-tags"><span class="sc-tag">Funk</span><span class="sc-tag">Soul</span></div>
-      </div>
-      <div class="song-card" onclick="window.location='/decompose'">
-        <img class="sc-art" src="https://i.scdn.co/image/ab67616d00001e02ff5429125128b43572dbdccd" alt="" />
-        <div class="sc-name">Wonderwall</div>
-        <div class="sc-artist">Oasis</div>
-        <div class="sc-tags"><span class="sc-tag">Britpop</span><span class="sc-tag">Acoustic</span></div>
-      </div>
-    </div>
+    <div class="lib-sub">Save, organize, and revisit your analyses, stems, and practice sessions.</div>
+    <div class="lib-note">We're building this next. Here's a preview of what it will look like.</div>
   </div>
 
   <!-- Favorites -->
   <div class="lib-section">
-    <div class="lib-section-head">
-      <div class="lib-section-title">Favorites</div>
-      <div class="lib-count">3 songs</div>
-    </div>
+    <div class="lib-section-title">Favorites</div>
+    <div class="lib-preview-wrap">
+    <div class="lib-preview-overlay"></div>
     <div class="song-grid">
-      <div class="song-card" onclick="window.location='/decompose'">
-        <img class="sc-art" src="https://i.scdn.co/image/ab67616d00001e02e175a19e530c898d167d39bf" alt="" />
-        <div class="sc-name">Come As You Are</div>
-        <div class="sc-artist">Nirvana</div>
-        <div class="sc-tags"><span class="sc-tag">Grunge</span><span class="sc-tag">Guitar Tab</span></div>
+      <div class="song-card">
+        <span class="sc-preview">Preview</span>
+        <img class="sc-art" src="https://is1-ssl.mzstatic.com/image/thumb/Music126/v4/c2/3c/54/c23c5414-20d1-7aea-f0f5-187974c58d65/23UMGIM79990.rgb.jpg/300x300bb.jpg" alt="" />
+        <div class="sc-name">Peg</div>
+        <div class="sc-detail">Steely Dan</div>
+        <div class="sc-album">Aja</div>
       </div>
-      <div class="song-card" onclick="window.location='/decompose'">
-        <img class="sc-art" src="https://i.scdn.co/image/ab67616d00001e02d4daf28d55fe4197ede848be" alt="" />
-        <div class="sc-name">Purple Rain</div>
-        <div class="sc-artist">Prince</div>
-        <div class="sc-tags"><span class="sc-tag">Rock</span><span class="sc-tag">Soul</span></div>
+      <div class="song-card">
+        <span class="sc-preview">Preview</span>
+        <img class="sc-art" src="https://is1-ssl.mzstatic.com/image/thumb/Music125/v4/dd/77/35/dd773533-06a7-4566-bef4-2c43c24d08f6/603497925759.jpg/300x300bb.jpg" alt="" />
+        <div class="sc-name">Dreams</div>
+        <div class="sc-detail">Fleetwood Mac</div>
+        <div class="sc-album">Rumours</div>
       </div>
-      <div class="song-card" onclick="window.location='/decompose'">
-        <img class="sc-art" src="https://i.scdn.co/image/ab67616d00001e028863bc11d2aa12b54f5aeb36" alt="" />
-        <div class="sc-name">Blinding Lights</div>
-        <div class="sc-artist">The Weeknd</div>
-        <div class="sc-tags"><span class="sc-tag">Synthwave</span><span class="sc-tag">Pop</span></div>
+      <div class="song-card">
+        <span class="sc-preview">Preview</span>
+        <img class="sc-art" src="https://is1-ssl.mzstatic.com/image/thumb/Music124/v4/7a/a0/f4/7aa0f487-f983-390e-73ef-005115eea1e0/dj.oqpplyfm.jpg/300x300bb.jpg" alt="" />
+        <div class="sc-name">Gravity</div>
+        <div class="sc-detail">John Mayer</div>
+        <div class="sc-album">Continuum</div>
       </div>
+      <div class="song-card">
+        <span class="sc-preview">Preview</span>
+        <img class="sc-art" src="https://is1-ssl.mzstatic.com/image/thumb/Music/47/c3/21/mzi.ciyzkqao.jpg/300x300bb.jpg" alt="" />
+        <div class="sc-name">Sultans of Swing</div>
+        <div class="sc-detail">Dire Straits</div>
+        <div class="sc-album">Dire Straits</div>
+      </div>
+    </div>
+    </div>
+  </div>
+
+  <!-- Recommendations -->
+  <div class="lib-section">
+    <div class="lib-section-title">Recommended for you</div>
+    <div class="lib-preview-wrap">
+    <div class="lib-preview-overlay"></div>
+    <div class="song-grid">
+      <div class="song-card">
+        <span class="sc-preview">Preview</span>
+        <img class="sc-art" src="https://is1-ssl.mzstatic.com/image/thumb/Music221/v4/89/82/f1/8982f1c5-a729-40da-146c-92bd8cb1e3f4/25UMGIM68675.rgb.jpg/300x300bb.jpg" alt="" />
+        <div class="sc-name">Kid Charlemagne</div>
+        <div class="sc-detail">Steely Dan</div>
+        <div class="sc-album">The Royal Scam</div>
+      </div>
+      <div class="song-card">
+        <span class="sc-preview">Preview</span>
+        <img class="sc-art" src="https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/69/ce/d2/69ced240-07a7-2a04-bbab-2afbacf30809/074643772822.jpg/300x300bb.jpg" alt="" />
+        <div class="sc-name">Rosanna</div>
+        <div class="sc-detail">Toto</div>
+        <div class="sc-album">Toto IV</div>
+      </div>
+      <div class="song-card">
+        <span class="sc-preview">Preview</span>
+        <img class="sc-art" src="https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/a5/4e/23/a54e2374-dca6-333d-c997-f07cb1acb9e1/00724359030852.rgb.jpg/300x300bb.jpg" alt="" />
+        <div class="sc-name">Cliffs of Dover</div>
+        <div class="sc-detail">Eric Johnson</div>
+        <div class="sc-album">Ah Via Musicom</div>
+      </div>
+      <div class="song-card">
+        <span class="sc-preview">Preview</span>
+        <img class="sc-art" src="https://is1-ssl.mzstatic.com/image/thumb/Music118/v4/eb/1f/12/eb1f12ec-474c-63aa-43af-09282f423b9d/00602537004737.rgb.jpg/300x300bb.jpg" alt="" />
+        <div class="sc-name">Sir Duke</div>
+        <div class="sc-detail">Stevie Wonder</div>
+        <div class="sc-album">Songs in the Key of Life</div>
+      </div>
+    </div>
     </div>
   </div>
 
