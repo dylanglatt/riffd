@@ -85,8 +85,28 @@ def download_track():
     data = request.json
     query = data.get("query")
     url = data.get("url")
+    track_id = data.get("track_id")
     if not query and not url:
         return jsonify({"error": "Provide 'query' or 'url'"}), 400
+
+    # Check if we already have audio from a previous job for this track
+    if track_id:
+        from history import _load_history
+        hist = _load_history()
+        entry = hist.get(track_id)
+        if entry and entry.get("job_id"):
+            old_job = entry["job_id"]
+            old_upload = UPLOAD_DIR / old_job
+            if old_upload.exists():
+                audio_files = [f for f in old_upload.iterdir()
+                               if f.suffix.lower() in {".wav", ".mp3", ".m4a", ".webm", ".ogg", ".flac"}]
+                if audio_files:
+                    job_id = str(uuid.uuid4())[:8]
+                    audio_path = str(audio_files[0])
+                    jobs[job_id] = {"status": "ready", "audio_path": audio_path, "progress": "Download complete"}
+                    print(f"[job {job_id}] DOWNLOAD REUSED from job {old_job} → {audio_path}")
+                    return jsonify({"job_id": job_id})
+
     job_id = str(uuid.uuid4())[:8]
     jobs[job_id] = {"status": "downloading", "progress": "Starting download..."}
     print(f"[job {job_id}] DOWNLOAD START query='{query or url}'")

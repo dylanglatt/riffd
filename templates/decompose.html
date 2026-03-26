@@ -405,10 +405,120 @@ async function uploadFile(file){
 }
 
 // ─── Loading messages ───────────────────────────────────────────────────────
-const loadingMessages=["Analyzing the track...","Separating instruments...","Isolating each part...","Detecting notes...","Finding chord structure...","Analyzing groove...","Building your tab...","Finalizing..."];
-let loadingMsgIdx=0,loadingMsgInterval=null;
-function startLoadingMessages(){stopLoadingMessages();loadingMsgIdx=0;_setLT(loadingMessages[0]);loadingMsgInterval=setInterval(()=>{loadingMsgIdx=(loadingMsgIdx+1)%loadingMessages.length;_fadeLT(loadingMessages[loadingMsgIdx]);},2500);}
-function stopLoadingMessages(){if(loadingMsgInterval){clearInterval(loadingMsgInterval);loadingMsgInterval=null;}}
+// ─── Stage-aware loading messages ────────────────────────────────────────────
+const _stageMsgs = {
+  download: [
+    "Fetching audio source...",
+    "Downloading the track...",
+    "Pulling the waveform...",
+    "Acquiring audio data...",
+    "Locating the best source...",
+    "Streaming audio...",
+    "Preparing the raw signal...",
+  ],
+  stems: [
+    "Separating instruments...",
+    "Splitting the mix into stems...",
+    "Isolating individual parts...",
+    "Running source separation model...",
+    "Deconstructing the arrangement...",
+    "Extracting each instrument layer...",
+    "Pulling apart the frequency spectrum...",
+    "Identifying overlapping voices...",
+    "Separating harmonic from percussive...",
+    "Unmixing the stereo field...",
+  ],
+  tabs: [
+    "Detecting pitched notes...",
+    "Converting audio to MIDI events...",
+    "Mapping frequencies to fret positions...",
+    "Generating tablature for each stem...",
+    "Reading note onsets and durations...",
+    "Transcribing the performance...",
+    "Building per-instrument notation...",
+    "Estimating pitch contours...",
+    "Quantizing notes to the beat grid...",
+  ],
+  analysis: [
+    "Analyzing harmonic content...",
+    "Detecting the tonal center...",
+    "Estimating key signature...",
+    "Measuring inter-onset intervals...",
+    "Profiling the pitch-class distribution...",
+    "Scoring diatonic chord templates...",
+    "Identifying the chord progression...",
+    "Matching against common harmonic patterns...",
+    "Calculating tempo from note density...",
+    "Cross-referencing key and chord data...",
+  ],
+  enrich: [
+    "Looking up song metadata...",
+    "Searching for lyrics...",
+    "Fetching genre and style tags...",
+    "Finding similar tracks...",
+    "Gathering contextual data...",
+    "Pulling external references...",
+  ],
+  finalize: [
+    "Assembling your results...",
+    "Packaging the analysis...",
+    "Almost there...",
+  ],
+};
+
+// Map backend progress strings → stage keys
+function _detectStage(backendProgress) {
+  if (!backendProgress) return null;
+  const p = backendProgress.toLowerCase();
+  if (p.includes("download") || p.includes("fetching audio") || p.includes("starting download")) return "download";
+  if (p.includes("demucs") || p.includes("separating") || p.includes("analyzing instruments") || p.includes("analyzing ") && !p.includes("key") && !p.includes("harmonic")) return "stems";
+  if (p.includes("tabbing") || p.includes("generating tab")) return "tabs";
+  if (p.includes("tempo") || p.includes("key") || p.includes("progression") || p.includes("analyzing key")) return "analysis";
+  if (p.includes("lyrics") || p.includes("recommend") || p.includes("tags")) return "enrich";
+  if (p.includes("done") || p.includes("finaliz")) return "finalize";
+  return null;
+}
+
+let _loadingInterval = null;
+let _currentStage = "download";
+let _lastShownMsg = "";
+let _stageUsed = {}; // track which messages were shown per stage
+
+function _pickMsg(stage) {
+  const pool = _stageMsgs[stage] || _stageMsgs.stems;
+  if (!_stageUsed[stage]) _stageUsed[stage] = new Set();
+  const used = _stageUsed[stage];
+  // Filter out already-shown and last-shown message
+  let available = pool.filter(m => !used.has(m) && m !== _lastShownMsg);
+  if (!available.length) { used.clear(); available = pool.filter(m => m !== _lastShownMsg); }
+  if (!available.length) available = pool;
+  const msg = available[Math.floor(Math.random() * available.length)];
+  used.add(msg);
+  _lastShownMsg = msg;
+  return msg;
+}
+
+function startLoadingMessages(stage) {
+  stopLoadingMessages();
+  _currentStage = stage || "download";
+  _stageUsed = {};
+  _lastShownMsg = "";
+  _setLT(_pickMsg(_currentStage));
+  _loadingInterval = setInterval(() => {
+    _fadeLT(_pickMsg(_currentStage));
+  }, 3200);
+}
+
+function setLoadingStage(stage) {
+  if (stage && stage !== _currentStage) {
+    _currentStage = stage;
+  }
+}
+
+function stopLoadingMessages() {
+  if (_loadingInterval) { clearInterval(_loadingInterval); _loadingInterval = null; }
+}
+
 function _setLT(t){const e=document.getElementById("progress-label");e.classList.remove("fading");e.textContent=t;}
 function _fadeLT(t){const e=document.getElementById("progress-label");e.classList.add("fading");setTimeout(()=>{e.textContent=t;e.classList.remove("fading");},300);}
 let _waveformBuilt = false;
@@ -476,7 +586,7 @@ async function startProcessing(){
   if(!currentJobId){ setError("No audio loaded."); return; }
 
   document.getElementById("process-btn").disabled=true;
-  buildProcessingBanner(); showView("confirm"); setProgress(null,5); startLoadingMessages();
+  buildProcessingBanner(); showView("confirm"); setProgress(null,5); startLoadingMessages("stems");
 
   try {
     const r = await fetch(`/api/process/${currentJobId}`, {
@@ -494,11 +604,11 @@ async function startProcessing(){
 }
 
 async function downloadTrack(){
-  buildProcessingBanner(); showView("confirm"); setProgress(null,8); startLoadingMessages();
+  buildProcessingBanner(); showView("confirm"); setProgress(null,8); startLoadingMessages("download");
   try {
     const r = await fetch("/api/download", {
       method:"POST", headers:{"Content-Type":"application/json"},
-      body: JSON.stringify({query: selectedTrack.yt_query}),
+      body: JSON.stringify({query: selectedTrack.yt_query, track_id: selectedTrack?.id || null}),
     });
     const d = await r.json();
     if(d.error) throw new Error(d.error);
@@ -527,12 +637,19 @@ async function waitForReady(jid, mw=120){
 function pollStatus(){
   let pct = 20;
   _pollStartTime = Date.now();
-  clearInterval(pollInterval);
+  clearTimeout(pollInterval);
 
-  pollInterval = setInterval(async () => {
-    // Hard timeout — never poll forever
+  function _pollInterval() {
+    // Adaptive: 1s for first 10s, 1.5s for next 20s, 2.5s after
+    const elapsed = Date.now() - _pollStartTime;
+    if (elapsed < 10000) return 1000;
+    if (elapsed < 30000) return 1500;
+    return 2500;
+  }
+
+  async function _poll() {
+    // Hard timeout
     if(Date.now() - _pollStartTime > POLL_TIMEOUT_MS) {
-      clearInterval(pollInterval);
       _resetLoadingUI();
       setError("Processing timed out. The server may still be working — try refreshing in a minute.");
       showView("confirm");
@@ -544,46 +661,55 @@ function pollStatus(){
       const d = await r.json();
 
       if(d.status === "complete") {
-        clearInterval(pollInterval);
-        _resetLoadingUI();
-        _fadeLT("Done!"); setProgress(null, 100);
-        jobData = d;
-        setTimeout(() => renderResults(d), 400);
-
-      } else if(d.status === "partial") {
-        // Backend completed with some stages failed — show results + warning
-        clearInterval(pollInterval);
-        _resetLoadingUI();
-        _fadeLT("Completed with errors"); setProgress(null, 100);
+        setLoadingStage("finalize");
+        _fadeLT(_pickMsg("finalize")); setProgress(null, 98);
         jobData = d;
         setTimeout(() => {
+          _fadeLT("Ready."); setProgress(null, 100);
+          setTimeout(() => { _resetLoadingUI(); renderResults(d); }, 400);
+        }, 600);
+        return; // stop polling
+
+      } else if(d.status === "partial") {
+        setLoadingStage("finalize");
+        _fadeLT(_pickMsg("finalize")); setProgress(null, 98);
+        jobData = d;
+        setTimeout(() => {
+          setProgress(null, 100);
+          _resetLoadingUI();
           renderResults(d);
-          // Show error banner after results render
           const errMsg = (d.errors || []).map(e => e.step + ": " + e.message).join("\n");
           _showResultWarning("Some analysis steps failed. Showing available results.\n" + errMsg);
-        }, 400);
+        }, 600);
+        return; // stop polling
 
       } else if(d.status === "error") {
-        clearInterval(pollInterval);
         _resetLoadingUI();
         const step = d.error_step ? ` (at: ${d.error_step})` : "";
         setError((d.error || "Unknown error") + step);
         showView("confirm");
+        return; // stop polling
 
       } else {
         // Still processing
-        pct = Math.min(pct + 3, 92);
+        pct = Math.min(pct + 2, 92);
         setProgress(null, pct);
-        // Update loading message from backend progress if available
-        if(d.progress) _setLT(d.progress);
+        if (d.progress) {
+          const detected = _detectStage(d.progress);
+          if (detected) setLoadingStage(detected);
+        }
+        // Schedule next poll with adaptive interval
+        pollInterval = setTimeout(_poll, _pollInterval());
       }
     } catch(e) {
-      clearInterval(pollInterval);
       _resetLoadingUI();
       setError("Lost connection to server.");
       showView("confirm");
     }
-  }, 2500);
+  }
+
+  // Start first poll quickly
+  pollInterval = setTimeout(_poll, 800);
 }
 
 // ─── Result Warning Banner ───────────────────────────────────────────────────
@@ -628,9 +754,17 @@ async function renderResults(data) {
   renderRecommendations(recs);
   switchPanel(_defaultTab || "mix");
   _defaultTab = "mix";
-  await loadStemAudio(activeNames);
+
+  // Show results immediately — don't wait for audio decode
   document.getElementById("process-btn").disabled=false;document.getElementById("process-btn").textContent="Dive In";
   showView("results");
+
+  // Load audio in background (parallel decode, non-blocking)
+  loadStemAudio(activeNames).then(() => {
+    console.log("[audio] all stems decoded and ready");
+  }).catch(e => console.warn("[audio] decode error:", e));
+
+  // Refresh history
   loadHistory();
 }
 
@@ -666,7 +800,25 @@ function applyTranspose(){const c=transposeAmount*100;for(const s of Object.valu
 async function loadStemAudio(names){
   if(!audioCtx) audioCtx=new(window.AudioContext||window.webkitAudioContext)();
   cleanupAudio();stemBuffers={};stemGains={};stemVolumes={};stemMuted={};stemSoloed={};duration=0;
-  for(const n of names){stemVolumes[n]=1;stemMuted[n]=false;stemSoloed[n]=false;try{const r=await fetch(`/api/audio/${currentJobId}/${n}`);const ab=await r.arrayBuffer();const buf=await audioCtx.decodeAudioData(ab);stemBuffers[n]=buf;if(buf.duration>duration)duration=buf.duration;}catch(e){console.warn(`Failed: ${n}`,e);}const g=audioCtx.createGain();g.connect(audioCtx.destination);stemGains[n]=g;}
+
+  // Set up gain nodes first (instant)
+  for(const n of names){
+    stemVolumes[n]=1;stemMuted[n]=false;stemSoloed[n]=false;
+    const g=audioCtx.createGain();g.connect(audioCtx.destination);stemGains[n]=g;
+  }
+
+  // Fetch + decode all stems in parallel
+  const _jid = currentJobId;
+  await Promise.all(names.map(async (n) => {
+    try {
+      const r = await fetch(`/api/audio/${_jid}/${n}`);
+      const ab = await r.arrayBuffer();
+      const buf = await audioCtx.decodeAudioData(ab);
+      stemBuffers[n] = buf;
+      if(buf.duration > duration) duration = buf.duration;
+    } catch(e) { console.warn(`[audio] stem decode failed: ${n}`, e); }
+  }));
+
   document.getElementById("seek-bar").max=duration;updateTimeDisplay();
 }
 function cleanupAudio(){if(animFrame)cancelAnimationFrame(animFrame);animFrame=null;Object.values(stemSources).forEach(s=>{try{s.stop();}catch{}});stemSources={};isPlaying=false;updatePlayIcon();}
@@ -697,7 +849,7 @@ function setProgress(t,p){
 }
 function setError(m){const e=document.getElementById("error-msg");e.textContent=m;e.style.display=m?"block":"none";}
 function resetApp(){
-  cleanupAudio();stopLoadingMessages();pauseOffset=0;duration=0;currentJobId=null;selectedTrack=null;jobData=null;searchResults=[];lastQuery="";loopActive=false;transposeAmount=0;songKey=null;_recTracks={};clearInterval(pollInterval);
+  cleanupAudio();stopLoadingMessages();pauseOffset=0;duration=0;currentJobId=null;selectedTrack=null;jobData=null;searchResults=[];lastQuery="";loopActive=false;transposeAmount=0;songKey=null;_recTracks={};clearTimeout(pollInterval);
   document.getElementById("search-input").value="";document.getElementById("search-results").innerHTML="";document.getElementById("file-input").value="";
   document.getElementById("process-btn").disabled=false;document.getElementById("process-btn").textContent="Dive In";
   document.getElementById("hero-actions").classList.remove("hidden");document.getElementById("hero-loading").classList.add("hidden");
@@ -785,14 +937,15 @@ async function loadHistory() {
 async function pickHistory(i) {
   const entry = _historySongs[i];
   if (!entry || !entry.track_id) return;
-  // Must have enough data to actually process
   const name = (entry.name || "").trim();
   const artist = (entry.artist || "").trim();
   if (!name || !artist) { setError("This song has incomplete data and cannot be opened."); return; }
 
   const track = { id: entry.track_id, name: name, artist: artist, image_url: entry.image_url, year: entry.year || "", artist_id: entry.artist_id, yt_query: entry.yt_query || `${artist} - ${name} official audio` };
-  selectedTrack = track; currentJobId = null; _showHeroPreProcess(); showView("confirm");
-  if (entry.track_id && entry.has_cache) {
+  selectedTrack = track; currentJobId = null;
+
+  // Try cache first — if valid, skip confirm page entirely
+  if (entry.has_cache) {
     try {
       const res = await fetch(`/api/cache/${entry.track_id}`);
       if (res.ok) {
@@ -800,12 +953,16 @@ async function pickHistory(i) {
         if (cached && !cached.error) {
           currentJobId = cached.job_id || entry.job_id;
           jobData = { status: "complete", tabs: cached.tabs || {}, stems: cached.stems || {}, intelligence: cached.intelligence || {}, lyrics: cached.lyrics || null, tags: cached.tags || [], recommendations: cached.recommendations || {} };
-          _showHeroLoading(); startLoadingMessages(); setProgress(null, 80); _fadeLT("Loading cached results...");
-          await sleep(600); stopLoadingMessages(); renderResults(jobData); return;
+          // Go directly to results — no confirm page, no fake delay
+          renderResults(jobData);
+          return;
         }
       }
-    } catch (e) { console.warn("Cache miss, will reprocess:", e); }
+    } catch (e) { console.warn("[history] cache miss, will reprocess:", e); }
   }
+
+  // No cache — show confirm page for reprocessing
+  _showHeroPreProcess(); showView("confirm");
   startProcessing();
 }
 loadHistory();
