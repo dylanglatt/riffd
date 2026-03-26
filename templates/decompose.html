@@ -144,9 +144,16 @@
     .transport-btn.stop-btn { width:40px; height:40px; background:transparent; border:1px solid rgba(255,255,255,0.15); }
     .transport-btn.stop-btn:hover { border-color:rgba(255,255,255,0.30); }
     .transport-btn.stop-btn svg { width:12px; height:12px; fill:rgba(245,245,245,0.7); }
-    .transport-seek-wrap { flex:1; display:flex; align-items:center; }
-    .transport-seek { width:100%; height:4px; -webkit-appearance:none; appearance:none; background:rgba(255,255,255,0.1); outline:none; cursor:pointer; }
-    .transport-seek::-webkit-slider-thumb { -webkit-appearance:none; width:12px; height:12px; border-radius:50%; background:#D4691F; cursor:pointer; }
+    .transport-seek-wrap { flex:1; position:relative; height:48px; cursor:pointer; }
+    .player-waveform { display:flex; align-items:flex-end; gap:2px; height:100%; width:100%; position:absolute; top:0; left:0; }
+    .player-wv-bar { width:2px; background:rgba(245,245,245,0.18); flex-shrink:0; }
+    .player-wv-bar:nth-child(18n) { background:rgba(212,105,31,0.35); }
+    .player-waveform-progress { position:absolute; top:0; left:0; height:100%; width:0%; overflow:hidden; pointer-events:none; }
+    .player-waveform-progress .player-waveform { position:static; width:10000px; }
+    .player-waveform-progress .player-wv-bar { background:rgba(245,245,245,0.5); }
+    .player-waveform-progress .player-wv-bar:nth-child(18n) { background:rgba(212,105,31,0.8); }
+    .transport-seek { position:absolute; top:0; left:0; width:100%; height:100%; opacity:0; cursor:pointer; z-index:2; -webkit-appearance:none; appearance:none; margin:0; }
+    .player-cursor { position:absolute; top:0; width:1px; height:100%; background:rgba(245,245,245,0.4); pointer-events:none; z-index:1; left:0%; transition:left 0.1s linear; }
     .transport-time { font-size:0.8125rem; color:rgba(245,245,245,0.5); font-family:monospace; min-width:80px; text-align:right; }
 
     /* Channel strips */
@@ -214,7 +221,7 @@
       .results-panel { padding:16px; }
       .mixer-transport { gap:10px; flex-wrap:wrap; }
       .transport-btn { width:42px; height:42px; }
-      .transport-seek-wrap { min-width:0; flex:1 1 100%; order:3; }
+      .transport-seek-wrap { min-width:0; flex:1 1 100%; order:3; height:40px; }
       .transport-time { font-size:0.75rem; min-width:70px; }
       .channel { grid-template-columns:90px 1fr 24px 24px; gap:8px; }
       .channel-name { font-size:0.8125rem; }
@@ -343,7 +350,10 @@
             <button class="transport-btn stop-btn" onclick="stopPlayback()" title="Stop">
               <svg viewBox="0 0 24 24"><rect x="5" y="5" width="14" height="14" rx="2"/></svg>
             </button>
-            <div class="transport-seek-wrap">
+            <div class="transport-seek-wrap" id="player-waveform-wrap">
+              <div class="player-waveform" id="player-waveform-bg"></div>
+              <div class="player-waveform-progress" id="player-waveform-fg"><div class="player-waveform" id="player-waveform-fg-inner"></div></div>
+              <div class="player-cursor" id="player-cursor"></div>
               <input type="range" class="transport-seek" id="seek-bar" min="0" max="100" value="0" step="0.1" oninput="seekTo(this.value)" />
             </div>
             <div class="transport-time" id="time-display">0:00 / 0:00</div>
@@ -976,6 +986,36 @@ async function loadStemAudio(names){
   }));
 
   document.getElementById("seek-bar").max=duration;updateTimeDisplay();
+  _buildPlayerWaveform();
+}
+
+function _buildPlayerWaveform() {
+  const bg = document.getElementById('player-waveform-bg');
+  const fg = document.getElementById('player-waveform-fg-inner');
+  if (!bg) return;
+  // Measure container width to determine bar count
+  const wrap = document.getElementById('player-waveform-wrap');
+  const w = wrap ? wrap.offsetWidth : 600;
+  const barCount = Math.floor(w / 4); // 2px bar + 2px gap
+  let bgHtml = '', fgHtml = '';
+  for (let i = 0; i < barCount; i++) {
+    const h = 6 + Math.random() * 36;
+    const style = `height:${h}px`;
+    bgHtml += `<div class="player-wv-bar" style="${style}"></div>`;
+    fgHtml += `<div class="player-wv-bar" style="${style}"></div>`;
+  }
+  bg.innerHTML = bgHtml;
+  fg.innerHTML = fgHtml;
+}
+
+function _updatePlayerProgress() {
+  if (!duration) return;
+  const t = getCurrentTime();
+  const pct = Math.min(100, (t / duration) * 100);
+  const fg = document.getElementById('player-waveform-fg');
+  const cursor = document.getElementById('player-cursor');
+  if (fg) fg.style.width = pct + '%';
+  if (cursor) cursor.style.left = pct + '%';
 }
 function cleanupAudio(){if(animFrame)cancelAnimationFrame(animFrame);animFrame=null;Object.values(stemSources).forEach(s=>{try{s.stop();}catch{}});stemSources={};isPlaying=false;updatePlayIcon();}
 function togglePlayback(){if(isPlaying)pausePlayback();else playAll();}
@@ -986,10 +1026,10 @@ function playAll(){
   isPlaying=true;updatePlayIcon();updateGains();tickTime();
 }
 function pausePlayback(){if(!isPlaying)return;pauseOffset=getCurrentTime();Object.values(stemSources).forEach(s=>{try{s.stop();}catch{}});stemSources={};isPlaying=false;updatePlayIcon();if(animFrame)cancelAnimationFrame(animFrame);}
-function stopPlayback(){pausePlayback();pauseOffset=0;updateTimeDisplay();document.getElementById("seek-bar").value=0;}
-function seekTo(v){const w=isPlaying;if(isPlaying){Object.values(stemSources).forEach(s=>{try{s.stop();}catch{}});stemSources={};isPlaying=false;}pauseOffset=parseFloat(v);updateTimeDisplay();if(w)playAll();}
+function stopPlayback(){pausePlayback();pauseOffset=0;updateTimeDisplay();document.getElementById("seek-bar").value=0;_updatePlayerProgress();}
+function seekTo(v){const w=isPlaying;if(isPlaying){Object.values(stemSources).forEach(s=>{try{s.stop();}catch{}});stemSources={};isPlaying=false;}pauseOffset=parseFloat(v);updateTimeDisplay();_updatePlayerProgress();if(w)playAll();}
 function getCurrentTime(){if(!audioCtx)return 0;return isPlaying?audioCtx.currentTime-startedAt:pauseOffset;}
-function tickTime(){if(!isPlaying)return;const t=getCurrentTime();const lp=getLoopBounds();if(lp&&t>=lp.end){pauseOffset=lp.start;Object.values(stemSources).forEach(s=>{try{s.stop();}catch{}});stemSources={};isPlaying=false;playAll();return;}if(t>=duration){stopPlayback();return;}document.getElementById("seek-bar").value=t;updateTimeDisplay();animFrame=requestAnimationFrame(tickTime);}
+function tickTime(){if(!isPlaying)return;const t=getCurrentTime();const lp=getLoopBounds();if(lp&&t>=lp.end){pauseOffset=lp.start;Object.values(stemSources).forEach(s=>{try{s.stop();}catch{}});stemSources={};isPlaying=false;playAll();return;}if(t>=duration){stopPlayback();return;}document.getElementById("seek-bar").value=t;updateTimeDisplay();_updatePlayerProgress();animFrame=requestAnimationFrame(tickTime);}
 function updateTimeDisplay(){document.getElementById("time-display").textContent=`${fmtSec(getCurrentTime())} / ${fmtSec(duration)}`;}
 function updatePlayIcon(){document.getElementById("play-icon").style.display=isPlaying?"none":"block";document.getElementById("pause-icon").style.display=isPlaying?"block":"none";}
 function setVolume(n,v){stemVolumes[n]=parseInt(v)/100;document.getElementById(`vol-label-${n}`).textContent=v;updateGains();}

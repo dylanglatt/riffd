@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Riffd{% endblock %}
+{% block title %}riffd{% endblock %}
 
 {% block extra_css %}
   /* Hero */
@@ -10,97 +10,74 @@
   .hero-text { max-width:540px; }
   .hero-headline {
     font-size:4rem; font-weight:500; letter-spacing:-0.04em; line-height:1.05;
-    margin-bottom:20px; color:#F5F5F5;
+    margin-bottom:24px; color:#F5F5F5;
   }
   .hero-sub {
-    color:rgba(245,245,245,0.55); font-size:1.125rem; font-weight:400; line-height:1.6;
-    max-width:420px; margin-bottom:40px; letter-spacing:-0.01em;
+    color:rgba(245,245,245,0.55); font-size:1.125rem; font-weight:400; line-height:1.65;
+    max-width:440px; margin-bottom:48px; letter-spacing:-0.01em;
   }
   .hero-ctas { display:flex; gap:16px; }
   .cta-primary {
-    padding:14px 32px; font-size:0.9375rem; font-weight:500; border-radius:0;
+    padding:14px 32px; font-size:0.9375rem; font-weight:500;
     background:#FAFAF9; color:black; border:none; cursor:pointer;
-    transition:opacity .15s ease; text-decoration:none;
-    display:inline-flex; align-items:center; gap:8px; font-family:inherit; letter-spacing:-0.01em;
+    transition:transform .1s; text-decoration:none;
+    display:inline-flex; align-items:center; font-family:inherit; letter-spacing:-0.01em;
   }
-  .cta-primary:hover { opacity:0.85; }
+  .cta-primary:hover { transform:translateY(-0.5px); }
   .cta-secondary {
-    padding:14px 32px; font-size:0.9375rem; font-weight:500; border-radius:0;
+    padding:14px 32px; font-size:0.9375rem; font-weight:500;
     background:transparent; color:#F5F5F5; border:1px solid rgba(255,255,255,0.15);
-    cursor:pointer; transition:border-color .15s ease; text-decoration:none;
-    display:inline-flex; align-items:center; gap:8px; font-family:inherit; letter-spacing:-0.01em;
+    cursor:pointer; transition:border-color .15s; text-decoration:none;
+    display:inline-flex; align-items:center; font-family:inherit; letter-spacing:-0.01em;
   }
   .cta-secondary:hover { border-color:rgba(255,255,255,0.30); }
 
-  /* Product mockup */
-  .hero-mockup {
-    border:1px solid rgba(255,255,255,0.08); background:transparent;
+  /* Product preview — realistic decompose output */
+  .preview-card { border:1px solid rgba(255,255,255,0.08); }
+  .preview-header {
+    display:flex; align-items:center; gap:12px;
+    padding:16px 20px; border-bottom:1px solid rgba(255,255,255,0.08);
   }
-  .mockup-header {
-    display:flex; align-items:center; gap:6px;
-    padding:12px 16px; border-bottom:1px solid rgba(255,255,255,0.08);
+  .preview-art {
+    width:44px; height:44px; object-fit:cover; flex-shrink:0;
   }
-  .mockup-dot {
-    width:10px; height:10px; border-radius:50%;
+  .preview-song-name { font-size:0.9375rem; font-weight:500; color:#F5F5F5; letter-spacing:-0.01em; }
+  .preview-song-artist { font-size:0.8125rem; color:rgba(245,245,245,0.5); margin-top:2px; letter-spacing:-0.01em; }
+
+  .preview-meta {
+    display:flex; gap:8px; padding:12px 20px; border-bottom:1px solid rgba(255,255,255,0.08);
   }
-  .mockup-dot.red { background:#f87171; }
-  .mockup-dot.yellow { background:#fbbf24; }
-  .mockup-dot.green { background:#4ade80; }
-  .mockup-body {
-    padding:32px 24px 24px;
+  .preview-badge {
+    padding:4px 10px; border:1px solid rgba(255,255,255,0.08); font-size:0.6875rem;
   }
-  .mockup-waveform {
-    display:flex; align-items:flex-end; gap:3px; height:100px; margin-bottom:24px;
-  }
-  .mockup-bar {
-    width:2px; background:rgba(245,245,245,0.3); flex-shrink:0;
-  }
-  .mockup-bar.accent {
-    background:rgba(212,105,31,0.7);
-  }
-  .mockup-chords {
-    display:flex; gap:8px;
-  }
-  .mockup-chord {
-    padding:6px 14px; border:1px solid rgba(255,255,255,0.08);
-    font-size:0.8125rem; font-weight:500; color:rgba(245,245,245,0.55);
-    letter-spacing:-0.01em;
+  .preview-badge-label { color:rgba(245,245,245,0.4); font-weight:400; letter-spacing:0.03em; margin-right:6px; }
+  .preview-badge-val { color:#F5F5F5; font-weight:500; letter-spacing:-0.01em; font-size:0.8125rem; }
+
+  .preview-body { padding:24px 20px; }
+  .preview-waveform { display:flex; align-items:flex-end; gap:2px; height:64px; margin-bottom:20px; }
+  .preview-wv-bar { width:2px; background:rgba(245,245,245,0.25); flex-shrink:0; }
+  .preview-wv-bar.accent { background:rgba(212,105,31,0.6); }
+  .preview-chords { display:flex; gap:8px; }
+  .preview-chord-box {
+    padding:6px 16px; border:1px solid rgba(255,255,255,0.08);
+    font-size:0.875rem; font-weight:500; color:rgba(245,245,245,0.7); letter-spacing:-0.01em;
   }
 
   /* Features */
-  .features-section {
-    padding:160px 0; border-top:1px solid rgba(255,255,255,0.08);
-  }
+  .features-section { padding:160px 0; border-top:1px solid rgba(255,255,255,0.08); }
   .features-label {
     font-size:0.8125rem; font-weight:500; letter-spacing:0.1em; text-transform:uppercase;
     color:rgba(245,245,245,0.4); margin-bottom:48px;
   }
-  .features-grid {
-    display:grid; grid-template-columns:repeat(3,1fr); gap:48px;
-  }
-  .feature-item { }
-  .feature-icon {
-    width:40px; height:40px; margin-bottom:20px;
-    display:flex; align-items:center; justify-content:center;
-  }
-  .feature-icon svg {
-    width:28px; height:28px; stroke:rgba(212,105,31,0.85); stroke-width:1.5; fill:none;
-  }
-  .feature-title {
-    font-size:1.25rem; font-weight:500; letter-spacing:-0.02em; margin-bottom:8px; color:#F5F5F5;
-  }
-  .feature-desc {
-    font-size:0.9375rem; color:rgba(245,245,245,0.5); line-height:1.6; letter-spacing:-0.01em; font-weight:400;
-  }
+  .features-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:48px; }
+  .feature-icon { margin-bottom:20px; }
+  .feature-icon svg { width:24px; height:24px; stroke:rgba(212,105,31,0.85); stroke-width:1.5; fill:none; }
+  .feature-title { font-size:1.25rem; font-weight:500; letter-spacing:-0.02em; margin-bottom:8px; color:#F5F5F5; }
+  .feature-desc { font-size:0.9375rem; color:rgba(245,245,245,0.5); line-height:1.65; letter-spacing:-0.01em; }
 
   /* Bottom CTA */
-  .bottom-cta {
-    text-align:center; padding:160px 0 80px;
-  }
-  .bottom-headline {
-    font-size:3rem; font-weight:500; letter-spacing:-0.03em; line-height:1.1;
-    margin-bottom:32px; color:#F5F5F5;
-  }
+  .bottom-cta { text-align:center; padding:160px 0 80px; }
+  .bottom-headline { font-size:3rem; font-weight:500; letter-spacing:-0.03em; line-height:1.15; margin-bottom:32px; color:#F5F5F5; }
 
   /* Footer */
   .home-footer {
@@ -108,18 +85,13 @@
     display:flex; justify-content:space-between; align-items:center;
   }
   .home-footer-links { display:flex; gap:32px; }
-  .home-footer-links a {
-    color:rgba(245,245,245,0.35); text-decoration:none; font-size:0.875rem;
-    font-weight:400; letter-spacing:-0.01em; transition:color .2s;
-  }
+  .home-footer-links a { color:rgba(245,245,245,0.35); text-decoration:none; font-size:0.875rem; font-weight:400; letter-spacing:-0.01em; transition:color .2s; }
   .home-footer-links a:hover { color:#F5F5F5; }
-  .home-footer-note {
-    color:rgba(245,245,245,0.35); font-size:0.875rem; font-weight:400; letter-spacing:-0.01em;
-  }
+  .home-footer-note { color:rgba(245,245,245,0.35); font-size:0.875rem; font-weight:400; letter-spacing:-0.01em; }
 
   @media(max-width:960px) {
     .home-hero { grid-template-columns:1fr; gap:48px; padding:120px 0 100px; }
-    .hero-mockup { max-width:520px; }
+    .preview-card { max-width:520px; }
     .features-grid { grid-template-columns:1fr; gap:40px; }
   }
   @media(max-width:768px) {
@@ -144,26 +116,35 @@
   <div class="home-hero">
     <div class="hero-text">
       <div class="hero-headline">Analyze any song.</div>
-      <div class="hero-sub">Break any track into stems, chords, and tabs. Powered by AI audio analysis.</div>
+      <div class="hero-sub">Isolate stems, identify chords, and generate tabs — so you understand how songs actually work.</div>
       <div class="hero-ctas">
         <a href="/decompose" class="cta-primary">Get Started</a>
-        <a href="/learn" class="cta-secondary">See Demo</a>
+        <a href="/about" class="cta-secondary">Learn More</a>
       </div>
     </div>
-    <div class="hero-mockup">
-      <div class="mockup-header">
-        <div class="mockup-dot red"></div>
-        <div class="mockup-dot yellow"></div>
-        <div class="mockup-dot green"></div>
+
+    <!-- Realistic product preview: Take It Easy — Eagles -->
+    <div class="preview-card">
+      <div class="preview-header">
+        <img class="preview-art" src="https://is1-ssl.mzstatic.com/image/thumb/Music125/v4/8f/e7/f4/8fe7f417-d464-8879-b00e-3d4965a9cfd1/075596062329.jpg/600x600bb.jpg" alt="Take It Easy — Eagles" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" /><div style="display:none;width:44px;height:44px;background:#141414;border:1px solid rgba(255,255,255,0.06);align-items:center;justify-content:center;flex-shrink:0;color:rgba(245,245,245,0.2);font-size:0.75rem;font-weight:500">TE</div>
+        <div>
+          <div class="preview-song-name">Take It Easy</div>
+          <div class="preview-song-artist">Eagles</div>
+        </div>
       </div>
-      <div class="mockup-body">
-        <div class="mockup-waveform" id="mockup-waveform"></div>
-        <div class="mockup-chords">
-          <div class="mockup-chord">Am</div>
-          <div class="mockup-chord">F</div>
-          <div class="mockup-chord">C</div>
-          <div class="mockup-chord">G</div>
-          <div class="mockup-chord">Em</div>
+      <div class="preview-meta">
+        <div class="preview-badge"><span class="preview-badge-label">BPM</span><span class="preview-badge-val">138</span></div>
+        <div class="preview-badge"><span class="preview-badge-label">KEY</span><span class="preview-badge-val">G Major</span></div>
+        <div class="preview-badge"><span class="preview-badge-label">PROGRESSION</span><span class="preview-badge-val">I – IV – V – IV</span></div>
+      </div>
+      <div class="preview-body">
+        <div class="preview-waveform" id="preview-waveform"></div>
+        <div class="preview-chords">
+          <div class="preview-chord-box">G</div>
+          <div class="preview-chord-box">C</div>
+          <div class="preview-chord-box">D</div>
+          <div class="preview-chord-box">C</div>
+          <div class="preview-chord-box">Em</div>
         </div>
       </div>
     </div>
@@ -173,26 +154,26 @@
   <div class="features-section">
     <div class="features-label">Features</div>
     <div class="features-grid">
-      <div class="feature-item">
+      <div>
         <div class="feature-icon">
-          <svg viewBox="0 0 24 24"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+          <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h10M4 18h6"/></svg>
         </div>
-        <div class="feature-title">Stem Separation</div>
-        <div class="feature-desc">Isolate vocals, guitar, bass, and drums from any track. Solo, mute, and mix individual parts.</div>
+        <div class="feature-title">Isolate</div>
+        <div class="feature-desc">Separate vocals, drums, bass, and instruments with precision.</div>
       </div>
-      <div class="feature-item">
+      <div>
         <div class="feature-icon">
-          <svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="0"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+          <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v4m0 12v4m10-10h-4M6 12H2"/></svg>
         </div>
-        <div class="feature-title">Chord Detection</div>
-        <div class="feature-desc">Automatic chord analysis with beat-aligned timing. See every change as it happens in the track.</div>
+        <div class="feature-title">Understand</div>
+        <div class="feature-desc">See chords, key, tempo, and harmonic structure in real time.</div>
       </div>
-      <div class="feature-item">
+      <div>
         <div class="feature-icon">
-          <svg viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+          <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
         </div>
-        <div class="feature-title">Theory Reference</div>
-        <div class="feature-desc">Scales, progressions, and key guides built for guitar and piano. Learn the why behind the music.</div>
+        <div class="feature-title">Play</div>
+        <div class="feature-desc">Generate tabs and practice any part of the song at your own pace.</div>
       </div>
     </div>
   </div>
@@ -205,24 +186,23 @@
 
   <!-- Footer -->
   <div class="home-footer">
+    <div class="home-footer-note">&copy; 2026 Riffd</div>
     <div class="home-footer-links">
       <a href="/about">About</a>
-      <a href="/learn">Learn</a>
+      <a href="/learn">Studio</a>
       <a href="/library">Library</a>
     </div>
-    <div class="home-footer-note">Riffd by <a href="https://riffdlabs.com" style="color:inherit;text-decoration:none">Riffd Labs</a></div>
   </div>
 </div>
 
 <script>
 (function(){
-  var wf = document.getElementById('mockup-waveform');
+  var wf = document.getElementById('preview-waveform');
   if (!wf) return;
-  for (var i = 0; i < 80; i++) {
+  for (var i = 0; i < 100; i++) {
     var bar = document.createElement('div');
-    bar.className = 'mockup-bar' + (i % 20 === 0 ? ' accent' : '');
-    var h = 15 + Math.random() * 70;
-    bar.style.height = h + 'px';
+    bar.className = 'preview-wv-bar' + (i % 18 === 0 ? ' accent' : '');
+    bar.style.height = (12 + Math.random() * 48) + 'px';
     wf.appendChild(bar);
   }
 })();

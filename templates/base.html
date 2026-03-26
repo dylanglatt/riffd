@@ -39,7 +39,10 @@
     }
     .nav-logo {
       font-size:1.125rem; font-weight:500; letter-spacing:-0.02em;
-      color:#F5F5F5; text-decoration:none;
+      color:#F5F5F5; text-decoration:none; display:flex; align-items:center; gap:8px;
+    }
+    .nav-logo-beta {
+      font-size:0.625rem; font-weight:400; color:rgba(245,245,245,0.2); letter-spacing:0.02em;
     }
     .nav-links { display:flex; align-items:center; gap:32px; }
     .nav-link {
@@ -115,12 +118,13 @@
 <!-- Global Navigation -->
 <nav class="global-nav">
   <div class="global-nav-inner">
-    <a href="/" class="nav-logo">riffd</a>
+    <a href="/" class="nav-logo">riffd <span class="nav-logo-beta">Beta</span></a>
     <div class="nav-links">
       <a href="/decompose" class="nav-link {% if active_page == 'decompose' %}active{% endif %}">Decompose <span class="nav-badge">Beta</span></a>
       <a href="/learn" class="nav-link {% if active_page == 'learn' %}active{% endif %}">Studio <span class="nav-badge">Beta</span></a>
       <a href="/library" class="nav-link {% if active_page == 'library' %}active{% endif %}">Library <span class="nav-badge">Coming Soon</span></a>
       <a href="/practice" class="nav-link {% if active_page == 'practice' %}active{% endif %}">Practice <span class="nav-badge">Coming Soon</span></a>
+      <a href="/about" class="nav-link {% if active_page == 'about' %}active{% endif %}">About</a>
     </div>
   </div>
 </nav>
