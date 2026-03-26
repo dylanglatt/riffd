@@ -160,8 +160,10 @@ def process_audio(job_id):
     spotify_artist_id = req_data.get("artist_id")
     track_meta = req_data.get("track_meta", {})
 
+    import time as _time_mod
     jobs[job_id]["status"] = "processing"
     jobs[job_id]["progress"] = "Separating stems..."
+    jobs[job_id]["_started_at"] = _time_mod.time()
     print(f"[job {job_id}] PROCESS START audio={audio_path}")
 
     def run():
@@ -376,12 +378,23 @@ def process_audio(job_id):
     return jsonify({"status": "processing", "job_id": job_id})
 
 
+JOB_TIMEOUT = 600  # 10 minutes — if a job is still "processing" after this, force error
+
 @app.route("/api/status/<job_id>")
 def job_status(job_id):
+    import time as _t
     if job_id not in jobs:
         print(f"[job {job_id}] STATUS POLL → unknown job")
         return jsonify({"error": "Unknown job ID"}), 404
     job = jobs[job_id]
+
+    # Watchdog: force-expire stuck jobs
+    if job.get("status") == "processing" and job.get("_started_at"):
+        elapsed = _t.time() - job["_started_at"]
+        if elapsed > JOB_TIMEOUT:
+            print(f"[job {job_id}] WATCHDOG: job stuck for {elapsed:.0f}s, forcing error")
+            job.update({"status": "error", "error": f"Processing timed out after {int(elapsed)}s", "error_step": "timeout"})
+
     print(f"[job {job_id}] STATUS POLL → {job.get('status')} | {job.get('progress', '')} | error={job.get('error', 'none')}")
     return jsonify(job)
 

@@ -404,19 +404,28 @@ def separate_stems(audio_path: str, song_id: str, progress_callback=None) -> dic
     if progress_callback:
         progress_callback("Running Demucs separation...")
 
-    result = subprocess.run(
-        ["python", "-m", "demucs", "--out", str(out_dir), "--name", model, str(audio_path)],
-        capture_output=True, text=True,
-    )
+    DEMUCS_TIMEOUT = 600  # 10 minutes max for stem separation
+
+    try:
+        result = subprocess.run(
+            ["python", "-m", "demucs", "--out", str(out_dir), "--name", model, str(audio_path)],
+            capture_output=True, text=True, timeout=DEMUCS_TIMEOUT,
+        )
+    except subprocess.TimeoutExpired:
+        raise RuntimeError(f"Demucs timed out after {DEMUCS_TIMEOUT}s")
 
     # Fallback to 4-stem if 6-stem fails
     if result.returncode != 0 and model == "htdemucs_6stems":
+        print(f"[demucs] 6-stem failed, trying 4-stem fallback. stderr: {result.stderr[-200:]}")
         model = "htdemucs"
         stem_names = STEM_NAMES_4
-        result = subprocess.run(
-            ["python", "-m", "demucs", "--out", str(out_dir), "--name", model, str(audio_path)],
-            capture_output=True, text=True,
-        )
+        try:
+            result = subprocess.run(
+                ["python", "-m", "demucs", "--out", str(out_dir), "--name", model, str(audio_path)],
+                capture_output=True, text=True, timeout=DEMUCS_TIMEOUT,
+            )
+        except subprocess.TimeoutExpired:
+            raise RuntimeError(f"Demucs fallback timed out after {DEMUCS_TIMEOUT}s")
 
     if result.returncode != 0:
         raise RuntimeError(f"Demucs failed:\n{result.stderr}")

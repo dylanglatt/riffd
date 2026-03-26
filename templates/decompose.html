@@ -660,6 +660,14 @@ function pollStatus(){
       const r = await fetch(`/api/status/${currentJobId}`);
       const d = await r.json();
 
+      // Unknown job (server restarted, or bad job_id) — stop immediately
+      if(r.status === 404 || d.error === "Unknown job ID" || !d.status) {
+        _resetLoadingUI();
+        setError("Job was lost (server may have restarted). Please try again.");
+        showView("confirm");
+        return;
+      }
+
       if(d.status === "complete") {
         setLoadingStage("finalize");
         _fadeLT(_pickMsg("finalize")); setProgress(null, 98);
