@@ -1,0 +1,162 @@
+{% extends "base.html" %}
+{% block title %}About{% endblock %}
+
+{% block extra_css %}
+  .about-hero { text-align:center; padding:60px 0 48px; max-width:680px; margin:0 auto; }
+  .about-hero .section-title { font-size:2rem; }
+  .about-hero .section-sub { font-size:1rem; line-height:1.7; max-width:560px; margin:12px auto 0; }
+
+  .about-section { margin-bottom:56px; }
+  .about-section-title { font-size:1.15rem; font-weight:800; letter-spacing:-0.02em; margin-bottom:16px; }
+
+  .flow-steps { display:grid; grid-template-columns:repeat(4,1fr); gap:20px; margin-top:24px; }
+  .flow-step {
+    padding:24px 20px; border-radius:var(--radius); background:rgba(255,255,255,.015);
+    border:1px solid var(--border); text-align:center;
+  }
+  .fs-num {
+    width:36px; height:36px; border-radius:50%; display:flex; align-items:center; justify-content:center;
+    font-size:.78rem; font-weight:800; margin:0 auto 14px;
+    background:rgba(124,92,255,.08); border:1px solid rgba(124,92,255,.15); color:var(--accent);
+  }
+  .fs-title { font-size:.92rem; font-weight:700; margin-bottom:6px; }
+  .fs-desc { font-size:.78rem; color:var(--text-muted); line-height:1.5; }
+
+  .tech-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; }
+  .tech-card {
+    padding:20px; border-radius:var(--radius); background:rgba(255,255,255,.015);
+    border:1px solid var(--border);
+  }
+  .tech-name { font-size:.88rem; font-weight:700; margin-bottom:4px; }
+  .tech-role { font-size:.78rem; color:var(--accent-2); margin-bottom:8px; }
+  .tech-desc { font-size:.76rem; color:var(--text-muted); line-height:1.5; }
+
+  .principles-list { display:flex; flex-direction:column; gap:16px; max-width:680px; }
+  .principle {
+    display:flex; gap:16px; align-items:flex-start;
+    padding:20px; border-radius:var(--radius); background:rgba(255,255,255,.01);
+    border:1px solid var(--border);
+  }
+  .pr-icon { font-size:1.4rem; flex-shrink:0; width:32px; text-align:center; }
+  .pr-title { font-size:.92rem; font-weight:700; margin-bottom:4px; }
+  .pr-desc { font-size:.8rem; color:var(--text-muted); line-height:1.5; }
+
+  @media(max-width:768px) {
+    .flow-steps { grid-template-columns:repeat(2,1fr); }
+    .tech-grid { grid-template-columns:1fr; }
+  }
+  @media(max-width:480px) {
+    .flow-steps { grid-template-columns:1fr; }
+  }
+{% endblock %}
+
+{% block body %}
+<div class="page-content">
+
+  <div class="about-hero">
+    <div class="section-title">How riffa works</div>
+    <div class="section-sub">riffa uses AI audio analysis to break songs into individual parts, detect musical properties, and give you the tools to learn and play along. No sheet music required.</div>
+  </div>
+
+  <!-- Flow -->
+  <div class="about-section">
+    <div class="about-section-title">The Pipeline</div>
+    <div class="flow-steps">
+      <div class="flow-step">
+        <div class="fs-num">1</div>
+        <div class="fs-title">Input</div>
+        <div class="fs-desc">Search for any song or upload an audio file directly.</div>
+      </div>
+      <div class="flow-step">
+        <div class="fs-num">2</div>
+        <div class="fs-title">Separate</div>
+        <div class="fs-desc">AI isolates vocals, guitar, bass, drums, piano, and other instruments.</div>
+      </div>
+      <div class="flow-step">
+        <div class="fs-num">3</div>
+        <div class="fs-title">Analyze</div>
+        <div class="fs-desc">Detect key, BPM, chord progression, and generate tablature from each stem.</div>
+      </div>
+      <div class="flow-step">
+        <div class="fs-num">4</div>
+        <div class="fs-title">Explore</div>
+        <div class="fs-desc">Mix stems, read tabs, loop sections, transpose, and learn at your own pace.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Technology -->
+  <div class="about-section">
+    <div class="about-section-title">Technology</div>
+    <div class="tech-grid">
+      <div class="tech-card">
+        <div class="tech-name">Demucs</div>
+        <div class="tech-role">Stem Separation</div>
+        <div class="tech-desc">Meta's hybrid transformer model separates audio into 6 individual stems with state-of-the-art quality.</div>
+      </div>
+      <div class="tech-card">
+        <div class="tech-name">Basic Pitch</div>
+        <div class="tech-role">Note Detection</div>
+        <div class="tech-desc">Spotify's neural network converts audio to MIDI — pitch, timing, and velocity for every detected note.</div>
+      </div>
+      <div class="tech-card">
+        <div class="tech-name">Krumhansl-Schmuckler</div>
+        <div class="tech-role">Key Detection</div>
+        <div class="tech-desc">Pitch-class profiling algorithm that matches note distributions against major and minor key profiles.</div>
+      </div>
+      <div class="tech-card">
+        <div class="tech-name">Web Audio API</div>
+        <div class="tech-role">Playback Engine</div>
+        <div class="tech-desc">Browser-native audio engine for synchronized stem playback with real-time volume, mute, solo, and transpose.</div>
+      </div>
+      <div class="tech-card">
+        <div class="tech-name">Diatonic Template Matching</div>
+        <div class="tech-role">Chord Analysis</div>
+        <div class="tech-desc">Windowed pitch-class histograms scored against diatonic chord templates to identify harmonic progressions.</div>
+      </div>
+      <div class="tech-card">
+        <div class="tech-name">Flask + Vanilla JS</div>
+        <div class="tech-role">Application Stack</div>
+        <div class="tech-desc">Lightweight Python backend with a zero-dependency frontend. Fast iteration, minimal overhead.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Principles -->
+  <div class="about-section">
+    <div class="about-section-title">Principles</div>
+    <div class="principles-list">
+      <div class="principle">
+        <span class="pr-icon">&#127927;</span>
+        <div>
+          <div class="pr-title">Built for musicians</div>
+          <div class="pr-desc">Every feature is designed for people who play instruments. Not a tech demo — a tool you actually use in your practice room.</div>
+        </div>
+      </div>
+      <div class="principle">
+        <span class="pr-icon">&#128270;</span>
+        <div>
+          <div class="pr-title">Honest about limitations</div>
+          <div class="pr-desc">AI analysis isn't perfect. We show confidence levels and suppress low-quality results rather than guessing. You deserve accurate information.</div>
+        </div>
+      </div>
+      <div class="principle">
+        <span class="pr-icon">&#9889;</span>
+        <div>
+          <div class="pr-title">Ship and iterate</div>
+          <div class="pr-desc">Core features are live. Tab accuracy, drum detection, and chord analysis are actively improving with every update.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="site-footer">
+    <div class="footer-links">
+      <a href="/">Home</a>
+      <a href="/decompose">Decompose</a>
+      <a href="/learn">Learn</a>
+    </div>
+    <div class="footer-note">riffa — built for musicians.</div>
+  </div>
+</div>
+{% endblock %}

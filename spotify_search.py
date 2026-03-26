@@ -131,7 +131,7 @@ def search_spotify(query: str, limit: int = 8) -> list[dict]:
         return _fallback_search(query, limit)
 
     if resp.status_code != 200:
-        print(f"[spotify] HTTP {resp.status_code} — using fallback search")
+        print(f"[spotify] HTTP {resp.status_code} — body: {resp.text[:300]}")
         return _fallback_search(query, limit)
 
     # Success — clear cooldown if any

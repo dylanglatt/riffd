@@ -34,7 +34,32 @@ def allowed_file(filename: str) -> bool:
 
 @app.route("/")
 def index():
-    return render_template("index.html")
+    return render_template("home.html", active_page="home")
+
+
+@app.route("/decompose")
+def decompose():
+    return render_template("decompose.html", active_page="decompose")
+
+
+@app.route("/learn")
+def learn():
+    return render_template("learn.html", active_page="learn")
+
+
+@app.route("/library")
+def library():
+    return render_template("library.html", active_page="library")
+
+
+@app.route("/practice")
+def practice():
+    return render_template("practice.html", active_page="practice")
+
+
+@app.route("/about")
+def about():
+    return render_template("about.html", active_page="about")
 
 
 @app.route("/api/spotify/search")
@@ -64,13 +89,20 @@ def download_track():
         return jsonify({"error": "Provide 'query' or 'url'"}), 400
     job_id = str(uuid.uuid4())[:8]
     jobs[job_id] = {"status": "downloading", "progress": "Starting download..."}
+    print(f"[job {job_id}] DOWNLOAD START query='{query or url}'")
 
     def run():
         try:
+            print(f"[job {job_id}] yt-dlp starting...")
             audio_path = download_audio_from_youtube(query or url, job_id)
+            print(f"[job {job_id}] yt-dlp finished → {audio_path}")
             jobs[job_id].update({"status": "ready", "audio_path": str(audio_path), "progress": "Download complete"})
+            print(f"[job {job_id}] STATUS → ready")
         except Exception as e:
+            print(f"[job {job_id}] DOWNLOAD ERROR: {e}")
+            traceback.print_exc()
             jobs[job_id].update({"status": "error", "error": str(e)})
+            print(f"[job {job_id}] STATUS → error")
 
     threading.Thread(target=run, daemon=True).start()
     return jsonify({"job_id": job_id})
@@ -110,23 +142,97 @@ def process_audio(job_id):
 
     jobs[job_id]["status"] = "processing"
     jobs[job_id]["progress"] = "Separating stems..."
+    print(f"[job {job_id}] PROCESS START audio={audio_path}")
 
     def run():
+        import time as _time
+        _t0 = _time.time()
+        def _elapsed():
+            return f"{_time.time()-_t0:.1f}s"
+
+        # Partial results accumulate — returned even if a later stage fails
+        stems = {}
+        tabs = {}
+        intelligence = {"key": "Unknown", "key_num": -1, "mode_num": -1, "bpm": 120, "progression": None}
+        lyrics = None
+        tags = []
+        recs = {"more_like_this": [], "same_style": [], "around_this_time": []}
+        failed_steps = []
+
+        def on_progress(msg):
+            jobs[job_id]["progress"] = msg
+            print(f"[job {job_id}] [{_elapsed()}] progress: {msg}")
+
+        def _fail(step, e):
+            """Record a failed step without aborting the pipeline."""
+            print(f"[job {job_id}] [{_elapsed()}] {step} FAILED: {e}")
+            traceback.print_exc()
+            failed_steps.append({"step": step, "message": str(e)})
+
+        def _finalize():
+            """Write whatever we have to the job dict. Called on success AND failure."""
+            partial = bool(failed_steps)
+            result = {
+                "status": "complete" if not partial else "partial",
+                "tabs": tabs,
+                "stems": {k: {"label": v.get("label", k), "energy": v.get("energy", 0), "active": v.get("active", True)} for k, v in stems.items()},
+                "intelligence": intelligence,
+                "lyrics": lyrics,
+                "tags": tags,
+                "recommendations": recs,
+                "progress": "Done!" if not partial else "Completed with errors",
+            }
+            if partial:
+                result["errors"] = failed_steps
+                result["error"] = f"{len(failed_steps)} step(s) failed: {', '.join(s['step'] for s in failed_steps)}"
+            jobs[job_id].update(result)
+            status_label = result["status"]
+            print(f"[job {job_id}] [{_elapsed()}] STATUS → {status_label}" + (f" (failed: {[s['step'] for s in failed_steps]})" if partial else ""))
+
+            # Save to cache + history
+            if spotify_track_id and (not partial or stems):
+                try:
+                    save_cached_result(job_id, {
+                        "tabs": tabs,
+                        "stems": result["stems"],
+                        "intelligence": intelligence,
+                        "lyrics": lyrics,
+                        "tags": tags,
+                        "recommendations": recs,
+                        "job_id": job_id,
+                        "track_id": spotify_track_id,
+                    })
+                    add_to_history(spotify_track_id, track_meta, job_id)
+                    print(f"[job {job_id}] [{_elapsed()}] cache+history saved")
+                except Exception as e:
+                    print(f"[job {job_id}] [{_elapsed()}] cache/history save error: {e}")
+
         try:
-            def on_progress(msg):
-                jobs[job_id]["progress"] = msg
+            # ── Stage 1: Stem separation (Demucs) ──
+            print(f"[job {job_id}] [{_elapsed()}] DEMUCS starting...")
+            try:
+                stems = separate_stems(audio_path, job_id, progress_callback=on_progress)
+                print(f"[job {job_id}] [{_elapsed()}] DEMUCS finished → {len(stems)} stems: {list(stems.keys())}")
+                jobs[job_id]["stems"] = stems
+            except Exception as e:
+                # Demucs failure is fatal — nothing to work with
+                print(f"[job {job_id}] [{_elapsed()}] DEMUCS FATAL: {e}")
+                traceback.print_exc()
+                jobs[job_id].update({
+                    "status": "error",
+                    "error": str(e),
+                    "error_step": "stem_separation",
+                    "progress": "Stem separation failed",
+                })
+                return
 
-            # 1. Separate stems
-            stems = separate_stems(audio_path, job_id, progress_callback=on_progress)
-            jobs[job_id]["stems"] = stems
-
-            # 2. Quick BPM detection from first harmonic stem
-            #    (needed before tab generation for correct grid quantization)
-            on_progress("Detecting tempo...")
             active_stems = {k: v for k, v in stems.items() if v.get("active", True)}
-            detected_bpm = 120.0  # default fallback
+            detected_bpm = 120.0
+            artist_name = track_meta.get("artist", "")
+            track_name = track_meta.get("name", "")
 
-            # Find a harmonic stem for BPM — prefer guitar/piano/bass over vocals/drums
+            # ── Stage 2: BPM detection ──
+            on_progress("Detecting tempo...")
             bpm_stem_key = None
             for priority_list in [["guitar", "piano", "bass", "other"], list(active_stems.keys())]:
                 for k in priority_list:
@@ -138,14 +244,13 @@ def process_audio(job_id):
 
             if bpm_stem_key:
                 try:
+                    print(f"[job {job_id}] [{_elapsed()}] BPM detection starting (stem={bpm_stem_key})...")
                     from basic_pitch import ICASSP_2022_MODEL_PATH
                     from basic_pitch.inference import predict as bp_predict
                     _, _, bpm_notes = bp_predict(
                         active_stems[bpm_stem_key]["path"],
                         ICASSP_2022_MODEL_PATH,
-                        minimum_note_length=80,
-                        minimum_frequency=40,
-                        maximum_frequency=2000,
+                        minimum_note_length=80, minimum_frequency=40, maximum_frequency=2000,
                     )
                     if bpm_notes and len(bpm_notes) > 10:
                         import pandas as pd
@@ -154,136 +259,98 @@ def process_audio(job_id):
                         est_bpm, bpm_conf = estimate_bpm(bpm_df)
                         if est_bpm > 0 and bpm_conf >= 0.15:
                             detected_bpm = est_bpm
-                            print(f"[process] early BPM detection: {detected_bpm} (confidence={bpm_conf:.2f}, from {bpm_stem_key})")
+                    print(f"[job {job_id}] [{_elapsed()}] BPM detection finished → {detected_bpm}")
                 except Exception as e:
-                    print(f"[process] early BPM detection failed: {e}")
+                    _fail("bpm_detection", e)
 
-            # 3. Generate tabs + collect note events (with BPM for grid)
-            on_progress("Generating tabs...")
-            tabs = {}
+            # ── Stage 3: Tab generation (Basic Pitch) ──
+            print(f"[job {job_id}] [{_elapsed()}] TAB GENERATION starting ({len(active_stems)} stems)...")
             note_events_all = {}
+            try:
+                for stem_key, stem_info in active_stems.items():
+                    label = stem_info.get("label", stem_key)
+                    on_progress(f"Tabbing {label}...")
+                    print(f"[job {job_id}] [{_elapsed()}] Basic Pitch → {stem_key}...")
+                    tab_result = generate_tabs(stem_info["path"], job_id, stem_key, label=label, bpm=detected_bpm)
+                    tabs[stem_key] = tab_result
+                    csv_path = tab_result.get("notes_csv")
+                    if csv_path:
+                        try:
+                            import pandas as pd
+                            df = pd.read_csv(csv_path)
+                            if len(df) > 0:
+                                note_events_all[stem_key] = df
+                        except Exception:
+                            pass
+                    print(f"[job {job_id}] [{_elapsed()}] Basic Pitch → {stem_key} done")
+                print(f"[job {job_id}] [{_elapsed()}] TAB GENERATION finished")
+            except Exception as e:
+                _fail("tab_generation", e)
 
-            for stem_key, stem_info in active_stems.items():
-                label = stem_info.get("label", stem_key)
-                on_progress(f"Tabbing {label}...")
-                tab_result = generate_tabs(stem_info["path"], job_id, stem_key, label=label, bpm=detected_bpm)
-                tabs[stem_key] = tab_result
-                csv_path = tab_result.get("notes_csv")
-                if csv_path:
-                    try:
-                        import pandas as pd
-                        df = pd.read_csv(csv_path)
-                        if len(df) > 0:
-                            note_events_all[stem_key] = df
-                    except Exception:
-                        pass
-
-            # Extract names early (needed for intelligence + lyrics + recs)
-            artist_name = track_meta.get("artist", "")
-            track_name = track_meta.get("name", "")
-
-            # 4. Song intelligence (full analysis — key, BPM refinement, chords)
+            # ── Stage 4: Song intelligence (key, chords) ──
             on_progress("Analyzing key and progression...")
-            intelligence = {"key": "Unknown", "key_num": -1, "mode_num": -1, "bpm": detected_bpm, "progression": None}
-            if note_events_all:
-                try:
+            print(f"[job {job_id}] [{_elapsed()}] INTELLIGENCE starting...")
+            try:
+                if note_events_all:
                     intelligence = analyze_song_from_notes(
-                        note_events_all,
-                        song_name=track_name,
-                        artist=artist_name,
+                        note_events_all, song_name=track_name, artist=artist_name,
                     )
-                    print(f"[intel] key={intelligence['key']}, bpm={intelligence['bpm']}, prog={intelligence['progression']}, source={intelligence.get('progression_source')}")
-                except Exception as e:
-                    print(f"[intel] FAILED: {e}")
-                    traceback.print_exc()
+                    print(f"[job {job_id}] [{_elapsed()}] INTELLIGENCE finished → key={intelligence['key']}, bpm={intelligence['bpm']}, prog={intelligence['progression']}")
+                else:
+                    print(f"[job {job_id}] [{_elapsed()}] INTELLIGENCE skipped (no note events)")
+            except Exception as e:
+                _fail("intelligence", e)
 
-            # 4. Lyrics (Genius)
-            lyrics = None
+            # ── Stage 5: Lyrics (Genius) ──
             if artist_name and track_name:
                 on_progress("Fetching lyrics...")
+                print(f"[job {job_id}] [{_elapsed()}] LYRICS starting...")
                 try:
                     lyrics = get_lyrics(artist_name, track_name)
-                    print(f"[lyrics] {'found' if lyrics else 'not found'} ({len(lyrics) if lyrics else 0} chars)")
+                    print(f"[job {job_id}] [{_elapsed()}] LYRICS finished → {'found' if lyrics else 'not found'} ({len(lyrics) if lyrics else 0} chars)")
                 except Exception as e:
-                    print(f"[lyrics] FAILED: {e}")
+                    _fail("lyrics", e)
 
-            # 5. Tags (Last.fm)
-            tags = []
+            # ── Stage 6: Tags (Last.fm) ──
             if artist_name and track_name:
                 try:
                     tags = get_track_tags(artist_name, track_name)
-                    print(f"[tags] {tags}")
-                except Exception:
-                    pass
+                    print(f"[job {job_id}] [{_elapsed()}] TAGS → {tags}")
+                except Exception as e:
+                    _fail("tags", e)
 
-            # 6. Recommendations (Spotify + Last.fm enrichment)
-            recs = {"more_like_this": [], "same_style": [], "around_this_time": []}
+            # ── Stage 7: Recommendations ──
             if spotify_track_id:
                 on_progress("Finding recommendations...")
+                print(f"[job {job_id}] [{_elapsed()}] RECS starting...")
                 try:
                     recs = get_recommendations_for_track(
                         track_id=spotify_track_id,
                         artist_id=spotify_artist_id or track_meta.get("artist_id"),
-                        track_name=track_name,
-                        artist_name=artist_name,
+                        track_name=track_name, artist_name=artist_name,
                         year=track_meta.get("year", ""),
                         detected_key=intelligence.get("key", ""),
                         detected_bpm=intelligence.get("bpm", 120),
                     )
                 except Exception as e:
-                    print(f"[recs spotify] FAILED: {e}")
-                    traceback.print_exc()
-
-                # Enrich with Last.fm
+                    _fail("recommendations_spotify", e)
                 if artist_name and track_name:
                     try:
                         recs = enrich_recommendations_with_lastfm(recs, artist_name, track_name)
                     except Exception as e:
-                        print(f"[recs lastfm] FAILED: {e}")
-
+                        _fail("recommendations_lastfm", e)
                 for k, v in recs.items():
-                    print(f"[recs] {k}: {len(v)} tracks")
+                    print(f"[job {job_id}] [{_elapsed()}] recs {k}: {len(v)} tracks")
 
-            final_result = {
-                "status": "complete",
-                "tabs": tabs,
-                "intelligence": intelligence,
-                "lyrics": lyrics,
-                "tags": tags,
-                "recommendations": recs,
-                "progress": "Done!",
-            }
-            jobs[job_id].update(final_result)
-
-            # Save to cache + history
-            if spotify_track_id:
-                try:
-                    # Save stems metadata (labels, energy, active) — not file paths
-                    stems_meta = {}
-                    for sk, sv in stems.items():
-                        stems_meta[sk] = {
-                            "label": sv.get("label", sk),
-                            "energy": sv.get("energy", 0),
-                            "active": sv.get("active", True),
-                        }
-                    save_cached_result(job_id, {
-                        "tabs": tabs,
-                        "stems": stems_meta,
-                        "intelligence": intelligence,
-                        "lyrics": lyrics,
-                        "tags": tags,
-                        "recommendations": recs,
-                        "job_id": job_id,
-                        "track_id": spotify_track_id,
-                    })
-                    add_to_history(spotify_track_id, track_meta, job_id)
-                except Exception as e:
-                    print(f"[cache/history] save error: {e}")
+            # ── Finalize ──
+            _finalize()
 
         except Exception as e:
-            print(f"[process] FATAL: {e}")
+            # Unexpected crash — still save partial results
+            print(f"[job {job_id}] [{_elapsed()}] UNEXPECTED FATAL: {e}")
             traceback.print_exc()
-            jobs[job_id].update({"status": "error", "error": str(e)})
+            failed_steps.append({"step": "unknown", "message": str(e)})
+            _finalize()
 
     threading.Thread(target=run, daemon=True).start()
     return jsonify({"status": "processing", "job_id": job_id})
@@ -292,8 +359,11 @@ def process_audio(job_id):
 @app.route("/api/status/<job_id>")
 def job_status(job_id):
     if job_id not in jobs:
+        print(f"[job {job_id}] STATUS POLL → unknown job")
         return jsonify({"error": "Unknown job ID"}), 404
-    return jsonify(jobs[job_id])
+    job = jobs[job_id]
+    print(f"[job {job_id}] STATUS POLL → {job.get('status')} | {job.get('progress', '')} | error={job.get('error', 'none')}")
+    return jsonify(job)
 
 
 @app.route("/api/audio/<job_id>/<stem_name>")

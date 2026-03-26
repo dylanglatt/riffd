@@ -1,0 +1,277 @@
+{% extends "base.html" %}
+{% block title %}Learn Theory{% endblock %}
+
+{% block extra_css %}
+  .learn-layout { display:grid; grid-template-columns:200px 1fr; gap:32px; min-height:70vh; }
+  .learn-sidebar { position:sticky; top:96px; align-self:start; }
+  .sidebar-nav { display:flex; flex-direction:column; gap:2px; }
+  .sidebar-link {
+    display:flex; align-items:center; gap:10px; padding:10px 14px;
+    font-size:.84rem; font-weight:500; color:var(--text-muted);
+    text-decoration:none; border-radius:var(--radius-xs); transition:all .2s; cursor:pointer;
+  }
+  .sidebar-link:hover { color:var(--text-secondary); background:rgba(255,255,255,.03); }
+  .sidebar-link.active { color:var(--text-primary); background:rgba(124,92,255,.08); }
+  .sidebar-icon { font-size:1rem; width:20px; text-align:center; }
+  .learn-main { min-width:0; }
+
+  .theory-section { display:none; }
+  .theory-section.active { display:block; animation:fadeUp .25s ease; }
+  @keyframes fadeUp { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
+
+  .theory-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:16px; margin-top:20px; }
+  .theory-card {
+    padding:20px; border-radius:var(--radius); background:rgba(255,255,255,.015);
+    border:1px solid var(--border); transition:all .25s; cursor:default;
+  }
+  .theory-card:hover { background:rgba(124,92,255,.03); border-color:rgba(124,92,255,.12); }
+  .tc-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; }
+  .tc-name { font-size:.95rem; font-weight:700; }
+  .tc-badge { font-size:.66rem; font-weight:600; padding:3px 8px; border-radius:999px; background:rgba(94,234,212,.08); color:var(--accent-2); border:1px solid rgba(94,234,212,.12); }
+  .tc-formula { font-family:"SF Mono","Cascadia Code",monospace; font-size:.76rem; color:var(--accent-2); margin-bottom:6px; }
+  .tc-desc { font-size:.78rem; color:var(--text-muted); line-height:1.5; }
+  .tc-tags { display:flex; gap:6px; flex-wrap:wrap; margin-top:10px; }
+  .tc-tag { font-size:.66rem; padding:2px 8px; border-radius:999px; background:rgba(255,255,255,.03); color:var(--text-muted); border:1px solid var(--border); }
+
+  .instrument-tabs { display:flex; gap:4px; margin-bottom:16px; }
+  .inst-tab {
+    padding:6px 14px; border-radius:999px; font-size:.76rem; font-weight:600;
+    background:rgba(255,255,255,.03); color:var(--text-muted); border:1px solid var(--border);
+    cursor:pointer; transition:all .15s;
+  }
+  .inst-tab.active { background:var(--accent-gradient); color:white; border-color:transparent; }
+
+  @media(max-width:768px) {
+    .learn-layout { grid-template-columns:1fr; }
+    .learn-sidebar { position:static; }
+    .sidebar-nav { flex-direction:row; overflow-x:auto; gap:4px; }
+    .sidebar-link { white-space:nowrap; }
+  }
+{% endblock %}
+
+{% block body %}
+<div class="page-content wide">
+  <div class="section-title">Learn Music Theory</div>
+  <div class="section-sub">Reference guides for chords, scales, progressions, and keys. Built for guitar and piano.</div>
+
+  <div class="learn-layout">
+    <!-- Sidebar -->
+    <div class="learn-sidebar">
+      <nav class="sidebar-nav">
+        <a class="sidebar-link active" onclick="showTheory('chords',this)"><span class="sidebar-icon">&#9835;</span> Chords</a>
+        <a class="sidebar-link" onclick="showTheory('scales',this)"><span class="sidebar-icon">&#9833;</span> Scales</a>
+        <a class="sidebar-link" onclick="showTheory('progressions',this)"><span class="sidebar-icon">&#9839;</span> Progressions</a>
+        <a class="sidebar-link" onclick="showTheory('keys',this)"><span class="sidebar-icon">&#9837;</span> Keys</a>
+      </nav>
+    </div>
+
+    <!-- Main content -->
+    <div class="learn-main">
+
+      <!-- CHORDS -->
+      <div class="theory-section active" id="section-chords">
+        <div class="instrument-tabs">
+          <span class="inst-tab active">Guitar</span>
+          <span class="inst-tab">Piano</span>
+        </div>
+        <div class="theory-grid">
+          <div class="theory-card">
+            <div class="tc-header"><span class="tc-name">C Major</span><span class="tc-badge">Open</span></div>
+            <div class="tc-formula">C - E - G</div>
+            <div class="tc-desc">The most fundamental open chord. First chord most guitarists learn.</div>
+            <div class="tc-tags"><span class="tc-tag">Beginner</span><span class="tc-tag">Open Position</span></div>
+          </div>
+          <div class="theory-card">
+            <div class="tc-header"><span class="tc-name">G Major</span><span class="tc-badge">Open</span></div>
+            <div class="tc-formula">G - B - D</div>
+            <div class="tc-desc">Rich, full open chord. Pairs naturally with C, D, and Em.</div>
+            <div class="tc-tags"><span class="tc-tag">Beginner</span><span class="tc-tag">Open Position</span></div>
+          </div>
+          <div class="theory-card">
+            <div class="tc-header"><span class="tc-name">D Major</span><span class="tc-badge">Open</span></div>
+            <div class="tc-formula">D - F# - A</div>
+            <div class="tc-desc">Bright, compact voicing on the top four strings.</div>
+            <div class="tc-tags"><span class="tc-tag">Beginner</span><span class="tc-tag">Open Position</span></div>
+          </div>
+          <div class="theory-card">
+            <div class="tc-header"><span class="tc-name">A Minor</span><span class="tc-badge">Open</span></div>
+            <div class="tc-formula">A - C - E</div>
+            <div class="tc-desc">Essential minor chord. One finger change from C major.</div>
+            <div class="tc-tags"><span class="tc-tag">Beginner</span><span class="tc-tag">Minor</span></div>
+          </div>
+          <div class="theory-card">
+            <div class="tc-header"><span class="tc-name">E Minor</span><span class="tc-badge">Open</span></div>
+            <div class="tc-formula">E - G - B</div>
+            <div class="tc-desc">Easiest chord on guitar. Two fingers, all six strings ring out.</div>
+            <div class="tc-tags"><span class="tc-tag">Beginner</span><span class="tc-tag">Minor</span></div>
+          </div>
+          <div class="theory-card">
+            <div class="tc-header"><span class="tc-name">F Major</span><span class="tc-badge">Barre</span></div>
+            <div class="tc-formula">F - A - C</div>
+            <div class="tc-desc">First barre chord challenge. Gateway to moveable shapes.</div>
+            <div class="tc-tags"><span class="tc-tag">Intermediate</span><span class="tc-tag">Barre</span></div>
+          </div>
+          <div class="theory-card">
+            <div class="tc-header"><span class="tc-name">B Minor</span><span class="tc-badge">Barre</span></div>
+            <div class="tc-formula">B - D - F#</div>
+            <div class="tc-desc">Am shape barre chord at 2nd fret. Common in folk and rock.</div>
+            <div class="tc-tags"><span class="tc-tag">Intermediate</span><span class="tc-tag">Barre</span></div>
+          </div>
+          <div class="theory-card">
+            <div class="tc-header"><span class="tc-name">Dm7</span><span class="tc-badge">7th</span></div>
+            <div class="tc-formula">D - F - A - C</div>
+            <div class="tc-desc">Smooth minor seventh voicing. Staple of jazz and neo-soul.</div>
+            <div class="tc-tags"><span class="tc-tag">Intermediate</span><span class="tc-tag">Jazz</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SCALES -->
+      <div class="theory-section" id="section-scales">
+        <div class="instrument-tabs">
+          <span class="inst-tab active">Guitar</span>
+          <span class="inst-tab">Piano</span>
+        </div>
+        <div class="theory-grid">
+          <div class="theory-card">
+            <div class="tc-header"><span class="tc-name">Major Scale</span><span class="tc-badge">Essential</span></div>
+            <div class="tc-formula">W - W - H - W - W - W - H</div>
+            <div class="tc-desc">The foundation of Western harmony. All other scales relate back to this pattern.</div>
+            <div class="tc-tags"><span class="tc-tag">Beginner</span><span class="tc-tag">7 Notes</span></div>
+          </div>
+          <div class="theory-card">
+            <div class="tc-header"><span class="tc-name">Natural Minor</span><span class="tc-badge">Essential</span></div>
+            <div class="tc-formula">W - H - W - W - H - W - W</div>
+            <div class="tc-desc">The relative minor of the major scale. Darker, moodier character.</div>
+            <div class="tc-tags"><span class="tc-tag">Beginner</span><span class="tc-tag">7 Notes</span></div>
+          </div>
+          <div class="theory-card">
+            <div class="tc-header"><span class="tc-name">Minor Pentatonic</span><span class="tc-badge">Essential</span></div>
+            <div class="tc-formula">1 - b3 - 4 - 5 - b7</div>
+            <div class="tc-desc">The most-used scale in rock, blues, and pop soloing. Five notes, no wrong notes.</div>
+            <div class="tc-tags"><span class="tc-tag">Beginner</span><span class="tc-tag">5 Notes</span><span class="tc-tag">Blues</span></div>
+          </div>
+          <div class="theory-card">
+            <div class="tc-header"><span class="tc-name">Major Pentatonic</span><span class="tc-badge">Essential</span></div>
+            <div class="tc-formula">1 - 2 - 3 - 5 - 6</div>
+            <div class="tc-desc">Bright, open sound. Country, folk, and classic rock. Same shape as minor pentatonic, different root.</div>
+            <div class="tc-tags"><span class="tc-tag">Beginner</span><span class="tc-tag">5 Notes</span></div>
+          </div>
+          <div class="theory-card">
+            <div class="tc-header"><span class="tc-name">Blues Scale</span><span class="tc-badge">Blues</span></div>
+            <div class="tc-formula">1 - b3 - 4 - b5 - 5 - b7</div>
+            <div class="tc-desc">Minor pentatonic plus the blue note (b5). Adds tension and grit.</div>
+            <div class="tc-tags"><span class="tc-tag">Intermediate</span><span class="tc-tag">6 Notes</span></div>
+          </div>
+          <div class="theory-card">
+            <div class="tc-header"><span class="tc-name">Dorian Mode</span><span class="tc-badge">Mode</span></div>
+            <div class="tc-formula">W - H - W - W - W - H - W</div>
+            <div class="tc-desc">Minor scale with a raised 6th. Jazz, funk, and Santana-style playing.</div>
+            <div class="tc-tags"><span class="tc-tag">Intermediate</span><span class="tc-tag">Jazz</span><span class="tc-tag">Funk</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PROGRESSIONS -->
+      <div class="theory-section" id="section-progressions">
+        <div class="theory-grid">
+          <div class="theory-card">
+            <div class="tc-header"><span class="tc-name">I - V - vi - IV</span><span class="tc-badge">Pop</span></div>
+            <div class="tc-formula">C - G - Am - F (in C)</div>
+            <div class="tc-desc">The most common progression in modern pop. Used in hundreds of hit songs from every decade.</div>
+            <div class="tc-tags"><span class="tc-tag">Beginner</span><span class="tc-tag">4 Chords</span><span class="tc-tag">Pop</span><span class="tc-tag">Rock</span></div>
+          </div>
+          <div class="theory-card">
+            <div class="tc-header"><span class="tc-name">I - IV - V</span><span class="tc-badge">Blues</span></div>
+            <div class="tc-formula">G - C - D (in G)</div>
+            <div class="tc-desc">The backbone of blues, rock 'n' roll, and country. Three chords and the truth.</div>
+            <div class="tc-tags"><span class="tc-tag">Beginner</span><span class="tc-tag">3 Chords</span><span class="tc-tag">Blues</span></div>
+          </div>
+          <div class="theory-card">
+            <div class="tc-header"><span class="tc-name">vi - IV - I - V</span><span class="tc-badge">Pop</span></div>
+            <div class="tc-formula">Am - F - C - G (in C)</div>
+            <div class="tc-desc">Same chords as I-V-vi-IV, starting on the minor. More emotional, introspective feel.</div>
+            <div class="tc-tags"><span class="tc-tag">Beginner</span><span class="tc-tag">Ballad</span></div>
+          </div>
+          <div class="theory-card">
+            <div class="tc-header"><span class="tc-name">ii - V - I</span><span class="tc-badge">Jazz</span></div>
+            <div class="tc-formula">Dm7 - G7 - Cmaj7 (in C)</div>
+            <div class="tc-desc">The fundamental jazz cadence. Resolution through the circle of fifths.</div>
+            <div class="tc-tags"><span class="tc-tag">Intermediate</span><span class="tc-tag">Jazz</span><span class="tc-tag">Standards</span></div>
+          </div>
+          <div class="theory-card">
+            <div class="tc-header"><span class="tc-name">12-Bar Blues</span><span class="tc-badge">Blues</span></div>
+            <div class="tc-formula">I-I-I-I / IV-IV-I-I / V-IV-I-V</div>
+            <div class="tc-desc">The quintessential blues form. 12 bars, three chords, infinite expression.</div>
+            <div class="tc-tags"><span class="tc-tag">Beginner</span><span class="tc-tag">Blues</span><span class="tc-tag">12 Bars</span></div>
+          </div>
+          <div class="theory-card">
+            <div class="tc-header"><span class="tc-name">i - VI - III - VII</span><span class="tc-badge">Minor</span></div>
+            <div class="tc-formula">Am - F - C - G (in Am)</div>
+            <div class="tc-desc">Andalusian-influenced minor progression. Dramatic, cinematic quality.</div>
+            <div class="tc-tags"><span class="tc-tag">Intermediate</span><span class="tc-tag">Minor</span><span class="tc-tag">Cinematic</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- KEYS -->
+      <div class="theory-section" id="section-keys">
+        <div class="theory-grid">
+          <div class="theory-card">
+            <div class="tc-header"><span class="tc-name">C Major / A Minor</span><span class="tc-badge">No Sharps/Flats</span></div>
+            <div class="tc-formula">C D E F G A B</div>
+            <div class="tc-desc">All natural notes. The reference key for understanding all others.</div>
+            <div class="tc-tags"><span class="tc-tag">Beginner</span><span class="tc-tag">Piano-friendly</span></div>
+          </div>
+          <div class="theory-card">
+            <div class="tc-header"><span class="tc-name">G Major / E Minor</span><span class="tc-badge">1 Sharp</span></div>
+            <div class="tc-formula">G A B C D E F#</div>
+            <div class="tc-desc">The most guitar-friendly key. Open chords G, C, D, Em, Am all live here.</div>
+            <div class="tc-tags"><span class="tc-tag">Beginner</span><span class="tc-tag">Guitar-friendly</span></div>
+          </div>
+          <div class="theory-card">
+            <div class="tc-header"><span class="tc-name">D Major / B Minor</span><span class="tc-badge">2 Sharps</span></div>
+            <div class="tc-formula">D E F# G A B C#</div>
+            <div class="tc-desc">Bright, open key popular in folk, country, and acoustic music.</div>
+            <div class="tc-tags"><span class="tc-tag">Beginner</span><span class="tc-tag">Folk</span></div>
+          </div>
+          <div class="theory-card">
+            <div class="tc-header"><span class="tc-name">A Major / F# Minor</span><span class="tc-badge">3 Sharps</span></div>
+            <div class="tc-formula">A B C# D E F# G#</div>
+            <div class="tc-desc">Great for electric guitar. Sweet spot between open chords and barre territory.</div>
+            <div class="tc-tags"><span class="tc-tag">Intermediate</span><span class="tc-tag">Rock</span></div>
+          </div>
+          <div class="theory-card">
+            <div class="tc-header"><span class="tc-name">E Major / C# Minor</span><span class="tc-badge">4 Sharps</span></div>
+            <div class="tc-formula">E F# G# A B C# D#</div>
+            <div class="tc-desc">Standard tuning root. Classic rock and blues key for guitar.</div>
+            <div class="tc-tags"><span class="tc-tag">Intermediate</span><span class="tc-tag">Blues</span></div>
+          </div>
+          <div class="theory-card">
+            <div class="tc-header"><span class="tc-name">F Major / D Minor</span><span class="tc-badge">1 Flat</span></div>
+            <div class="tc-formula">F G A Bb C D E</div>
+            <div class="tc-desc">Popular in R&B, soul, and jazz. Requires the F barre chord on guitar.</div>
+            <div class="tc-tags"><span class="tc-tag">Intermediate</span><span class="tc-tag">R&B</span></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="site-footer">
+    <div class="footer-note">riffa — built for musicians.</div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function showTheory(id, el) {
+  document.querySelectorAll('.theory-section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('active'));
+  document.getElementById('section-' + id).classList.add('active');
+  if (el) el.classList.add('active');
+}
+</script>
+{% endblock %}

@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{% block title %}riffa{% endblock %} | Isolate, understand, and play any song</title>
+  <meta name="description" content="A music tool that helps you isolate parts, analyze songs, and practice faster." />
+  <style>
+    :root {
+      --bg: #05060a; --bg-soft: #0b0d14; --surface: #11131c; --surface-2: #171926;
+      --surface-3: #1e2133; --surface-4: #262a3e;
+      --border: rgba(255,255,255,0.06); --border-2: rgba(255,255,255,0.09);
+      --accent: #7c5cff; --accent-2: #5eead4;
+      --accent-gradient: linear-gradient(135deg, #7c5cff, #5eead4);
+      --accent-glow: rgba(124,92,255,0.18);
+      --text-primary: #f5f7ff; --text-secondary: #9aa0b5; --text-muted: #6b7085;
+      --red: #f87171; --green: #4ade80; --yellow: #fbbf24;
+      --radius: 16px; --radius-sm: 12px; --radius-xs: 8px;
+      --glass-bg: rgba(17,19,28,0.65); --glass-border: rgba(255,255,255,0.06);
+      --glass-blur: blur(24px);
+      --glass-shadow: 0 8px 32px rgba(0,0,0,0.35), 0 0 0 1px rgba(255,255,255,0.03);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: "Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; background: var(--bg); color: var(--text-primary); min-height: 100vh; -webkit-font-smoothing: antialiased; overflow-x: hidden; }
+    body::before { content:""; position:fixed; top:-40%; left:50%; transform:translateX(-50%); width:800px; height:600px; background:radial-gradient(ellipse,rgba(124,92,255,0.08) 0%,rgba(94,234,212,0.04) 40%,transparent 70%); pointer-events:none; z-index:0; }
+
+    /* ═══ Global Nav ═══ */
+    .global-nav {
+      position:fixed; top:0; left:0; right:0; z-index:100;
+      display:flex; align-items:center; gap:0;
+      padding:0 28px; height:56px;
+      background:rgba(5,6,10,0.8); backdrop-filter:blur(20px); -webkit-backdrop-filter:blur(20px);
+      border-bottom:1px solid rgba(255,255,255,0.04);
+    }
+    .nav-logo {
+      font-size:1.1rem; font-weight:800; letter-spacing:-0.04em;
+      background:var(--accent-gradient); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text;
+      text-decoration:none; margin-right:40px; flex-shrink:0;
+    }
+    .nav-links { display:flex; gap:4px; }
+    .nav-link {
+      display:inline-flex; align-items:center; padding:8px 16px;
+      font-size:.82rem; font-weight:500; color:var(--text-muted);
+      text-decoration:none; border-radius:var(--radius-xs);
+      transition:all .2s;
+    }
+    .nav-link:hover { color:var(--text-secondary); background:rgba(255,255,255,.03); }
+    .nav-link.active { color:var(--text-primary); background:rgba(124,92,255,.08); }
+    .nav-spacer { flex:1; }
+
+    /* ═══ Page shell ═══ */
+    .page-body { position:relative; z-index:1; min-height:100vh; padding-top:56px; }
+    .page-content { max-width:1100px; margin:0 auto; padding:40px 32px 60px; }
+    .page-content.wide { max-width:1280px; }
+
+    /* ═══ Ambient background ═══ */
+    .ambient-bg {
+      position:fixed; top:0; left:0; width:100vw; height:100vh;
+      z-index:0; pointer-events:none;
+      background:linear-gradient(180deg, #06070d 0%, #080a14 30%, #0a0c16 60%, #070912 100%);
+    }
+    .bg-wash { position:absolute; border-radius:50%; filter:blur(90px); }
+    .bg-wash-1 { width:600px; height:500px; top:-5%; left:5%; background:var(--accent); opacity:0.04; animation:washP 25s ease-in-out infinite; }
+    .bg-wash-2 { width:500px; height:400px; top:35%; right:0; background:var(--accent-2); opacity:0.03; animation:washP 30s ease-in-out infinite 8s; }
+    .bg-wash-3 { width:550px; height:450px; bottom:5%; left:15%; background:#5c7cff; opacity:0.035; animation:washP 22s ease-in-out infinite 15s; }
+    @keyframes washP { 0%,100%{transform:scale(1)} 50%{transform:scale(1.08)} }
+
+    /* ═══ Common components ═══ */
+    .card { background:var(--glass-bg); backdrop-filter:var(--glass-blur); -webkit-backdrop-filter:var(--glass-blur); border:1px solid var(--glass-border); border-radius:var(--radius); box-shadow:var(--glass-shadow); }
+    button { border:none; border-radius:var(--radius-sm); padding:11px 18px; font-size:.88rem; font-weight:600; cursor:pointer; transition:all .2s ease; font-family:inherit; }
+    button:hover { transform:translateY(-1px); } button:active { transform:translateY(0); } button:disabled { opacity:.3; cursor:not-allowed; transform:none; }
+    .primary { background:var(--accent-gradient); color:white; box-shadow:0 4px 20px rgba(124,92,255,.25); }
+    .primary:hover { box-shadow:0 6px 28px rgba(124,92,255,.4); }
+    .secondary { background:var(--surface-2); color:var(--text-secondary); border:1px solid var(--border-2); }
+    .ghost { background:transparent; color:var(--text-muted); border:1px solid var(--border-2); }
+
+    /* ═══ Section headings ═══ */
+    .section-title { font-size:1.4rem; font-weight:800; letter-spacing:-0.03em; margin-bottom:8px; }
+    .section-sub { color:var(--text-muted); font-size:.88rem; line-height:1.5; margin-bottom:28px; }
+
+    /* ═══ Footer ═══ */
+    .site-footer { margin-top:80px; padding:24px 0 20px; border-top:1px solid rgba(255,255,255,.04); text-align:center; }
+    .footer-links { display:flex; justify-content:center; gap:28px; margin-bottom:12px; }
+    .footer-links a { color:var(--text-muted); text-decoration:none; font-size:.78rem; font-weight:500; transition:color .2s; }
+    .footer-links a:hover { color:var(--text-secondary); }
+    .footer-note { color:var(--text-muted); font-size:.72rem; opacity:.6; }
+
+    /* ═══ Responsive ═══ */
+    @media(max-width:768px) {
+      .global-nav { padding:0 16px; }
+      .nav-logo { margin-right:20px; }
+      .nav-link { padding:8px 10px; font-size:.78rem; }
+      .page-content { padding:28px 16px 60px; }
+    }
+    @media(max-width:480px) {
+      .nav-links { gap:0; }
+      .nav-link { padding:8px 8px; font-size:.74rem; }
+    }
+
+    {% block extra_css %}{% endblock %}
+  </style>
+</head>
+<body>
+
+<!-- Ambient background -->
+<div class="ambient-bg">
+  <div class="bg-wash bg-wash-1"></div>
+  <div class="bg-wash bg-wash-2"></div>
+  <div class="bg-wash bg-wash-3"></div>
+</div>
+
+<!-- Global Navigation -->
+<nav class="global-nav">
+  <a href="/" class="nav-logo">riffa</a>
+  <div class="nav-links">
+    <a href="/decompose" class="nav-link {% if active_page == 'decompose' %}active{% endif %}">Decompose</a>
+    <a href="/learn" class="nav-link {% if active_page == 'learn' %}active{% endif %}">Learn</a>
+    <a href="/library" class="nav-link {% if active_page == 'library' %}active{% endif %}">Library</a>
+    <a href="/practice" class="nav-link {% if active_page == 'practice' %}active{% endif %}">Practice</a>
+  </div>
+  <div class="nav-spacer"></div>
+</nav>
+
+<div class="page-body">
+  {% block body %}{% endblock %}
+</div>
+
+{% block extra_js %}{% endblock %}
+</body>
+</html>

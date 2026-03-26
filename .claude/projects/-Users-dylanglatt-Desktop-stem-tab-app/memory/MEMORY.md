@@ -1,0 +1,1 @@
+- [No forced chord-lyric alignment](feedback_chord_alignment.md) — chords at section level, never tied to specific lyric lines

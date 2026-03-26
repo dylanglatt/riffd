@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+{% block title %}Library{% endblock %}
+
+{% block extra_css %}
+  .library-header { margin-bottom:36px; }
+  .lib-section { margin-bottom:40px; }
+  .lib-section-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; }
+  .lib-section-title { font-size:1.05rem; font-weight:700; }
+  .lib-count { font-size:.76rem; color:var(--text-muted); }
+
+  .song-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:16px; }
+  .song-card {
+    padding:16px; border-radius:var(--radius); background:rgba(255,255,255,.015);
+    border:1px solid var(--border); transition:all .25s; cursor:pointer;
+  }
+  .song-card:hover { background:rgba(124,92,255,.04); border-color:rgba(124,92,255,.15); transform:translateY(-3px); box-shadow:0 12px 32px rgba(124,92,255,.1); }
+  .sc-art {
+    width:100%; aspect-ratio:1; border-radius:var(--radius-sm); margin-bottom:14px; object-fit:cover;
+    background:linear-gradient(135deg,var(--surface-3),var(--surface-4));
+  }
+  .sc-art-ph {
+    width:100%; aspect-ratio:1; border-radius:var(--radius-sm); margin-bottom:14px;
+    background:linear-gradient(135deg,var(--surface-3),var(--surface-4));
+    display:flex; align-items:center; justify-content:center; font-size:2rem; color:var(--text-muted);
+  }
+  .sc-name { font-size:.88rem; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .sc-artist { font-size:.78rem; color:var(--text-muted); margin-top:3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .sc-tags { display:flex; gap:5px; flex-wrap:wrap; margin-top:10px; }
+  .sc-tag { font-size:.64rem; padding:2px 8px; border-radius:999px; background:rgba(124,92,255,.06); color:var(--accent); border:1px solid rgba(124,92,255,.1); font-weight:600; }
+
+  .empty-lib {
+    text-align:center; padding:60px 20px; color:var(--text-muted);
+  }
+  .empty-lib-icon { font-size:2.4rem; margin-bottom:12px; }
+  .empty-lib-title { font-size:1rem; font-weight:600; color:var(--text-secondary); margin-bottom:6px; }
+  .empty-lib-desc { font-size:.84rem; line-height:1.5; max-width:360px; margin:0 auto; }
+{% endblock %}
+
+{% block body %}
+<div class="page-content">
+  <div class="library-header">
+    <div class="section-title">Library</div>
+    <div class="section-sub">Your analyzed songs and saved charts. Sample library shown below.</div>
+  </div>
+
+  <!-- Recent -->
+  <div class="lib-section">
+    <div class="lib-section-head">
+      <div class="lib-section-title">Recent</div>
+      <div class="lib-count">6 songs</div>
+    </div>
+    <div class="song-grid">
+      <div class="song-card" onclick="window.location='/decompose'">
+        <img class="sc-art" src="https://image-cdn-ak.spotifycdn.com/image/ab67616d00001e024637341b9f507521afa9a778" alt="" />
+        <div class="sc-name">Hotel California</div>
+        <div class="sc-artist">Eagles</div>
+        <div class="sc-tags"><span class="sc-tag">Rock</span><span class="sc-tag">6 stems</span></div>
+      </div>
+      <div class="song-card" onclick="window.location='/decompose'">
+        <img class="sc-art" src="https://i.scdn.co/image/ab67616d00001e02ce4f1737bc8a646c8c4bd25a" alt="" />
+        <div class="sc-name">Bohemian Rhapsody</div>
+        <div class="sc-artist">Queen</div>
+        <div class="sc-tags"><span class="sc-tag">Rock</span><span class="sc-tag">6 stems</span></div>
+      </div>
+      <div class="song-card" onclick="window.location='/decompose'">
+        <img class="sc-art" src="https://i.scdn.co/image/ab67616d00001e02c8a11e48c91a982d086afc69" alt="" />
+        <div class="sc-name">Stairway to Heaven</div>
+        <div class="sc-artist">Led Zeppelin</div>
+        <div class="sc-tags"><span class="sc-tag">Rock</span><span class="sc-tag">Classic</span></div>
+      </div>
+      <div class="song-card" onclick="window.location='/decompose'">
+        <img class="sc-art" src="https://i.scdn.co/image/ab67616d00001e024121faee8df82c526cbab2be" alt="" />
+        <div class="sc-name">Billie Jean</div>
+        <div class="sc-artist">Michael Jackson</div>
+        <div class="sc-tags"><span class="sc-tag">Pop</span><span class="sc-tag">Funk</span></div>
+      </div>
+      <div class="song-card" onclick="window.location='/decompose'">
+        <img class="sc-art" src="https://image-cdn-ak.spotifycdn.com/image/ab67616d00001e029e447b59bd3e2cbefaa31d91" alt="" />
+        <div class="sc-name">Superstition</div>
+        <div class="sc-artist">Stevie Wonder</div>
+        <div class="sc-tags"><span class="sc-tag">Funk</span><span class="sc-tag">Soul</span></div>
+      </div>
+      <div class="song-card" onclick="window.location='/decompose'">
+        <img class="sc-art" src="https://i.scdn.co/image/ab67616d00001e02ff5429125128b43572dbdccd" alt="" />
+        <div class="sc-name">Wonderwall</div>
+        <div class="sc-artist">Oasis</div>
+        <div class="sc-tags"><span class="sc-tag">Britpop</span><span class="sc-tag">Acoustic</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Favorites -->
+  <div class="lib-section">
+    <div class="lib-section-head">
+      <div class="lib-section-title">Favorites</div>
+      <div class="lib-count">3 songs</div>
+    </div>
+    <div class="song-grid">
+      <div class="song-card" onclick="window.location='/decompose'">
+        <img class="sc-art" src="https://i.scdn.co/image/ab67616d00001e02e175a19e530c898d167d39bf" alt="" />
+        <div class="sc-name">Come As You Are</div>
+        <div class="sc-artist">Nirvana</div>
+        <div class="sc-tags"><span class="sc-tag">Grunge</span><span class="sc-tag">Guitar Tab</span></div>
+      </div>
+      <div class="song-card" onclick="window.location='/decompose'">
+        <img class="sc-art" src="https://i.scdn.co/image/ab67616d00001e02d4daf28d55fe4197ede848be" alt="" />
+        <div class="sc-name">Purple Rain</div>
+        <div class="sc-artist">Prince</div>
+        <div class="sc-tags"><span class="sc-tag">Rock</span><span class="sc-tag">Soul</span></div>
+      </div>
+      <div class="song-card" onclick="window.location='/decompose'">
+        <img class="sc-art" src="https://i.scdn.co/image/ab67616d00001e028863bc11d2aa12b54f5aeb36" alt="" />
+        <div class="sc-name">Blinding Lights</div>
+        <div class="sc-artist">The Weeknd</div>
+        <div class="sc-tags"><span class="sc-tag">Synthwave</span><span class="sc-tag">Pop</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="site-footer">
+    <div class="footer-note">Sample library — real persistence coming soon.</div>
+  </div>
+</div>
+{% endblock %}

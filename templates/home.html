@@ -1,0 +1,151 @@
+{% extends "base.html" %}
+{% block title %}riffa{% endblock %}
+
+{% block extra_css %}
+  .home-hero {
+    text-align:center; padding:80px 0 60px; position:relative; z-index:2;
+  }
+  .hero-headline {
+    font-size:3.6rem; font-weight:900; letter-spacing:-0.045em; line-height:1.02;
+    margin-bottom:18px; color:var(--text-primary);
+  }
+  .hero-headline span {
+    background:var(--accent-gradient); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text;
+  }
+  .hero-sub {
+    color:var(--text-secondary); font-size:1.12rem; font-weight:400; line-height:1.55;
+    max-width:520px; margin:0 auto 36px;
+  }
+  .hero-ctas { display:flex; gap:14px; justify-content:center; flex-wrap:wrap; }
+  .cta-primary {
+    padding:15px 36px; font-size:.95rem; font-weight:700; border-radius:var(--radius-sm);
+    background:var(--accent-gradient); color:white; border:none; cursor:pointer;
+    box-shadow:0 4px 24px rgba(124,92,255,.35); transition:all .3s ease; text-decoration:none;
+    display:inline-flex; align-items:center; gap:8px;
+  }
+  .cta-primary:hover { box-shadow:0 8px 36px rgba(124,92,255,.5); transform:translateY(-2px); }
+  .cta-secondary {
+    padding:15px 36px; font-size:.95rem; font-weight:600; border-radius:var(--radius-sm);
+    background:rgba(255,255,255,.04); color:var(--text-secondary); border:1px solid var(--border-2);
+    cursor:pointer; transition:all .3s ease; text-decoration:none;
+    display:inline-flex; align-items:center; gap:8px;
+  }
+  .cta-secondary:hover { background:rgba(255,255,255,.07); color:var(--text-primary); transform:translateY(-2px); }
+
+  /* How it works */
+  .hiw-section { padding:60px 0; }
+  .hiw-label { text-align:center; font-size:.7rem; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:.14em; margin-bottom:36px; }
+  .hiw-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:40px; max-width:900px; margin:0 auto; }
+  .hiw-step { text-align:center; }
+  .hiw-num {
+    width:44px; height:44px; border-radius:50%; display:flex; align-items:center; justify-content:center;
+    font-size:.82rem; font-weight:800; margin:0 auto 16px;
+    background:rgba(124,92,255,.08); border:1px solid rgba(124,92,255,.15); color:var(--accent);
+  }
+  .hiw-title { font-size:1.05rem; font-weight:700; margin-bottom:6px; }
+  .hiw-desc { font-size:.84rem; color:var(--text-muted); line-height:1.5; }
+
+  /* Feature cards */
+  .features-section { padding:40px 0 60px; }
+  .features-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:20px; }
+  .feature-card {
+    padding:28px 24px; border-radius:var(--radius); background:rgba(255,255,255,.015);
+    border:1px solid var(--border); transition:all .3s; cursor:pointer; text-decoration:none; color:inherit; display:block;
+  }
+  .feature-card:hover { background:rgba(124,92,255,.04); border-color:rgba(124,92,255,.15); transform:translateY(-3px); }
+  .fc-icon { font-size:1.6rem; margin-bottom:14px; display:block; }
+  .fc-title { font-size:1rem; font-weight:700; margin-bottom:6px; }
+  .fc-desc { font-size:.82rem; color:var(--text-muted); line-height:1.5; }
+  .fc-tag {
+    display:inline-block; margin-top:12px; padding:3px 10px; border-radius:999px;
+    font-size:.68rem; font-weight:600; background:rgba(94,234,212,.08); color:var(--accent-2);
+    border:1px solid rgba(94,234,212,.12);
+  }
+
+  /* Bottom CTA */
+  .bottom-cta { text-align:center; padding:60px 0 20px; }
+  .bottom-cta .hero-sub { margin-bottom:24px; }
+
+  @media(max-width:768px) {
+    .hero-headline { font-size:2.4rem; }
+    .hiw-grid { grid-template-columns:1fr; gap:28px; }
+    .features-grid { grid-template-columns:1fr; }
+  }
+{% endblock %}
+
+{% block body %}
+<div class="page-content">
+
+  <!-- Hero -->
+  <div class="home-hero">
+    <div class="hero-headline">See inside <span>any song.</span></div>
+    <div class="hero-sub">Separate instruments, understand harmony, and build real musicianship — powered by AI audio analysis.</div>
+    <div class="hero-ctas">
+      <a href="/decompose" class="cta-primary">Decompose a Song</a>
+      <a href="/learn" class="cta-secondary">Learn Music Theory</a>
+    </div>
+  </div>
+
+  <!-- How it Works -->
+  <div class="hiw-section">
+    <div class="hiw-label">How it works</div>
+    <div class="hiw-grid">
+      <div class="hiw-step">
+        <div class="hiw-num">1</div>
+        <div class="hiw-title">Choose a song</div>
+        <div class="hiw-desc">Search by name or drop in an audio file. We handle the rest.</div>
+      </div>
+      <div class="hiw-step">
+        <div class="hiw-num">2</div>
+        <div class="hiw-title">AI breaks it apart</div>
+        <div class="hiw-desc">Stems are separated, notes detected, key and chords analyzed automatically.</div>
+      </div>
+      <div class="hiw-step">
+        <div class="hiw-num">3</div>
+        <div class="hiw-title">Play and learn</div>
+        <div class="hiw-desc">Mix stems, read tabs, loop sections, transpose keys — all in one workspace.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Feature entry points -->
+  <div class="features-section">
+    <div class="features-grid">
+      <a href="/decompose" class="feature-card">
+        <span class="fc-icon">&#127929;</span>
+        <div class="fc-title">Decompose</div>
+        <div class="fc-desc">Isolate vocals, guitar, bass, drums, and more from any track. Mix, mute, solo, and loop individual parts.</div>
+        <span class="fc-tag">Live</span>
+      </a>
+      <a href="/learn" class="feature-card">
+        <span class="fc-icon">&#127932;</span>
+        <div class="fc-title">Learn Theory</div>
+        <div class="fc-desc">Reference guides for chords, scales, progressions, and keys. Built for guitar and piano players.</div>
+        <span class="fc-tag">Preview</span>
+      </a>
+      <a href="/practice" class="feature-card">
+        <span class="fc-icon">&#127928;</span>
+        <div class="fc-title">Practice</div>
+        <div class="fc-desc">Jam tracks, scale drills, chord trainers, and progression loopers to build muscle memory.</div>
+        <span class="fc-tag">Coming Soon</span>
+      </a>
+    </div>
+  </div>
+
+  <!-- Bottom CTA -->
+  <div class="bottom-cta">
+    <div class="hero-sub">Ready to hear what's inside your favorite song?</div>
+    <a href="/decompose" class="cta-primary">Get Started</a>
+  </div>
+
+  <!-- Footer -->
+  <div class="site-footer">
+    <div class="footer-links">
+      <a href="/about">About</a>
+      <a href="/learn">Learn</a>
+      <a href="/library">Library</a>
+    </div>
+    <div class="footer-note">riffa — built for musicians.</div>
+  </div>
+</div>
+{% endblock %}
