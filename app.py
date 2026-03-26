@@ -459,5 +459,5 @@ def discovery():
 
 
 if __name__ == "__main__":
-    print("\n  riffa running at http://localhost:5001\n")
+    print("\n  Riffd running at http://localhost:5001\n")
     app.run(debug=True, port=5001, threaded=True)

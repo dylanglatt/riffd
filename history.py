@@ -40,7 +40,8 @@ def add_to_history(track_id: str, track_meta: dict, job_id: str):
     Add or update a history entry after processing a song.
     Only saves entries with real metadata (name + artist).
     """
-    if not track_id:
+    if not track_id or len(track_id) < 4:
+        print(f"[history] SKIPPED: invalid track_id ({track_id!r})")
         return
 
     name = (track_meta.get("name") or "").strip()
@@ -82,9 +83,9 @@ def _is_valid_entry(entry: dict) -> bool:
     artist = (entry.get("artist") or "").strip()
     if not name or not artist:
         return False
-    if not entry.get("track_id"):
+    tid = entry.get("track_id") or ""
+    if not tid or len(tid) < 4:
         return False
-    # Filter placeholder/test values
     if name.lower() in ("test", "untitled") and artist.lower() in ("test", "unknown", ""):
         return False
     return True

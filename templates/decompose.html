@@ -27,24 +27,87 @@
     .track-meta { color:var(--text-muted); font-size:.72rem; text-align:right; white-space:nowrap; flex-shrink:0; }
     .divider { display:flex; align-items:center; gap:14px; color:var(--text-muted); font-size:.7rem; margin:18px 0 14px; text-transform:uppercase; letter-spacing:.1em; font-weight:500; }
     .divider::before,.divider::after { content:""; flex:1; height:1px; background:linear-gradient(90deg,transparent,rgba(255,255,255,.06),transparent); }
-    .upload-area { border:1px dashed rgba(255,255,255,.06); border-radius:var(--radius-sm); padding:18px 16px; text-align:center; color:var(--text-muted); cursor:pointer; transition:all .25s; }
-    .upload-area:hover,.upload-area.drag-over { border-color:rgba(124,92,255,.3); background:rgba(124,92,255,.04); }
+    .upload-area { border:1px dashed rgba(255,255,255,.05); border-radius:var(--radius-xs); padding:10px 14px; text-align:center; color:var(--text-muted); cursor:pointer; transition:all .25s; font-size:.76rem; font-weight:500; }
+    .upload-area:hover,.upload-area.drag-over { border-color:rgba(124,92,255,.25); background:rgba(124,92,255,.03); color:var(--text-secondary); }
     .upload-area input { display:none; }
-    .upload-title { color:var(--text-secondary); font-size:.82rem; font-weight:500; } .upload-subtitle { margin-top:4px; font-size:.72rem; }
     .empty-state { color:var(--text-muted); font-size:.84rem; padding:8px 2px; }
-    .search-hint { text-align:center; color:var(--text-muted); font-size:.78rem; margin-top:14px; }
 
     /* Try These */
     .landing-section { margin-top:48px; position:relative; z-index:2; }
     .landing-section-title { font-size:.96rem; font-weight:700; color:var(--text-primary); margin-bottom:18px; }
-    .try-grid { display:flex; gap:20px; overflow-x:auto; padding-bottom:10px; scroll-snap-type:x mandatory; }
-    .try-grid::-webkit-scrollbar { height:3px; } .try-grid::-webkit-scrollbar-thumb { background:rgba(255,255,255,.06); border-radius:4px; }
-    .try-card { flex-shrink:0; width:180px; background:rgba(255,255,255,.015); border:1px solid rgba(255,255,255,.04); border-radius:var(--radius); padding:14px; cursor:pointer; transition:all .3s; scroll-snap-align:start; }
-    .try-card:hover { background:rgba(124,92,255,.04); border-color:rgba(124,92,255,.15); transform:translateY(-5px); box-shadow:0 16px 40px rgba(124,92,255,.12); }
-    .try-card img { width:100%; aspect-ratio:1; object-fit:cover; border-radius:10px; margin-bottom:12px; }
-    .try-card-name { font-size:.86rem; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-    .try-card-artist { font-size:.78rem; color:var(--text-muted); margin-top:4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-    .try-card-ph { width:100%; aspect-ratio:1; background:linear-gradient(135deg,var(--surface-3),var(--surface-4)); border-radius:var(--radius-xs); margin-bottom:8px; display:flex; align-items:center; justify-content:center; color:var(--text-muted); font-size:1.4rem; }
+
+    /* ═══ Song row ═══ */
+    .song-row {
+      position:relative;
+    }
+    .try-grid {
+      display:flex; gap:14px; overflow-x:auto; padding:6px 0 6px;
+      scroll-behavior:smooth;
+      scrollbar-width:none; -ms-overflow-style:none;
+    }
+    .try-grid::-webkit-scrollbar { display:none; }
+
+    /* Custom scrollbar track */
+    .scroll-track {
+      position:relative; height:3px; margin:10px 0 0;
+      background:rgba(255,255,255,.04); border-radius:2px; overflow:hidden;
+    }
+    .scroll-thumb {
+      position:absolute; top:0; left:0; height:100%;
+      min-width:24px; border-radius:2px;
+      background:rgba(255,255,255,.12);
+      transition:background .2s;
+      cursor:grab;
+    }
+    .scroll-thumb:hover, .scroll-thumb.dragging { background:rgba(124,92,255,.35); }
+    .scroll-thumb:active { cursor:grabbing; }
+
+    .try-card {
+      flex-shrink:0; width:156px; background:rgba(255,255,255,.018);
+      border:1px solid rgba(255,255,255,.05); border-radius:var(--radius);
+      padding:12px; cursor:pointer; scroll-snap-align:start;
+      transition:transform .35s cubic-bezier(.16,1,.3,1), box-shadow .35s, border-color .3s, background .3s;
+      will-change:transform;
+    }
+    .try-card:hover {
+      background:rgba(124,92,255,.05); border-color:rgba(124,92,255,.18);
+      transform:translateY(-6px) scale(1.02);
+      box-shadow:0 16px 40px rgba(124,92,255,.12), 0 0 0 1px rgba(124,92,255,.08);
+    }
+    .try-card img { width:100%; aspect-ratio:1; object-fit:cover; border-radius:10px; margin-bottom:10px; transition:filter .3s; }
+    .try-card:hover img { filter:brightness(1.05); }
+    .try-card-name { font-size:.82rem; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; line-height:1.3; }
+    .try-card-artist { font-size:.72rem; color:var(--text-muted); margin-top:3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .try-card-ph {
+      width:100%; aspect-ratio:1; border-radius:10px; margin-bottom:10px;
+      background:linear-gradient(135deg,var(--surface-3),var(--surface-4));
+      display:flex; align-items:center; justify-content:center;
+    }
+
+    /* ═══ Capabilities ═══ */
+    .cap-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; }
+    .cap-card {
+      padding:24px 20px; border-radius:var(--radius);
+      background:rgba(255,255,255,.012); border:1px solid rgba(255,255,255,.05);
+      transition:border-color .35s, background .35s, box-shadow .35s, transform .35s cubic-bezier(.16,1,.3,1);
+    }
+    .cap-card:hover {
+      background:rgba(124,92,255,.03); border-color:rgba(124,92,255,.14);
+      transform:translateY(-3px);
+      box-shadow:0 8px 28px rgba(124,92,255,.08), 0 0 0 1px rgba(124,92,255,.06);
+    }
+    .cap-icon-wrap {
+      width:36px; height:36px; border-radius:10px; display:flex; align-items:center; justify-content:center;
+      background:rgba(124,92,255,.06); margin-bottom:14px;
+      transition:background .3s, box-shadow .3s;
+    }
+    .cap-card:hover .cap-icon-wrap { background:rgba(124,92,255,.1); box-shadow:0 0 16px rgba(124,92,255,.1); }
+    .cap-icon-wrap svg { width:18px; height:18px; stroke:var(--accent-2); stroke-width:1.5; fill:none; stroke-linecap:round; stroke-linejoin:round; transition:stroke .3s; }
+    .cap-card:hover .cap-icon-wrap svg { stroke:var(--text-primary); }
+    .cap-title { font-size:.9rem; font-weight:700; margin-bottom:5px; }
+    .cap-desc { font-size:.78rem; color:var(--text-muted); line-height:1.5; }
+    @media(max-width:768px) { .cap-grid { grid-template-columns:repeat(2,1fr); } }
+    @media(max-width:480px) { .cap-grid { grid-template-columns:1fr; } }
 
     /* Confirm / Processing */
     .track-banner { display:flex; align-items:center; gap:14px; padding:14px; background:rgba(255,255,255,.025); border:1px solid var(--border); border-radius:var(--radius-sm); }
@@ -183,25 +246,47 @@
         <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
       </div>
       <div id="search-results" class="search-results"></div>
-      <div class="divider">or drop a file</div>
+      <div class="divider">or</div>
       <div class="upload-area" id="upload-area" onclick="document.getElementById('file-input').click()" ondragover="handleDragOver(event)" ondrop="handleDrop(event)" ondragleave="handleDragLeave(event)">
         <input type="file" id="file-input" accept=".mp3,.wav,.flac,.m4a,.ogg,.aac" onchange="handleFileSelect(event)" />
-        <div class="upload-title">Drag an audio file here or click to browse</div>
-        <div class="upload-subtitle">MP3, WAV, FLAC, M4A, OGG, AAC</div>
+        Drop a file
       </div>
-      <div class="search-hint">Try "Hotel California" or upload your own track</div>
     </div>
 
     <!-- Recent Songs -->
     <div class="landing-section" id="history-section" style="display:none">
-      <div class="landing-section-title">Recent songs</div>
-      <div class="try-grid" id="history-grid"></div>
+      <div class="landing-section-title">Recents</div>
+      <div class="song-row" id="history-row">
+        <div class="try-grid" id="history-grid"></div>
+        <div class="scroll-track" id="history-track"><div class="scroll-thumb" id="history-thumb"></div></div>
+      </div>
     </div>
 
-    <!-- Discovery rail -->
+    <!-- Capabilities -->
     <div class="landing-section">
-      <div class="landing-section-title">Try a song</div>
-      <div class="try-grid" id="try-grid"></div>
+      <div class="landing-section-title">What Riffd does</div>
+      <div class="cap-grid">
+        <div class="cap-card">
+          <div class="cap-icon-wrap"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h10M4 18h6"/></svg></div>
+          <div class="cap-title">Separate stems</div>
+          <div class="cap-desc">Vocals, drums, bass, guitar, keys — isolated from any track.</div>
+        </div>
+        <div class="cap-card">
+          <div class="cap-icon-wrap"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v4m0 12v4m10-10h-4M6 12H2m15.07-7.07l-2.83 2.83M9.76 14.24l-2.83 2.83m11.14 0l-2.83-2.83M9.76 9.76L6.93 6.93"/></svg></div>
+          <div class="cap-title">Read the structure</div>
+          <div class="cap-desc">Key, tempo, chord progression, and harmonic analysis.</div>
+        </div>
+        <div class="cap-card">
+          <div class="cap-icon-wrap"><svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg></div>
+          <div class="cap-title">Play it back</div>
+          <div class="cap-desc">Solo any stem, loop sections, transpose to any key.</div>
+        </div>
+        <div class="cap-card">
+          <div class="cap-icon-wrap"><svg viewBox="0 0 24 24"><path d="M12 3v10.55A4 4 0 1 0 14 17V7h4V3h-6Z"/></svg></div>
+          <div class="cap-title">Learn faster</div>
+          <div class="cap-desc">Auto-generated tabs and MIDI for every instrument.</div>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -210,7 +295,7 @@
     <div class="proc-hero">
       <div class="proc-art-wrap" id="proc-art-wrap">
         <div class="proc-art-glow"></div>
-        <div class="proc-art-ph">&#127925;</div>
+        <div class="proc-art-ph"><svg viewBox="0 0 24 24" width="36" height="36" style="opacity:.25"><path d="M12 3v10.55A4 4 0 1 0 14 17V7h4V3h-6Z" fill="currentColor"/></svg></div>
       </div>
       <div class="proc-title" id="proc-title"></div>
       <div class="proc-sub" id="proc-sub"></div>
@@ -383,14 +468,17 @@ async function doSearch(q) {
 function renderSearchResults() {
   const c=document.getElementById("search-results");
   if(!searchResults.length){c.innerHTML='<div class="empty-state">No results found.</div>';return;}
-  c.innerHTML=searchResults.map((t,i)=>`<div class="track-result" onclick="selectByIndex(${i})">${t.image_url?`<img src="${esc(t.image_url)}" alt="">`:'<div style="width:44px;height:44px;border-radius:8px;background:var(--surface-3)"></div>'}<div class="track-info"><div class="track-name">${esc(t.name||"")}</div><div class="track-artist">${esc(t.artist||"")}</div></div><div class="track-meta">${esc(String(t.year||""))}<br>${fmtMs(t.duration_ms)}</div></div>`).join("");
+  c.innerHTML=searchResults.map((t,i)=>{
+    const img = t.image_url ? `<img src="${esc(t.image_url)}" alt="" style="width:44px;height:44px;border-radius:8px;object-fit:cover;flex-shrink:0;background:var(--surface-3)" onerror="_artFailSm(this)">` : '<div style="width:44px;height:44px;border-radius:8px;background:var(--surface-3);flex-shrink:0"></div>';
+    return `<div class="track-result" onclick="selectByIndex(${i})">${img}<div class="track-info"><div class="track-name">${esc(t.name||"")}</div><div class="track-artist">${esc(t.artist||"")}</div></div><div class="track-meta">${esc(String(t.year||""))}<br>${fmtMs(t.duration_ms)}</div></div>`;
+  }).join("");
 }
 
 function selectByIndex(i){const t=searchResults[i];if(t)selectTrack(t);}
 function selectTrack(t){selectedTrack=t;currentJobId=null;setError("");_showHeroPreProcess();showView("confirm");}
 function selectAndProcess(t){selectedTrack=t;currentJobId=null;setError("");_showHeroPreProcess();startProcessing();}
 function pickRec(k,i){const t=_recTracks[k];if(t&&t[i])selectAndProcess(t[i]);}
-function buildBanner(id,t){const el=document.getElementById(id);if(!el)return;const c=t.image_url?`<img src="${esc(t.image_url)}" alt="">`:'<div class="cover-placeholder">&#127925;</div>';el.innerHTML=`${c}<div><div class="track-banner-title">${esc(t.name||"Untitled")}</div><div class="track-banner-sub">${esc(t.artist||"Unknown")}${t.year?" &middot; "+esc(String(t.year)):""}</div></div>`;}
+function buildBanner(id,t){const el=document.getElementById(id);if(!el)return;const img=t.image_url?`<img src="${esc(t.image_url)}" alt="" onerror="_artFailBanner(this)">`:'<div class="cover-placeholder"><svg viewBox="0 0 24 24" width="20" height="20" style="opacity:.3"><path d="M12 3v10.55A4 4 0 1 0 14 17V7h4V3h-6Z" fill="currentColor"/></svg></div>';el.innerHTML=`${img}<div><div class="track-banner-title">${esc(t.name||"Untitled")}</div><div class="track-banner-sub">${esc(t.artist||"Unknown")}${t.year?" &middot; "+esc(String(t.year)):""}</div></div>`;}
 
 // ─── Upload ─────────────────────────────────────────────────────────────────
 function handleDragOver(e){e.preventDefault();document.getElementById("upload-area").classList.add("drag-over");}
@@ -527,8 +615,9 @@ function _populateHero() {
   if (!selectedTrack) return;
   const artWrap = document.getElementById("proc-art-wrap");
   const glow = '<div class="proc-art-glow"></div>';
-  if (selectedTrack.image_url) { artWrap.innerHTML = glow + `<img src="${esc(selectedTrack.image_url)}" alt="" />`; }
-  else { artWrap.innerHTML = glow + '<div class="proc-art-ph">&#127925;</div>'; }
+  if (selectedTrack.image_url) {
+    artWrap.innerHTML = glow + `<img src="${esc(selectedTrack.image_url)}" alt="" onerror="_artFailHero(this)" />`;
+  } else { artWrap.innerHTML = glow + '<div class="proc-art-ph"><svg viewBox="0 0 24 24" width="36" height="36" style="opacity:.25"><path d="M12 3v10.55A4 4 0 1 0 14 17V7h4V3h-6Z" fill="currentColor"/></svg></div>'; }
   document.getElementById("proc-title").textContent = selectedTrack.name || "Untitled";
   const sub = selectedTrack.artist ? `${selectedTrack.artist}${selectedTrack.year ? " \u00b7 " + selectedTrack.year : ""}` : "";
   document.getElementById("proc-sub").textContent = sub;
@@ -880,34 +969,89 @@ function formatStemLabel(rawKey, label) {
   return parts.join(" ");
 }
 function esc(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");}
+
+// Unified album art fallback — never shows broken images
+const _noteSvg = '<path d="M12 3v10.55A4 4 0 1 0 14 17V7h4V3h-6Z" fill="currentColor"/>';
+function _mkSvg(w, h) { const s = document.createElementNS('http://www.w3.org/2000/svg','svg'); s.setAttribute('viewBox','0 0 24 24'); s.setAttribute('width',w); s.setAttribute('height',h); s.style.opacity='.2'; s.innerHTML=_noteSvg; return s; }
+function _artFail(el) { const ph=document.createElement('div'); ph.className='try-card-ph'; ph.appendChild(_mkSvg('24','24')); el.replaceWith(ph); }
+function _artFailSm(el) { const ph=document.createElement('div'); ph.style.cssText='width:44px;height:44px;border-radius:8px;background:var(--surface-3);flex-shrink:0;display:flex;align-items:center;justify-content:center'; ph.appendChild(_mkSvg('16','16')); el.replaceWith(ph); }
+function _artFailBanner(el) { const ph=document.createElement('div'); ph.className='cover-placeholder'; ph.appendChild(_mkSvg('20','20')); el.replaceWith(ph); }
+function _artFailHero(el) { const ph=document.createElement('div'); ph.className='proc-art-ph'; ph.appendChild(_mkSvg('36','36')); el.replaceWith(ph); }
+function _songArt(t) {
+  if (!t || !t.image_url) return '<div class="try-card-ph"><svg viewBox="0 0 24 24" width="24" height="24" style="opacity:.2"><path d="M12 3v10.55A4 4 0 1 0 14 17V7h4V3h-6Z" fill="currentColor"/></svg></div>';
+  return `<img src="${esc(t.image_url)}" alt="" onerror="_artFail(this)" />`;
+}
 function sleep(ms){return new Promise(r=>setTimeout(r,ms));}
 
-// ─── Try These ──────────────────────────────────────────────────────────────
-let _discoverySongs = [];
-async function loadDiscovery() {
-  const grid = document.getElementById("try-grid");
-  if (!grid) return;
-  grid.innerHTML = '<div class="empty-state" style="padding:12px">Loading picks...</div>';
-  try {
-    const res = await fetch("/api/discovery");
-    const data = await res.json();
-    if (!data || !data.length) { grid.innerHTML = ""; return; }
-    _discoverySongs = data;
-    _renderDiscovery();
-  } catch { grid.innerHTML = ""; }
+// ─── Song row scrollbar ──────────────────────────────────────────────────────
+function _initSongRow(gridId, trackId, thumbId) {
+  const grid = document.getElementById(gridId);
+  const track = document.getElementById(trackId);
+  const thumb = document.getElementById(thumbId);
+  if (!grid || !track || !thumb) return;
+
+  function sync() {
+    const sw = grid.scrollWidth, cw = grid.clientWidth;
+    if (sw <= cw) { track.style.display = 'none'; return; }
+    track.style.display = '';
+    const ratio = cw / sw;
+    const tw = track.offsetWidth;
+    const thumbW = Math.max(24, tw * ratio);
+    thumb.style.width = thumbW + 'px';
+    const maxScroll = sw - cw;
+    const pct = maxScroll > 0 ? grid.scrollLeft / maxScroll : 0;
+    thumb.style.left = (pct * (tw - thumbW)) + 'px';
+  }
+
+  grid.addEventListener('scroll', sync, { passive: true });
+
+  // Wheel → horizontal
+  grid.addEventListener('wheel', (e) => {
+    if (Math.abs(e.deltaY) > Math.abs(e.deltaX) && Math.abs(e.deltaY) > 4) {
+      e.preventDefault();
+      grid.scrollLeft += e.deltaY;
+    }
+  }, { passive: false });
+
+  // Drag the thumb
+  let dragging = false, dragStartX = 0, dragStartScroll = 0;
+  thumb.addEventListener('mousedown', (e) => {
+    e.preventDefault();
+    dragging = true; dragStartX = e.clientX; dragStartScroll = grid.scrollLeft;
+    thumb.classList.add('dragging');
+    document.body.style.cursor = 'grabbing';
+    document.body.style.userSelect = 'none';
+  });
+  window.addEventListener('mousemove', (e) => {
+    if (!dragging) return;
+    const tw = track.offsetWidth, thumbW = thumb.offsetWidth;
+    const maxThumb = tw - thumbW;
+    const maxScroll = grid.scrollWidth - grid.clientWidth;
+    if (maxThumb <= 0) return;
+    const dx = e.clientX - dragStartX;
+    const scrollDx = (dx / maxThumb) * maxScroll;
+    grid.scrollLeft = dragStartScroll + scrollDx;
+  });
+  window.addEventListener('mouseup', () => {
+    if (!dragging) return;
+    dragging = false;
+    thumb.classList.remove('dragging');
+    document.body.style.cursor = '';
+    document.body.style.userSelect = '';
+  });
+
+  // Click on track to jump
+  track.addEventListener('click', (e) => {
+    if (e.target === thumb) return;
+    const rect = track.getBoundingClientRect();
+    const pct = (e.clientX - rect.left) / rect.width;
+    const maxScroll = grid.scrollWidth - grid.clientWidth;
+    grid.scrollTo({ left: pct * maxScroll, behavior: 'smooth' });
+  });
+
+  requestAnimationFrame(sync);
+  new ResizeObserver(sync).observe(grid);
 }
-function _renderDiscovery() {
-  const grid = document.getElementById("try-grid");
-  if (!grid || !_discoverySongs.length) return;
-  grid.innerHTML = _discoverySongs.map((t, i) => {
-    const imgHtml = t.image_url
-      ? `<img src="${esc(t.image_url)}" alt="${esc(t.name)}" crossorigin="anonymous" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" /><div class="try-card-ph" style="display:none"></div>`
-      : `<div class="try-card-ph"></div>`;
-    return `<div class="try-card" onclick="pickDiscovery(${i})">${imgHtml}<div class="try-card-name">${esc(t.name || "")}</div><div class="try-card-artist">${esc(t.artist || "")}</div></div>`;
-  }).join("");
-}
-function pickDiscovery(i) { const t = _discoverySongs[i]; if (t) selectTrack(t); }
-loadDiscovery();
 
 // ─── History ────────────────────────────────────────────────────────────────
 let _historySongs = [];
@@ -934,12 +1078,10 @@ async function loadHistory() {
     const section = document.getElementById("history-section");
     const grid = document.getElementById("history-grid");
     grid.innerHTML = _historySongs.map((t, i) => {
-      const imgHtml = t.image_url
-        ? `<img src="${esc(t.image_url)}" alt="${esc(t.name||"")}" crossorigin="anonymous" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" /><div class="try-card-ph" style="display:none"></div>`
-        : '<div class="try-card-ph"></div>';
-      return `<div class="try-card" onclick="pickHistory(${i})">${imgHtml}<div class="try-card-name">${esc(t.name||"")}</div><div class="try-card-artist">${esc(t.artist||"")}</div></div>`;
+      return `<div class="try-card" onclick="pickHistory(${i})">${_songArt(t)}<div class="try-card-name">${esc(t.name||"")}</div><div class="try-card-artist">${esc(t.artist||"")}</div></div>`;
     }).join("");
     section.style.display = "block";
+    requestAnimationFrame(() => _initSongRow('history-grid', 'history-track', 'history-thumb'));
   } catch {}
 }
 async function pickHistory(i) {
