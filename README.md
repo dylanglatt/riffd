@@ -2,8 +2,6 @@
   <img src="assets/logo.png" alt="Riffd" width="120" />
 </p>
 
-<h1 align="center">Riffd</h1>
-
 <p align="center">
   Analyze any song. Understand what's actually happening.
 </p>
