@@ -12,10 +12,6 @@
   <a href="https://www.riffdlabs.com"><strong>Live Product →</strong></a>
 </p>
 
-<p align="center">
-  <img src="assets/demo.gif" alt="Riffd demo" width="800" />
-</p>
-
 ---
 
 ## What Riffd Does

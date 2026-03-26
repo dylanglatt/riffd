@@ -36,6 +36,9 @@ FLASK_SECRET = os.getenv("FLASK_SECRET_KEY")
 
 print(f"[auth] SITE_PASSWORD set: {bool(SITE_PASSWORD)}")
 print(f"[auth] FLASK_SECRET_KEY set: {bool(FLASK_SECRET)}")
+print(f"[env] USE_HOSTED_SEPARATION = {os.getenv('USE_HOSTED_SEPARATION')!r}")
+print(f"[env] HAS_REPLICATE_TOKEN = {bool(os.getenv('REPLICATE_API_TOKEN'))}")
+print(f"[env] CWD = {os.getcwd()}")
 
 if not SITE_PASSWORD:
     raise RuntimeError("SITE_PASSWORD environment variable is required. Set it in .env or your hosting platform.")
@@ -261,6 +264,9 @@ def track_lookup(track_id):
 
 @app.route("/api/download", methods=["POST"])
 def download_track():
+    print(f"[download] triggered")
+    print(f"[download] USE_HOSTED_SEPARATION = {os.getenv('USE_HOSTED_SEPARATION')!r}")
+    print(f"[download] HAS_REPLICATE_TOKEN = {bool(os.getenv('REPLICATE_API_TOKEN'))}")
     data = request.json
     query = data.get("query")
     url = data.get("url")

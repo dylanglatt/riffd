@@ -139,7 +139,8 @@ def _detect_wav_format(filepath):
 def _read_wav(filepath):
     """
     Read a WAV file (PCM or float32).
-    Returns (left, right, sample_rate). Mono files return identical L/R.
+    Returns (left, right, sample_rate) as float32 arrays. Mono files return identical L/R.
+    Uses float32 instead of float64 to halve memory usage (~40MB vs ~80MB per 4-min song).
     """
     fmt_tag = _detect_wav_format(filepath)
     is_float = fmt_tag == 3
@@ -152,18 +153,21 @@ def _read_wav(filepath):
         raw = wf.readframes(n_frames)
 
     if is_float and sw == 4:
-        samples = np.frombuffer(raw, dtype=np.float32).astype(np.float64)
+        samples = np.frombuffer(raw, dtype=np.float32).copy()
     elif sw == 2:
-        samples = np.frombuffer(raw, dtype=np.int16).astype(np.float64) / 32768.0
+        samples = np.frombuffer(raw, dtype=np.int16).astype(np.float32) / 32768.0
     elif sw == 4:
-        samples = np.frombuffer(raw, dtype=np.int32).astype(np.float64) / 2147483648.0
+        samples = np.frombuffer(raw, dtype=np.int32).astype(np.float32) / 2147483648.0
     else:
-        samples = np.frombuffer(raw, dtype=np.uint8).astype(np.float64)
+        samples = np.frombuffer(raw, dtype=np.uint8).astype(np.float32)
         samples = (samples - 128.0) / 128.0
+    del raw  # Release raw bytes immediately
 
     if n_ch >= 2:
         samples = samples.reshape(-1, n_ch)
-        return samples[:, 0].copy(), samples[:, 1].copy(), sr
+        left, right = samples[:, 0].copy(), samples[:, 1].copy()
+        del samples
+        return left, right, sr
     else:
         mono = samples.flatten()
         return mono, mono.copy(), sr
@@ -173,11 +177,13 @@ def _write_wav(filepath, left, right, sr):
     """Write stereo 16-bit WAV."""
     interleaved = np.column_stack([left, right])
     data = (np.clip(interleaved, -1.0, 1.0) * 32767).astype(np.int16)
+    del interleaved
     with wave.open(str(filepath), "wb") as wf:
         wf.setnchannels(2)
         wf.setsampwidth(2)
         wf.setframerate(sr)
         wf.writeframes(data.tobytes())
+    del data
 
 
 def _rms(samples):
@@ -198,24 +204,24 @@ def _stereo_separate(left, right):
     """
     N = 4096
     hop = N // 4
-    win = np.hanning(N)
+    win = np.hanning(N).astype(np.float32)
 
     orig_len = len(left)
     pad = (hop - (orig_len % hop)) % hop + N
-    left_p = np.pad(left, (0, pad))
-    right_p = np.pad(right, (0, pad))
+    left_p = np.pad(left, (0, pad)).astype(np.float32)
+    right_p = np.pad(right, (0, pad)).astype(np.float32)
     out_len = len(left_p)
 
     n_frames = (out_len - N) // hop + 1
 
     # Output accumulators (center, left-panned, right-panned) × (L, R channels)
-    c_l = np.zeros(out_len)
-    c_r = np.zeros(out_len)
-    p_ll = np.zeros(out_len)
-    p_lr = np.zeros(out_len)
-    p_rl = np.zeros(out_len)
-    p_rr = np.zeros(out_len)
-    win_sq = np.zeros(out_len)
+    c_l = np.zeros(out_len, dtype=np.float32)
+    c_r = np.zeros(out_len, dtype=np.float32)
+    p_ll = np.zeros(out_len, dtype=np.float32)
+    p_lr = np.zeros(out_len, dtype=np.float32)
+    p_rl = np.zeros(out_len, dtype=np.float32)
+    p_rr = np.zeros(out_len, dtype=np.float32)
+    win_sq = np.zeros(out_len, dtype=np.float32)
 
     # Gaussian mask parameters
     sigma_c = 0.12   # center width
@@ -257,23 +263,30 @@ def _stereo_separate(left, right):
         p_rr[s:s + N] += np.fft.irfft(R * rm, n=N) * win
         win_sq[s:s + N] += win ** 2
 
+    # Release padded inputs
+    del left_p, right_p
+
     # Normalize overlap-add
     norm = np.maximum(win_sq[:orig_len], 1e-8)
+    del win_sq
 
     components = {}
 
     cl = c_l[:orig_len] / norm
     cr = c_r[:orig_len] / norm
+    del c_l, c_r
     if _rms((cl + cr) / 2) > SILENCE_THRESHOLD:
         components["center"] = (cl, cr)
 
     ll = p_ll[:orig_len] / norm
     lr = p_lr[:orig_len] / norm
+    del p_ll, p_lr
     if _rms(ll) > SILENCE_THRESHOLD * 0.5:
         components["left"] = (ll, lr)
 
     rl = p_rl[:orig_len] / norm
     rr = p_rr[:orig_len] / norm
+    del p_rl, p_rr, norm
     if _rms(rr) > SILENCE_THRESHOLD * 0.5:
         components["right"] = (rl, rr)
 
@@ -399,31 +412,23 @@ def _get_tab_renderer(label):
 
 # ─── Main Separation Pipeline ────────────────────────────────────────────────
 
-def separate_stems(audio_path: str, song_id: str, progress_callback=None) -> dict:
+def _separate_stems_local(audio_path: Path, out_dir: Path, progress_callback=None) -> tuple[dict, str]:
     """
-    Full pipeline:
-      1. Run Demucs for initial separation
-      2. Analyze stereo field of each stem
-      3. Split into individually panned components
-      4. Classify each component
-      5. Return only stems with meaningful audio content
-
-    Returns dict: {stem_key: {path, energy, active, label}}
+    Run Demucs locally as subprocess. Returns (raw_stems, model_name).
+    raw_stems: {stem_name: path_to_raw_wav}
     """
-    _ensure_imports()
-    audio_path = Path(audio_path)
-    out_dir = OUTPUT_DIR / song_id / "stems"
-    out_dir.mkdir(parents=True, exist_ok=True)
+    import time as _time
+    _t0 = _time.time()
 
-    # ── Step 1: Run Demucs ──
     model = DEMUCS_MODEL
     stem_names = STEM_NAMES_6
 
     if progress_callback:
-        progress_callback("Running Demucs separation...")
+        progress_callback("Running Demucs separation (local)...")
 
-    DEMUCS_TIMEOUT = 600  # 10 minutes max for stem separation
+    DEMUCS_TIMEOUT = 600
 
+    print(f"[separation] LOCAL starting: model={model}")
     try:
         result = subprocess.run(
             ["python", "-m", "demucs", "--out", str(out_dir), "--name", model, str(audio_path)],
@@ -434,7 +439,7 @@ def separate_stems(audio_path: str, song_id: str, progress_callback=None) -> dic
 
     # Fallback to 4-stem if 6-stem fails
     if result.returncode != 0 and model == "htdemucs_6stems":
-        print(f"[demucs] 6-stem failed, trying 4-stem fallback. stderr: {result.stderr[-200:]}")
+        print(f"[separation] 6-stem failed, trying 4-stem fallback. stderr: {result.stderr[-200:]}")
         model = "htdemucs"
         stem_names = STEM_NAMES_4
         try:
@@ -451,7 +456,6 @@ def separate_stems(audio_path: str, song_id: str, progress_callback=None) -> dic
     song_name = audio_path.stem
     stem_dir = out_dir / model / song_name
 
-    # Copy Demucs output to standard location
     raw_stems = {}
     for stem_name in stem_names:
         stem_file = stem_dir / f"{stem_name}.wav"
@@ -460,11 +464,124 @@ def separate_stems(audio_path: str, song_id: str, progress_callback=None) -> dic
             shutil.copy2(stem_file, dest)
             raw_stems[stem_name] = str(dest)
 
+    elapsed = _time.time() - _t0
+    print(f"[separation] LOCAL finished in {elapsed:.1f}s → {len(raw_stems)} stems: {list(raw_stems.keys())}")
+    return raw_stems, model
+
+
+def _separate_stems_replicate(audio_path: Path, out_dir: Path, progress_callback=None) -> tuple[dict, str]:
+    """
+    Run Demucs via Replicate hosted API. Returns (raw_stems, model_name).
+    raw_stems: {stem_name: path_to_raw_wav}
+    """
+    import os
+    import time as _time
+    import requests as _requests
+
+    token = os.getenv("REPLICATE_API_TOKEN", "")
+    if not token:
+        raise RuntimeError("REPLICATE_API_TOKEN not set")
+
+    _t0 = _time.time()
+
+    if progress_callback:
+        progress_callback("Running stem separation (cloud)...")
+
+    print(f"[separation] REPLICATE starting: {audio_path.name}")
+
+    import replicate
+
+    # Use the official htdemucs model on Replicate
+    # This runs the same Demucs model on GPU — identical output, much faster
+    output = replicate.run(
+        "cjwbw/demucs:25a173108cff36ef9f80f854c162d01df9e6528be175794b81571db50571f6d7",
+        input={
+            "audio": open(str(audio_path), "rb"),
+            "jobs": 0,  # auto
+        },
+    )
+
+    # Replicate returns a dict of stem URLs: {"bass": "https://...", "drums": "https://...", ...}
+    # Map Replicate stem names to our expected names
+    _REPLICATE_STEM_MAP = {
+        "vocals": "vocals",
+        "drums": "drums",
+        "bass": "bass",
+        "guitar": "guitar",
+        "piano": "piano",
+        "other": "other",
+    }
+
+    raw_stems = {}
+    for replicate_key, url in output.items():
+        stem_name = _REPLICATE_STEM_MAP.get(replicate_key)
+        if not stem_name:
+            # Unknown stem from Replicate — keep it with original name
+            stem_name = replicate_key
+            print(f"[separation] REPLICATE unmapped stem: {replicate_key}")
+
+        dest = out_dir / f"_raw_{stem_name}.wav"
+        print(f"[separation] REPLICATE downloading: {stem_name} → {dest.name}")
+
+        resp = _requests.get(url, timeout=60)
+        resp.raise_for_status()
+        dest.write_bytes(resp.content)
+        raw_stems[stem_name] = str(dest)
+
+    elapsed = _time.time() - _t0
+    print(f"[separation] REPLICATE finished in {elapsed:.1f}s → {len(raw_stems)} stems: {list(raw_stems.keys())}")
+    return raw_stems, "replicate_htdemucs"
+
+
+def separate_stems(audio_path: str, song_id: str, progress_callback=None) -> dict:
+    """
+    Full pipeline:
+      1. Run Demucs for initial separation (hosted or local)
+      2. Analyze stereo field of each stem
+      3. Split into individually panned components
+      4. Classify each component
+      5. Return only stems with meaningful audio content
+
+    Returns dict: {stem_key: {path, energy, active, label}}
+    """
+    import os
+    _ensure_imports()
+    audio_path = Path(audio_path)
+    out_dir = OUTPUT_DIR / song_id / "stems"
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    # ── Step 1: Stem separation (hosted or local) ──
+    hosted_raw = os.getenv("USE_HOSTED_SEPARATION", "false").strip()
+    use_hosted = hosted_raw.lower() in ("true", "1", "yes")
+    has_token = bool(os.getenv("REPLICATE_API_TOKEN", "").strip())
+
+    print(f"[separation] USE_HOSTED_SEPARATION = {hosted_raw!r} → use_hosted={use_hosted}")
+    print(f"[separation] HAS_REPLICATE_TOKEN = {has_token}")
+
+    if use_hosted and not has_token:
+        print(f"[separation] WARNING: hosted separation enabled but REPLICATE_API_TOKEN is missing — using local")
+        use_hosted = False
+
+    if use_hosted:
+        print(f"[separation] path = replicate")
+        try:
+            raw_stems, model = _separate_stems_replicate(audio_path, out_dir, progress_callback)
+        except Exception as e:
+            print(f"[separation] REPLICATE FAILED: {e} — falling back to local Demucs")
+            if progress_callback:
+                progress_callback("Cloud separation failed, using local...")
+            raw_stems, model = _separate_stems_local(audio_path, out_dir, progress_callback)
+    else:
+        print(f"[separation] path = local")
+        raw_stems, model = _separate_stems_local(audio_path, out_dir, progress_callback)
+
     # ── Step 2: Refine each stem ──
     if progress_callback:
         progress_callback("Analyzing instruments...")
 
     refined = {}
+
+    import gc as _gc
 
     for stem_name, raw_path in raw_stems.items():
         # Drums and bass: keep as-is (Demucs handles these well)
@@ -473,6 +590,7 @@ def separate_stems(audio_path: str, song_id: str, progress_callback=None) -> dic
             shutil.copy2(raw_path, dest)
             left, right, sr = _read_wav(raw_path)
             energy = _rms((left + right) / 2)
+            del left, right
             refined[stem_name] = {
                 "path": str(dest),
                 "energy": round(energy, 6),
@@ -498,6 +616,7 @@ def separate_stems(audio_path: str, song_id: str, progress_callback=None) -> dic
 
         stem_energy = _rms((left + right) / 2)
         if stem_energy < SILENCE_THRESHOLD:
+            del left, right
             continue  # Skip entirely silent stems
 
         if progress_callback:
@@ -511,7 +630,9 @@ def separate_stems(audio_path: str, song_id: str, progress_callback=None) -> dic
             dest = out_dir / f"{stem_name}.wav"
             shutil.copy2(raw_path, dest)
             mono = (left + right) / 2
+            del left, right
             feat = _spectral_features(mono, sr)
+            del mono
             label = _classify_component(feat, stem_name, "center")
             refined[stem_name] = {
                 "path": str(dest),
@@ -520,6 +641,7 @@ def separate_stems(audio_path: str, song_id: str, progress_callback=None) -> dic
                 "label": label,
             }
             continue
+        del left, right  # No longer needed after stereo separation
 
         # Classify each component
         sub_parts = []
@@ -570,6 +692,8 @@ def separate_stems(audio_path: str, song_id: str, progress_callback=None) -> dic
 
         # Multiple components — save each with numbered duplicates
         _save_sub_parts(sub_parts, sr, out_dir, refined)
+        del sub_parts, components
+        _gc.collect()
 
     # Clean up intermediate files to save disk/memory
     # Remove Demucs working directory (model output copies are already in _raw_*)
@@ -688,9 +812,11 @@ def generate_tabs(stem_path: str, song_id: str, stem_name: str, label: str = "",
         minimum_frequency=config["min_freq"],
         maximum_frequency=config["max_freq"],
     )
+    del model_output  # Large tensor, not needed after prediction
 
     midi_path = tab_dir / f"{stem_name}.mid"
     midi_data.write(str(midi_path))
+    del midi_data
 
     csv_path = tab_dir / f"{stem_name}_notes.csv"
     note_events = _normalize_note_events(note_events)
