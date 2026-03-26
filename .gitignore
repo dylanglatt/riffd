@@ -27,3 +27,4 @@ Thumbs.db
 # IDE / tooling
 .claude/settings.local.json
 *.xlsx
+design/archive/figma-reference/
