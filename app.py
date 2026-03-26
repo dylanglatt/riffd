@@ -458,6 +458,30 @@ def discovery():
     return jsonify(_STATIC_DISCOVERY[:8])
 
 
+# ─── Theory data endpoints ────────────────────────────────────────────────────
+
+import json as _json
+
+_THEORY_DATA = {}
+_DATA_DIR = Path("data")
+
+def _load_theory(name):
+    if name not in _THEORY_DATA:
+        p = _DATA_DIR / f"{name}.json"
+        if p.exists():
+            _THEORY_DATA[name] = _json.loads(p.read_text())
+        else:
+            _THEORY_DATA[name] = []
+    return _THEORY_DATA[name]
+
+
+@app.route("/api/theory/<section>")
+def theory_data(section):
+    if section not in ("chords", "scales", "progressions", "keys"):
+        return jsonify({"error": "Unknown section"}), 404
+    return jsonify(_load_theory(section))
+
+
 if __name__ == "__main__":
     print("\n  Riffd running at http://localhost:5001\n")
     app.run(debug=True, port=5001, threaded=True)

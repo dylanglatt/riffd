@@ -1,0 +1,671 @@
+[
+  {
+    "name": "Major Scale (Ionian)",
+    "formula": "W - W - H - W - W - W - H",
+    "badge": "Essential",
+    "desc": "The foundation of Western harmony. All other scales and modes relate to this pattern.",
+    "difficulty": "Beginner",
+    "family": "Major",
+    "genres": [
+      "Pop",
+      "Rock",
+      "Classical"
+    ],
+    "mood": [
+      "Bright",
+      "Happy",
+      "Resolved"
+    ],
+    "notes": 7
+  },
+  {
+    "name": "Dorian Mode",
+    "formula": "W - H - W - W - W - H - W",
+    "badge": "Mode",
+    "desc": "Minor with a raised 6th. The sound of jazz, funk, and Carlos Santana.",
+    "difficulty": "Intermediate",
+    "family": "Major",
+    "genres": [
+      "Jazz",
+      "Funk",
+      "Latin"
+    ],
+    "mood": [
+      "Smooth",
+      "Cool",
+      "Sophisticated"
+    ],
+    "notes": 7
+  },
+  {
+    "name": "Phrygian Mode",
+    "formula": "H - W - W - W - H - W - W",
+    "badge": "Mode",
+    "desc": "Minor with a flat 2nd. Spanish, flamenco, and metal character.",
+    "difficulty": "Intermediate",
+    "family": "Major",
+    "genres": [
+      "Flamenco",
+      "Metal",
+      "World"
+    ],
+    "mood": [
+      "Exotic",
+      "Dark",
+      "Intense"
+    ],
+    "notes": 7
+  },
+  {
+    "name": "Lydian Mode",
+    "formula": "W - W - W - H - W - W - H",
+    "badge": "Mode",
+    "desc": "Major with a raised 4th. Dreamy, floating, cinematic. Steve Vai, Joe Satriani.",
+    "difficulty": "Intermediate",
+    "family": "Major",
+    "genres": [
+      "Film",
+      "Progressive",
+      "Ambient"
+    ],
+    "mood": [
+      "Dreamy",
+      "Floating",
+      "Ethereal"
+    ],
+    "notes": 7
+  },
+  {
+    "name": "Mixolydian Mode",
+    "formula": "W - W - H - W - W - H - W",
+    "badge": "Mode",
+    "desc": "Major with a flat 7th. Blues-rock, jam band, and classic rock essential.",
+    "difficulty": "Intermediate",
+    "family": "Major",
+    "genres": [
+      "Blues",
+      "Rock",
+      "Country"
+    ],
+    "mood": [
+      "Laid-Back",
+      "Bluesy",
+      "Earthy"
+    ],
+    "notes": 7
+  },
+  {
+    "name": "Aeolian Mode (Natural Minor)",
+    "formula": "W - H - W - W - H - W - W",
+    "badge": "Essential",
+    "desc": "The natural minor scale. Relative minor of major. Darker, moodier character.",
+    "difficulty": "Beginner",
+    "family": "Minor",
+    "genres": [
+      "Rock",
+      "Pop",
+      "Classical"
+    ],
+    "mood": [
+      "Dark",
+      "Melancholy",
+      "Emotional"
+    ],
+    "notes": 7
+  },
+  {
+    "name": "Locrian Mode",
+    "formula": "H - W - W - H - W - W - W",
+    "badge": "Mode",
+    "desc": "The darkest mode. Diminished tonic, rarely used as key center. Theoretical importance.",
+    "difficulty": "Advanced",
+    "family": "Major",
+    "genres": [
+      "Metal",
+      "Avant-Garde"
+    ],
+    "mood": [
+      "Unstable",
+      "Dissonant",
+      "Tense"
+    ],
+    "notes": 7
+  },
+  {
+    "name": "Natural Minor",
+    "formula": "W - H - W - W - H - W - W",
+    "badge": "Essential",
+    "desc": "The foundational minor scale. All minor harmony derives from this pattern.",
+    "difficulty": "Beginner",
+    "family": "Minor",
+    "genres": [
+      "Rock",
+      "Pop",
+      "Classical"
+    ],
+    "mood": [
+      "Dark",
+      "Sad",
+      "Emotional"
+    ],
+    "notes": 7
+  },
+  {
+    "name": "Harmonic Minor",
+    "formula": "W - H - W - W - H - 3H - H",
+    "badge": "Minor",
+    "desc": "Raised 7th creates a leading tone. Stronger pull to the tonic. Classical and neo-classical.",
+    "difficulty": "Intermediate",
+    "family": "Minor",
+    "genres": [
+      "Classical",
+      "Neo-Classical",
+      "Metal"
+    ],
+    "mood": [
+      "Dramatic",
+      "Exotic",
+      "Intense"
+    ],
+    "notes": 7
+  },
+  {
+    "name": "Melodic Minor (Ascending)",
+    "formula": "W - H - W - W - W - W - H",
+    "badge": "Jazz",
+    "desc": "Raised 6th and 7th. The jazz minor scale. Foundation of altered harmony.",
+    "difficulty": "Advanced",
+    "family": "Minor",
+    "genres": [
+      "Jazz",
+      "Fusion"
+    ],
+    "mood": [
+      "Sophisticated",
+      "Complex",
+      "Smooth"
+    ],
+    "notes": 7
+  },
+  {
+    "name": "Minor Pentatonic",
+    "formula": "1 - b3 - 4 - 5 - b7",
+    "badge": "Essential",
+    "desc": "Five notes, no wrong notes. The most-used scale in rock, blues, and pop soloing.",
+    "difficulty": "Beginner",
+    "family": "Pentatonic",
+    "genres": [
+      "Rock",
+      "Blues",
+      "Pop"
+    ],
+    "mood": [
+      "Raw",
+      "Expressive",
+      "Universal"
+    ],
+    "notes": 5
+  },
+  {
+    "name": "Major Pentatonic",
+    "formula": "1 - 2 - 3 - 5 - 6",
+    "badge": "Essential",
+    "desc": "Bright and open. Country, folk, and classic rock. Same shape as minor pentatonic, different root.",
+    "difficulty": "Beginner",
+    "family": "Pentatonic",
+    "genres": [
+      "Country",
+      "Folk",
+      "Rock"
+    ],
+    "mood": [
+      "Bright",
+      "Open",
+      "Joyful"
+    ],
+    "notes": 5
+  },
+  {
+    "name": "Blues Scale (Minor)",
+    "formula": "1 - b3 - 4 - b5 - 5 - b7",
+    "badge": "Blues",
+    "desc": "Minor pentatonic plus the blue note (b5). Adds tension, grit, and soul.",
+    "difficulty": "Beginner",
+    "family": "Blues",
+    "genres": [
+      "Blues",
+      "Rock",
+      "Jazz"
+    ],
+    "mood": [
+      "Gritty",
+      "Soulful",
+      "Raw"
+    ],
+    "notes": 6
+  },
+  {
+    "name": "Major Blues Scale",
+    "formula": "1 - 2 - b3 - 3 - 5 - 6",
+    "badge": "Blues",
+    "desc": "Major pentatonic with a chromatic passing tone. Bright blues flavor. B.B. King's signature.",
+    "difficulty": "Intermediate",
+    "family": "Blues",
+    "genres": [
+      "Blues",
+      "Country",
+      "Jazz"
+    ],
+    "mood": [
+      "Bright",
+      "Playful",
+      "Soulful"
+    ],
+    "notes": 6
+  },
+  {
+    "name": "Phrygian Dominant",
+    "formula": "H - 3H - H - W - H - W - W",
+    "badge": "Exotic",
+    "desc": "5th mode of harmonic minor. Middle Eastern and flamenco sound. Haunting and powerful.",
+    "difficulty": "Advanced",
+    "family": "Harmonic Minor",
+    "genres": [
+      "Flamenco",
+      "Metal",
+      "World"
+    ],
+    "mood": [
+      "Exotic",
+      "Haunting",
+      "Powerful"
+    ],
+    "notes": 7
+  },
+  {
+    "name": "Lydian #2",
+    "formula": "3H - H - W - H - W - W - H",
+    "badge": "Exotic",
+    "desc": "2nd mode of harmonic minor. Mysterious and unsettling. Used in film scoring.",
+    "difficulty": "Advanced",
+    "family": "Harmonic Minor",
+    "genres": [
+      "Film",
+      "Classical"
+    ],
+    "mood": [
+      "Mysterious",
+      "Unsettling"
+    ],
+    "notes": 7
+  },
+  {
+    "name": "Super Locrian bb7",
+    "formula": "H - W - H - W - W - H - 3H",
+    "badge": "Exotic",
+    "desc": "7th mode of harmonic minor. Extreme dissonance. Theoretical and avant-garde.",
+    "difficulty": "Advanced",
+    "family": "Harmonic Minor",
+    "genres": [
+      "Avant-Garde"
+    ],
+    "mood": [
+      "Dissonant",
+      "Abstract"
+    ],
+    "notes": 7
+  },
+  {
+    "name": "Lydian Dominant",
+    "formula": "W - W - W - H - W - H - W",
+    "badge": "Jazz",
+    "desc": "4th mode of melodic minor. Used over dominant 7#11 chords. Bartok's scale.",
+    "difficulty": "Advanced",
+    "family": "Melodic Minor",
+    "genres": [
+      "Jazz",
+      "Fusion"
+    ],
+    "mood": [
+      "Bright",
+      "Tense",
+      "Complex"
+    ],
+    "notes": 7
+  },
+  {
+    "name": "Altered Scale",
+    "formula": "H - W - H - W - W - W - W",
+    "badge": "Jazz",
+    "desc": "7th mode of melodic minor. Every tension altered. The sound of modern jazz improvisation.",
+    "difficulty": "Advanced",
+    "family": "Melodic Minor",
+    "genres": [
+      "Jazz",
+      "Fusion"
+    ],
+    "mood": [
+      "Tense",
+      "Angular",
+      "Complex"
+    ],
+    "notes": 7
+  },
+  {
+    "name": "Lydian Augmented",
+    "formula": "W - W - W - W - H - W - H",
+    "badge": "Jazz",
+    "desc": "3rd mode of melodic minor. Major with #4 and #5. Floating, otherworldly quality.",
+    "difficulty": "Advanced",
+    "family": "Melodic Minor",
+    "genres": [
+      "Jazz",
+      "Film"
+    ],
+    "mood": [
+      "Ethereal",
+      "Floating",
+      "Strange"
+    ],
+    "notes": 7
+  },
+  {
+    "name": "Dorian b2",
+    "formula": "H - W - W - W - W - H - W",
+    "badge": "Jazz",
+    "desc": "2nd mode of melodic minor. Phrygian with a natural 6th. Dark but not harsh.",
+    "difficulty": "Advanced",
+    "family": "Melodic Minor",
+    "genres": [
+      "Jazz"
+    ],
+    "mood": [
+      "Dark",
+      "Smooth",
+      "Mysterious"
+    ],
+    "notes": 7
+  },
+  {
+    "name": "Mixolydian b6",
+    "formula": "W - W - H - W - H - W - W",
+    "badge": "Jazz",
+    "desc": "5th mode of melodic minor. Hindu scale. Bittersweet, exotic major quality.",
+    "difficulty": "Advanced",
+    "family": "Melodic Minor",
+    "genres": [
+      "Jazz",
+      "World"
+    ],
+    "mood": [
+      "Bittersweet",
+      "Exotic"
+    ],
+    "notes": 7
+  },
+  {
+    "name": "Half-Diminished (Locrian #2)",
+    "formula": "W - H - W - H - W - W - W",
+    "badge": "Jazz",
+    "desc": "6th mode of melodic minor. Used over half-diminished chords in jazz ii-V-i.",
+    "difficulty": "Advanced",
+    "family": "Melodic Minor",
+    "genres": [
+      "Jazz"
+    ],
+    "mood": [
+      "Dark",
+      "Restrained"
+    ],
+    "notes": 7
+  },
+  {
+    "name": "Whole Tone",
+    "formula": "W - W - W - W - W - W",
+    "badge": "Symmetric",
+    "desc": "Six equally-spaced notes. Dreamy, floating, unresolved. Debussy's signature sound.",
+    "difficulty": "Intermediate",
+    "family": "Symmetric",
+    "genres": [
+      "Classical",
+      "Film",
+      "Jazz"
+    ],
+    "mood": [
+      "Dreamy",
+      "Floating",
+      "Unresolved"
+    ],
+    "notes": 6
+  },
+  {
+    "name": "Diminished (Half-Whole)",
+    "formula": "H-W-H-W-H-W-H-W",
+    "badge": "Symmetric",
+    "desc": "Eight-note symmetric scale. Used over diminished chords. Tense and angular.",
+    "difficulty": "Advanced",
+    "family": "Symmetric",
+    "genres": [
+      "Jazz",
+      "Classical"
+    ],
+    "mood": [
+      "Tense",
+      "Angular",
+      "Mechanical"
+    ],
+    "notes": 8
+  },
+  {
+    "name": "Diminished (Whole-Half)",
+    "formula": "W-H-W-H-W-H-W-H",
+    "badge": "Symmetric",
+    "desc": "Dominant diminished scale. Used over dominant 7b9 chords in jazz.",
+    "difficulty": "Advanced",
+    "family": "Symmetric",
+    "genres": [
+      "Jazz"
+    ],
+    "mood": [
+      "Tense",
+      "Rich",
+      "Complex"
+    ],
+    "notes": 8
+  },
+  {
+    "name": "Chromatic Scale",
+    "formula": "All 12 semitones",
+    "badge": "Reference",
+    "desc": "All twelve notes. Not a key \u2014 a tool for chromatic exercises and passing tones.",
+    "difficulty": "Beginner",
+    "family": "Symmetric",
+    "genres": [],
+    "mood": [
+      "Neutral"
+    ],
+    "notes": 12
+  },
+  {
+    "name": "Augmented Scale",
+    "formula": "m3 - H - m3 - H - m3 - H",
+    "badge": "Symmetric",
+    "desc": "Alternating minor thirds and half steps. Symmetrical, mysterious, and rare.",
+    "difficulty": "Advanced",
+    "family": "Symmetric",
+    "genres": [
+      "Jazz",
+      "Film"
+    ],
+    "mood": [
+      "Mysterious",
+      "Symmetrical"
+    ],
+    "notes": 6
+  },
+  {
+    "name": "Hungarian Minor",
+    "formula": "W - H - 3H - H - H - 3H - H",
+    "badge": "Exotic",
+    "desc": "Dramatic double-augmented sound. Eastern European folk and film music.",
+    "difficulty": "Advanced",
+    "family": "Exotic",
+    "genres": [
+      "Film",
+      "Folk",
+      "Classical"
+    ],
+    "mood": [
+      "Dramatic",
+      "Exotic",
+      "Cinematic"
+    ],
+    "notes": 7
+  },
+  {
+    "name": "Japanese (In Sen)",
+    "formula": "H - 2W - W - H - 2W",
+    "badge": "Exotic",
+    "desc": "Five-note scale with haunting openness. Traditional Japanese koto music and ambient.",
+    "difficulty": "Advanced",
+    "family": "Exotic",
+    "genres": [
+      "World",
+      "Ambient"
+    ],
+    "mood": [
+      "Haunting",
+      "Sparse",
+      "Contemplative"
+    ],
+    "notes": 5
+  },
+  {
+    "name": "Double Harmonic Major",
+    "formula": "H - 3H - H - W - H - 3H - H",
+    "badge": "Exotic",
+    "desc": "Byzantine scale. Combines harmonic minor color with major resolution. Dramatic and cinematic.",
+    "difficulty": "Advanced",
+    "family": "Exotic",
+    "genres": [
+      "Film",
+      "World",
+      "Metal"
+    ],
+    "mood": [
+      "Dramatic",
+      "Cinematic",
+      "Intense"
+    ],
+    "notes": 7
+  },
+  {
+    "name": "Hirajoshi",
+    "formula": "W - H - 2W - H - 2W",
+    "badge": "Exotic",
+    "desc": "Japanese pentatonic. Haunting, minimal, evocative. Used in ambient and film.",
+    "difficulty": "Advanced",
+    "family": "Exotic",
+    "genres": [
+      "World",
+      "Ambient",
+      "Film"
+    ],
+    "mood": [
+      "Haunting",
+      "Minimal",
+      "Beautiful"
+    ],
+    "notes": 5
+  },
+  {
+    "name": "Neapolitan Minor",
+    "formula": "H - W - W - W - H - 3H - H",
+    "badge": "Exotic",
+    "desc": "Natural minor with a flat 2nd plus raised 7th. Dark, Classical, operatic intensity.",
+    "difficulty": "Advanced",
+    "family": "Exotic",
+    "genres": [
+      "Classical",
+      "Film"
+    ],
+    "mood": [
+      "Dark",
+      "Operatic",
+      "Intense"
+    ],
+    "notes": 7
+  },
+  {
+    "name": "Enigmatic Scale",
+    "formula": "H - 3H - W - W - W - H - H",
+    "badge": "Exotic",
+    "desc": "Verdi's mysterious invention. Rarely used but hauntingly unique when applied.",
+    "difficulty": "Advanced",
+    "family": "Exotic",
+    "genres": [
+      "Film",
+      "Avant-Garde"
+    ],
+    "mood": [
+      "Mysterious",
+      "Strange",
+      "Unique"
+    ],
+    "notes": 7
+  },
+  {
+    "name": "Bebop Dominant",
+    "formula": "W-W-H-W-W-H-H-H",
+    "badge": "Jazz",
+    "desc": "Mixolydian with a chromatic passing tone. Keeps chord tones on downbeats. Charlie Parker essential.",
+    "difficulty": "Advanced",
+    "family": "Bebop",
+    "genres": [
+      "Jazz",
+      "Bebop"
+    ],
+    "mood": [
+      "Driving",
+      "Articulate",
+      "Virtuosic"
+    ],
+    "notes": 8
+  },
+  {
+    "name": "Bebop Major",
+    "formula": "W-W-H-W-H-H-W-H",
+    "badge": "Jazz",
+    "desc": "Major scale with a chromatic passing tone between 5 and 6. Smooth, flowing jazz lines.",
+    "difficulty": "Advanced",
+    "family": "Bebop",
+    "genres": [
+      "Jazz",
+      "Bebop"
+    ],
+    "mood": [
+      "Bright",
+      "Flowing",
+      "Articulate"
+    ],
+    "notes": 8
+  },
+  {
+    "name": "Bebop Dorian",
+    "formula": "W-H-H-H-W-W-H-W",
+    "badge": "Jazz",
+    "desc": "Dorian with a passing tone between 3 and 4. Used in minor ii-V-i lines.",
+    "difficulty": "Advanced",
+    "family": "Bebop",
+    "genres": [
+      "Jazz",
+      "Bebop"
+    ],
+    "mood": [
+      "Cool",
+      "Smooth",
+      "Complex"
+    ],
+    "notes": 8
+  }
+]

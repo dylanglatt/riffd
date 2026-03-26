@@ -1,0 +1,715 @@
+[
+  {
+    "name": "I - V - vi - IV",
+    "formula": "C - G - Am - F",
+    "badge": "Pop",
+    "desc": "The most common progression in modern pop. Hundreds of hits from every decade.",
+    "difficulty": "Beginner",
+    "category": "Pop",
+    "function": "Loop",
+    "genres": [
+      "Pop",
+      "Rock"
+    ],
+    "mood": [
+      "Uplifting",
+      "Anthemic"
+    ],
+    "chords": 4
+  },
+  {
+    "name": "vi - IV - I - V",
+    "formula": "Am - F - C - G",
+    "badge": "Pop",
+    "desc": "Same four chords, starting on the minor. More emotional, introspective arc.",
+    "difficulty": "Beginner",
+    "category": "Pop",
+    "function": "Loop",
+    "genres": [
+      "Pop",
+      "Ballad"
+    ],
+    "mood": [
+      "Emotional",
+      "Introspective"
+    ],
+    "chords": 4
+  },
+  {
+    "name": "I - vi - IV - V",
+    "formula": "C - Am - F - G",
+    "badge": "Doo-Wop",
+    "desc": "The 50s progression. Doo-wop, early rock, and retro throwbacks.",
+    "difficulty": "Beginner",
+    "category": "Pop",
+    "function": "Loop",
+    "genres": [
+      "Pop",
+      "Retro"
+    ],
+    "mood": [
+      "Nostalgic",
+      "Warm"
+    ],
+    "chords": 4
+  },
+  {
+    "name": "I - IV - vi - V",
+    "formula": "C - F - Am - G",
+    "badge": "Pop",
+    "desc": "Subtle rotation of the pop four chords. Slightly different emotional trajectory.",
+    "difficulty": "Beginner",
+    "category": "Pop",
+    "function": "Loop",
+    "genres": [
+      "Pop"
+    ],
+    "mood": [
+      "Bright",
+      "Hopeful"
+    ],
+    "chords": 4
+  },
+  {
+    "name": "IV - I - V - vi",
+    "formula": "F - C - G - Am",
+    "badge": "Pop",
+    "desc": "Starting on IV creates a hopeful, uplifting launch. Modern anthem staple.",
+    "difficulty": "Beginner",
+    "category": "Pop",
+    "function": "Loop",
+    "genres": [
+      "Pop"
+    ],
+    "mood": [
+      "Uplifting",
+      "Anthemic"
+    ],
+    "chords": 4
+  },
+  {
+    "name": "I - V - vi - iii - IV",
+    "formula": "C - G - Am - Em - F",
+    "badge": "Canon",
+    "desc": "Pachelbel's Canon extended. Elegant, flowing, endlessly adaptable.",
+    "difficulty": "Intermediate",
+    "category": "Pop",
+    "function": "Loop",
+    "genres": [
+      "Pop",
+      "Classical"
+    ],
+    "mood": [
+      "Elegant",
+      "Flowing"
+    ],
+    "chords": 5
+  },
+  {
+    "name": "vi - V - IV - V",
+    "formula": "Am - G - F - G",
+    "badge": "Pop",
+    "desc": "Minor-starting loop with ascending return. Dramatic and driving.",
+    "difficulty": "Beginner",
+    "category": "Pop",
+    "function": "Loop",
+    "genres": [
+      "Pop",
+      "Rock"
+    ],
+    "mood": [
+      "Driving",
+      "Dramatic"
+    ],
+    "chords": 3
+  },
+  {
+    "name": "I - iii - IV - V",
+    "formula": "C - Em - F - G",
+    "badge": "Pop",
+    "desc": "The iii adds warmth before the IV-V climb. Classic singer-songwriter sound.",
+    "difficulty": "Beginner",
+    "category": "Pop",
+    "function": "Loop",
+    "genres": [
+      "Pop",
+      "Folk"
+    ],
+    "mood": [
+      "Warm",
+      "Building"
+    ],
+    "chords": 4
+  },
+  {
+    "name": "I - IV - V",
+    "formula": "G - C - D",
+    "badge": "Essential",
+    "desc": "Three chords and the truth. The backbone of rock, blues, country, and punk.",
+    "difficulty": "Beginner",
+    "category": "Rock",
+    "function": "Loop",
+    "genres": [
+      "Rock",
+      "Blues",
+      "Country",
+      "Punk"
+    ],
+    "mood": [
+      "Raw",
+      "Direct",
+      "Powerful"
+    ],
+    "chords": 3
+  },
+  {
+    "name": "I - IV - V - IV",
+    "formula": "A - D - E - D",
+    "badge": "Rock",
+    "desc": "Classic rock vamp. Straightforward, driving, endlessly repeatable.",
+    "difficulty": "Beginner",
+    "category": "Rock",
+    "function": "Loop",
+    "genres": [
+      "Rock"
+    ],
+    "mood": [
+      "Driving",
+      "Steady"
+    ],
+    "chords": 3
+  },
+  {
+    "name": "I - V - IV",
+    "formula": "A - E - D",
+    "badge": "Rock",
+    "desc": "Power chord staple. Punk, grunge, garage rock. Nirvana, Ramones.",
+    "difficulty": "Beginner",
+    "category": "Rock",
+    "function": "Loop",
+    "genres": [
+      "Rock",
+      "Punk",
+      "Grunge"
+    ],
+    "mood": [
+      "Raw",
+      "Aggressive"
+    ],
+    "chords": 3
+  },
+  {
+    "name": "I - bVII - IV",
+    "formula": "A - G - D",
+    "badge": "Rock",
+    "desc": "Borrowed bVII from mixolydian. Grateful Dead, Tom Petty, classic Americana.",
+    "difficulty": "Intermediate",
+    "category": "Rock",
+    "function": "Loop",
+    "genres": [
+      "Rock",
+      "Americana"
+    ],
+    "mood": [
+      "Earthy",
+      "Laid-Back"
+    ],
+    "chords": 3
+  },
+  {
+    "name": "I - bIII - bVII - IV",
+    "formula": "E - G - D - A",
+    "badge": "Rock",
+    "desc": "Borrowed chords from parallel minor. Grunge and alt-rock signature.",
+    "difficulty": "Intermediate",
+    "category": "Rock",
+    "function": "Loop",
+    "genres": [
+      "Rock",
+      "Grunge",
+      "Alternative"
+    ],
+    "mood": [
+      "Dark",
+      "Gritty"
+    ],
+    "chords": 4
+  },
+  {
+    "name": "I - bVI - bVII - I",
+    "formula": "C - Ab - Bb - C",
+    "badge": "Modal",
+    "desc": "Borrowed chords for epic, anthemic, cinematic feel. Film scores and arena rock.",
+    "difficulty": "Intermediate",
+    "category": "Rock",
+    "function": "Cadence",
+    "genres": [
+      "Rock",
+      "Film"
+    ],
+    "mood": [
+      "Epic",
+      "Anthemic",
+      "Cinematic"
+    ],
+    "chords": 3
+  },
+  {
+    "name": "12-Bar Blues",
+    "formula": "I-I-I-I / IV-IV-I-I / V-IV-I-V",
+    "badge": "Blues",
+    "desc": "The quintessential blues form. 12 bars, three chords, infinite expression.",
+    "difficulty": "Beginner",
+    "category": "Blues",
+    "function": "Form",
+    "genres": [
+      "Blues"
+    ],
+    "mood": [
+      "Soulful",
+      "Raw",
+      "Expressive"
+    ],
+    "chords": 3
+  },
+  {
+    "name": "Quick-Change Blues",
+    "formula": "I-IV-I-I / IV-IV-I-I / V-IV-I-V",
+    "badge": "Blues",
+    "desc": "IV chord hits in bar 2 instead of bar 5. Adds early movement. Common in Chicago blues.",
+    "difficulty": "Beginner",
+    "category": "Blues",
+    "function": "Form",
+    "genres": [
+      "Blues"
+    ],
+    "mood": [
+      "Driving",
+      "Urgent"
+    ],
+    "chords": 3
+  },
+  {
+    "name": "Minor Blues",
+    "formula": "i-i-i-i / iv-iv-i-i / v-iv-i-v",
+    "badge": "Blues",
+    "desc": "12-bar form in minor. Darker, jazzier. B.B. King, The Thrill Is Gone.",
+    "difficulty": "Intermediate",
+    "category": "Blues",
+    "function": "Form",
+    "genres": [
+      "Blues",
+      "Jazz"
+    ],
+    "mood": [
+      "Dark",
+      "Dramatic"
+    ],
+    "chords": 3
+  },
+  {
+    "name": "Jazz Blues",
+    "formula": "I7-IV7-I7-I7 / IV7-#IVdim-I7-vi7 / ii7-V7-I7-V7",
+    "badge": "Blues",
+    "desc": "Blues with jazz substitutions. Added turnarounds and passing chords.",
+    "difficulty": "Advanced",
+    "category": "Blues",
+    "function": "Form",
+    "genres": [
+      "Jazz",
+      "Blues"
+    ],
+    "mood": [
+      "Sophisticated",
+      "Smooth"
+    ],
+    "chords": 7
+  },
+  {
+    "name": "Stormy Monday Blues",
+    "formula": "I9-I9-IV9-IV9 / I9-I9-#IVdim7-IV9 / I9-bVI7-V7-I9",
+    "badge": "Blues",
+    "desc": "The T-Bone Walker arrangement. Rich ninth chords and chromatic movement.",
+    "difficulty": "Advanced",
+    "category": "Blues",
+    "function": "Form",
+    "genres": [
+      "Blues",
+      "Jazz"
+    ],
+    "mood": [
+      "Rich",
+      "Smoky"
+    ],
+    "chords": 5
+  },
+  {
+    "name": "8-Bar Blues",
+    "formula": "I-V-IV-IV / I-V-I-V",
+    "badge": "Blues",
+    "desc": "Compact blues form. Key to the Foundations, Heartbreak Hotel.",
+    "difficulty": "Intermediate",
+    "category": "Blues",
+    "function": "Form",
+    "genres": [
+      "Blues",
+      "Rock"
+    ],
+    "mood": [
+      "Compact",
+      "Driving"
+    ],
+    "chords": 3
+  },
+  {
+    "name": "ii - V - I",
+    "formula": "Dm7 - G7 - Cmaj7",
+    "badge": "Jazz",
+    "desc": "The fundamental jazz cadence. Resolution through the circle of fifths.",
+    "difficulty": "Intermediate",
+    "category": "Jazz",
+    "function": "Cadence",
+    "genres": [
+      "Jazz"
+    ],
+    "mood": [
+      "Resolved",
+      "Sophisticated"
+    ],
+    "chords": 3
+  },
+  {
+    "name": "ii - V - i (minor)",
+    "formula": "Dm7b5 - G7b9 - Cm",
+    "badge": "Jazz",
+    "desc": "Minor ii-V-i. Half-diminished and altered dominant. Standard jazz vocabulary.",
+    "difficulty": "Advanced",
+    "category": "Jazz",
+    "function": "Cadence",
+    "genres": [
+      "Jazz"
+    ],
+    "mood": [
+      "Dark",
+      "Sophisticated"
+    ],
+    "chords": 3
+  },
+  {
+    "name": "I - vi - ii - V",
+    "formula": "C - Am - Dm - G",
+    "badge": "Jazz",
+    "desc": "Rhythm changes A section. The heart of the jazz standard songbook.",
+    "difficulty": "Intermediate",
+    "category": "Jazz",
+    "function": "Turnaround",
+    "genres": [
+      "Jazz"
+    ],
+    "mood": [
+      "Classic",
+      "Flowing"
+    ],
+    "chords": 4
+  },
+  {
+    "name": "iii - vi - ii - V - I",
+    "formula": "Em - Am - Dm - G - C",
+    "badge": "Jazz",
+    "desc": "Extended circle of fifths. Each chord a fifth above the next. Beautiful cascading resolution.",
+    "difficulty": "Advanced",
+    "category": "Jazz",
+    "function": "Turnaround",
+    "genres": [
+      "Jazz"
+    ],
+    "mood": [
+      "Elegant",
+      "Cascading"
+    ],
+    "chords": 5
+  },
+  {
+    "name": "I - IV - iii - vi",
+    "formula": "Cmaj7 - Fmaj7 - Em7 - Am7",
+    "badge": "Jazz",
+    "desc": "Smooth four-chord loop. Bossa nova and lounge jazz feel.",
+    "difficulty": "Intermediate",
+    "category": "Jazz",
+    "function": "Loop",
+    "genres": [
+      "Jazz",
+      "Bossa Nova"
+    ],
+    "mood": [
+      "Smooth",
+      "Relaxed"
+    ],
+    "chords": 4
+  },
+  {
+    "name": "Coltrane Changes",
+    "formula": "Cmaj7 - Eb7 - Abmaj7 - B7 - Emaj7 - G7",
+    "badge": "Jazz",
+    "desc": "Three key centers a major third apart. Giant Steps. The ultimate jazz challenge.",
+    "difficulty": "Advanced",
+    "category": "Jazz",
+    "function": "Form",
+    "genres": [
+      "Jazz"
+    ],
+    "mood": [
+      "Complex",
+      "Virtuosic"
+    ],
+    "chords": 6
+  },
+  {
+    "name": "Backdoor ii-V",
+    "formula": "Bbm7 - Eb7 - Cmaj7",
+    "badge": "Jazz",
+    "desc": "Unexpected resolution from the flat side. Smooth, surprising cadence.",
+    "difficulty": "Advanced",
+    "category": "Jazz",
+    "function": "Cadence",
+    "genres": [
+      "Jazz"
+    ],
+    "mood": [
+      "Surprising",
+      "Smooth"
+    ],
+    "chords": 3
+  },
+  {
+    "name": "Tritone Substitution",
+    "formula": "Dm7 - Db7 - Cmaj7",
+    "badge": "Jazz",
+    "desc": "Db7 replaces G7 via tritone sub. Chromatic bass motion. Sophisticated voice leading.",
+    "difficulty": "Advanced",
+    "category": "Jazz",
+    "function": "Cadence",
+    "genres": [
+      "Jazz"
+    ],
+    "mood": [
+      "Chromatic",
+      "Sophisticated"
+    ],
+    "chords": 3
+  },
+  {
+    "name": "Autumn Leaves",
+    "formula": "ii - V - I - IV - vii - III - vi",
+    "badge": "Jazz",
+    "desc": "The most-played jazz standard progression. Alternates between major and relative minor ii-Vs.",
+    "difficulty": "Intermediate",
+    "category": "Jazz",
+    "function": "Form",
+    "genres": [
+      "Jazz"
+    ],
+    "mood": [
+      "Bittersweet",
+      "Classic"
+    ],
+    "chords": 7
+  },
+  {
+    "name": "Rhythm Changes (A)",
+    "formula": "I - vi - ii - V / I - vi - ii - V",
+    "badge": "Jazz",
+    "desc": "Based on Gershwin's I Got Rhythm. The second most common jazz form after blues.",
+    "difficulty": "Intermediate",
+    "category": "Jazz",
+    "function": "Form",
+    "genres": [
+      "Jazz",
+      "Bebop"
+    ],
+    "mood": [
+      "Driving",
+      "Classic"
+    ],
+    "chords": 4
+  },
+  {
+    "name": "Rhythm Changes (B)",
+    "formula": "III7 - VI7 - II7 - V7",
+    "badge": "Jazz",
+    "desc": "The bridge of rhythm changes. Dominant seventh cycle. Bebop playground.",
+    "difficulty": "Advanced",
+    "category": "Jazz",
+    "function": "Bridge",
+    "genres": [
+      "Jazz",
+      "Bebop"
+    ],
+    "mood": [
+      "Driving",
+      "Virtuosic"
+    ],
+    "chords": 4
+  },
+  {
+    "name": "i - VI - III - VII",
+    "formula": "Am - F - C - G",
+    "badge": "Minor",
+    "desc": "Andalusian-influenced. Dramatic, cinematic. Massive in modern pop and film.",
+    "difficulty": "Intermediate",
+    "category": "Minor",
+    "function": "Loop",
+    "genres": [
+      "Pop",
+      "Film"
+    ],
+    "mood": [
+      "Dramatic",
+      "Cinematic"
+    ],
+    "chords": 4
+  },
+  {
+    "name": "i - iv - v",
+    "formula": "Am - Dm - Em",
+    "badge": "Minor",
+    "desc": "Pure natural minor triads. Dark and unresolved. Folk and classical.",
+    "difficulty": "Beginner",
+    "category": "Minor",
+    "function": "Loop",
+    "genres": [
+      "Folk",
+      "Classical"
+    ],
+    "mood": [
+      "Dark",
+      "Unresolved"
+    ],
+    "chords": 3
+  },
+  {
+    "name": "i - VII - VI - V",
+    "formula": "Am - G - F - E",
+    "badge": "Flamenco",
+    "desc": "Andalusian cadence. Descends through the scale. Flamenco and classical guitar.",
+    "difficulty": "Intermediate",
+    "category": "Minor",
+    "function": "Cadence",
+    "genres": [
+      "Flamenco",
+      "Classical"
+    ],
+    "mood": [
+      "Passionate",
+      "Dramatic"
+    ],
+    "chords": 4
+  },
+  {
+    "name": "i - iv - VII - III",
+    "formula": "Am - Dm - G - C",
+    "badge": "Minor",
+    "desc": "Minor loop using all diatonic chords. Cyclical and moody.",
+    "difficulty": "Intermediate",
+    "category": "Minor",
+    "function": "Loop",
+    "genres": [
+      "Pop",
+      "Indie"
+    ],
+    "mood": [
+      "Moody",
+      "Cyclical"
+    ],
+    "chords": 4
+  },
+  {
+    "name": "i - bVI - bIII - bVII",
+    "formula": "Am - F - C - G",
+    "badge": "Minor",
+    "desc": "Same notes as vi-IV-I-V but heard in minor context. Context changes everything.",
+    "difficulty": "Beginner",
+    "category": "Minor",
+    "function": "Loop",
+    "genres": [
+      "Pop",
+      "Rock"
+    ],
+    "mood": [
+      "Dark",
+      "Powerful"
+    ],
+    "chords": 4
+  },
+  {
+    "name": "I - III - IV - iv",
+    "formula": "C - E - F - Fm",
+    "badge": "Chromatic",
+    "desc": "Major to borrowed minor iv. The emotional gut-punch. Radiohead, Beatles.",
+    "difficulty": "Advanced",
+    "category": "Chromatic",
+    "function": "Turnaround",
+    "genres": [
+      "Rock",
+      "Alternative"
+    ],
+    "mood": [
+      "Emotional",
+      "Bittersweet"
+    ],
+    "chords": 4
+  },
+  {
+    "name": "Plagal Cadence (IV - I)",
+    "formula": "F - C",
+    "badge": "Cadence",
+    "desc": "The Amen cadence. Gentle, hymn-like resolution. Warm finality.",
+    "difficulty": "Beginner",
+    "category": "Cadence",
+    "function": "Cadence",
+    "genres": [
+      "Gospel",
+      "Classical"
+    ],
+    "mood": [
+      "Peaceful",
+      "Warm"
+    ],
+    "chords": 2
+  },
+  {
+    "name": "Deceptive Cadence (V - vi)",
+    "formula": "G - Am",
+    "badge": "Cadence",
+    "desc": "Expected resolution to I diverted to vi. Creates surprise and continuation.",
+    "difficulty": "Intermediate",
+    "category": "Cadence",
+    "function": "Cadence",
+    "genres": [
+      "Classical",
+      "Pop"
+    ],
+    "mood": [
+      "Surprising",
+      "Unresolved"
+    ],
+    "chords": 2
+  },
+  {
+    "name": "Half Cadence (I - V)",
+    "formula": "C - G",
+    "badge": "Cadence",
+    "desc": "Ends on the dominant. Creates tension. The musical question mark.",
+    "difficulty": "Beginner",
+    "category": "Cadence",
+    "function": "Cadence",
+    "genres": [
+      "Classical"
+    ],
+    "mood": [
+      "Tense",
+      "Open"
+    ],
+    "chords": 2
+  }
+]

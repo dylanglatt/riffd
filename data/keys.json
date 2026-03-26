@@ -1,0 +1,470 @@
+[
+  {
+    "name": "C Major",
+    "relative": "A Minor",
+    "notes": "C D E F G A B",
+    "badge": "No Sharps/Flats",
+    "sharps": 0,
+    "flats": 0,
+    "desc": "All natural notes. The reference point for understanding every other key.",
+    "mode": "Major",
+    "mood": [
+      "Bright",
+      "Clear"
+    ],
+    "brightness": "Neutral",
+    "difficulty": "Beginner",
+    "genres": [
+      "Pop"
+    ],
+    "context": [
+      "Piano-Friendly"
+    ]
+  },
+  {
+    "name": "G Major",
+    "relative": "E Minor",
+    "notes": "G A B C D E F#",
+    "badge": "1 Sharp",
+    "sharps": 1,
+    "flats": 0,
+    "desc": "The most guitar-friendly key. Open chords G, C, D, Em, Am all live here.",
+    "mode": "Major",
+    "mood": [
+      "Bright",
+      "Clear"
+    ],
+    "brightness": "Balanced",
+    "difficulty": "Beginner",
+    "genres": [
+      "Folk",
+      "Rock"
+    ],
+    "context": [
+      "Guitar-Friendly"
+    ]
+  },
+  {
+    "name": "D Major",
+    "relative": "B Minor",
+    "notes": "D E F# G A B C#",
+    "badge": "2 Sharps",
+    "sharps": 2,
+    "flats": 0,
+    "desc": "Bright and open. Popular in folk, country, and acoustic singer-songwriter.",
+    "mode": "Major",
+    "mood": [
+      "Bright",
+      "Clear"
+    ],
+    "brightness": "Bright",
+    "difficulty": "Beginner",
+    "genres": [
+      "Folk",
+      "Country"
+    ],
+    "context": [
+      "Guitar-Friendly"
+    ]
+  },
+  {
+    "name": "A Major",
+    "relative": "F# Minor",
+    "notes": "A B C# D E F# G#",
+    "badge": "3 Sharps",
+    "sharps": 3,
+    "flats": 0,
+    "desc": "Sweet spot between open chords and barre territory. Classic rock and pop.",
+    "mode": "Major",
+    "mood": [
+      "Balanced"
+    ],
+    "brightness": "Bright",
+    "difficulty": "Intermediate",
+    "genres": [
+      "Rock",
+      "Pop"
+    ],
+    "context": []
+  },
+  {
+    "name": "E Major",
+    "relative": "C# Minor",
+    "notes": "E F# G# A B C# D#",
+    "badge": "4 Sharps",
+    "sharps": 4,
+    "flats": 0,
+    "desc": "Standard tuning root note. Blues, rock, and metal staple.",
+    "mode": "Major",
+    "mood": [
+      "Balanced"
+    ],
+    "brightness": "Bright",
+    "difficulty": "Intermediate",
+    "genres": [
+      "Blues",
+      "Rock",
+      "Metal"
+    ],
+    "context": [
+      "Guitar-Friendly"
+    ]
+  },
+  {
+    "name": "B Major",
+    "relative": "G# Minor",
+    "notes": "B C# D# E F# G# A#",
+    "badge": "5 Sharps",
+    "sharps": 5,
+    "flats": 0,
+    "desc": "Bright and cutting. Common in pop production and worship music.",
+    "mode": "Major",
+    "mood": [
+      "Balanced"
+    ],
+    "brightness": "Bright",
+    "difficulty": "Advanced",
+    "genres": [
+      "Pop"
+    ],
+    "context": []
+  },
+  {
+    "name": "F# Major",
+    "relative": "D# Minor",
+    "notes": "F# G# A# B C# D# E#",
+    "badge": "6 Sharps",
+    "sharps": 6,
+    "flats": 0,
+    "desc": "Enharmonic equivalent of Gb. Rarely used directly but important theoretically.",
+    "mode": "Major",
+    "mood": [
+      "Balanced"
+    ],
+    "brightness": "Bright",
+    "difficulty": "Advanced",
+    "genres": [],
+    "context": []
+  },
+  {
+    "name": "F Major",
+    "relative": "D Minor",
+    "notes": "F G A Bb C D E",
+    "badge": "1 Flat",
+    "sharps": 0,
+    "flats": 1,
+    "desc": "Warm and grounded. Central to R&B, soul, jazz, and classical.",
+    "mode": "Major",
+    "mood": [
+      "Bright",
+      "Clear"
+    ],
+    "brightness": "Balanced",
+    "difficulty": "Intermediate",
+    "genres": [
+      "R&B",
+      "Soul",
+      "Jazz"
+    ],
+    "context": []
+  },
+  {
+    "name": "Bb Major",
+    "relative": "G Minor",
+    "notes": "Bb C D Eb F G A",
+    "badge": "2 Flats",
+    "sharps": 0,
+    "flats": 2,
+    "desc": "The key of wind instruments. Jazz, brass bands, New Orleans music.",
+    "mode": "Major",
+    "mood": [
+      "Bright",
+      "Clear"
+    ],
+    "brightness": "Warm",
+    "difficulty": "Intermediate",
+    "genres": [
+      "Jazz",
+      "Brass"
+    ],
+    "context": []
+  },
+  {
+    "name": "Eb Major",
+    "relative": "C Minor",
+    "notes": "Eb F G Ab Bb C D",
+    "badge": "3 Flats",
+    "sharps": 0,
+    "flats": 3,
+    "desc": "Rich and soulful. R&B, gospel, and jazz ballads.",
+    "mode": "Major",
+    "mood": [
+      "Bright",
+      "Clear"
+    ],
+    "brightness": "Warm",
+    "difficulty": "Intermediate",
+    "genres": [
+      "R&B",
+      "Gospel",
+      "Jazz"
+    ],
+    "context": []
+  },
+  {
+    "name": "Ab Major",
+    "relative": "F Minor",
+    "notes": "Ab Bb C Db Eb F G",
+    "badge": "4 Flats",
+    "sharps": 0,
+    "flats": 4,
+    "desc": "Lush and warm. Neo-soul, gospel, and cinematic scoring.",
+    "mode": "Major",
+    "mood": [
+      "Bright",
+      "Clear"
+    ],
+    "brightness": "Warm",
+    "difficulty": "Advanced",
+    "genres": [
+      "Soul",
+      "Gospel",
+      "Cinematic"
+    ],
+    "context": []
+  },
+  {
+    "name": "Db Major",
+    "relative": "Bb Minor",
+    "notes": "Db Eb F Gb Ab Bb C",
+    "badge": "5 Flats",
+    "sharps": 0,
+    "flats": 5,
+    "desc": "Smooth and mellow. Common in jazz ballads and R&B slow jams.",
+    "mode": "Major",
+    "mood": [
+      "Bright",
+      "Clear"
+    ],
+    "brightness": "Warm",
+    "difficulty": "Advanced",
+    "genres": [
+      "Jazz",
+      "R&B"
+    ],
+    "context": []
+  },
+  {
+    "name": "A Minor",
+    "relative": "C Major",
+    "notes": "A B C D E F G",
+    "badge": "No Sharps/Flats",
+    "sharps": 0,
+    "flats": 0,
+    "desc": "The natural minor. Shares all notes with C major but sounds darker.",
+    "mode": "Minor",
+    "mood": [
+      "Emotional",
+      "Expressive"
+    ],
+    "brightness": "Cool",
+    "difficulty": "Beginner",
+    "genres": [
+      "Rock",
+      "Pop"
+    ],
+    "context": [
+      "Guitar-Friendly"
+    ]
+  },
+  {
+    "name": "E Minor",
+    "relative": "G Major",
+    "notes": "E F# G A B C D",
+    "badge": "1 Sharp",
+    "sharps": 1,
+    "flats": 0,
+    "desc": "One of the most common keys in rock and folk. Open Em is effortless.",
+    "mode": "Minor",
+    "mood": [
+      "Emotional",
+      "Expressive"
+    ],
+    "brightness": "Cool",
+    "difficulty": "Beginner",
+    "genres": [
+      "Rock",
+      "Folk"
+    ],
+    "context": [
+      "Guitar-Friendly"
+    ]
+  },
+  {
+    "name": "B Minor",
+    "relative": "D Major",
+    "notes": "B C# D E F# G A",
+    "badge": "2 Sharps",
+    "sharps": 2,
+    "flats": 0,
+    "desc": "Dark and contemplative. Frequent in modern pop and indie.",
+    "mode": "Minor",
+    "mood": [
+      "Moody",
+      "Introspective"
+    ],
+    "brightness": "Cool",
+    "difficulty": "Intermediate",
+    "genres": [
+      "Pop",
+      "Indie"
+    ],
+    "context": []
+  },
+  {
+    "name": "F# Minor",
+    "relative": "A Major",
+    "notes": "F# G# A B C# D E",
+    "badge": "3 Sharps",
+    "sharps": 3,
+    "flats": 0,
+    "desc": "Moody and expressive. Common in alternative and electronic music.",
+    "mode": "Minor",
+    "mood": [
+      "Moody",
+      "Introspective"
+    ],
+    "brightness": "Cool",
+    "difficulty": "Intermediate",
+    "genres": [
+      "Alternative",
+      "Electronic"
+    ],
+    "context": []
+  },
+  {
+    "name": "C# Minor",
+    "relative": "E Major",
+    "notes": "C# D# E F# G# A B",
+    "badge": "4 Sharps",
+    "sharps": 4,
+    "flats": 0,
+    "desc": "Deep and introspective. Moonlight Sonata lives here.",
+    "mode": "Minor",
+    "mood": [
+      "Moody",
+      "Introspective"
+    ],
+    "brightness": "Cool",
+    "difficulty": "Intermediate",
+    "genres": [
+      "Classical",
+      "Cinematic"
+    ],
+    "context": []
+  },
+  {
+    "name": "D Minor",
+    "relative": "F Major",
+    "notes": "D E F G A Bb C",
+    "badge": "1 Flat",
+    "sharps": 0,
+    "flats": 1,
+    "desc": "The saddest key, according to Nigel Tufnel. Dark, dramatic, expressive.",
+    "mode": "Minor",
+    "mood": [
+      "Emotional",
+      "Expressive"
+    ],
+    "brightness": "Moderate",
+    "difficulty": "Intermediate",
+    "genres": [
+      "Classical",
+      "Rock"
+    ],
+    "context": []
+  },
+  {
+    "name": "G Minor",
+    "relative": "Bb Major",
+    "notes": "G A Bb C D Eb F",
+    "badge": "2 Flats",
+    "sharps": 0,
+    "flats": 2,
+    "desc": "Brooding and powerful. Common in hip-hop, trap, and minor-key pop.",
+    "mode": "Minor",
+    "mood": [
+      "Dark",
+      "Melancholy"
+    ],
+    "brightness": "Moderate",
+    "difficulty": "Intermediate",
+    "genres": [
+      "Hip-Hop",
+      "Pop"
+    ],
+    "context": []
+  },
+  {
+    "name": "C Minor",
+    "relative": "Eb Major",
+    "notes": "C D Eb F G Ab Bb",
+    "badge": "3 Flats",
+    "sharps": 0,
+    "flats": 3,
+    "desc": "Deep and dramatic. Beethoven's key of choice for emotional intensity.",
+    "mode": "Minor",
+    "mood": [
+      "Dark",
+      "Melancholy"
+    ],
+    "brightness": "Dark",
+    "difficulty": "Intermediate",
+    "genres": [
+      "Classical",
+      "Cinematic"
+    ],
+    "context": []
+  },
+  {
+    "name": "F Minor",
+    "relative": "Ab Major",
+    "notes": "F G Ab Bb C Db Eb",
+    "badge": "4 Flats",
+    "sharps": 0,
+    "flats": 4,
+    "desc": "Dark and lush. Jazz ballads, film noir, and introspective R&B.",
+    "mode": "Minor",
+    "mood": [
+      "Dark",
+      "Melancholy"
+    ],
+    "brightness": "Dark",
+    "difficulty": "Advanced",
+    "genres": [
+      "Jazz",
+      "Cinematic"
+    ],
+    "context": []
+  },
+  {
+    "name": "Bb Minor",
+    "relative": "Db Major",
+    "notes": "Bb C Db Eb F Gb Ab",
+    "badge": "5 Flats",
+    "sharps": 0,
+    "flats": 5,
+    "desc": "Rare but hauntingly beautiful. Deep jazz and art music.",
+    "mode": "Minor",
+    "mood": [
+      "Dark",
+      "Melancholy"
+    ],
+    "brightness": "Dark",
+    "difficulty": "Advanced",
+    "genres": [
+      "Jazz"
+    ],
+    "context": []
+  }
+]
