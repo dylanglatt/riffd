@@ -6,12 +6,6 @@ __pycache__/
 # Environment
 .env
 
-# Node (Figma reference)
-node_modules/
-.next/
-dist/
-build/
-
 # Runtime data
 uploads/
 outputs/
@@ -24,7 +18,18 @@ riffd.db
 .DS_Store
 Thumbs.db
 
-# IDE / tooling
-.claude/settings.local.json
+# Node (legacy)
+node_modules/
+.next/
+dist/
+build/
+
+# Internal — not public-facing
+.claude/
+design/
+static/
+test_*.py
 *.xlsx
+
+# Figma reference (archived)
 design/archive/figma-reference/

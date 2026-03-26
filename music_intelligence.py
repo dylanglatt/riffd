@@ -4,9 +4,23 @@ Key detection (Krumhansl-Schmuckler), BPM estimation, chord progression via
 template matching against diatonic chord pitch-class sets.
 """
 
-import numpy as np
-import pandas as pd
 from collections import Counter
+
+# Heavy imports deferred to first use
+np = None
+pd = None
+
+
+def _ensure_imports():
+    global np, pd
+    if np is not None:
+        return
+    import numpy as _np
+    import pandas as _pd
+    np = _np
+    pd = _pd
+    print("[music_intelligence] heavy imports loaded (numpy, pandas)")
+
 
 NOTE_NAMES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"]
 
@@ -16,8 +30,20 @@ MINOR_INTERVALS = [0, 2, 3, 5, 7, 8, 10]
 MAJOR_NUMERALS = ["I", "ii", "iii", "IV", "V", "vi", "vii\u00b0"]
 MINOR_NUMERALS = ["i", "ii\u00b0", "III", "iv", "v", "VI", "VII"]
 
-MAJOR_PROFILE = np.array([6.35, 2.23, 3.48, 2.33, 4.38, 4.09, 2.52, 5.19, 2.39, 3.66, 2.29, 2.88])
-MINOR_PROFILE = np.array([6.33, 2.68, 3.52, 5.38, 2.60, 3.53, 2.54, 4.75, 3.98, 2.69, 3.34, 3.17])
+# Stored as plain lists — converted to np.array on first use
+_MAJOR_PROFILE_RAW = [6.35, 2.23, 3.48, 2.33, 4.38, 4.09, 2.52, 5.19, 2.39, 3.66, 2.29, 2.88]
+_MINOR_PROFILE_RAW = [6.33, 2.68, 3.52, 5.38, 2.60, 3.53, 2.54, 4.75, 3.98, 2.69, 3.34, 3.17]
+MAJOR_PROFILE = None
+MINOR_PROFILE = None
+
+
+def _ensure_profiles():
+    global MAJOR_PROFILE, MINOR_PROFILE
+    if MAJOR_PROFILE is not None:
+        return
+    _ensure_imports()
+    MAJOR_PROFILE = np.array(_MAJOR_PROFILE_RAW)
+    MINOR_PROFILE = np.array(_MINOR_PROFILE_RAW)
 
 # Triad intervals relative to root (in semitones)
 MAJOR_TRIAD = [0, 4, 7]
@@ -64,6 +90,7 @@ MIN_PROGRESSION_CONFIDENCE = 0.35
 # ─── Key Detection ────────────────────────────────────────────────────────────
 
 def detect_key_from_notes(note_events_df):
+    _ensure_profiles()
     if note_events_df is None or len(note_events_df) == 0:
         return -1, -1, 0.0
     pitches = note_events_df["pitch_midi"].values.astype(int)
@@ -104,6 +131,7 @@ def estimate_bpm(note_events_df):
 
     Returns (bpm, confidence).
     """
+    _ensure_imports()
     if note_events_df is None or len(note_events_df) < 10:
         return 0, 0.0
 
@@ -541,6 +569,7 @@ def analyze_song_from_notes(all_note_events, song_name="", artist="", lyrics_tex
 
     Returns dict with key, bpm, progression, harmonic_sections, etc.
     """
+    _ensure_imports()
     frames = []
     if isinstance(all_note_events, dict):
         for df in all_note_events.values():

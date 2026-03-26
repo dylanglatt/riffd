@@ -69,6 +69,12 @@
     font-size:0.8125rem; line-height:1.6; font-weight:400; letter-spacing:-0.01em;
     color:rgba(245,245,245,0.25);
   }
+  .creator-credit a {
+    color:rgba(245,245,245,0.35); text-decoration:none; transition:color 0.2s;
+  }
+  .creator-credit a:hover { color:rgba(245,245,245,0.55); }
+  .credit-links { margin-top:6px; font-size:0.75rem; letter-spacing:0.01em; }
+  .credit-sep { margin:0 8px; opacity:0.4; }
   .site-footer-custom {
     text-align:center; padding:48px 0 40px;
     font-size:0.8125rem; color:rgba(245,245,245,0.35);
@@ -177,7 +183,7 @@
     </div>
   </div>
 
-  <div class="creator-credit">Built by Dylan Glatt<br>New York, NY</div>
+  <div class="creator-credit">Built by Dylan Glatt &mdash; New York, NY<div class="credit-links"><a href="https://linkedin.com/in/dylanjglatt" target="_blank" rel="noopener">LinkedIn</a><span class="credit-sep">&middot;</span><a href="https://github.com/djglatt" target="_blank" rel="noopener">GitHub</a></div></div>
   <div class="site-footer-custom">&copy; 2026 Riffd</div>
 </div>
 {% endblock %}

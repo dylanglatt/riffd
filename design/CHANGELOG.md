@@ -4,6 +4,31 @@
 
 ---
 
+## [2026-03-26 — Memory management and production stability]
+
+### Change Summary
+- Deferred heavy imports (numpy, pandas, basic_pitch) from boot time to first job — startup RSS dropped from ~300MB to ~40MB
+- processor.py and music_intelligence.py now lazy-load via `_ensure_imports()` pattern
+- app.py no longer imports processor/music_intelligence at module level
+- Added job pruning: completed/errored jobs auto-removed from memory after 10 minutes
+- Added result trimming: heavy payloads (tabs, stems, lyrics, intelligence) stripped from job dict after frontend receives them
+- Added concurrent job guard: rejects new processing if one is already running (503)
+- Added explicit `gc.collect()` after Demucs and at job completion
+- Added memory logging (`_log_memory()`) at startup, post-import, post-demucs, and job end
+- Intermediate files cleaned up: Demucs working directory and `_raw_*.wav` files deleted after stem refinement
+
+### Files Modified
+- `processor.py`: lazy imports for numpy/pandas/basic_pitch, intermediate file cleanup
+- `music_intelligence.py`: lazy imports for numpy/pandas
+- `app.py`: lazy processor/music_intelligence imports, job pruning, result trimming, concurrent guard, memory logging
+
+### Impact
+- Startup memory reduced ~85% (300MB → 40MB)
+- Peak memory still high during Demucs processing (~500MB+) but now releases after
+- No product behavior changes — same UX, same routes, same outputs
+
+---
+
 ## [2026-03-26 — Audio acquisition waterfall + timeout UX]
 
 ### Change Summary

@@ -13,10 +13,27 @@ import subprocess
 import wave
 from pathlib import Path
 
-import numpy as np
-import pandas as pd
-from basic_pitch import ICASSP_2022_MODEL_PATH
-from basic_pitch.inference import predict
+# Heavy imports deferred to first use — saves ~200MB at boot
+np = None
+pd = None
+ICASSP_2022_MODEL_PATH = None
+predict = None
+
+
+def _ensure_imports():
+    """Lazy-load numpy, pandas, and basic_pitch on first use."""
+    global np, pd, ICASSP_2022_MODEL_PATH, predict
+    if np is not None:
+        return
+    import numpy as _np
+    import pandas as _pd
+    from basic_pitch import ICASSP_2022_MODEL_PATH as _model_path
+    from basic_pitch.inference import predict as _predict
+    np = _np
+    pd = _pd
+    ICASSP_2022_MODEL_PATH = _model_path
+    predict = _predict
+    print("[processor] heavy imports loaded (numpy, pandas, basic_pitch)")
 
 
 UPLOAD_DIR = Path("uploads")
@@ -393,6 +410,7 @@ def separate_stems(audio_path: str, song_id: str, progress_callback=None) -> dic
 
     Returns dict: {stem_key: {path, energy, active, label}}
     """
+    _ensure_imports()
     audio_path = Path(audio_path)
     out_dir = OUTPUT_DIR / song_id / "stems"
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -553,8 +571,22 @@ def separate_stems(audio_path: str, song_id: str, progress_callback=None) -> dic
         # Multiple components — save each with numbered duplicates
         _save_sub_parts(sub_parts, sr, out_dir, refined)
 
-    # Also save the full original stems directory for the mixer "All" option
-    # (the refined stems are what the user sees)
+    # Clean up intermediate files to save disk/memory
+    # Remove Demucs working directory (model output copies are already in _raw_*)
+    demucs_work_dir = out_dir / model
+    if demucs_work_dir.exists():
+        try:
+            shutil.rmtree(demucs_work_dir)
+            print(f"[processor] cleaned up {demucs_work_dir}")
+        except Exception as e:
+            print(f"[processor] cleanup warning: {e}")
+
+    # Remove _raw_* intermediate files (refined stems are the final output)
+    for raw_file in out_dir.glob("_raw_*.wav"):
+        try:
+            raw_file.unlink()
+        except Exception:
+            pass
 
     return refined
 
@@ -638,6 +670,7 @@ def generate_tabs(stem_path: str, song_id: str, stem_name: str, label: str = "",
     Run Basic Pitch on a stem audio file with per-instrument parameters.
     Returns paths to: MIDI file, note events CSV, and rendered tab text.
     """
+    _ensure_imports()
     stem_path = Path(stem_path)
     tab_dir = OUTPUT_DIR / song_id / "tabs"
     tab_dir.mkdir(parents=True, exist_ok=True)
@@ -727,7 +760,7 @@ def _log_confidence_stats(stem_name: str, label: str, renderer: str, note_events
     print(f"[notes]   distribution: {dist_str}")
 
 
-def _normalize_note_events(note_events) -> pd.DataFrame:
+def _normalize_note_events(note_events) -> "pd.DataFrame":
     """
     Normalize Basic Pitch note events into a DataFrame with at least:
     start_time_s, end_time_s, pitch_midi, confidence
@@ -804,7 +837,7 @@ def render_ascii_tab(note_events, stem_name: str, label: str = "", bpm: float = 
     return "\n".join(lines)
 
 
-def _filter_by_confidence(note_events, threshold: float) -> pd.DataFrame:
+def _filter_by_confidence(note_events, threshold: float) -> "pd.DataFrame":
     """Filter out low-confidence notes. Returns filtered DataFrame."""
     if "confidence" not in note_events.columns:
         return note_events.copy()

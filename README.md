@@ -1,54 +1,74 @@
-# Riffd
+<p align="center">
+  <img src="assets/logo.png" alt="Riffd" width="120" />
+</p>
 
-**Search any song. Separate the stems. See the harmony.**
+<h1 align="center">Riffd</h1>
 
-Riffd is a music analysis tool that breaks a song into its parts — isolating instruments, detecting key and tempo, mapping chords to song sections, and generating tablature. Built for musicians who want to understand what's actually happening inside a track.
+<p align="center">
+  Analyze any song. Understand what's actually happening.
+</p>
 
-🔗 **[riffdlabs.com](https://riffdlabs.com)**
+<p align="center">
+  <a href="https://www.riffdlabs.com"><strong>Live Product →</strong></a>
+</p>
 
----
-
-## What It Does
-
-Pick a song from Spotify search or drop in your own audio. Riffd runs a multi-stage pipeline and returns isolated stems, harmonic analysis, lyrics, and downloadable MIDI — all from the browser.
-
-- **Stem separation** — vocals, bass, drums, guitar, keys, and more via Meta's Demucs neural network
-- **Stem mixer** — per-instrument volume, mute, solo, seek, loop, and transpose using the Web Audio API
-- **Harmonic analysis** — chords aligned to song sections (Verse, Chorus, Bridge) with roman numeral notation relative to the detected key
-- **Key and BPM** — detected from audio content using Krumhansl-Schmuckler pitch-class profiling and inter-onset interval analysis
-- **Lyrics** — full text with section structure via Genius
-- **MIDI export** — per-stem MIDI files for use in any DAW
+<p align="center">
+  <img src="assets/demo.gif" alt="Riffd demo" width="800" />
+</p>
 
 ---
 
-## How It Works
+## What Riffd Does
 
-**Audio acquisition** follows a multi-source waterfall — YouTube, Spotify preview, iTunes preview, user upload — with automatic fallback at each stage.
+Riffd takes a song and breaks it into its core components — so you can hear, see, and understand it.
 
-**Stem separation** uses Demucs (6-stem model, 4-stem fallback) plus stereo field analysis to further isolate instruments by panning position.
-
-**Tab generation** runs each stem through Spotify's Basic Pitch model with per-instrument confidence thresholds. Notes are quantized to a BPM-aware grid. Output is MIDI, CSV, and ASCII tablature.
-
-**Harmonic analysis** sources chords from the web (with audio-based fallback), then aligns them proportionally to lyric sections. Key detection scores across all 24 major/minor keys. Roman numerals handle non-diatonic chords.
-
-**Resilience** is built into every external call. Spotify search falls back to local data when throttled. All API integrations have timeouts, retries, and graceful degradation — no dead spinners.
+- **Stem separation** — isolate vocals, bass, drums, guitar, keys, and more using neural source separation
+- **Interactive mixer** — mute, solo, loop, transpose, and explore each part in the browser
+- **Harmonic analysis** — chords aligned to song sections with roman numeral notation relative to the detected key
+- **Key + tempo detection** — derived directly from audio, not metadata
+- **Lyrics** — full text with section structure, aligned to the analysis
+- **MIDI export** — per-stem files, ready for any DAW
 
 ---
 
-## Stack
+## Why This Exists
 
-Python · Flask · Demucs · Basic Pitch · SQLite · Web Audio API · Spotify · Genius · Last.fm · iTunes Search API · yt-dlp
+Most tools do one thing. A stem splitter. A chord chart. A lyrics site. A tuner.
+
+Riffd connects the full pipeline — from raw audio to structured, playable musical information — in one place. Search a song, and within minutes you can hear the isolated bass line, see what key it's in, read the chord progression by section, and export the MIDI.
+
+I built it because I wanted a single tool that could answer *"what's happening in this song"* without switching between five apps.
+
+---
+
+## Technical Highlights
+
+This project required solving real production problems beyond modeling:
+
+**Audio acquisition.**
+Songs are acquired through a multi-source waterfall — YouTube, Spotify preview, iTunes preview, user upload — with automatic fallback at each stage. No single point of failure when full audio is unavailable.
+
+**Long-running processing.**
+Stem separation runs neural inference on CPU and takes real time to complete. The app handles this with background job orchestration, timeout management, polling, and failure-safe UX — no dead spinners.
+
+**Signal processing + ML pipeline.**
+Stem separation (Demucs), pitch extraction (Basic Pitch), stereo field analysis, key detection (Krumhansl-Schmuckler), and section-based harmonic analysis are combined into one end-to-end workflow with per-stage error isolation.
+
+**Resilience.**
+Every external dependency — YouTube, Spotify, Genius, chord sources — can and will fail. The app only became usable once every API call had a fallback path and every failure surfaced a clear next step instead of a broken state.
 
 ---
 
 ## Status
 
-Public beta. The core pipeline works end-to-end: search → acquire → separate → analyze → display. Active work includes improved fret assignment for more playable tabs, better drum transcription, and full-length tab rendering.
+Riffd is in public beta. The full pipeline works end-to-end — search, acquire, separate, analyze, display.
+
+Current focus areas include improving tab quality and fret assignment, refining harmonic precision, increasing processing speed, and polishing the overall product experience.
 
 ---
 
 ## About
 
-Solo project by **Dylan Glatt**.
+Solo project by **Dylan Glatt** — New York, NY.
 
-[LinkedIn](https://www.linkedin.com/in/dylanjglatt/) · [GitHub](https://github.com/djglatt) · [dylanglatt@gmail.com](mailto:dylanglatt@gmail.com)
+<a href="https://www.linkedin.com/in/dylanjglatt/">LinkedIn</a> · <a href="https://github.com/djglatt">GitHub</a> · <a href="mailto:dylanglatt@gmail.com">dylanglatt@gmail.com</a>

@@ -11,9 +11,18 @@ from dotenv import load_dotenv
 from flask import Flask, render_template, request, jsonify, send_from_directory, session, redirect, url_for
 from werkzeug.utils import secure_filename
 
-from processor import separate_stems, generate_tabs
+# Heavy processing modules deferred — loaded on first job, not at boot
+# processor.py pulls in numpy, pandas, basic_pitch (~200MB+)
+# music_intelligence.py pulls in numpy, pandas
+def _lazy_processor():
+    from processor import separate_stems, generate_tabs
+    return separate_stems, generate_tabs
+
+def _lazy_music_intelligence():
+    from music_intelligence import analyze_song_from_notes
+    return analyze_song_from_notes
+
 from spotify_search import search_spotify, get_recommendations_for_track, RateLimitError
-from music_intelligence import analyze_song_from_notes
 from external_apis import get_lyrics, get_track_tags, enrich_recommendations_with_lastfm
 from downloader import download_audio_from_youtube, resolve_audio, AudioUnavailableError
 from history import add_to_history, get_recent, get_cached_result, save_cached_result, touch_history
@@ -54,11 +63,67 @@ migrate_from_history_json()
 
 ALLOWED_EXTENSIONS = {".mp3", ".wav", ".flac", ".m4a", ".ogg", ".aac"}
 jobs = {}
+_processing_lock = threading.Lock()
+_active_processing = 0
+MAX_CONCURRENT_JOBS = 1  # Prevent stacking heavy processing in one process
+
+
+def _log_memory(label=""):
+    """Log current process RSS memory usage."""
+    try:
+        import resource
+        rss_mb = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / (1024 * 1024)  # macOS returns bytes
+        # Linux returns KB
+        import sys
+        if sys.platform == "linux":
+            rss_mb = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024
+        print(f"[mem] {label} RSS={rss_mb:.0f}MB")
+    except Exception:
+        pass
+
+
+def _prune_old_jobs():
+    """Remove completed/errored jobs older than 10 minutes to free memory."""
+    import time
+    now = time.time()
+    stale = []
+    for jid, job in jobs.items():
+        status = job.get("status", "")
+        if status in ("complete", "partial", "error", "upload_required"):
+            finished_at = job.get("_finished_at", job.get("_started_at", 0))
+            if finished_at and (now - finished_at) > 600:  # 10 minutes
+                stale.append(jid)
+    for jid in stale:
+        del jobs[jid]
+    if stale:
+        print(f"[mem] pruned {len(stale)} stale jobs: {stale}")
+
+
+def _trim_job_result(job_id):
+    """Strip heavy payload from a completed job after the frontend has polled it.
+    We keep only status + lightweight metadata. Full results are in the filesystem cache."""
+    job = jobs.get(job_id)
+    if not job:
+        return
+    status = job.get("status")
+    if status not in ("complete", "partial"):
+        return
+    # Mark when finished for pruning
+    import time
+    job["_finished_at"] = time.time()
+    # Keep only what the status endpoint needs
+    kept = {"status", "progress", "audio_source", "error", "errors",
+            "_started_at", "_finished_at", "_result_delivered"}
+    for key in list(job.keys()):
+        if key not in kept:
+            del job[key]
 
 
 def allowed_file(filename: str) -> bool:
     return Path(filename).suffix.lower() in ALLOWED_EXTENSIONS
 
+
+_log_memory("startup")
 
 # ─── Authentication ───────────────────────────────────────────────────────────
 
@@ -301,6 +366,7 @@ def upload_file():
 
 @app.route("/api/process/<job_id>", methods=["POST"])
 def process_audio(job_id):
+    global _active_processing
     if job_id not in jobs:
         return jsonify({"error": "Unknown job ID"}), 404
     job = jobs[job_id]
@@ -309,6 +375,15 @@ def process_audio(job_id):
     audio_path = job.get("audio_path")
     if not audio_path:
         return jsonify({"error": "No audio file"}), 400
+
+    # Guard against stacking heavy jobs
+    with _processing_lock:
+        if _active_processing >= MAX_CONCURRENT_JOBS:
+            print(f"[job {job_id}] REJECTED: {_active_processing} jobs already processing")
+            return jsonify({"error": "Server is busy processing another song. Please try again in a moment."}), 503
+
+    # Prune stale jobs before starting a new one
+    _prune_old_jobs()
 
     req_data = request.json or {}
     spotify_track_id = req_data.get("track_id")
@@ -336,10 +411,21 @@ def process_audio(job_id):
         set_track_status(spotify_track_id, "pending")
 
     def run():
+        global _active_processing
+        with _processing_lock:
+            _active_processing += 1
+        print(f"[mem] active processing jobs: {_active_processing}")
+
         import time as _time
+        import gc
         _t0 = _time.time()
         def _elapsed():
             return f"{_time.time()-_t0:.1f}s"
+
+        # Load heavy processing modules on first job
+        separate_stems, generate_tabs = _lazy_processor()
+        analyze_song_from_notes = _lazy_music_intelligence()
+        _log_memory(f"[job {job_id}] PROCESS START (after imports)")
 
         # Partial results accumulate — returned even if a later stage fails
         stems = {}
@@ -422,7 +508,9 @@ def process_audio(job_id):
             print(f"[job {job_id}] [{_elapsed()}] DEMUCS starting...")
             try:
                 stems = separate_stems(audio_path, job_id, progress_callback=on_progress)
+                gc.collect()  # Release Demucs intermediates
                 print(f"[job {job_id}] [{_elapsed()}] DEMUCS finished → {len(stems)} stems: {list(stems.keys())}")
+                _log_memory(f"[job {job_id}] post-demucs")
                 jobs[job_id]["stems"] = stems
             except Exception as e:
                 # Demucs failure is fatal — nothing to work with
@@ -562,6 +650,13 @@ def process_audio(job_id):
             traceback.print_exc()
             failed_steps.append({"step": "unknown", "message": str(e)})
             _finalize()
+        finally:
+            # Release processing slot and force garbage collection
+            with _processing_lock:
+                _active_processing -= 1
+            gc.collect()
+            _log_memory(f"[job {job_id}] PROCESS END")
+            print(f"[mem] active processing jobs: {_active_processing}")
 
     threading.Thread(target=run, daemon=True).start()
     return jsonify({"status": "processing", "job_id": job_id})
@@ -585,7 +680,19 @@ def job_status(job_id):
             job.update({"status": "error", "error": f"Processing timed out after {int(elapsed)}s", "error_step": "timeout"})
 
     print(f"[job {job_id}] STATUS POLL → {job.get('status')} | {job.get('progress', '')} | error={job.get('error', 'none')}")
-    return jsonify(job)
+    resp = jsonify(job)
+
+    # After delivering a completed result, trim the heavy payload from memory
+    # The full result is persisted in filesystem cache — the job dict only needs status
+    if job.get("status") in ("complete", "partial"):
+        if job.get("_result_delivered"):
+            # Second poll after completion — safe to trim
+            _trim_job_result(job_id)
+        else:
+            # First delivery — mark it, trim on next poll
+            job["_result_delivered"] = True
+
+    return resp
 
 
 @app.route("/api/audio/<job_id>/<stem_name>")
