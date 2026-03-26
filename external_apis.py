@@ -348,6 +348,38 @@ def get_track_tags(artist: str, track_name: str) -> list[str]:
         return []
 
 
+def _itunes_art(artist: str, track: str) -> str | None:
+    """Quick iTunes Search lookup for album art. Returns URL or None."""
+    try:
+        q = f"{artist} {track}"
+        resp = requests.get(
+            "https://itunes.apple.com/search",
+            params={"term": q, "media": "music", "entity": "song", "limit": 1},
+            timeout=5,
+        )
+        if resp.status_code == 200:
+            results = resp.json().get("results", [])
+            if results:
+                art = results[0].get("artworkUrl100", "")
+                if art:
+                    return art.replace("100x100bb", "300x300bb")
+    except Exception:
+        pass
+    return None
+
+
+_art_cache = {}  # (artist_lower, track_lower) → url or None
+
+def _get_art_for_track(artist: str, track: str) -> str | None:
+    """Get album art URL with caching. Tries iTunes if no image available."""
+    key = (artist.lower().strip(), track.lower().strip())
+    if key in _art_cache:
+        return _art_cache[key]
+    url = _itunes_art(artist, track)
+    _art_cache[key] = url
+    return url
+
+
 def enrich_recommendations_with_lastfm(recs: dict, artist: str, track_name: str) -> dict:
     """
     Add Last.fm similar tracks to the 'same_style' pool.
@@ -383,4 +415,17 @@ def enrich_recommendations_with_lastfm(recs: dict, artist: str, track_name: str)
             all_existing.add(key)
 
     print(f"[recs] lastfm enriched same_style to {len(recs.get('same_style', []))} tracks")
+
+    # Fill in missing album art via iTunes lookup
+    filled = 0
+    for pool_key in recs:
+        for t in recs[pool_key]:
+            if not t.get("image_url") and t.get("name") and t.get("artist"):
+                art = _get_art_for_track(t["artist"], t["name"])
+                if art:
+                    t["image_url"] = art
+                    filled += 1
+    if filled:
+        print(f"[recs] filled {filled} missing album art via iTunes")
+
     return recs

@@ -1,0 +1,3308 @@
+[
+  {
+    "name": "C",
+    "formula": "C - E - G",
+    "badge": "Major",
+    "desc": "The foundational chord of Western music. First chord most beginners learn on piano.",
+    "difficulty": "Beginner",
+    "quality": "Major",
+    "context": [
+      "Open"
+    ],
+    "genres": [
+      "Pop",
+      "Rock"
+    ],
+    "mood": [
+      "Bright",
+      "Resolved"
+    ],
+    "voicing_type": "open",
+    "voicing_root": null,
+    "is_default": true
+  },
+  {
+    "name": "Cm",
+    "formula": "C - Eb - G",
+    "badge": "Minor",
+    "desc": "Deep and dramatic. Beethoven's key of tension and resolution.",
+    "difficulty": "Intermediate",
+    "quality": "Minor",
+    "context": [
+      "Barre"
+    ],
+    "genres": [
+      "Rock",
+      "Pop"
+    ],
+    "mood": [
+      "Dark",
+      "Melancholy"
+    ],
+    "voicing_type": "barre",
+    "voicing_root": "A-shape",
+    "is_default": true
+  },
+  {
+    "name": "C7",
+    "formula": "C - E - G - Bb",
+    "badge": "Dom 7",
+    "desc": "The V chord in F major. Creates tension that resolves beautifully to F.",
+    "difficulty": "Intermediate",
+    "quality": "Dominant 7",
+    "context": [
+      "Open"
+    ],
+    "genres": [
+      "Blues"
+    ],
+    "mood": [
+      "Tense",
+      "Bluesy"
+    ],
+    "voicing_type": "open",
+    "voicing_root": null,
+    "is_default": true
+  },
+  {
+    "name": "Cmaj7",
+    "formula": "C - E - G - B",
+    "badge": "Maj 7",
+    "desc": "Dreamy and open. The sound of bossa nova and soft jazz. Effortless on guitar.",
+    "difficulty": "Intermediate",
+    "quality": "Major 7",
+    "context": [
+      "Open"
+    ],
+    "genres": [
+      "Jazz",
+      "Neo-Soul"
+    ],
+    "mood": [
+      "Dreamy",
+      "Warm"
+    ],
+    "voicing_type": "open",
+    "voicing_root": null,
+    "is_default": true
+  },
+  {
+    "name": "Cm7",
+    "formula": "C - Eb - G - Bb",
+    "badge": "Min 7",
+    "desc": "Minor seventh. Warm, understated, versatile.",
+    "difficulty": "Intermediate",
+    "quality": "Minor 7",
+    "context": [
+      "Moveable"
+    ],
+    "genres": [
+      "Jazz",
+      "R&B"
+    ],
+    "mood": [
+      "Mellow",
+      "Smooth"
+    ],
+    "voicing_type": "moveable",
+    "voicing_root": null,
+    "is_default": true
+  },
+  {
+    "name": "Cdim",
+    "formula": "C - Eb - F#",
+    "badge": "Dim",
+    "desc": "Diminished triad. Tense and unstable, wants to resolve.",
+    "difficulty": "Advanced",
+    "quality": "Diminished",
+    "context": [
+      "Moveable"
+    ],
+    "genres": [],
+    "mood": [
+      "Tense",
+      "Unstable"
+    ],
+    "voicing_type": "moveable",
+    "voicing_root": null,
+    "is_default": false
+  },
+  {
+    "name": "Caug",
+    "formula": "C - E - Ab",
+    "badge": "Aug",
+    "desc": "Augmented triad. Dreamy, symmetrical, unresolved.",
+    "difficulty": "Advanced",
+    "quality": "Augmented",
+    "context": [
+      "Moveable"
+    ],
+    "genres": [],
+    "mood": [
+      "Floating",
+      "Unresolved"
+    ],
+    "voicing_type": "moveable",
+    "voicing_root": null,
+    "is_default": false
+  },
+  {
+    "name": "Csus2",
+    "formula": "C - D - G",
+    "badge": "Sus",
+    "desc": "Suspended 2nd. Open, neither major nor minor.",
+    "difficulty": "Beginner",
+    "quality": "Suspended",
+    "context": [
+      "Moveable"
+    ],
+    "genres": [
+      "Indie",
+      "Ambient"
+    ],
+    "mood": [
+      "Open",
+      "Ambiguous"
+    ],
+    "voicing_type": "moveable",
+    "voicing_root": null,
+    "is_default": false
+  },
+  {
+    "name": "Csus4",
+    "formula": "C - F - G",
+    "badge": "Sus",
+    "desc": "Suspended 4th. Tension that resolves to major or minor.",
+    "difficulty": "Beginner",
+    "quality": "Suspended",
+    "context": [
+      "Moveable"
+    ],
+    "genres": [
+      "Rock",
+      "Folk"
+    ],
+    "mood": [
+      "Tense",
+      "Expectant"
+    ],
+    "voicing_type": "moveable",
+    "voicing_root": null,
+    "is_default": false
+  },
+  {
+    "name": "Cadd9",
+    "formula": "C - E - G - D",
+    "badge": "Add",
+    "desc": "C major with an added 9th. Bright, jangly, Oasis-era Britpop sound.",
+    "difficulty": "Intermediate",
+    "quality": "Add",
+    "context": [
+      "Open"
+    ],
+    "genres": [
+      "Indie",
+      "Pop"
+    ],
+    "mood": [
+      "Sparkly",
+      "Rich"
+    ],
+    "voicing_type": "open",
+    "voicing_root": null,
+    "is_default": true
+  },
+  {
+    "name": "C6",
+    "formula": "C - E - G - A",
+    "badge": "6th",
+    "desc": "Major sixth. Warm, vintage, and slightly jazzy.",
+    "difficulty": "Intermediate",
+    "quality": "6th Chord",
+    "context": [
+      "Open"
+    ],
+    "genres": [
+      "Jazz",
+      "Country"
+    ],
+    "mood": [
+      "Warm",
+      "Nostalgic"
+    ],
+    "voicing_type": "open",
+    "voicing_root": null,
+    "is_default": true
+  },
+  {
+    "name": "Cm6",
+    "formula": "C - Eb - G - A",
+    "badge": "Min 6",
+    "desc": "Minor sixth. Dark, sophisticated, film noir quality.",
+    "difficulty": "Intermediate",
+    "quality": "6th Chord",
+    "context": [
+      "Moveable"
+    ],
+    "genres": [
+      "Jazz"
+    ],
+    "mood": [
+      "Bittersweet",
+      "Noir"
+    ],
+    "voicing_type": "moveable",
+    "voicing_root": null,
+    "is_default": false
+  },
+  {
+    "name": "C9",
+    "formula": "C - E - G - Bb - D",
+    "badge": "9th",
+    "desc": "Dominant ninth. Full, funky, and colorful.",
+    "difficulty": "Advanced",
+    "quality": "9th Chord",
+    "context": [
+      "Moveable"
+    ],
+    "genres": [
+      "Funk",
+      "Jazz",
+      "R&B"
+    ],
+    "mood": [
+      "Rich",
+      "Funky"
+    ],
+    "voicing_type": "moveable",
+    "voicing_root": null,
+    "is_default": false
+  },
+  {
+    "name": "C#",
+    "formula": "C# - F - Ab",
+    "badge": "Major",
+    "desc": "Major triad. Stable, bright, and resolved.",
+    "difficulty": "Intermediate",
+    "quality": "Major",
+    "context": [
+      "Barre"
+    ],
+    "genres": [],
+    "mood": [
+      "Bright",
+      "Resolved"
+    ],
+    "voicing_type": "barre",
+    "voicing_root": "A-shape",
+    "is_default": true
+  },
+  {
+    "name": "C#m",
+    "formula": "C# - E - Ab",
+    "badge": "Minor",
+    "desc": "Minor triad. Darker, more introspective character.",
+    "difficulty": "Intermediate",
+    "quality": "Minor",
+    "context": [
+      "Barre"
+    ],
+    "genres": [],
+    "mood": [
+      "Dark",
+      "Melancholy"
+    ],
+    "voicing_type": "barre",
+    "voicing_root": "A-shape",
+    "is_default": true
+  },
+  {
+    "name": "C#7",
+    "formula": "C# - F - Ab - B",
+    "badge": "Dom 7",
+    "desc": "Dominant seventh. Creates tension that wants to resolve.",
+    "difficulty": "Advanced",
+    "quality": "Dominant 7",
+    "context": [
+      "Moveable"
+    ],
+    "genres": [
+      "Blues"
+    ],
+    "mood": [
+      "Tense",
+      "Bluesy"
+    ],
+    "voicing_type": "moveable",
+    "voicing_root": null,
+    "is_default": true
+  },
+  {
+    "name": "C#maj7",
+    "formula": "C# - F - Ab - C",
+    "badge": "Maj 7",
+    "desc": "Major seventh. Smooth, jazzy, sophisticated.",
+    "difficulty": "Advanced",
+    "quality": "Major 7",
+    "context": [
+      "Moveable"
+    ],
+    "genres": [
+      "Jazz",
+      "Neo-Soul"
+    ],
+    "mood": [
+      "Dreamy",
+      "Warm"
+    ],
+    "voicing_type": "moveable",
+    "voicing_root": null,
+    "is_default": true
+  },
+  {
+    "name": "C#m7",
+    "formula": "C# - E - Ab - B",
+    "badge": "Min 7",
+    "desc": "Minor seventh. Warm, understated, versatile.",
+    "difficulty": "Advanced",
+    "quality": "Minor 7",
+    "context": [
+      "Moveable"
+    ],
+    "genres": [
+      "Jazz",
+      "R&B"
+    ],
+    "mood": [
+      "Mellow",
+      "Smooth"
+    ],
+    "voicing_type": "moveable",
+    "voicing_root": null,
+    "is_default": true
+  },
+  {
+    "name": "C#dim",
+    "formula": "C# - E - G",
+    "badge": "Dim",
+    "desc": "Diminished triad. Tense and unstable, wants to resolve.",
+    "difficulty": "Advanced",
+    "quality": "Diminished",
+    "context": [
+      "Moveable"
+    ],
+    "genres": [],
+    "mood": [
+      "Tense",
+      "Unstable"
+    ],
+    "voicing_type": "moveable",
+    "voicing_root": null,
+    "is_default": false
+  },
+  {
+    "name": "C#aug",
+    "formula": "C# - F - A",
+    "badge": "Aug",
+    "desc": "Augmented triad. Dreamy, symmetrical, unresolved.",
+    "difficulty": "Advanced",
+    "quality": "Augmented",
+    "context": [
+      "Moveable"
+    ],
+    "genres": [],
+    "mood": [
+      "Floating",
+      "Unresolved"
+    ],
+    "voicing_type": "moveable",
+    "voicing_root": null,
+    "is_default": false
+  },
+  {
+    "name": "C#sus2",
+    "formula": "C# - Eb - Ab",
+    "badge": "Sus",
+    "desc": "Suspended 2nd. Open, neither major nor minor.",
+    "difficulty": "Advanced",
+    "quality": "Suspended",
+    "context": [
+      "Moveable"
+    ],
+    "genres": [
+      "Indie",
+      "Ambient"
+    ],
+    "mood": [
+      "Open",
+      "Ambiguous"
+    ],
+    "voicing_type": "moveable",
+    "voicing_root": null,
+    "is_default": false
+  },
+  {
+    "name": "C#sus4",
+    "formula": "C# - F# - Ab",
+    "badge": "Sus",
+    "desc": "Suspended 4th. Tension that resolves to major or minor.",
+    "difficulty": "Advanced",
+    "quality": "Suspended",
+    "context": [
+      "Moveable"
+    ],
+    "genres": [
+      "Rock",
+      "Folk"
+    ],
+    "mood": [
+      "Tense",
+      "Expectant"
+    ],
+    "voicing_type": "moveable",
+    "voicing_root": null,
+    "is_default": false
+  },
+  {
+    "name": "C#add9",
+    "formula": "C# - F - Ab - Eb",
+    "badge": "Add",
+    "desc": "Added 9th. Bright extension without the 7th.",
+    "difficulty": "Advanced",
+    "quality": "Add",
+    "context": [
+      "Moveable"
+    ],
+    "genres": [
+      "Indie",
+      "Pop"
+    ],
+    "mood": [
+      "Sparkly",
+      "Rich"
+    ],
+    "voicing_type": "moveable",
+    "voicing_root": null,
+    "is_default": false
+  },
+  {
+    "name": "C#6",
+    "formula": "C# - F - Ab - Bb",
+    "badge": "6th",
+    "desc": "Major sixth. Warm, vintage, and slightly jazzy.",
+    "difficulty": "Advanced",
+    "quality": "6th Chord",
+    "context": [
+      "Moveable"
+    ],
+    "genres": [
+      "Jazz",
+      "Country"
+    ],
+    "mood": [
+      "Warm",
+      "Nostalgic"
+    ],
+    "voicing_type": "moveable",
+    "voicing_root": null,
+    "is_default": false
+  },
+  {
+    "name": "C#m6",
+    "formula": "C# - E - Ab - Bb",
+    "badge": "Min 6",
+    "desc": "Minor sixth. Dark, sophisticated, film noir quality.",
+    "difficulty": "Intermediate",
+    "quality": "6th Chord",
+    "context": [
+      "Moveable"
+    ],
+    "genres": [
+      "Jazz"
+    ],
+    "mood": [
+      "Bittersweet",
+      "Noir"
+    ],
+    "voicing_type": "moveable",
+    "voicing_root": null,
+    "is_default": false
+  },
+  {
+    "name": "C#9",
+    "formula": "C# - F - Ab - B - Eb",
+    "badge": "9th",
+    "desc": "Dominant ninth. Full, funky, and colorful.",
+    "difficulty": "Advanced",
+    "quality": "9th Chord",
+    "context": [
+      "Moveable"
+    ],
+    "genres": [
+      "Funk",
+      "Jazz",
+      "R&B"
+    ],
+    "mood": [
+      "Rich",
+      "Funky"
+    ],
+    "voicing_type": "moveable",
+    "voicing_root": null,
+    "is_default": false
+  },
+  {
+    "name": "D",
+    "formula": "D - F# - A",
+    "badge": "Major",
+    "desc": "Bright and compact. A staple in folk, country, and acoustic pop.",
+    "difficulty": "Beginner",
+    "quality": "Major",
+    "context": [
+      "Open"
+    ],
+    "genres": [
+      "Pop",
+      "Rock"
+    ],
+    "mood": [
+      "Bright",
+      "Resolved"
+    ],
+    "voicing_type": "open",
+    "voicing_root": null,
+    "is_default": true
+  },
+  {
+    "name": "Dm",
+    "formula": "D - F - A",
+    "badge": "Minor",
+    "desc": "Dark and intimate. One of the most emotionally direct minor chords.",
+    "difficulty": "Beginner",
+    "quality": "Minor",
+    "context": [
+      "Open"
+    ],
+    "genres": [
+      "Rock",
+      "Pop"
+    ],
+    "mood": [
+      "Dark",
+      "Melancholy"
+    ],
+    "voicing_type": "open",
+    "voicing_root": null,
+    "is_default": true
+  },
+  {
+    "name": "D7",
+    "formula": "D - F# - A - C",
+    "badge": "Dom 7",
+    "desc": "Open dominant seventh that pulls strongly toward G major.",
+    "difficulty": "Intermediate",
+    "quality": "Dominant 7",
+    "context": [
+      "Open"
+    ],
+    "genres": [
+      "Blues"
+    ],
+    "mood": [
+      "Tense",
+      "Bluesy"
+    ],
+    "voicing_type": "open",
+    "voicing_root": null,
+    "is_default": true
+  },
+  {
+    "name": "Dmaj7",
+    "formula": "D - F# - A - C#",
+    "badge": "Maj 7",
+    "desc": "Bright and shimmering. Common in neo-soul and indie singer-songwriter.",
+    "difficulty": "Intermediate",
+    "quality": "Major 7",
+    "context": [
+      "Open"
+    ],
+    "genres": [
+      "Jazz",
+      "Neo-Soul"
+    ],
+    "mood": [
+      "Dreamy",
+      "Warm"
+    ],
+    "voicing_type": "open",
+    "voicing_root": null,
+    "is_default": true
+  },
+  {
+    "name": "Dm7",
+    "formula": "D - F - A - C",
+    "badge": "Min 7",
+    "desc": "Warm and understated. The ii chord in the key of C. Jazz essential.",
+    "difficulty": "Intermediate",
+    "quality": "Minor 7",
+    "context": [
+      "Open"
+    ],
+    "genres": [
+      "Jazz",
+      "R&B"
+    ],
+    "mood": [
+      "Mellow",
+      "Smooth"
+    ],
+    "voicing_type": "open",
+    "voicing_root": null,
+    "is_default": true
+  },
+  {
+    "name": "Ddim",
+    "formula": "D - F - Ab",
+    "badge": "Dim",
+    "desc": "Diminished triad. Tense and unstable, wants to resolve.",
+    "difficulty": "Advanced",
+    "quality": "Diminished",
+    "context": [
+      "Moveable"
+    ],
+    "genres": [],
+    "mood": [
+      "Tense",
+      "Unstable"
+    ],
+    "voicing_type": "moveable",
+    "voicing_root": null,
+    "is_default": false
+  },
+  {
+    "name": "Daug",
+    "formula": "D - F# - Bb",
+    "badge": "Aug",
+    "desc": "Augmented triad. Dreamy, symmetrical, unresolved.",
+    "difficulty": "Advanced",
+    "quality": "Augmented",
+    "context": [
+      "Moveable"
+    ],
+    "genres": [],
+    "mood": [
+      "Floating",
+      "Unresolved"
+    ],
+    "voicing_type": "moveable",
+    "voicing_root": null,
+    "is_default": false
+  },
+  {
+    "name": "Dsus2",
+    "formula": "D - E - A",
+    "badge": "Sus",
+    "desc": "Open, spacious, ambiguous. Neither major nor minor. Beautifully neutral.",
+    "difficulty": "Beginner",
+    "quality": "Suspended",
+    "context": [
+      "Open"
+    ],
+    "genres": [
+      "Indie",
+      "Ambient"
+    ],
+    "mood": [
+      "Open",
+      "Ambiguous"
+    ],
+    "voicing_type": "open",
+    "voicing_root": null,
+    "is_default": true
+  },
+  {
+    "name": "Dsus4",
+    "formula": "D - G - A",
+    "badge": "Sus",
+    "desc": "Creates tension that resolves perfectly to D major with one finger lift.",
+    "difficulty": "Beginner",
+    "quality": "Suspended",
+    "context": [
+      "Open"
+    ],
+    "genres": [
+      "Rock",
+      "Folk"
+    ],
+    "mood": [
+      "Tense",
+      "Expectant"
+    ],
+    "voicing_type": "open",
+    "voicing_root": null,
+    "is_default": true
+  },
+  {
+    "name": "Dadd9",
+    "formula": "D - F# - A - E",
+    "badge": "Add",
+    "desc": "Added 9th. Bright extension without the 7th.",
+    "difficulty": "Intermediate",
+    "quality": "Add",
+    "context": [
+      "Moveable"
+    ],
+    "genres": [
+      "Indie",
+      "Pop"
+    ],
+    "mood": [
+      "Sparkly",
+      "Rich"
+    ],
+    "voicing_type": "moveable",
+    "voicing_root": null,
+    "is_default": false
+  },
+  {
+    "name": "D6",
+    "formula": "D - F# - A - B",
+    "badge": "6th",
+    "desc": "Major sixth. Warm, vintage, and slightly jazzy.",
+    "difficulty": "Intermediate",
+    "quality": "6th Chord",
+    "context": [
+      "Open"
+    ],
+    "genres": [
+      "Jazz",
+      "Country"
+    ],
+    "mood": [
+      "Warm",
+      "Nostalgic"
+    ],
+    "voicing_type": "open",
+    "voicing_root": null,
+    "is_default": true
+  },
+  {
+    "name": "Dm6",
+    "formula": "D - F - A - B",
+    "badge": "Min 6",
+    "desc": "Minor sixth. Dark, sophisticated, film noir quality.",
+    "difficulty": "Intermediate",
+    "quality": "6th Chord",
+    "context": [
+      "Moveable"
+    ],
+    "genres": [
+      "Jazz"
+    ],
+    "mood": [
+      "Bittersweet",
+      "Noir"
+    ],
+    "voicing_type": "moveable",
+    "voicing_root": null,
+    "is_default": false
+  },
+  {
+    "name": "D9",
+    "formula": "D - F# - A - C - E",
+    "badge": "9th",
+    "desc": "Dominant ninth. Full, funky, and colorful.",
+    "difficulty": "Advanced",
+    "quality": "9th Chord",
+    "context": [
+      "Moveable"
+    ],
+    "genres": [
+      "Funk",
+      "Jazz",
+      "R&B"
+    ],
+    "mood": [
+      "Rich",
+      "Funky"
+    ],
+    "voicing_type": "moveable",
+    "voicing_root": null,
+    "is_default": false
+  },
+  {
+    "name": "Eb",
+    "formula": "Eb - G - Bb",
+    "badge": "Major",
+    "desc": "Major triad. Stable, bright, and resolved.",
+    "difficulty": "Intermediate",
+    "quality": "Major",
+    "context": [
+      "Barre"
+    ],
+    "genres": [],
+    "mood": [
+      "Bright",
+      "Resolved"
+    ],
+    "voicing_type": "barre",
+    "voicing_root": "A-shape",
+    "is_default": true
+  },
+  {
+    "name": "Ebm",
+    "formula": "Eb - F# - Bb",
+    "badge": "Minor",
+    "desc": "Minor triad. Darker, more introspective character.",
+    "difficulty": "Intermediate",
+    "quality": "Minor",
+    "context": [
+      "Barre"
+    ],
+    "genres": [],
+    "mood": [
+      "Dark",
+      "Melancholy"
+    ],
+    "voicing_type": "barre",
+    "voicing_root": "A-shape",
+    "is_default": true
+  },
+  {
+    "name": "Eb7",
+    "formula": "Eb - G - Bb - C#",
+    "badge": "Dom 7",
+    "desc": "Dominant seventh. Creates tension that wants to resolve.",
+    "difficulty": "Intermediate",
+    "quality": "Dominant 7",
+    "context": [
+      "Moveable"
+    ],
+    "genres": [
+      "Blues"
+    ],
+    "mood": [
+      "Tense",
+      "Bluesy"
+    ],
+    "voicing_type": "moveable",
+    "voicing_root": null,
+    "is_default": true
+  },
+  {
+    "name": "Ebmaj7",
+    "formula": "Eb - G - Bb - D",
+    "badge": "Maj 7",
+    "desc": "Major seventh. Smooth, jazzy, sophisticated.",
+    "difficulty": "Intermediate",
+    "quality": "Major 7",
+    "context": [
+      "Moveable"
+    ],
+    "genres": [
+      "Jazz",
+      "Neo-Soul"
+    ],
+    "mood": [
+      "Dreamy",
+      "Warm"
+    ],
+    "voicing_type": "moveable",
+    "voicing_root": null,
+    "is_default": true
+  },
+  {
+    "name": "Ebm7",
+    "formula": "Eb - F# - Bb - C#",
+    "badge": "Min 7",
+    "desc": "Minor seventh. Warm, understated, versatile.",
+    "difficulty": "Intermediate",
+    "quality": "Minor 7",
+    "context": [
+      "Moveable"
+    ],
+    "genres": [
+      "Jazz",
+      "R&B"
+    ],
+    "mood": [
+      "Mellow",
+      "Smooth"
+    ],
+    "voicing_type": "moveable",
+    "voicing_root": null,
+    "is_default": true
+  },
+  {
+    "name": "Ebdim",
+    "formula": "Eb - F# - A",
+    "badge": "Dim",
+    "desc": "Diminished triad. Tense and unstable, wants to resolve.",
+    "difficulty": "Advanced",
+    "quality": "Diminished",
+    "context": [
+      "Moveable"
+    ],
+    "genres": [],
+    "mood": [
+      "Tense",
+      "Unstable"
+    ],
+    "voicing_type": "moveable",
+    "voicing_root": null,
+    "is_default": false
+  },
+  {
+    "name": "Ebaug",
+    "formula": "Eb - G - B",
+    "badge": "Aug",
+    "desc": "Augmented triad. Dreamy, symmetrical, unresolved.",
+    "difficulty": "Advanced",
+    "quality": "Augmented",
+    "context": [
+      "Moveable"
+    ],
+    "genres": [],
+    "mood": [
+      "Floating",
+      "Unresolved"
+    ],
+    "voicing_type": "moveable",
+    "voicing_root": null,
+    "is_default": false
+  },
+  {
+    "name": "Ebsus2",
+    "formula": "Eb - F - Bb",
+    "badge": "Sus",
+    "desc": "Suspended 2nd. Open, neither major nor minor.",
+    "difficulty": "Intermediate",
+    "quality": "Suspended",
+    "context": [
+      "Moveable"
+    ],
+    "genres": [
+      "Indie",
+      "Ambient"
+    ],
+    "mood": [
+      "Open",
+      "Ambiguous"
+    ],
+    "voicing_type": "moveable",
+    "voicing_root": null,
+    "is_default": false
+  },
+  {
+    "name": "Ebsus4",
+    "formula": "Eb - Ab - Bb",
+    "badge": "Sus",
+    "desc": "Suspended 4th. Tension that resolves to major or minor.",
+    "difficulty": "Intermediate",
+    "quality": "Suspended",
+    "context": [
+      "Moveable"
+    ],
+    "genres": [
+      "Rock",
+      "Folk"
+    ],
+    "mood": [
+      "Tense",
+      "Expectant"
+    ],
+    "voicing_type": "moveable",
+    "voicing_root": null,
+    "is_default": false
+  },
+  {
+    "name": "Ebadd9",
+    "formula": "Eb - G - Bb - F",
+    "badge": "Add",
+    "desc": "Added 9th. Bright extension without the 7th.",
+    "difficulty": "Intermediate",
+    "quality": "Add",
+    "context": [
+      "Moveable"
+    ],
+    "genres": [
+      "Indie",
+      "Pop"
+    ],
+    "mood": [
+      "Sparkly",
+      "Rich"
+    ],
+    "voicing_type": "moveable",
+    "voicing_root": null,
+    "is_default": false
+  },
+  {
+    "name": "Eb6",
+    "formula": "Eb - G - Bb - C",
+    "badge": "6th",
+    "desc": "Major sixth. Warm, vintage, and slightly jazzy.",
+    "difficulty": "Intermediate",
+    "quality": "6th Chord",
+    "context": [
+      "Moveable"
+    ],
+    "genres": [
+      "Jazz",
+      "Country"
+    ],
+    "mood": [
+      "Warm",
+      "Nostalgic"
+    ],
+    "voicing_type": "moveable",
+    "voicing_root": null,
+    "is_default": false
+  },
+  {
+    "name": "Ebm6",
+    "formula": "Eb - F# - Bb - C",
+    "badge": "Min 6",
+    "desc": "Minor sixth. Dark, sophisticated, film noir quality.",
+    "difficulty": "Intermediate",
+    "quality": "6th Chord",
+    "context": [
+      "Moveable"
+    ],
+    "genres": [
+      "Jazz"
+    ],
+    "mood": [
+      "Bittersweet",
+      "Noir"
+    ],
+    "voicing_type": "moveable",
+    "voicing_root": null,
+    "is_default": false
+  },
+  {
+    "name": "Eb9",
+    "formula": "Eb - G - Bb - C# - F",
+    "badge": "9th",
+    "desc": "Dominant ninth. Full, funky, and colorful.",
+    "difficulty": "Advanced",
+    "quality": "9th Chord",
+    "context": [
+      "Moveable"
+    ],
+    "genres": [
+      "Funk",
+      "Jazz",
+      "R&B"
+    ],
+    "mood": [
+      "Rich",
+      "Funky"
+    ],
+    "voicing_type": "moveable",
+    "voicing_root": null,
+    "is_default": false
+  },
+  {
+    "name": "E",
+    "formula": "E - Ab - B",
+    "badge": "Major",
+    "desc": "Full and resonant in standard tuning. Foundation of countless rock songs.",
+    "difficulty": "Beginner",
+    "quality": "Major",
+    "context": [
+      "Open"
+    ],
+    "genres": [
+      "Pop",
+      "Rock"
+    ],
+    "mood": [
+      "Bright",
+      "Resolved"
+    ],
+    "voicing_type": "open",
+    "voicing_root": null,
+    "is_default": true
+  },
+  {
+    "name": "Em",
+    "formula": "E - G - B",
+    "badge": "Minor",
+    "desc": "The easiest chord on guitar. Two fingers, all six strings ring out.",
+    "difficulty": "Beginner",
+    "quality": "Minor",
+    "context": [
+      "Open"
+    ],
+    "genres": [
+      "Rock",
+      "Pop"
+    ],
+    "mood": [
+      "Dark",
+      "Melancholy"
+    ],
+    "voicing_type": "open",
+    "voicing_root": null,
+    "is_default": true
+  },
+  {
+    "name": "E7",
+    "formula": "E - Ab - B - D",
+    "badge": "Dom 7",
+    "desc": "Classic turnaround chord in blues in A. Open and biting.",
+    "difficulty": "Intermediate",
+    "quality": "Dominant 7",
+    "context": [
+      "Open"
+    ],
+    "genres": [
+      "Blues"
+    ],
+    "mood": [
+      "Tense",
+      "Bluesy"
+    ],
+    "voicing_type": "open",
+    "voicing_root": null,
+    "is_default": true
+  },
+  {
+    "name": "Emaj7",
+    "formula": "E - Ab - B - Eb",
+    "badge": "Maj 7",
+    "desc": "Major seventh. Smooth, jazzy, sophisticated.",
+    "difficulty": "Intermediate",
+    "quality": "Major 7",
+    "context": [
+      "Moveable"
+    ],
+    "genres": [
+      "Jazz",
+      "Neo-Soul"
+    ],
+    "mood": [
+      "Dreamy",
+      "Warm"
+    ],
+    "voicing_type": "moveable",
+    "voicing_root": null,
+    "is_default": true
+  },
+  {
+    "name": "Em7",
+    "formula": "E - G - B - D",
+    "badge": "Min 7",
+    "desc": "Open seventh with a spacious, atmospheric sound. Indie and folk staple.",
+    "difficulty": "Intermediate",
+    "quality": "Minor 7",
+    "context": [
+      "Open"
+    ],
+    "genres": [
+      "Jazz",
+      "R&B"
+    ],
+    "mood": [
+      "Mellow",
+      "Smooth"
+    ],
+    "voicing_type": "open",
+    "voicing_root": null,
+    "is_default": true
+  },
+  {
+    "name": "Edim",
+    "formula": "E - G - Bb",
+    "badge": "Dim",
+    "desc": "Diminished triad. Tense and unstable, wants to resolve.",
+    "difficulty": "Advanced",
+    "quality": "Diminished",
+    "context": [
+      "Moveable"
+    ],
+    "genres": [],
+    "mood": [
+      "Tense",
+      "Unstable"
+    ],
+    "voicing_type": "moveable",
+    "voicing_root": null,
+    "is_default": false
+  },
+  {
+    "name": "Eaug",
+    "formula": "E - Ab - C",
+    "badge": "Aug",
+    "desc": "Augmented triad. Dreamy, symmetrical, unresolved.",
+    "difficulty": "Advanced",
+    "quality": "Augmented",
+    "context": [
+      "Moveable"
+    ],
+    "genres": [],
+    "mood": [
+      "Floating",
+      "Unresolved"
+    ],
+    "voicing_type": "moveable",
+    "voicing_root": null,
+    "is_default": false
+  },
+  {
+    "name": "Esus2",
+    "formula": "E - F# - B",
+    "badge": "Sus",
+    "desc": "Suspended 2nd. Open, neither major nor minor.",
+    "difficulty": "Beginner",
+    "quality": "Suspended",
+    "context": [
+      "Moveable"
+    ],
+    "genres": [
+      "Indie",
+      "Ambient"
+    ],
+    "mood": [
+      "Open",
+      "Ambiguous"
+    ],
+    "voicing_type": "moveable",
+    "voicing_root": null,
+    "is_default": false
+  },
+  {
+    "name": "Esus4",
+    "formula": "E - A - B",
+    "badge": "Sus",
+    "desc": "Wide, ringing voicing. Resolves to E major with one finger lift.",
+    "difficulty": "Beginner",
+    "quality": "Suspended",
+    "context": [
+      "Open"
+    ],
+    "genres": [
+      "Rock",
+      "Folk"
+    ],
+    "mood": [
+      "Tense",
+      "Expectant"
+    ],
+    "voicing_type": "open",
+    "voicing_root": null,
+    "is_default": true
+  },
+  {
+    "name": "Eadd9",
+    "formula": "E - Ab - B - F#",
+    "badge": "Add",
+    "desc": "Added 9th. Bright extension without the 7th.",
+    "difficulty": "Intermediate",
+    "quality": "Add",
+    "context": [
+      "Open"
+    ],
+    "genres": [
+      "Indie",
+      "Pop"
+    ],
+    "mood": [
+      "Sparkly",
+      "Rich"
+    ],
+    "voicing_type": "open",
+    "voicing_root": null,
+    "is_default": true
+  },
+  {
+    "name": "E6",
+    "formula": "E - Ab - B - C#",
+    "badge": "6th",
+    "desc": "Major sixth. Warm, vintage, and slightly jazzy.",
+    "difficulty": "Intermediate",
+    "quality": "6th Chord",
+    "context": [
+      "Open"
+    ],
+    "genres": [
+      "Jazz",
+      "Country"
+    ],
+    "mood": [
+      "Warm",
+      "Nostalgic"
+    ],
+    "voicing_type": "open",
+    "voicing_root": null,
+    "is_default": true
+  },
+  {
+    "name": "Em6",
+    "formula": "E - G - B - C#",
+    "badge": "Min 6",
+    "desc": "Minor sixth. Dark, sophisticated, film noir quality.",
+    "difficulty": "Intermediate",
+    "quality": "6th Chord",
+    "context": [
+      "Moveable"
+    ],
+    "genres": [
+      "Jazz"
+    ],
+    "mood": [
+      "Bittersweet",
+      "Noir"
+    ],
+    "voicing_type": "moveable",
+    "voicing_root": null,
+    "is_default": false
+  },
+  {
+    "name": "E9",
+    "formula": "E - Ab - B - D - F#",
+    "badge": "9th",
+    "desc": "Dominant ninth. Full, funky, and colorful.",
+    "difficulty": "Advanced",
+    "quality": "9th Chord",
+    "context": [
+      "Moveable"
+    ],
+    "genres": [
+      "Funk",
+      "Jazz",
+      "R&B"
+    ],
+    "mood": [
+      "Rich",
+      "Funky"
+    ],
+    "voicing_type": "moveable",
+    "voicing_root": null,
+    "is_default": false
+  },
+  {
+    "name": "F",
+    "formula": "F - A - C",
+    "badge": "Major",
+    "desc": "The first barre chord most guitarists face. Gateway to moveable shapes.",
+    "difficulty": "Intermediate",
+    "quality": "Major",
+    "context": [
+      "Barre"
+    ],
+    "genres": [],
+    "mood": [
+      "Bright",
+      "Resolved"
+    ],
+    "voicing_type": "barre",
+    "voicing_root": "E-shape",
+    "is_default": true
+  },
+  {
+    "name": "Fm",
+    "formula": "F - Ab - C",
+    "badge": "Minor",
+    "desc": "Dark and brooding. Common in R&B, soul, and dramatic ballads.",
+    "difficulty": "Intermediate",
+    "quality": "Minor",
+    "context": [
+      "Barre"
+    ],
+    "genres": [],
+    "mood": [
+      "Dark",
+      "Melancholy"
+    ],
+    "voicing_type": "barre",
+    "voicing_root": "E-shape",
+    "is_default": true
+  },
+  {
+    "name": "F7",
+    "formula": "F - A - C - Eb",
+    "badge": "Dom 7",
+    "desc": "Dominant seventh. Creates tension that wants to resolve.",
+    "difficulty": "Intermediate",
+    "quality": "Dominant 7",
+    "context": [
+      "Moveable"
+    ],
+    "genres": [
+      "Blues"
+    ],
+    "mood": [
+      "Tense",
+      "Bluesy"
+    ],
+    "voicing_type": "moveable",
+    "voicing_root": null,
+    "is_default": true
+  },
+  {
+    "name": "Fmaj7",
+    "formula": "F - A - C - E",
+    "badge": "Maj 7",
+    "desc": "Warm, lush voicing. The IV chord in dreamy C major progressions.",
+    "difficulty": "Intermediate",
+    "quality": "Major 7",
+    "context": [
+      "Open"
+    ],
+    "genres": [
+      "Jazz",
+      "Neo-Soul"
+    ],
+    "mood": [
+      "Dreamy",
+      "Warm"
+    ],
+    "voicing_type": "open",
+    "voicing_root": null,
+    "is_default": true
+  },
+  {
+    "name": "Fm7",
+    "formula": "F - Ab - C - Eb",
+    "badge": "Min 7",
+    "desc": "Minor seventh. Warm, understated, versatile.",
+    "difficulty": "Intermediate",
+    "quality": "Minor 7",
+    "context": [
+      "Moveable"
+    ],
+    "genres": [
+      "Jazz",
+      "R&B"
+    ],
+    "mood": [
+      "Mellow",
+      "Smooth"
+    ],
+    "voicing_type": "moveable",
+    "voicing_root": null,
+    "is_default": true
+  },
+  {
+    "name": "Fdim",
+    "formula": "F - Ab - B",
+    "badge": "Dim",
+    "desc": "Diminished triad. Tense and unstable, wants to resolve.",
+    "difficulty": "Advanced",
+    "quality": "Diminished",
+    "context": [
+      "Moveable"
+    ],
+    "genres": [],
+    "mood": [
+      "Tense",
+      "Unstable"
+    ],
+    "voicing_type": "moveable",
+    "voicing_root": null,
+    "is_default": false
+  },
+  {
+    "name": "Faug",
+    "formula": "F - A - C#",
+    "badge": "Aug",
+    "desc": "Augmented triad. Dreamy, symmetrical, unresolved.",
+    "difficulty": "Advanced",
+    "quality": "Augmented",
+    "context": [
+      "Moveable"
+    ],
+    "genres": [],
+    "mood": [
+      "Floating",
+      "Unresolved"
+    ],
+    "voicing_type": "moveable",
+    "voicing_root": null,
+    "is_default": false
+  },
+  {
+    "name": "Fsus2",
+    "formula": "F - G - C",
+    "badge": "Sus",
+    "desc": "Suspended 2nd. Open, neither major nor minor.",
+    "difficulty": "Intermediate",
+    "quality": "Suspended",
+    "context": [
+      "Moveable"
+    ],
+    "genres": [
+      "Indie",
+      "Ambient"
+    ],
+    "mood": [
+      "Open",
+      "Ambiguous"
+    ],
+    "voicing_type": "moveable",
+    "voicing_root": null,
+    "is_default": false
+  },
+  {
+    "name": "Fsus4",
+    "formula": "F - Bb - C",
+    "badge": "Sus",
+    "desc": "Suspended 4th. Tension that resolves to major or minor.",
+    "difficulty": "Intermediate",
+    "quality": "Suspended",
+    "context": [
+      "Moveable"
+    ],
+    "genres": [
+      "Rock",
+      "Folk"
+    ],
+    "mood": [
+      "Tense",
+      "Expectant"
+    ],
+    "voicing_type": "moveable",
+    "voicing_root": null,
+    "is_default": false
+  },
+  {
+    "name": "Fadd9",
+    "formula": "F - A - C - G",
+    "badge": "Add",
+    "desc": "Added 9th. Bright extension without the 7th.",
+    "difficulty": "Intermediate",
+    "quality": "Add",
+    "context": [
+      "Moveable"
+    ],
+    "genres": [
+      "Indie",
+      "Pop"
+    ],
+    "mood": [
+      "Sparkly",
+      "Rich"
+    ],
+    "voicing_type": "moveable",
+    "voicing_root": null,
+    "is_default": false
+  },
+  {
+    "name": "F6",
+    "formula": "F - A - C - D",
+    "badge": "6th",
+    "desc": "Major sixth. Warm, vintage, and slightly jazzy.",
+    "difficulty": "Intermediate",
+    "quality": "6th Chord",
+    "context": [
+      "Moveable"
+    ],
+    "genres": [
+      "Jazz",
+      "Country"
+    ],
+    "mood": [
+      "Warm",
+      "Nostalgic"
+    ],
+    "voicing_type": "moveable",
+    "voicing_root": null,
+    "is_default": false
+  },
+  {
+    "name": "Fm6",
+    "formula": "F - Ab - C - D",
+    "badge": "Min 6",
+    "desc": "Minor sixth. Dark, sophisticated, film noir quality.",
+    "difficulty": "Intermediate",
+    "quality": "6th Chord",
+    "context": [
+      "Moveable"
+    ],
+    "genres": [
+      "Jazz"
+    ],
+    "mood": [
+      "Bittersweet",
+      "Noir"
+    ],
+    "voicing_type": "moveable",
+    "voicing_root": null,
+    "is_default": false
+  },
+  {
+    "name": "F9",
+    "formula": "F - A - C - Eb - G",
+    "badge": "9th",
+    "desc": "Dominant ninth. Full, funky, and colorful.",
+    "difficulty": "Advanced",
+    "quality": "9th Chord",
+    "context": [
+      "Moveable"
+    ],
+    "genres": [
+      "Funk",
+      "Jazz",
+      "R&B"
+    ],
+    "mood": [
+      "Rich",
+      "Funky"
+    ],
+    "voicing_type": "moveable",
+    "voicing_root": null,
+    "is_default": false
+  },
+  {
+    "name": "F#",
+    "formula": "F# - Bb - C#",
+    "badge": "Major",
+    "desc": "Major triad. Stable, bright, and resolved.",
+    "difficulty": "Intermediate",
+    "quality": "Major",
+    "context": [
+      "Barre"
+    ],
+    "genres": [],
+    "mood": [
+      "Bright",
+      "Resolved"
+    ],
+    "voicing_type": "barre",
+    "voicing_root": "E-shape",
+    "is_default": true
+  },
+  {
+    "name": "F#m",
+    "formula": "F# - A - C#",
+    "badge": "Minor",
+    "desc": "Minor triad. Darker, more introspective character.",
+    "difficulty": "Intermediate",
+    "quality": "Minor",
+    "context": [
+      "Barre"
+    ],
+    "genres": [],
+    "mood": [
+      "Dark",
+      "Melancholy"
+    ],
+    "voicing_type": "barre",
+    "voicing_root": "E-shape",
+    "is_default": true
+  },
+  {
+    "name": "F#7",
+    "formula": "F# - Bb - C# - E",
+    "badge": "Dom 7",
+    "desc": "Dominant seventh. Creates tension that wants to resolve.",
+    "difficulty": "Advanced",
+    "quality": "Dominant 7",
+    "context": [
+      "Moveable"
+    ],
+    "genres": [
+      "Blues"
+    ],
+    "mood": [
+      "Tense",
+      "Bluesy"
+    ],
+    "voicing_type": "moveable",
+    "voicing_root": null,
+    "is_default": true
+  },
+  {
+    "name": "F#maj7",
+    "formula": "F# - Bb - C# - F",
+    "badge": "Maj 7",
+    "desc": "Major seventh. Smooth, jazzy, sophisticated.",
+    "difficulty": "Advanced",
+    "quality": "Major 7",
+    "context": [
+      "Moveable"
+    ],
+    "genres": [
+      "Jazz",
+      "Neo-Soul"
+    ],
+    "mood": [
+      "Dreamy",
+      "Warm"
+    ],
+    "voicing_type": "moveable",
+    "voicing_root": null,
+    "is_default": true
+  },
+  {
+    "name": "F#m7",
+    "formula": "F# - A - C# - E",
+    "badge": "Min 7",
+    "desc": "Minor seventh. Warm, understated, versatile.",
+    "difficulty": "Advanced",
+    "quality": "Minor 7",
+    "context": [
+      "Moveable"
+    ],
+    "genres": [
+      "Jazz",
+      "R&B"
+    ],
+    "mood": [
+      "Mellow",
+      "Smooth"
+    ],
+    "voicing_type": "moveable",
+    "voicing_root": null,
+    "is_default": true
+  },
+  {
+    "name": "F#dim",
+    "formula": "F# - A - C",
+    "badge": "Dim",
+    "desc": "Diminished triad. Tense and unstable, wants to resolve.",
+    "difficulty": "Advanced",
+    "quality": "Diminished",
+    "context": [
+      "Moveable"
+    ],
+    "genres": [],
+    "mood": [
+      "Tense",
+      "Unstable"
+    ],
+    "voicing_type": "moveable",
+    "voicing_root": null,
+    "is_default": false
+  },
+  {
+    "name": "F#aug",
+    "formula": "F# - Bb - D",
+    "badge": "Aug",
+    "desc": "Augmented triad. Dreamy, symmetrical, unresolved.",
+    "difficulty": "Advanced",
+    "quality": "Augmented",
+    "context": [
+      "Moveable"
+    ],
+    "genres": [],
+    "mood": [
+      "Floating",
+      "Unresolved"
+    ],
+    "voicing_type": "moveable",
+    "voicing_root": null,
+    "is_default": false
+  },
+  {
+    "name": "F#sus2",
+    "formula": "F# - Ab - C#",
+    "badge": "Sus",
+    "desc": "Suspended 2nd. Open, neither major nor minor.",
+    "difficulty": "Advanced",
+    "quality": "Suspended",
+    "context": [
+      "Moveable"
+    ],
+    "genres": [
+      "Indie",
+      "Ambient"
+    ],
+    "mood": [
+      "Open",
+      "Ambiguous"
+    ],
+    "voicing_type": "moveable",
+    "voicing_root": null,
+    "is_default": false
+  },
+  {
+    "name": "F#sus4",
+    "formula": "F# - B - C#",
+    "badge": "Sus",
+    "desc": "Suspended 4th. Tension that resolves to major or minor.",
+    "difficulty": "Advanced",
+    "quality": "Suspended",
+    "context": [
+      "Moveable"
+    ],
+    "genres": [
+      "Rock",
+      "Folk"
+    ],
+    "mood": [
+      "Tense",
+      "Expectant"
+    ],
+    "voicing_type": "moveable",
+    "voicing_root": null,
+    "is_default": false
+  },
+  {
+    "name": "F#add9",
+    "formula": "F# - Bb - C# - Ab",
+    "badge": "Add",
+    "desc": "Added 9th. Bright extension without the 7th.",
+    "difficulty": "Advanced",
+    "quality": "Add",
+    "context": [
+      "Moveable"
+    ],
+    "genres": [
+      "Indie",
+      "Pop"
+    ],
+    "mood": [
+      "Sparkly",
+      "Rich"
+    ],
+    "voicing_type": "moveable",
+    "voicing_root": null,
+    "is_default": false
+  },
+  {
+    "name": "F#6",
+    "formula": "F# - Bb - C# - Eb",
+    "badge": "6th",
+    "desc": "Major sixth. Warm, vintage, and slightly jazzy.",
+    "difficulty": "Advanced",
+    "quality": "6th Chord",
+    "context": [
+      "Moveable"
+    ],
+    "genres": [
+      "Jazz",
+      "Country"
+    ],
+    "mood": [
+      "Warm",
+      "Nostalgic"
+    ],
+    "voicing_type": "moveable",
+    "voicing_root": null,
+    "is_default": false
+  },
+  {
+    "name": "F#m6",
+    "formula": "F# - A - C# - Eb",
+    "badge": "Min 6",
+    "desc": "Minor sixth. Dark, sophisticated, film noir quality.",
+    "difficulty": "Intermediate",
+    "quality": "6th Chord",
+    "context": [
+      "Moveable"
+    ],
+    "genres": [
+      "Jazz"
+    ],
+    "mood": [
+      "Bittersweet",
+      "Noir"
+    ],
+    "voicing_type": "moveable",
+    "voicing_root": null,
+    "is_default": false
+  },
+  {
+    "name": "F#9",
+    "formula": "F# - Bb - C# - E - Ab",
+    "badge": "9th",
+    "desc": "Dominant ninth. Full, funky, and colorful.",
+    "difficulty": "Advanced",
+    "quality": "9th Chord",
+    "context": [
+      "Moveable"
+    ],
+    "genres": [
+      "Funk",
+      "Jazz",
+      "R&B"
+    ],
+    "mood": [
+      "Rich",
+      "Funky"
+    ],
+    "voicing_type": "moveable",
+    "voicing_root": null,
+    "is_default": false
+  },
+  {
+    "name": "G",
+    "formula": "G - B - D",
+    "badge": "Major",
+    "desc": "Rich, full voicing. Pairs naturally with C, D, and Em in the most common key.",
+    "difficulty": "Beginner",
+    "quality": "Major",
+    "context": [
+      "Open"
+    ],
+    "genres": [
+      "Pop",
+      "Rock"
+    ],
+    "mood": [
+      "Bright",
+      "Resolved"
+    ],
+    "voicing_type": "open",
+    "voicing_root": null,
+    "is_default": true
+  },
+  {
+    "name": "Gm",
+    "formula": "G - Bb - D",
+    "badge": "Minor",
+    "desc": "Moody and expressive. Dominant in hip-hop, pop, and minor-key production.",
+    "difficulty": "Intermediate",
+    "quality": "Minor",
+    "context": [
+      "Barre"
+    ],
+    "genres": [
+      "Rock",
+      "Pop"
+    ],
+    "mood": [
+      "Dark",
+      "Melancholy"
+    ],
+    "voicing_type": "barre",
+    "voicing_root": "E-shape",
+    "is_default": true
+  },
+  {
+    "name": "G7",
+    "formula": "G - B - D - F",
+    "badge": "Dom 7",
+    "desc": "Resolves to C. Essential in jazz ii-V-I and blues progressions.",
+    "difficulty": "Intermediate",
+    "quality": "Dominant 7",
+    "context": [
+      "Open"
+    ],
+    "genres": [
+      "Blues"
+    ],
+    "mood": [
+      "Tense",
+      "Bluesy"
+    ],
+    "voicing_type": "open",
+    "voicing_root": null,
+    "is_default": true
+  },
+  {
+    "name": "Gmaj7",
+    "formula": "G - B - D - F#",
+    "badge": "Maj 7",
+    "desc": "Open and airy. Adds sophistication to folk and acoustic arrangements.",
+    "difficulty": "Intermediate",
+    "quality": "Major 7",
+    "context": [
+      "Open"
+    ],
+    "genres": [
+      "Jazz",
+      "Neo-Soul"
+    ],
+    "mood": [
+      "Dreamy",
+      "Warm"
+    ],
+    "voicing_type": "open",
+    "voicing_root": null,
+    "is_default": true
+  },
+  {
+    "name": "Gm7",
+    "formula": "G - Bb - D - F",
+    "badge": "Min 7",
+    "desc": "Minor seventh. Warm, understated, versatile.",
+    "difficulty": "Intermediate",
+    "quality": "Minor 7",
+    "context": [
+      "Moveable"
+    ],
+    "genres": [
+      "Jazz",
+      "R&B"
+    ],
+    "mood": [
+      "Mellow",
+      "Smooth"
+    ],
+    "voicing_type": "moveable",
+    "voicing_root": null,
+    "is_default": true
+  },
+  {
+    "name": "Gdim",
+    "formula": "G - Bb - C#",
+    "badge": "Dim",
+    "desc": "Diminished triad. Tense and unstable, wants to resolve.",
+    "difficulty": "Advanced",
+    "quality": "Diminished",
+    "context": [
+      "Moveable"
+    ],
+    "genres": [],
+    "mood": [
+      "Tense",
+      "Unstable"
+    ],
+    "voicing_type": "moveable",
+    "voicing_root": null,
+    "is_default": false
+  },
+  {
+    "name": "Gaug",
+    "formula": "G - B - Eb",
+    "badge": "Aug",
+    "desc": "Augmented triad. Dreamy, symmetrical, unresolved.",
+    "difficulty": "Advanced",
+    "quality": "Augmented",
+    "context": [
+      "Moveable"
+    ],
+    "genres": [],
+    "mood": [
+      "Floating",
+      "Unresolved"
+    ],
+    "voicing_type": "moveable",
+    "voicing_root": null,
+    "is_default": false
+  },
+  {
+    "name": "Gsus2",
+    "formula": "G - A - D",
+    "badge": "Sus",
+    "desc": "Suspended 2nd. Open, neither major nor minor.",
+    "difficulty": "Beginner",
+    "quality": "Suspended",
+    "context": [
+      "Moveable"
+    ],
+    "genres": [
+      "Indie",
+      "Ambient"
+    ],
+    "mood": [
+      "Open",
+      "Ambiguous"
+    ],
+    "voicing_type": "moveable",
+    "voicing_root": null,
+    "is_default": false
+  },
+  {
+    "name": "Gsus4",
+    "formula": "G - C - D",
+    "badge": "Sus",
+    "desc": "Suspended 4th. Tension that resolves to major or minor.",
+    "difficulty": "Beginner",
+    "quality": "Suspended",
+    "context": [
+      "Moveable"
+    ],
+    "genres": [
+      "Rock",
+      "Folk"
+    ],
+    "mood": [
+      "Tense",
+      "Expectant"
+    ],
+    "voicing_type": "moveable",
+    "voicing_root": null,
+    "is_default": false
+  },
+  {
+    "name": "Gadd9",
+    "formula": "G - B - D - A",
+    "badge": "Add",
+    "desc": "Full, ringing open chord. Adds sparkle to any folk or pop progression.",
+    "difficulty": "Intermediate",
+    "quality": "Add",
+    "context": [
+      "Open"
+    ],
+    "genres": [
+      "Indie",
+      "Pop"
+    ],
+    "mood": [
+      "Sparkly",
+      "Rich"
+    ],
+    "voicing_type": "open",
+    "voicing_root": null,
+    "is_default": true
+  },
+  {
+    "name": "G6",
+    "formula": "G - B - D - E",
+    "badge": "6th",
+    "desc": "Major sixth. Warm, vintage, and slightly jazzy.",
+    "difficulty": "Intermediate",
+    "quality": "6th Chord",
+    "context": [
+      "Open"
+    ],
+    "genres": [
+      "Jazz",
+      "Country"
+    ],
+    "mood": [
+      "Warm",
+      "Nostalgic"
+    ],
+    "voicing_type": "open",
+    "voicing_root": null,
+    "is_default": true
+  },
+  {
+    "name": "Gm6",
+    "formula": "G - Bb - D - E",
+    "badge": "Min 6",
+    "desc": "Minor sixth. Dark, sophisticated, film noir quality.",
+    "difficulty": "Intermediate",
+    "quality": "6th Chord",
+    "context": [
+      "Moveable"
+    ],
+    "genres": [
+      "Jazz"
+    ],
+    "mood": [
+      "Bittersweet",
+      "Noir"
+    ],
+    "voicing_type": "moveable",
+    "voicing_root": null,
+    "is_default": false
+  },
+  {
+    "name": "G9",
+    "formula": "G - B - D - F - A",
+    "badge": "9th",
+    "desc": "Dominant ninth. Full, funky, and colorful.",
+    "difficulty": "Advanced",
+    "quality": "9th Chord",
+    "context": [
+      "Moveable"
+    ],
+    "genres": [
+      "Funk",
+      "Jazz",
+      "R&B"
+    ],
+    "mood": [
+      "Rich",
+      "Funky"
+    ],
+    "voicing_type": "moveable",
+    "voicing_root": null,
+    "is_default": false
+  },
+  {
+    "name": "Ab",
+    "formula": "Ab - C - Eb",
+    "badge": "Major",
+    "desc": "Major triad. Stable, bright, and resolved.",
+    "difficulty": "Intermediate",
+    "quality": "Major",
+    "context": [
+      "Barre"
+    ],
+    "genres": [],
+    "mood": [
+      "Bright",
+      "Resolved"
+    ],
+    "voicing_type": "barre",
+    "voicing_root": "E-shape",
+    "is_default": true
+  },
+  {
+    "name": "Abm",
+    "formula": "Ab - B - Eb",
+    "badge": "Minor",
+    "desc": "Minor triad. Darker, more introspective character.",
+    "difficulty": "Intermediate",
+    "quality": "Minor",
+    "context": [
+      "Barre"
+    ],
+    "genres": [],
+    "mood": [
+      "Dark",
+      "Melancholy"
+    ],
+    "voicing_type": "barre",
+    "voicing_root": "E-shape",
+    "is_default": true
+  },
+  {
+    "name": "Ab7",
+    "formula": "Ab - C - Eb - F#",
+    "badge": "Dom 7",
+    "desc": "Dominant seventh. Creates tension that wants to resolve.",
+    "difficulty": "Advanced",
+    "quality": "Dominant 7",
+    "context": [
+      "Moveable"
+    ],
+    "genres": [
+      "Blues"
+    ],
+    "mood": [
+      "Tense",
+      "Bluesy"
+    ],
+    "voicing_type": "moveable",
+    "voicing_root": null,
+    "is_default": true
+  },
+  {
+    "name": "Abmaj7",
+    "formula": "Ab - C - Eb - G",
+    "badge": "Maj 7",
+    "desc": "Major seventh. Smooth, jazzy, sophisticated.",
+    "difficulty": "Advanced",
+    "quality": "Major 7",
+    "context": [
+      "Moveable"
+    ],
+    "genres": [
+      "Jazz",
+      "Neo-Soul"
+    ],
+    "mood": [
+      "Dreamy",
+      "Warm"
+    ],
+    "voicing_type": "moveable",
+    "voicing_root": null,
+    "is_default": true
+  },
+  {
+    "name": "Abm7",
+    "formula": "Ab - B - Eb - F#",
+    "badge": "Min 7",
+    "desc": "Minor seventh. Warm, understated, versatile.",
+    "difficulty": "Advanced",
+    "quality": "Minor 7",
+    "context": [
+      "Moveable"
+    ],
+    "genres": [
+      "Jazz",
+      "R&B"
+    ],
+    "mood": [
+      "Mellow",
+      "Smooth"
+    ],
+    "voicing_type": "moveable",
+    "voicing_root": null,
+    "is_default": true
+  },
+  {
+    "name": "Abdim",
+    "formula": "Ab - B - D",
+    "badge": "Dim",
+    "desc": "Diminished triad. Tense and unstable, wants to resolve.",
+    "difficulty": "Advanced",
+    "quality": "Diminished",
+    "context": [
+      "Moveable"
+    ],
+    "genres": [],
+    "mood": [
+      "Tense",
+      "Unstable"
+    ],
+    "voicing_type": "moveable",
+    "voicing_root": null,
+    "is_default": false
+  },
+  {
+    "name": "Abaug",
+    "formula": "Ab - C - E",
+    "badge": "Aug",
+    "desc": "Augmented triad. Dreamy, symmetrical, unresolved.",
+    "difficulty": "Advanced",
+    "quality": "Augmented",
+    "context": [
+      "Moveable"
+    ],
+    "genres": [],
+    "mood": [
+      "Floating",
+      "Unresolved"
+    ],
+    "voicing_type": "moveable",
+    "voicing_root": null,
+    "is_default": false
+  },
+  {
+    "name": "Absus2",
+    "formula": "Ab - Bb - Eb",
+    "badge": "Sus",
+    "desc": "Suspended 2nd. Open, neither major nor minor.",
+    "difficulty": "Advanced",
+    "quality": "Suspended",
+    "context": [
+      "Moveable"
+    ],
+    "genres": [
+      "Indie",
+      "Ambient"
+    ],
+    "mood": [
+      "Open",
+      "Ambiguous"
+    ],
+    "voicing_type": "moveable",
+    "voicing_root": null,
+    "is_default": false
+  },
+  {
+    "name": "Absus4",
+    "formula": "Ab - C# - Eb",
+    "badge": "Sus",
+    "desc": "Suspended 4th. Tension that resolves to major or minor.",
+    "difficulty": "Advanced",
+    "quality": "Suspended",
+    "context": [
+      "Moveable"
+    ],
+    "genres": [
+      "Rock",
+      "Folk"
+    ],
+    "mood": [
+      "Tense",
+      "Expectant"
+    ],
+    "voicing_type": "moveable",
+    "voicing_root": null,
+    "is_default": false
+  },
+  {
+    "name": "Abadd9",
+    "formula": "Ab - C - Eb - Bb",
+    "badge": "Add",
+    "desc": "Added 9th. Bright extension without the 7th.",
+    "difficulty": "Advanced",
+    "quality": "Add",
+    "context": [
+      "Moveable"
+    ],
+    "genres": [
+      "Indie",
+      "Pop"
+    ],
+    "mood": [
+      "Sparkly",
+      "Rich"
+    ],
+    "voicing_type": "moveable",
+    "voicing_root": null,
+    "is_default": false
+  },
+  {
+    "name": "Ab6",
+    "formula": "Ab - C - Eb - F",
+    "badge": "6th",
+    "desc": "Major sixth. Warm, vintage, and slightly jazzy.",
+    "difficulty": "Advanced",
+    "quality": "6th Chord",
+    "context": [
+      "Moveable"
+    ],
+    "genres": [
+      "Jazz",
+      "Country"
+    ],
+    "mood": [
+      "Warm",
+      "Nostalgic"
+    ],
+    "voicing_type": "moveable",
+    "voicing_root": null,
+    "is_default": false
+  },
+  {
+    "name": "Abm6",
+    "formula": "Ab - B - Eb - F",
+    "badge": "Min 6",
+    "desc": "Minor sixth. Dark, sophisticated, film noir quality.",
+    "difficulty": "Intermediate",
+    "quality": "6th Chord",
+    "context": [
+      "Moveable"
+    ],
+    "genres": [
+      "Jazz"
+    ],
+    "mood": [
+      "Bittersweet",
+      "Noir"
+    ],
+    "voicing_type": "moveable",
+    "voicing_root": null,
+    "is_default": false
+  },
+  {
+    "name": "Ab9",
+    "formula": "Ab - C - Eb - F# - Bb",
+    "badge": "9th",
+    "desc": "Dominant ninth. Full, funky, and colorful.",
+    "difficulty": "Advanced",
+    "quality": "9th Chord",
+    "context": [
+      "Moveable"
+    ],
+    "genres": [
+      "Funk",
+      "Jazz",
+      "R&B"
+    ],
+    "mood": [
+      "Rich",
+      "Funky"
+    ],
+    "voicing_type": "moveable",
+    "voicing_root": null,
+    "is_default": false
+  },
+  {
+    "name": "A",
+    "formula": "A - C# - E",
+    "badge": "Major",
+    "desc": "Clean and bright. Central to country, pop, and classic rock progressions.",
+    "difficulty": "Beginner",
+    "quality": "Major",
+    "context": [
+      "Open"
+    ],
+    "genres": [
+      "Pop",
+      "Rock"
+    ],
+    "mood": [
+      "Bright",
+      "Resolved"
+    ],
+    "voicing_type": "open",
+    "voicing_root": null,
+    "is_default": true
+  },
+  {
+    "name": "Am",
+    "formula": "A - C - E",
+    "badge": "Minor",
+    "desc": "Essential minor chord. One finger change from C major. Deeply versatile.",
+    "difficulty": "Beginner",
+    "quality": "Minor",
+    "context": [
+      "Open"
+    ],
+    "genres": [
+      "Rock",
+      "Pop"
+    ],
+    "mood": [
+      "Dark",
+      "Melancholy"
+    ],
+    "voicing_type": "open",
+    "voicing_root": null,
+    "is_default": true
+  },
+  {
+    "name": "A7",
+    "formula": "A - C# - E - G",
+    "badge": "Dom 7",
+    "desc": "The I chord in blues in A. Open, easy, endlessly versatile.",
+    "difficulty": "Intermediate",
+    "quality": "Dominant 7",
+    "context": [
+      "Open"
+    ],
+    "genres": [
+      "Blues"
+    ],
+    "mood": [
+      "Tense",
+      "Bluesy"
+    ],
+    "voicing_type": "open",
+    "voicing_root": null,
+    "is_default": true
+  },
+  {
+    "name": "Amaj7",
+    "formula": "A - C# - E - Ab",
+    "badge": "Maj 7",
+    "desc": "Elegant and resolved. Frequently used in R&B and smooth jazz.",
+    "difficulty": "Intermediate",
+    "quality": "Major 7",
+    "context": [
+      "Open"
+    ],
+    "genres": [
+      "Jazz",
+      "Neo-Soul"
+    ],
+    "mood": [
+      "Dreamy",
+      "Warm"
+    ],
+    "voicing_type": "open",
+    "voicing_root": null,
+    "is_default": true
+  },
+  {
+    "name": "Am7",
+    "formula": "A - C - E - G",
+    "badge": "Min 7",
+    "desc": "Soft, mellow. The ii chord in G major jazz voicings. Endlessly useful.",
+    "difficulty": "Intermediate",
+    "quality": "Minor 7",
+    "context": [
+      "Open"
+    ],
+    "genres": [
+      "Jazz",
+      "R&B"
+    ],
+    "mood": [
+      "Mellow",
+      "Smooth"
+    ],
+    "voicing_type": "open",
+    "voicing_root": null,
+    "is_default": true
+  },
+  {
+    "name": "Adim",
+    "formula": "A - C - Eb",
+    "badge": "Dim",
+    "desc": "Diminished triad. Tense and unstable, wants to resolve.",
+    "difficulty": "Advanced",
+    "quality": "Diminished",
+    "context": [
+      "Moveable"
+    ],
+    "genres": [],
+    "mood": [
+      "Tense",
+      "Unstable"
+    ],
+    "voicing_type": "moveable",
+    "voicing_root": null,
+    "is_default": false
+  },
+  {
+    "name": "Aaug",
+    "formula": "A - C# - F",
+    "badge": "Aug",
+    "desc": "Augmented triad. Dreamy, symmetrical, unresolved.",
+    "difficulty": "Advanced",
+    "quality": "Augmented",
+    "context": [
+      "Moveable"
+    ],
+    "genres": [],
+    "mood": [
+      "Floating",
+      "Unresolved"
+    ],
+    "voicing_type": "moveable",
+    "voicing_root": null,
+    "is_default": false
+  },
+  {
+    "name": "Asus2",
+    "formula": "A - B - E",
+    "badge": "Sus",
+    "desc": "Bright and spacious. Common in modern worship and ambient rock.",
+    "difficulty": "Beginner",
+    "quality": "Suspended",
+    "context": [
+      "Open"
+    ],
+    "genres": [
+      "Indie",
+      "Ambient"
+    ],
+    "mood": [
+      "Open",
+      "Ambiguous"
+    ],
+    "voicing_type": "open",
+    "voicing_root": null,
+    "is_default": true
+  },
+  {
+    "name": "Asus4",
+    "formula": "A - D - E",
+    "badge": "Sus",
+    "desc": "Strong suspension before resolving to A major. Classic rock sound.",
+    "difficulty": "Beginner",
+    "quality": "Suspended",
+    "context": [
+      "Open"
+    ],
+    "genres": [
+      "Rock",
+      "Folk"
+    ],
+    "mood": [
+      "Tense",
+      "Expectant"
+    ],
+    "voicing_type": "open",
+    "voicing_root": null,
+    "is_default": true
+  },
+  {
+    "name": "Aadd9",
+    "formula": "A - C# - E - B",
+    "badge": "Add",
+    "desc": "Added 9th. Bright extension without the 7th.",
+    "difficulty": "Intermediate",
+    "quality": "Add",
+    "context": [
+      "Moveable"
+    ],
+    "genres": [
+      "Indie",
+      "Pop"
+    ],
+    "mood": [
+      "Sparkly",
+      "Rich"
+    ],
+    "voicing_type": "moveable",
+    "voicing_root": null,
+    "is_default": false
+  },
+  {
+    "name": "A6",
+    "formula": "A - C# - E - F#",
+    "badge": "6th",
+    "desc": "Major sixth. Warm, vintage, and slightly jazzy.",
+    "difficulty": "Intermediate",
+    "quality": "6th Chord",
+    "context": [
+      "Open"
+    ],
+    "genres": [
+      "Jazz",
+      "Country"
+    ],
+    "mood": [
+      "Warm",
+      "Nostalgic"
+    ],
+    "voicing_type": "open",
+    "voicing_root": null,
+    "is_default": true
+  },
+  {
+    "name": "Am6",
+    "formula": "A - C - E - F#",
+    "badge": "Min 6",
+    "desc": "Minor sixth. Dark, sophisticated, film noir quality.",
+    "difficulty": "Intermediate",
+    "quality": "6th Chord",
+    "context": [
+      "Moveable"
+    ],
+    "genres": [
+      "Jazz"
+    ],
+    "mood": [
+      "Bittersweet",
+      "Noir"
+    ],
+    "voicing_type": "moveable",
+    "voicing_root": null,
+    "is_default": false
+  },
+  {
+    "name": "A9",
+    "formula": "A - C# - E - G - B",
+    "badge": "9th",
+    "desc": "Dominant ninth. Full, funky, and colorful.",
+    "difficulty": "Advanced",
+    "quality": "9th Chord",
+    "context": [
+      "Moveable"
+    ],
+    "genres": [
+      "Funk",
+      "Jazz",
+      "R&B"
+    ],
+    "mood": [
+      "Rich",
+      "Funky"
+    ],
+    "voicing_type": "moveable",
+    "voicing_root": null,
+    "is_default": false
+  },
+  {
+    "name": "Bb",
+    "formula": "Bb - D - F",
+    "badge": "Major",
+    "desc": "Warm and grounded. Key center for jazz, brass, and New Orleans music.",
+    "difficulty": "Intermediate",
+    "quality": "Major",
+    "context": [
+      "Barre"
+    ],
+    "genres": [],
+    "mood": [
+      "Bright",
+      "Resolved"
+    ],
+    "voicing_type": "barre",
+    "voicing_root": "A-shape",
+    "is_default": true
+  },
+  {
+    "name": "Bbm",
+    "formula": "Bb - C# - F",
+    "badge": "Minor",
+    "desc": "Minor triad. Darker, more introspective character.",
+    "difficulty": "Intermediate",
+    "quality": "Minor",
+    "context": [
+      "Barre"
+    ],
+    "genres": [],
+    "mood": [
+      "Dark",
+      "Melancholy"
+    ],
+    "voicing_type": "barre",
+    "voicing_root": "A-shape",
+    "is_default": true
+  },
+  {
+    "name": "Bb7",
+    "formula": "Bb - D - F - Ab",
+    "badge": "Dom 7",
+    "desc": "Dominant seventh. Creates tension that wants to resolve.",
+    "difficulty": "Intermediate",
+    "quality": "Dominant 7",
+    "context": [
+      "Moveable"
+    ],
+    "genres": [
+      "Blues"
+    ],
+    "mood": [
+      "Tense",
+      "Bluesy"
+    ],
+    "voicing_type": "moveable",
+    "voicing_root": null,
+    "is_default": true
+  },
+  {
+    "name": "Bbmaj7",
+    "formula": "Bb - D - F - A",
+    "badge": "Maj 7",
+    "desc": "Major seventh. Smooth, jazzy, sophisticated.",
+    "difficulty": "Intermediate",
+    "quality": "Major 7",
+    "context": [
+      "Moveable"
+    ],
+    "genres": [
+      "Jazz",
+      "Neo-Soul"
+    ],
+    "mood": [
+      "Dreamy",
+      "Warm"
+    ],
+    "voicing_type": "moveable",
+    "voicing_root": null,
+    "is_default": true
+  },
+  {
+    "name": "Bbm7",
+    "formula": "Bb - C# - F - Ab",
+    "badge": "Min 7",
+    "desc": "Minor seventh. Warm, understated, versatile.",
+    "difficulty": "Intermediate",
+    "quality": "Minor 7",
+    "context": [
+      "Moveable"
+    ],
+    "genres": [
+      "Jazz",
+      "R&B"
+    ],
+    "mood": [
+      "Mellow",
+      "Smooth"
+    ],
+    "voicing_type": "moveable",
+    "voicing_root": null,
+    "is_default": true
+  },
+  {
+    "name": "Bbdim",
+    "formula": "Bb - C# - E",
+    "badge": "Dim",
+    "desc": "Diminished triad. Tense and unstable, wants to resolve.",
+    "difficulty": "Advanced",
+    "quality": "Diminished",
+    "context": [
+      "Moveable"
+    ],
+    "genres": [],
+    "mood": [
+      "Tense",
+      "Unstable"
+    ],
+    "voicing_type": "moveable",
+    "voicing_root": null,
+    "is_default": false
+  },
+  {
+    "name": "Bbaug",
+    "formula": "Bb - D - F#",
+    "badge": "Aug",
+    "desc": "Augmented triad. Dreamy, symmetrical, unresolved.",
+    "difficulty": "Advanced",
+    "quality": "Augmented",
+    "context": [
+      "Moveable"
+    ],
+    "genres": [],
+    "mood": [
+      "Floating",
+      "Unresolved"
+    ],
+    "voicing_type": "moveable",
+    "voicing_root": null,
+    "is_default": false
+  },
+  {
+    "name": "Bbsus2",
+    "formula": "Bb - C - F",
+    "badge": "Sus",
+    "desc": "Suspended 2nd. Open, neither major nor minor.",
+    "difficulty": "Intermediate",
+    "quality": "Suspended",
+    "context": [
+      "Moveable"
+    ],
+    "genres": [
+      "Indie",
+      "Ambient"
+    ],
+    "mood": [
+      "Open",
+      "Ambiguous"
+    ],
+    "voicing_type": "moveable",
+    "voicing_root": null,
+    "is_default": false
+  },
+  {
+    "name": "Bbsus4",
+    "formula": "Bb - Eb - F",
+    "badge": "Sus",
+    "desc": "Suspended 4th. Tension that resolves to major or minor.",
+    "difficulty": "Intermediate",
+    "quality": "Suspended",
+    "context": [
+      "Moveable"
+    ],
+    "genres": [
+      "Rock",
+      "Folk"
+    ],
+    "mood": [
+      "Tense",
+      "Expectant"
+    ],
+    "voicing_type": "moveable",
+    "voicing_root": null,
+    "is_default": false
+  },
+  {
+    "name": "Bbadd9",
+    "formula": "Bb - D - F - C",
+    "badge": "Add",
+    "desc": "Added 9th. Bright extension without the 7th.",
+    "difficulty": "Intermediate",
+    "quality": "Add",
+    "context": [
+      "Moveable"
+    ],
+    "genres": [
+      "Indie",
+      "Pop"
+    ],
+    "mood": [
+      "Sparkly",
+      "Rich"
+    ],
+    "voicing_type": "moveable",
+    "voicing_root": null,
+    "is_default": false
+  },
+  {
+    "name": "Bb6",
+    "formula": "Bb - D - F - G",
+    "badge": "6th",
+    "desc": "Major sixth. Warm, vintage, and slightly jazzy.",
+    "difficulty": "Intermediate",
+    "quality": "6th Chord",
+    "context": [
+      "Moveable"
+    ],
+    "genres": [
+      "Jazz",
+      "Country"
+    ],
+    "mood": [
+      "Warm",
+      "Nostalgic"
+    ],
+    "voicing_type": "moveable",
+    "voicing_root": null,
+    "is_default": false
+  },
+  {
+    "name": "Bbm6",
+    "formula": "Bb - C# - F - G",
+    "badge": "Min 6",
+    "desc": "Minor sixth. Dark, sophisticated, film noir quality.",
+    "difficulty": "Intermediate",
+    "quality": "6th Chord",
+    "context": [
+      "Moveable"
+    ],
+    "genres": [
+      "Jazz"
+    ],
+    "mood": [
+      "Bittersweet",
+      "Noir"
+    ],
+    "voicing_type": "moveable",
+    "voicing_root": null,
+    "is_default": false
+  },
+  {
+    "name": "Bb9",
+    "formula": "Bb - D - F - Ab - C",
+    "badge": "9th",
+    "desc": "Dominant ninth. Full, funky, and colorful.",
+    "difficulty": "Advanced",
+    "quality": "9th Chord",
+    "context": [
+      "Moveable"
+    ],
+    "genres": [
+      "Funk",
+      "Jazz",
+      "R&B"
+    ],
+    "mood": [
+      "Rich",
+      "Funky"
+    ],
+    "voicing_type": "moveable",
+    "voicing_root": null,
+    "is_default": false
+  },
+  {
+    "name": "B",
+    "formula": "B - Eb - F#",
+    "badge": "Major",
+    "desc": "Barre chord at 2nd fret. Common in pop, worship, and modern production.",
+    "difficulty": "Intermediate",
+    "quality": "Major",
+    "context": [
+      "Barre"
+    ],
+    "genres": [],
+    "mood": [
+      "Bright",
+      "Resolved"
+    ],
+    "voicing_type": "barre",
+    "voicing_root": "A-shape",
+    "is_default": true
+  },
+  {
+    "name": "Bm",
+    "formula": "B - D - F#",
+    "badge": "Minor",
+    "desc": "Am-shape barre at 2nd fret. One of the most common barre chords in folk and rock.",
+    "difficulty": "Intermediate",
+    "quality": "Minor",
+    "context": [
+      "Barre"
+    ],
+    "genres": [],
+    "mood": [
+      "Dark",
+      "Melancholy"
+    ],
+    "voicing_type": "barre",
+    "voicing_root": "A-shape",
+    "is_default": true
+  },
+  {
+    "name": "B7",
+    "formula": "B - Eb - F# - A",
+    "badge": "Dom 7",
+    "desc": "Resolves to E major with urgency. Open voicing works across genres.",
+    "difficulty": "Intermediate",
+    "quality": "Dominant 7",
+    "context": [
+      "Open"
+    ],
+    "genres": [
+      "Blues"
+    ],
+    "mood": [
+      "Tense",
+      "Bluesy"
+    ],
+    "voicing_type": "open",
+    "voicing_root": null,
+    "is_default": true
+  },
+  {
+    "name": "Bmaj7",
+    "formula": "B - Eb - F# - Bb",
+    "badge": "Maj 7",
+    "desc": "Major seventh. Smooth, jazzy, sophisticated.",
+    "difficulty": "Intermediate",
+    "quality": "Major 7",
+    "context": [
+      "Moveable"
+    ],
+    "genres": [
+      "Jazz",
+      "Neo-Soul"
+    ],
+    "mood": [
+      "Dreamy",
+      "Warm"
+    ],
+    "voicing_type": "moveable",
+    "voicing_root": null,
+    "is_default": true
+  },
+  {
+    "name": "Bm7",
+    "formula": "B - D - F# - A",
+    "badge": "Min 7",
+    "desc": "Smooth barre voicing. Staple of R&B and funk rhythm guitar.",
+    "difficulty": "Intermediate",
+    "quality": "Minor 7",
+    "context": [
+      "Moveable"
+    ],
+    "genres": [
+      "Jazz",
+      "R&B"
+    ],
+    "mood": [
+      "Mellow",
+      "Smooth"
+    ],
+    "voicing_type": "moveable",
+    "voicing_root": null,
+    "is_default": true
+  },
+  {
+    "name": "Bdim",
+    "formula": "B - D - F",
+    "badge": "Dim",
+    "desc": "Diminished triad. Tense and unstable, wants to resolve.",
+    "difficulty": "Intermediate",
+    "quality": "Diminished",
+    "context": [
+      "Open"
+    ],
+    "genres": [],
+    "mood": [
+      "Tense",
+      "Unstable"
+    ],
+    "voicing_type": "open",
+    "voicing_root": null,
+    "is_default": true
+  },
+  {
+    "name": "Baug",
+    "formula": "B - Eb - G",
+    "badge": "Aug",
+    "desc": "Augmented triad. Dreamy, symmetrical, unresolved.",
+    "difficulty": "Advanced",
+    "quality": "Augmented",
+    "context": [
+      "Moveable"
+    ],
+    "genres": [],
+    "mood": [
+      "Floating",
+      "Unresolved"
+    ],
+    "voicing_type": "moveable",
+    "voicing_root": null,
+    "is_default": false
+  },
+  {
+    "name": "Bsus2",
+    "formula": "B - C# - F#",
+    "badge": "Sus",
+    "desc": "Suspended 2nd. Open, neither major nor minor.",
+    "difficulty": "Intermediate",
+    "quality": "Suspended",
+    "context": [
+      "Moveable"
+    ],
+    "genres": [
+      "Indie",
+      "Ambient"
+    ],
+    "mood": [
+      "Open",
+      "Ambiguous"
+    ],
+    "voicing_type": "moveable",
+    "voicing_root": null,
+    "is_default": false
+  },
+  {
+    "name": "Bsus4",
+    "formula": "B - E - F#",
+    "badge": "Sus",
+    "desc": "Suspended 4th. Tension that resolves to major or minor.",
+    "difficulty": "Intermediate",
+    "quality": "Suspended",
+    "context": [
+      "Moveable"
+    ],
+    "genres": [
+      "Rock",
+      "Folk"
+    ],
+    "mood": [
+      "Tense",
+      "Expectant"
+    ],
+    "voicing_type": "moveable",
+    "voicing_root": null,
+    "is_default": false
+  },
+  {
+    "name": "Badd9",
+    "formula": "B - Eb - F# - C#",
+    "badge": "Add",
+    "desc": "Added 9th. Bright extension without the 7th.",
+    "difficulty": "Intermediate",
+    "quality": "Add",
+    "context": [
+      "Moveable"
+    ],
+    "genres": [
+      "Indie",
+      "Pop"
+    ],
+    "mood": [
+      "Sparkly",
+      "Rich"
+    ],
+    "voicing_type": "moveable",
+    "voicing_root": null,
+    "is_default": false
+  },
+  {
+    "name": "B6",
+    "formula": "B - Eb - F# - Ab",
+    "badge": "6th",
+    "desc": "Major sixth. Warm, vintage, and slightly jazzy.",
+    "difficulty": "Intermediate",
+    "quality": "6th Chord",
+    "context": [
+      "Moveable"
+    ],
+    "genres": [
+      "Jazz",
+      "Country"
+    ],
+    "mood": [
+      "Warm",
+      "Nostalgic"
+    ],
+    "voicing_type": "moveable",
+    "voicing_root": null,
+    "is_default": false
+  },
+  {
+    "name": "Bm6",
+    "formula": "B - D - F# - Ab",
+    "badge": "Min 6",
+    "desc": "Minor sixth. Dark, sophisticated, film noir quality.",
+    "difficulty": "Intermediate",
+    "quality": "6th Chord",
+    "context": [
+      "Moveable"
+    ],
+    "genres": [
+      "Jazz"
+    ],
+    "mood": [
+      "Bittersweet",
+      "Noir"
+    ],
+    "voicing_type": "moveable",
+    "voicing_root": null,
+    "is_default": false
+  },
+  {
+    "name": "B9",
+    "formula": "B - Eb - F# - A - C#",
+    "badge": "9th",
+    "desc": "Dominant ninth. Full, funky, and colorful.",
+    "difficulty": "Advanced",
+    "quality": "9th Chord",
+    "context": [
+      "Moveable"
+    ],
+    "genres": [
+      "Funk",
+      "Jazz",
+      "R&B"
+    ],
+    "mood": [
+      "Rich",
+      "Funky"
+    ],
+    "voicing_type": "moveable",
+    "voicing_root": null,
+    "is_default": false
+  }
+]

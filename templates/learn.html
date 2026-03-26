@@ -1,261 +1,191 @@
 {% extends "base.html" %}
-{% block title %}Learn Theory{% endblock %}
+{% block title %}Studio{% endblock %}
 
 {% block extra_css %}
-  .learn-layout { display:grid; grid-template-columns:200px 1fr; gap:32px; min-height:70vh; }
-  .learn-sidebar { position:sticky; top:96px; align-self:start; }
+  .studio-head { text-align:center; padding:24px 0 0; }
+  .studio-title { font-size:1.8rem; font-weight:900; letter-spacing:-.04em; margin-bottom:6px; }
+  .studio-sub { color:var(--text-muted); font-size:.88rem; margin-bottom:28px; }
+
+  /* Search */
+  .studio-search-wrap { max-width:520px; margin:0 auto 28px; position:relative; }
+  .studio-search {
+    width:100%; padding:14px 20px 14px 44px; font-size:.95rem; font-family:inherit;
+    background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.08);
+    border-radius:var(--radius); color:var(--text-primary); outline:none;
+    transition:border-color .25s, box-shadow .25s;
+  }
+  .studio-search:focus { border-color:rgba(124,92,255,.4); box-shadow:0 0 0 3px var(--accent-glow); }
+  .studio-search::placeholder { color:var(--text-muted); }
+  .studio-search-icon { position:absolute; left:16px; top:50%; transform:translateY(-50%); width:16px; height:16px; color:var(--text-muted); pointer-events:none; }
+
+  /* Layout */
+  .studio-layout { display:grid; grid-template-columns:180px 1fr; gap:28px; min-height:60vh; }
+  .studio-sidebar { position:sticky; top:96px; align-self:start; }
   .sidebar-nav { display:flex; flex-direction:column; gap:2px; }
   .sidebar-link {
-    display:flex; align-items:center; gap:10px; padding:10px 14px;
-    font-size:.84rem; font-weight:500; color:var(--text-muted);
+    display:flex; align-items:center; gap:9px; padding:9px 12px;
+    font-size:.82rem; font-weight:500; color:var(--text-muted);
     text-decoration:none; border-radius:var(--radius-xs); transition:all .2s; cursor:pointer;
   }
-  .sidebar-link:hover { color:var(--text-secondary); background:rgba(255,255,255,.03); }
+  .sidebar-link:hover { color:var(--text-secondary); background:rgba(255,255,255,.025); }
   .sidebar-link.active { color:var(--text-primary); background:rgba(124,92,255,.08); }
-  .sidebar-icon { font-size:1rem; width:20px; text-align:center; }
-  .learn-main { min-width:0; }
+  .sidebar-icon { width:16px; height:16px; opacity:.45; flex-shrink:0; }
+  .sidebar-link.active .sidebar-icon { opacity:.75; }
+  .studio-main { min-width:0; }
 
   .theory-section { display:none; }
-  .theory-section.active { display:block; animation:fadeUp .25s ease; }
-  @keyframes fadeUp { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
+  .theory-section.active { display:block; animation:fadeUp .2s ease; }
+  @keyframes fadeUp { from{opacity:0;transform:translateY(4px)} to{opacity:1;transform:translateY(0)} }
 
-  .theory-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:16px; margin-top:20px; }
+  /* Filter dropdowns */
+  .filter-row { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:20px; align-items:center; }
+  .filter-dd {
+    position:relative; user-select:none;
+  }
+  .filter-dd-btn {
+    display:flex; align-items:center; gap:5px; padding:6px 12px;
+    font-size:.72rem; font-weight:600; color:var(--text-muted);
+    background:rgba(255,255,255,.025); border:1px solid rgba(255,255,255,.06);
+    border-radius:6px; cursor:pointer; transition:all .15s;
+  }
+  .filter-dd-btn:hover { background:rgba(255,255,255,.04); color:var(--text-secondary); }
+  .filter-dd-btn.has-active { color:var(--accent-2); border-color:rgba(124,92,255,.2); background:rgba(124,92,255,.06); }
+  .filter-dd-btn svg { width:10px; height:10px; opacity:.4; }
+  .filter-dd-menu {
+    display:none; position:absolute; top:calc(100% + 4px); left:0; z-index:10;
+    min-width:160px; max-height:240px; overflow-y:auto;
+    background:var(--surface-2); border:1px solid var(--border-2); border-radius:var(--radius-xs);
+    box-shadow:0 8px 24px rgba(0,0,0,.4); padding:4px 0;
+  }
+  .filter-dd-menu::-webkit-scrollbar { width:3px; }
+  .filter-dd-menu::-webkit-scrollbar-thumb { background:rgba(255,255,255,.08); border-radius:3px; }
+  .filter-dd.open .filter-dd-menu { display:block; }
+  .filter-dd-item {
+    display:flex; align-items:center; gap:8px; padding:6px 12px;
+    font-size:.74rem; color:var(--text-muted); cursor:pointer; transition:background .1s;
+  }
+  .filter-dd-item:hover { background:rgba(255,255,255,.03); }
+  .filter-dd-check {
+    width:14px; height:14px; border-radius:3px; border:1px solid rgba(255,255,255,.12);
+    display:flex; align-items:center; justify-content:center; flex-shrink:0;
+    transition:all .15s;
+  }
+  .filter-dd-item.checked .filter-dd-check { background:var(--accent); border-color:var(--accent); }
+  .filter-dd-item.checked .filter-dd-check::after { content:""; width:5px; height:3px; border-left:1.5px solid white; border-bottom:1.5px solid white; transform:rotate(-45deg) translateY(-1px); }
+  .filter-dd-item.checked { color:var(--text-primary); }
+  .filter-clear {
+    font-size:.7rem; font-weight:600; color:var(--text-muted); cursor:pointer;
+    padding:6px 10px; transition:color .15s;
+  }
+  .filter-clear:hover { color:var(--red); }
+  .active-pills { display:flex; flex-wrap:wrap; gap:5px; margin-bottom:14px; min-height:0; }
+  .active-pills:empty { display:none; }
+  .active-pill {
+    display:inline-flex; align-items:center; gap:4px; padding:3px 10px;
+    font-size:.68rem; font-weight:600; border-radius:999px; cursor:pointer;
+    background:rgba(124,92,255,.08); color:var(--accent-2); border:1px solid rgba(124,92,255,.15);
+    transition:all .15s;
+  }
+  .active-pill:hover { background:rgba(248,113,113,.08); color:var(--red); border-color:rgba(248,113,113,.15); }
+
+  /* Cards */
+  .theory-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:12px; }
   .theory-card {
-    padding:20px; border-radius:var(--radius); background:rgba(255,255,255,.015);
-    border:1px solid var(--border); transition:all .25s; cursor:default;
+    padding:18px; border-radius:var(--radius); background:rgba(255,255,255,.015);
+    border:1px solid rgba(255,255,255,.04); transition:all .25s cubic-bezier(.16,1,.3,1); cursor:default;
   }
-  .theory-card:hover { background:rgba(124,92,255,.03); border-color:rgba(124,92,255,.12); }
-  .tc-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; }
-  .tc-name { font-size:.95rem; font-weight:700; }
-  .tc-badge { font-size:.66rem; font-weight:600; padding:3px 8px; border-radius:999px; background:rgba(94,234,212,.08); color:var(--accent-2); border:1px solid rgba(94,234,212,.12); }
-  .tc-formula { font-family:"SF Mono","Cascadia Code",monospace; font-size:.76rem; color:var(--accent-2); margin-bottom:6px; }
-  .tc-desc { font-size:.78rem; color:var(--text-muted); line-height:1.5; }
-  .tc-tags { display:flex; gap:6px; flex-wrap:wrap; margin-top:10px; }
-  .tc-tag { font-size:.66rem; padding:2px 8px; border-radius:999px; background:rgba(255,255,255,.03); color:var(--text-muted); border:1px solid var(--border); }
+  .theory-card:hover { background:rgba(124,92,255,.025); border-color:rgba(124,92,255,.1); transform:translateY(-2px); box-shadow:0 6px 20px rgba(124,92,255,.05); }
+  .tc-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:6px; }
+  .tc-name { font-size:.88rem; font-weight:700; }
+  .tc-badge { font-size:.6rem; font-weight:600; padding:2px 7px; border-radius:999px; background:rgba(94,234,212,.06); color:var(--accent-2); border:1px solid rgba(94,234,212,.08); }
+  .tc-formula { font-family:"SF Mono","Cascadia Code",monospace; font-size:.72rem; color:var(--accent-2); margin-bottom:5px; opacity:.75; }
+  .tc-desc { font-size:.74rem; color:var(--text-muted); line-height:1.5; }
+  .tc-tags { display:flex; gap:4px; flex-wrap:wrap; margin-top:8px; }
+  .tc-tag { font-size:.6rem; padding:2px 6px; border-radius:999px; background:rgba(255,255,255,.02); color:var(--text-muted); border:1px solid rgba(255,255,255,.04); }
+  .tc-extra { font-size:.68rem; color:var(--text-muted); margin-top:6px; opacity:.55; }
+  .empty-section { padding:40px 20px; text-align:center; color:var(--text-muted); font-size:.84rem; }
 
-  .instrument-tabs { display:flex; gap:4px; margin-bottom:16px; }
-  .inst-tab {
-    padding:6px 14px; border-radius:999px; font-size:.76rem; font-weight:600;
-    background:rgba(255,255,255,.03); color:var(--text-muted); border:1px solid var(--border);
-    cursor:pointer; transition:all .15s;
+  /* Pagination */
+  .pagination { display:flex; align-items:center; justify-content:center; gap:6px; margin-top:24px; }
+  .page-btn {
+    width:32px; height:32px; border-radius:6px; border:1px solid var(--border);
+    background:rgba(255,255,255,.02); color:var(--text-muted); font-size:.74rem; font-weight:600;
+    display:flex; align-items:center; justify-content:center; cursor:pointer; transition:all .15s;
+    font-family:inherit;
   }
-  .inst-tab.active { background:var(--accent-gradient); color:white; border-color:transparent; }
+  .page-btn:hover { background:rgba(255,255,255,.04); color:var(--text-secondary); }
+  .page-btn.active { background:rgba(124,92,255,.1); color:var(--accent-2); border-color:rgba(124,92,255,.2); }
+  .page-btn:disabled { opacity:.3; cursor:default; }
+  .page-btn.arrow { font-size:.8rem; }
 
   @media(max-width:768px) {
-    .learn-layout { grid-template-columns:1fr; }
-    .learn-sidebar { position:static; }
+    .studio-layout { grid-template-columns:1fr; }
+    .studio-sidebar { position:static; }
     .sidebar-nav { flex-direction:row; overflow-x:auto; gap:4px; }
     .sidebar-link { white-space:nowrap; }
+    .theory-grid { grid-template-columns:1fr; }
   }
 {% endblock %}
 
 {% block body %}
 <div class="page-content wide">
-  <div class="section-title">Learn Music Theory</div>
-  <div class="section-sub">Reference guides for chords, scales, progressions, and keys. Built for guitar and piano.</div>
+  <div class="studio-head">
+    <div class="studio-title">Studio</div>
+    <div class="studio-sub">Chords, scales, progressions, and keys.</div>
+  </div>
 
-  <div class="learn-layout">
-    <!-- Sidebar -->
-    <div class="learn-sidebar">
+  <div class="studio-search-wrap">
+    <svg class="studio-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+    <input class="studio-search" id="global-search" placeholder="Search chords, scales, progressions..." autocomplete="off" />
+  </div>
+
+  <div class="studio-layout">
+    <div class="studio-sidebar">
       <nav class="sidebar-nav">
-        <a class="sidebar-link active" onclick="showTheory('chords',this)"><span class="sidebar-icon">&#9835;</span> Chords</a>
-        <a class="sidebar-link" onclick="showTheory('scales',this)"><span class="sidebar-icon">&#9833;</span> Scales</a>
-        <a class="sidebar-link" onclick="showTheory('progressions',this)"><span class="sidebar-icon">&#9839;</span> Progressions</a>
-        <a class="sidebar-link" onclick="showTheory('keys',this)"><span class="sidebar-icon">&#9837;</span> Keys</a>
+        <a class="sidebar-link active" onclick="_showSection('chords',this)">
+          <svg class="sidebar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+          Chords
+        </a>
+        <a class="sidebar-link" onclick="_showSection('scales',this)">
+          <svg class="sidebar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 20h20M6 16v4M10 12v8M14 8v12M18 4v16"/></svg>
+          Scales
+        </a>
+        <a class="sidebar-link" onclick="_showSection('progressions',this)">
+          <svg class="sidebar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h4l3-9 4 18 3-9h4"/></svg>
+          Progressions
+        </a>
+        <a class="sidebar-link" onclick="_showSection('keys',this)">
+          <svg class="sidebar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2v20M2 12h20"/></svg>
+          Keys
+        </a>
       </nav>
     </div>
 
-    <!-- Main content -->
-    <div class="learn-main">
-
-      <!-- CHORDS -->
+    <div class="studio-main">
       <div class="theory-section active" id="section-chords">
-        <div class="instrument-tabs">
-          <span class="inst-tab active">Guitar</span>
-          <span class="inst-tab">Piano</span>
-        </div>
-        <div class="theory-grid">
-          <div class="theory-card">
-            <div class="tc-header"><span class="tc-name">C Major</span><span class="tc-badge">Open</span></div>
-            <div class="tc-formula">C - E - G</div>
-            <div class="tc-desc">The most fundamental open chord. First chord most guitarists learn.</div>
-            <div class="tc-tags"><span class="tc-tag">Beginner</span><span class="tc-tag">Open Position</span></div>
-          </div>
-          <div class="theory-card">
-            <div class="tc-header"><span class="tc-name">G Major</span><span class="tc-badge">Open</span></div>
-            <div class="tc-formula">G - B - D</div>
-            <div class="tc-desc">Rich, full open chord. Pairs naturally with C, D, and Em.</div>
-            <div class="tc-tags"><span class="tc-tag">Beginner</span><span class="tc-tag">Open Position</span></div>
-          </div>
-          <div class="theory-card">
-            <div class="tc-header"><span class="tc-name">D Major</span><span class="tc-badge">Open</span></div>
-            <div class="tc-formula">D - F# - A</div>
-            <div class="tc-desc">Bright, compact voicing on the top four strings.</div>
-            <div class="tc-tags"><span class="tc-tag">Beginner</span><span class="tc-tag">Open Position</span></div>
-          </div>
-          <div class="theory-card">
-            <div class="tc-header"><span class="tc-name">A Minor</span><span class="tc-badge">Open</span></div>
-            <div class="tc-formula">A - C - E</div>
-            <div class="tc-desc">Essential minor chord. One finger change from C major.</div>
-            <div class="tc-tags"><span class="tc-tag">Beginner</span><span class="tc-tag">Minor</span></div>
-          </div>
-          <div class="theory-card">
-            <div class="tc-header"><span class="tc-name">E Minor</span><span class="tc-badge">Open</span></div>
-            <div class="tc-formula">E - G - B</div>
-            <div class="tc-desc">Easiest chord on guitar. Two fingers, all six strings ring out.</div>
-            <div class="tc-tags"><span class="tc-tag">Beginner</span><span class="tc-tag">Minor</span></div>
-          </div>
-          <div class="theory-card">
-            <div class="tc-header"><span class="tc-name">F Major</span><span class="tc-badge">Barre</span></div>
-            <div class="tc-formula">F - A - C</div>
-            <div class="tc-desc">First barre chord challenge. Gateway to moveable shapes.</div>
-            <div class="tc-tags"><span class="tc-tag">Intermediate</span><span class="tc-tag">Barre</span></div>
-          </div>
-          <div class="theory-card">
-            <div class="tc-header"><span class="tc-name">B Minor</span><span class="tc-badge">Barre</span></div>
-            <div class="tc-formula">B - D - F#</div>
-            <div class="tc-desc">Am shape barre chord at 2nd fret. Common in folk and rock.</div>
-            <div class="tc-tags"><span class="tc-tag">Intermediate</span><span class="tc-tag">Barre</span></div>
-          </div>
-          <div class="theory-card">
-            <div class="tc-header"><span class="tc-name">Dm7</span><span class="tc-badge">7th</span></div>
-            <div class="tc-formula">D - F - A - C</div>
-            <div class="tc-desc">Smooth minor seventh voicing. Staple of jazz and neo-soul.</div>
-            <div class="tc-tags"><span class="tc-tag">Intermediate</span><span class="tc-tag">Jazz</span></div>
-          </div>
-        </div>
+        <div class="filter-row" id="filters-chords"></div>
+        <div class="active-pills" id="active-chords"></div>
+        <div class="theory-grid" id="grid-chords"></div>
+        <div class="pagination" id="pag-chords"></div>
       </div>
-
-      <!-- SCALES -->
       <div class="theory-section" id="section-scales">
-        <div class="instrument-tabs">
-          <span class="inst-tab active">Guitar</span>
-          <span class="inst-tab">Piano</span>
-        </div>
-        <div class="theory-grid">
-          <div class="theory-card">
-            <div class="tc-header"><span class="tc-name">Major Scale</span><span class="tc-badge">Essential</span></div>
-            <div class="tc-formula">W - W - H - W - W - W - H</div>
-            <div class="tc-desc">The foundation of Western harmony. All other scales relate back to this pattern.</div>
-            <div class="tc-tags"><span class="tc-tag">Beginner</span><span class="tc-tag">7 Notes</span></div>
-          </div>
-          <div class="theory-card">
-            <div class="tc-header"><span class="tc-name">Natural Minor</span><span class="tc-badge">Essential</span></div>
-            <div class="tc-formula">W - H - W - W - H - W - W</div>
-            <div class="tc-desc">The relative minor of the major scale. Darker, moodier character.</div>
-            <div class="tc-tags"><span class="tc-tag">Beginner</span><span class="tc-tag">7 Notes</span></div>
-          </div>
-          <div class="theory-card">
-            <div class="tc-header"><span class="tc-name">Minor Pentatonic</span><span class="tc-badge">Essential</span></div>
-            <div class="tc-formula">1 - b3 - 4 - 5 - b7</div>
-            <div class="tc-desc">The most-used scale in rock, blues, and pop soloing. Five notes, no wrong notes.</div>
-            <div class="tc-tags"><span class="tc-tag">Beginner</span><span class="tc-tag">5 Notes</span><span class="tc-tag">Blues</span></div>
-          </div>
-          <div class="theory-card">
-            <div class="tc-header"><span class="tc-name">Major Pentatonic</span><span class="tc-badge">Essential</span></div>
-            <div class="tc-formula">1 - 2 - 3 - 5 - 6</div>
-            <div class="tc-desc">Bright, open sound. Country, folk, and classic rock. Same shape as minor pentatonic, different root.</div>
-            <div class="tc-tags"><span class="tc-tag">Beginner</span><span class="tc-tag">5 Notes</span></div>
-          </div>
-          <div class="theory-card">
-            <div class="tc-header"><span class="tc-name">Blues Scale</span><span class="tc-badge">Blues</span></div>
-            <div class="tc-formula">1 - b3 - 4 - b5 - 5 - b7</div>
-            <div class="tc-desc">Minor pentatonic plus the blue note (b5). Adds tension and grit.</div>
-            <div class="tc-tags"><span class="tc-tag">Intermediate</span><span class="tc-tag">6 Notes</span></div>
-          </div>
-          <div class="theory-card">
-            <div class="tc-header"><span class="tc-name">Dorian Mode</span><span class="tc-badge">Mode</span></div>
-            <div class="tc-formula">W - H - W - W - W - H - W</div>
-            <div class="tc-desc">Minor scale with a raised 6th. Jazz, funk, and Santana-style playing.</div>
-            <div class="tc-tags"><span class="tc-tag">Intermediate</span><span class="tc-tag">Jazz</span><span class="tc-tag">Funk</span></div>
-          </div>
-        </div>
+        <div class="filter-row" id="filters-scales"></div>
+        <div class="active-pills" id="active-scales"></div>
+        <div class="theory-grid" id="grid-scales"></div>
+        <div class="pagination" id="pag-scales"></div>
       </div>
-
-      <!-- PROGRESSIONS -->
       <div class="theory-section" id="section-progressions">
-        <div class="theory-grid">
-          <div class="theory-card">
-            <div class="tc-header"><span class="tc-name">I - V - vi - IV</span><span class="tc-badge">Pop</span></div>
-            <div class="tc-formula">C - G - Am - F (in C)</div>
-            <div class="tc-desc">The most common progression in modern pop. Used in hundreds of hit songs from every decade.</div>
-            <div class="tc-tags"><span class="tc-tag">Beginner</span><span class="tc-tag">4 Chords</span><span class="tc-tag">Pop</span><span class="tc-tag">Rock</span></div>
-          </div>
-          <div class="theory-card">
-            <div class="tc-header"><span class="tc-name">I - IV - V</span><span class="tc-badge">Blues</span></div>
-            <div class="tc-formula">G - C - D (in G)</div>
-            <div class="tc-desc">The backbone of blues, rock 'n' roll, and country. Three chords and the truth.</div>
-            <div class="tc-tags"><span class="tc-tag">Beginner</span><span class="tc-tag">3 Chords</span><span class="tc-tag">Blues</span></div>
-          </div>
-          <div class="theory-card">
-            <div class="tc-header"><span class="tc-name">vi - IV - I - V</span><span class="tc-badge">Pop</span></div>
-            <div class="tc-formula">Am - F - C - G (in C)</div>
-            <div class="tc-desc">Same chords as I-V-vi-IV, starting on the minor. More emotional, introspective feel.</div>
-            <div class="tc-tags"><span class="tc-tag">Beginner</span><span class="tc-tag">Ballad</span></div>
-          </div>
-          <div class="theory-card">
-            <div class="tc-header"><span class="tc-name">ii - V - I</span><span class="tc-badge">Jazz</span></div>
-            <div class="tc-formula">Dm7 - G7 - Cmaj7 (in C)</div>
-            <div class="tc-desc">The fundamental jazz cadence. Resolution through the circle of fifths.</div>
-            <div class="tc-tags"><span class="tc-tag">Intermediate</span><span class="tc-tag">Jazz</span><span class="tc-tag">Standards</span></div>
-          </div>
-          <div class="theory-card">
-            <div class="tc-header"><span class="tc-name">12-Bar Blues</span><span class="tc-badge">Blues</span></div>
-            <div class="tc-formula">I-I-I-I / IV-IV-I-I / V-IV-I-V</div>
-            <div class="tc-desc">The quintessential blues form. 12 bars, three chords, infinite expression.</div>
-            <div class="tc-tags"><span class="tc-tag">Beginner</span><span class="tc-tag">Blues</span><span class="tc-tag">12 Bars</span></div>
-          </div>
-          <div class="theory-card">
-            <div class="tc-header"><span class="tc-name">i - VI - III - VII</span><span class="tc-badge">Minor</span></div>
-            <div class="tc-formula">Am - F - C - G (in Am)</div>
-            <div class="tc-desc">Andalusian-influenced minor progression. Dramatic, cinematic quality.</div>
-            <div class="tc-tags"><span class="tc-tag">Intermediate</span><span class="tc-tag">Minor</span><span class="tc-tag">Cinematic</span></div>
-          </div>
-        </div>
+        <div class="filter-row" id="filters-progressions"></div>
+        <div class="active-pills" id="active-progressions"></div>
+        <div class="theory-grid" id="grid-progressions"></div>
+        <div class="pagination" id="pag-progressions"></div>
       </div>
-
-      <!-- KEYS -->
       <div class="theory-section" id="section-keys">
-        <div class="theory-grid">
-          <div class="theory-card">
-            <div class="tc-header"><span class="tc-name">C Major / A Minor</span><span class="tc-badge">No Sharps/Flats</span></div>
-            <div class="tc-formula">C D E F G A B</div>
-            <div class="tc-desc">All natural notes. The reference key for understanding all others.</div>
-            <div class="tc-tags"><span class="tc-tag">Beginner</span><span class="tc-tag">Piano-friendly</span></div>
-          </div>
-          <div class="theory-card">
-            <div class="tc-header"><span class="tc-name">G Major / E Minor</span><span class="tc-badge">1 Sharp</span></div>
-            <div class="tc-formula">G A B C D E F#</div>
-            <div class="tc-desc">The most guitar-friendly key. Open chords G, C, D, Em, Am all live here.</div>
-            <div class="tc-tags"><span class="tc-tag">Beginner</span><span class="tc-tag">Guitar-friendly</span></div>
-          </div>
-          <div class="theory-card">
-            <div class="tc-header"><span class="tc-name">D Major / B Minor</span><span class="tc-badge">2 Sharps</span></div>
-            <div class="tc-formula">D E F# G A B C#</div>
-            <div class="tc-desc">Bright, open key popular in folk, country, and acoustic music.</div>
-            <div class="tc-tags"><span class="tc-tag">Beginner</span><span class="tc-tag">Folk</span></div>
-          </div>
-          <div class="theory-card">
-            <div class="tc-header"><span class="tc-name">A Major / F# Minor</span><span class="tc-badge">3 Sharps</span></div>
-            <div class="tc-formula">A B C# D E F# G#</div>
-            <div class="tc-desc">Great for electric guitar. Sweet spot between open chords and barre territory.</div>
-            <div class="tc-tags"><span class="tc-tag">Intermediate</span><span class="tc-tag">Rock</span></div>
-          </div>
-          <div class="theory-card">
-            <div class="tc-header"><span class="tc-name">E Major / C# Minor</span><span class="tc-badge">4 Sharps</span></div>
-            <div class="tc-formula">E F# G# A B C# D#</div>
-            <div class="tc-desc">Standard tuning root. Classic rock and blues key for guitar.</div>
-            <div class="tc-tags"><span class="tc-tag">Intermediate</span><span class="tc-tag">Blues</span></div>
-          </div>
-          <div class="theory-card">
-            <div class="tc-header"><span class="tc-name">F Major / D Minor</span><span class="tc-badge">1 Flat</span></div>
-            <div class="tc-formula">F G A Bb C D E</div>
-            <div class="tc-desc">Popular in R&B, soul, and jazz. Requires the F barre chord on guitar.</div>
-            <div class="tc-tags"><span class="tc-tag">Intermediate</span><span class="tc-tag">R&B</span></div>
-          </div>
-        </div>
+        <div class="filter-row" id="filters-keys"></div>
+        <div class="active-pills" id="active-keys"></div>
+        <div class="theory-grid" id="grid-keys"></div>
+        <div class="pagination" id="pag-keys"></div>
       </div>
-
     </div>
   </div>
 
@@ -267,11 +197,254 @@
 
 {% block extra_js %}
 <script>
-function showTheory(id, el) {
+const _esc = s => String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+
+const _data = {};
+const _filtered = {};  // section → filtered array (cached)
+const _filters = {};
+const _search = {};
+const _page = {};      // section → current page (0-indexed)
+const PER_PAGE = 18;
+let _currentSection = 'chords';
+
+const FILTER_GROUPS = {
+  chords: [
+    { label:"Difficulty", field:"difficulty", values:["Beginner","Intermediate","Advanced"] },
+    { label:"Quality", field:"quality", values:["Major","Minor","Dominant 7","Major 7","Minor 7","Diminished","Augmented","Suspended","Add","6th Chord","9th Chord"] },
+    { label:"Genre", field:"genres", values:["Jazz","Blues","Rock","Pop","R&B","Soul","Funk","Folk","Country","Neo-Soul","Indie"] },
+    { label:"Mood", field:"mood", values:["Bright","Dark","Tense","Dreamy","Warm","Smooth","Bluesy"] },
+  ],
+  scales: [
+    { label:"Difficulty", field:"difficulty", values:["Beginner","Intermediate","Advanced"] },
+    { label:"Family", field:"family", values:["Major","Minor","Pentatonic","Blues","Harmonic Minor","Melodic Minor","Symmetric","Exotic","Bebop"] },
+    { label:"Genre", field:"genres", values:["Jazz","Blues","Rock","Classical","Metal","Film","Ambient","Funk","Flamenco","World"] },
+    { label:"Mood", field:"mood", values:["Bright","Dark","Exotic","Dreamy","Tense","Smooth","Raw","Dramatic"] },
+  ],
+  progressions: [
+    { label:"Difficulty", field:"difficulty", values:["Beginner","Intermediate","Advanced"] },
+    { label:"Category", field:"category", values:["Pop","Rock","Blues","Jazz","Minor","Cadence","Chromatic","Modal"] },
+    { label:"Function", field:"function", values:["Loop","Cadence","Form","Turnaround","Bridge"] },
+    { label:"Genre", field:"genres", values:["Pop","Rock","Blues","Jazz","Country","Punk","Folk","Film","Classical","Flamenco","Bebop"] },
+  ],
+  keys: [
+    { label:"Difficulty", field:"difficulty", values:["Beginner","Intermediate","Advanced"] },
+    { label:"Mode", field:"mode", values:["Major","Minor"] },
+    { label:"Brightness", field:"brightness", values:["Bright","Balanced","Neutral","Warm","Cool","Moderate","Dark"] },
+    { label:"Genre", field:"genres", values:["Jazz","Blues","Rock","Pop","R&B","Soul","Classical","Folk","Country","Metal","Hip-Hop","Gospel","Cinematic"] },
+  ],
+};
+
+// Sort order: Beginner first, then Intermediate, then Advanced
+const DIFF_ORDER = { "Beginner": 0, "Intermediate": 1, "Advanced": 2 };
+function _sortItems(items) {
+  return [...items].sort((a, b) => (DIFF_ORDER[a.difficulty] ?? 1) - (DIFF_ORDER[b.difficulty] ?? 1));
+}
+
+function _getAllValues(item, field) {
+  const v = item[field]; if (Array.isArray(v)) return v; if (v != null) return [v]; return [];
+}
+
+function _hasAnyFilter(section) {
+  const state = _filters[section];
+  for (const s of Object.values(state)) { if (s.size > 0) return true; }
+  return !!_search[section];
+}
+
+function _applyFilters(section) {
+  const items = _data[section] || [];
+  const state = _filters[section];
+  const q = _search[section] || '';
+  _filtered[section] = items.filter(item => {
+    for (const [field, selected] of Object.entries(state)) {
+      if (selected.size === 0) continue;
+      const vals = _getAllValues(item, field);
+      if (!vals.some(v => selected.has(v))) return false;
+    }
+    if (q) {
+      const hay = [item.name,item.desc,item.formula,item.notes,item.relative,
+        ...(item.genres||[]),...(item.mood||[]),...(item.context||[]),
+        item.quality,item.family,item.category,item.difficulty,item.mode
+      ].filter(Boolean).join(' ').toLowerCase();
+      if (!hay.includes(q)) return false;
+    }
+    return true;
+  });
+  _page[section] = 0;
+}
+
+function _showSection(id, el) {
   document.querySelectorAll('.theory-section').forEach(s => s.classList.remove('active'));
   document.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('active'));
   document.getElementById('section-' + id).classList.add('active');
   if (el) el.classList.add('active');
+  _currentSection = id;
+  // Sync search bar
+  document.getElementById('global-search').value = _search[id] || '';
 }
+
+function _toggleFilter(section, field, val) {
+  const set = _filters[section][field];
+  if (set.has(val)) set.delete(val); else set.add(val);
+  _applyFilters(section);
+  _renderSection(section);
+}
+
+function _toggleDropdown(btnEl) {
+  const dd = btnEl.closest('.filter-dd');
+  const wasOpen = dd.classList.contains('open');
+  // Close all dropdowns first
+  document.querySelectorAll('.filter-dd.open').forEach(d => d.classList.remove('open'));
+  if (!wasOpen) dd.classList.add('open');
+}
+
+// Close dropdowns on outside click
+document.addEventListener('click', e => {
+  if (!e.target.closest('.filter-dd')) {
+    document.querySelectorAll('.filter-dd.open').forEach(d => d.classList.remove('open'));
+  }
+});
+
+function _renderFilters(section) {
+  const bar = document.getElementById('filters-' + section);
+  const groups = FILTER_GROUPS[section] || [];
+  const state = _filters[section];
+  const totalActive = Object.values(state).reduce((n, s) => n + s.size, 0);
+  let html = '';
+
+  // Dropdowns
+  for (const g of groups) {
+    const active = state[g.field];
+    const hasActive = active && active.size > 0;
+    const btnClass = hasActive ? ' has-active' : '';
+    const label = hasActive ? `${g.label} (${active.size})` : g.label;
+    html += `<div class="filter-dd">`;
+    html += `<div class="filter-dd-btn${btnClass}" onclick="_toggleDropdown(this)">${_esc(label)} <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></div>`;
+    html += `<div class="filter-dd-menu">`;
+    for (const v of g.values) {
+      const checked = active?.has(v) ? ' checked' : '';
+      html += `<div class="filter-dd-item${checked}" onclick="_toggleFilter('${section}','${g.field}','${_esc(v)}')"><div class="filter-dd-check"></div>${_esc(v)}</div>`;
+    }
+    html += `</div></div>`;
+  }
+
+  // Clear button
+  if (totalActive > 0 || _search[section]) {
+    html += `<span class="filter-clear" onclick="_clearFilters('${section}')">Clear all</span>`;
+  }
+
+  bar.innerHTML = html;
+
+  // Active filter pills below dropdowns (so user can see + remove individual filters)
+  const pillsEl = document.getElementById('active-' + section);
+  if (totalActive === 0) { pillsEl.innerHTML = ''; return; }
+  let pills = '';
+  for (const g of groups) {
+    const active = state[g.field];
+    if (!active || active.size === 0) continue;
+    for (const v of active) {
+      pills += `<span class="active-pill" onclick="_toggleFilter('${section}','${g.field}','${_esc(v)}')">${_esc(v)} <svg viewBox="0 0 24 24" width="10" height="10" style="opacity:.5"><line x1="18" y1="6" x2="6" y2="18" stroke="currentColor" stroke-width="2"/><line x1="6" y1="6" x2="18" y2="18" stroke="currentColor" stroke-width="2"/></svg></span>`;
+    }
+  }
+  pillsEl.innerHTML = pills;
+}
+
+function _renderCards(section) {
+  const items = _filtered[section] || [];
+  const grid = document.getElementById('grid-' + section);
+  const pg = _page[section] || 0;
+  const start = pg * PER_PAGE;
+  const pageItems = items.slice(start, start + PER_PAGE);
+
+  if (!items.length) {
+    grid.innerHTML = '<div class="empty-section">No matches. Try adjusting filters or search.</div>';
+    document.getElementById('pag-' + section).innerHTML = '';
+    return;
+  }
+
+  grid.innerHTML = pageItems.map(item => {
+    const formulaField = item.notes || item.formula || '';
+    const tags = [];
+    if (item.difficulty) tags.push(item.difficulty);
+    if (item.quality) tags.push(item.quality);
+    if (item.family) tags.push(item.family);
+    if (item.category) tags.push(item.category);
+    (item.context||[]).forEach(c => tags.push(c));
+    (item.genres||[]).slice(0,3).forEach(g => tags.push(g));
+    (item.mood||[]).slice(0,1).forEach(m => tags.push(m));
+
+    let extra = '';
+    if (section === 'keys' && item.relative) extra = `<div class="tc-extra">Relative: ${_esc(item.relative)}${item.brightness ? ' \u00b7 ' + item.brightness : ''}</div>`;
+    if (section === 'progressions' && item.function) extra = `<div class="tc-extra">${_esc(item.function)}${item.chords ? ' \u00b7 ' + item.chords + ' chords' : ''}</div>`;
+    if (section === 'scales' && item.notes) extra = `<div class="tc-extra">${item.notes} notes${item.family ? ' \u00b7 ' + item.family : ''}</div>`;
+
+    return `<div class="theory-card">
+      <div class="tc-header"><span class="tc-name">${_esc(item.name)}</span>${item.badge ? `<span class="tc-badge">${_esc(item.badge)}</span>` : ''}</div>
+      ${formulaField ? `<div class="tc-formula">${_esc(formulaField)}</div>` : ''}
+      <div class="tc-desc">${_esc(item.desc)}</div>
+      ${extra}
+      <div class="tc-tags">${tags.map(t => `<span class="tc-tag">${_esc(t)}</span>`).join('')}</div>
+    </div>`;
+  }).join('');
+
+  // Pagination
+  const totalPages = Math.ceil(items.length / PER_PAGE);
+  const pagEl = document.getElementById('pag-' + section);
+  if (totalPages <= 1) { pagEl.innerHTML = ''; return; }
+  let pagHtml = `<button class="page-btn arrow" onclick="_goPage('${section}',${pg-1})" ${pg===0?'disabled':''}>&#8249;</button>`;
+  for (let i = 0; i < totalPages; i++) {
+    if (totalPages > 7 && i > 1 && i < totalPages - 2 && Math.abs(i - pg) > 1) {
+      if (i === 2 || i === totalPages - 3) pagHtml += '<span style="color:var(--text-muted);font-size:.7rem;padding:0 2px">...</span>';
+      continue;
+    }
+    pagHtml += `<button class="page-btn${i===pg?' active':''}" onclick="_goPage('${section}',${i})">${i+1}</button>`;
+  }
+  pagHtml += `<button class="page-btn arrow" onclick="_goPage('${section}',${pg+1})" ${pg>=totalPages-1?'disabled':''}>&#8250;</button>`;
+  pagEl.innerHTML = pagHtml;
+}
+
+function _goPage(section, pg) {
+  const total = Math.ceil((_filtered[section]||[]).length / PER_PAGE);
+  if (pg < 0 || pg >= total) return;
+  _page[section] = pg;
+  _renderCards(section);
+  // Scroll to top of grid
+  document.getElementById('grid-' + section).scrollIntoView({ behavior:'smooth', block:'start' });
+}
+
+function _renderSection(section) {
+  _renderFilters(section);
+  _renderCards(section);
+}
+
+// Global search bar
+document.getElementById('global-search').addEventListener('input', function() {
+  _search[_currentSection] = this.value.toLowerCase().trim();
+  _applyFilters(_currentSection);
+  _renderSection(_currentSection);
+});
+
+function _clearFilters(section) {
+  for (const set of Object.values(_filters[section])) set.clear();
+  _search[section] = '';
+  document.getElementById('global-search').value = '';
+  _applyFilters(section);
+  _renderSection(section);
+}
+
+async function _loadSection(section) {
+  try {
+    const r = await fetch(`/api/theory/${section}`);
+    _data[section] = _sortItems(await r.json());
+  } catch { _data[section] = []; }
+  _filters[section] = {};
+  for (const g of (FILTER_GROUPS[section]||[])) {
+    _filters[section][g.field] = new Set();
+  }
+  _search[section] = '';
+  _applyFilters(section);
+  _renderSection(section);
+}
+
+['chords','scales','progressions','keys'].forEach(_loadSection);
 </script>
 {% endblock %}
