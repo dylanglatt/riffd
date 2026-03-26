@@ -2,11 +2,13 @@
 app.py — Flask web server.
 """
 
+import os
 import uuid
 import threading
 import traceback
 from pathlib import Path
-from flask import Flask, render_template, request, jsonify, send_from_directory
+from dotenv import load_dotenv
+from flask import Flask, render_template, request, jsonify, send_from_directory, session, redirect, url_for
 from werkzeug.utils import secure_filename
 
 from processor import separate_stems, generate_tabs
@@ -17,8 +19,13 @@ from downloader import download_audio_from_youtube
 from history import add_to_history, get_recent, get_cached_result, save_cached_result, touch_history
 from db import init_db, migrate_from_history_json, get_track, upsert_track, set_track_status, touch_track, get_recent_tracks, get_analysis_for_track
 
+load_dotenv()
+
 app = Flask(__name__)
 app.config["MAX_CONTENT_LENGTH"] = 200 * 1024 * 1024
+app.secret_key = os.getenv("FLASK_SECRET_KEY", "dev-fallback-key-change-me")
+
+SITE_PASSWORD = os.getenv("SITE_PASSWORD", "")
 
 UPLOAD_DIR = Path("uploads")
 OUTPUT_DIR = Path("outputs")
@@ -35,6 +42,38 @@ jobs = {}
 
 def allowed_file(filename: str) -> bool:
     return Path(filename).suffix.lower() in ALLOWED_EXTENSIONS
+
+
+# ─── Authentication ───────────────────────────────────────────────────────────
+
+@app.before_request
+def require_login():
+    if not SITE_PASSWORD:
+        return  # No password set — open access
+    allowed = ("login", "static")
+    if request.endpoint in allowed:
+        return
+    if not session.get("authenticated"):
+        return redirect(url_for("login"))
+
+
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    if not SITE_PASSWORD:
+        return redirect(url_for("index"))
+    error = None
+    if request.method == "POST":
+        if request.form.get("password") == SITE_PASSWORD:
+            session["authenticated"] = True
+            return redirect(url_for("index"))
+        error = "Incorrect password"
+    return render_template("login.html", error=error)
+
+
+@app.route("/logout")
+def logout():
+    session.clear()
+    return redirect(url_for("login"))
 
 
 @app.route("/")
