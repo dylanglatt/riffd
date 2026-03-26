@@ -37,11 +37,10 @@ app = Flask(__name__)
 app.config["MAX_CONTENT_LENGTH"] = 200 * 1024 * 1024
 app.secret_key = FLASK_SECRET
 
-# Session config: browser-session only (cleared when browser closes)
+# Session config: browser-session cookie (no max-age, cleared when browser closes)
 app.config["SESSION_COOKIE_HTTPONLY"] = True
 app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
 app.config["SESSION_COOKIE_SECURE"] = False  # Set True if serving over HTTPS only
-app.config["PERMANENT_SESSION_LIFETIME"] = 0  # Non-permanent = browser session only
 app.config["SESSION_COOKIE_NAME"] = "riffd_session"
 
 UPLOAD_DIR = Path("uploads")

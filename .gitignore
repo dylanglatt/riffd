@@ -1,16 +1,28 @@
+# Python
 venv/
 __pycache__/
 *.pyc
+
+# Environment
 .env
+
+# Node (Figma reference)
 node_modules/
 .next/
 dist/
 build/
+
+# Runtime data
 uploads/
 outputs/
 history.json
-
-.DS_Store
-
+riffd.db
 *.db-shm
 *.db-wal
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE / tooling
+.claude/settings.local.json

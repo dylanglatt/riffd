@@ -2,51 +2,62 @@
 {% block title %}Library{% endblock %}
 
 {% block extra_css %}
-  .lib-head { text-align:center; padding:24px 0 8px; }
-  .lib-title-row { display:flex; align-items:center; justify-content:center; gap:10px; margin-bottom:6px; }
-  .lib-title { font-size:1.8rem; font-weight:900; letter-spacing:-.04em; }
-  .lib-coming { font-size:.6rem; font-weight:600; text-transform:uppercase; letter-spacing:.08em; padding:3px 10px; border-radius:999px; background:rgba(124,92,255,.08); color:var(--accent); border:1px solid rgba(124,92,255,.15); }
-  .lib-sub { color:var(--text-muted); font-size:.88rem; margin-bottom:8px; }
-  .lib-note { color:var(--text-muted); font-size:.76rem; opacity:.6; margin-bottom:36px; }
-
-  .lib-section { margin-bottom:40px; position:relative; }
-  .lib-section-title { font-size:.92rem; font-weight:700; color:var(--text-primary); margin-bottom:14px; }
-
-  /* Preview overlay */
-  .lib-preview-wrap { position:relative; }
-  .lib-preview-wrap .song-grid {
-    filter:blur(2px); opacity:.45; pointer-events:none; user-select:none;
+  .lib-head { padding:64px 0 0; margin-bottom:64px; }
+  .lib-title-row { display:flex; align-items:center; gap:16px; margin-bottom:16px; }
+  .lib-title {
+    font-size:3rem; font-weight:500; letter-spacing:-0.03em; line-height:1.1; color:#F5F5F5;
   }
-  .lib-preview-overlay {
-    position:absolute; inset:0; z-index:1;
-    background:linear-gradient(180deg, transparent 0%, rgba(5,6,10,.4) 100%);
-    pointer-events:none;
+  .lib-coming {
+    font-size:0.75rem; font-weight:400; color:rgba(245,245,245,0.35);
+  }
+  .lib-sub {
+    font-size:1rem; line-height:1.6; font-weight:400; letter-spacing:-0.01em;
+    color:rgba(245,245,245,0.55); margin-bottom:12px;
+  }
+  .lib-note {
+    font-size:0.875rem; font-weight:400; letter-spacing:-0.01em;
+    color:rgba(245,245,245,0.35);
   }
 
-  .song-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:14px; }
-  .song-card {
-    padding:14px; border-radius:var(--radius); background:rgba(255,255,255,.012);
-    border:1px solid rgba(255,255,255,.04); cursor:default; position:relative;
+  .lib-section { margin-bottom:64px; }
+  .lib-section-title {
+    font-size:0.9375rem; font-weight:500; letter-spacing:-0.01em;
+    color:rgba(245,245,245,0.7); margin-bottom:24px;
   }
+
+  .lib-preview-area { position:relative; }
+  .lib-preview-area .song-grid {
+    filter:blur(1.5px); opacity:0.55; pointer-events:none; user-select:none;
+  }
+  .song-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; }
+  .song-card { cursor:default; }
   .sc-art {
-    width:100%; aspect-ratio:1; border-radius:10px; margin-bottom:12px; object-fit:cover;
-    background:linear-gradient(135deg,var(--surface-3),var(--surface-4));
-    filter:saturate(.85);
+    width:100%; aspect-ratio:1; border:1px solid rgba(255,255,255,0.06);
+    background:#0D0D0D; margin-bottom:12px; display:block; object-fit:cover;
   }
-  .sc-name { font-size:.84rem; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; line-height:1.3; }
-  .sc-detail { font-size:.72rem; color:var(--text-muted); margin-top:3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-  .sc-album { font-size:.68rem; color:var(--text-muted); margin-top:2px; opacity:.5; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-  .sc-preview {
-    position:absolute; top:10px; right:10px; font-size:.56rem; font-weight:600;
-    text-transform:uppercase; letter-spacing:.06em; padding:2px 7px; border-radius:4px;
-    background:rgba(0,0,0,.5); color:var(--text-muted); backdrop-filter:blur(4px);
+  .sc-name {
+    font-size:0.875rem; font-weight:500; letter-spacing:-0.01em; color:#F5F5F5;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-bottom:4px;
+  }
+  .sc-detail {
+    font-size:0.8125rem; font-weight:400; letter-spacing:-0.01em;
+    color:rgba(245,245,245,0.5); margin-bottom:4px;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  }
+  .sc-album {
+    font-size:0.75rem; font-weight:400; letter-spacing:-0.01em;
+    color:rgba(245,245,245,0.35);
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  }
+
+  .site-footer-custom {
+    text-align:center; padding:80px 0 40px;
+    font-size:0.8125rem; color:rgba(245,245,245,0.35);
   }
 
   @media(max-width:768px) {
-    .lib-title { font-size:1.4rem; }
-    .song-grid { grid-template-columns:repeat(2,1fr); gap:10px; }
-    .song-card { padding:10px; }
-    .sc-name { font-size:.78rem; }
+    .lib-title { font-size:2.25rem; }
+    .song-grid { grid-template-columns:repeat(2,1fr); gap:12px; }
   }
   @media(max-width:380px) { .song-grid { grid-template-columns:1fr; } }
 {% endblock %}
@@ -65,32 +76,27 @@
   <!-- Favorites -->
   <div class="lib-section">
     <div class="lib-section-title">Favorites</div>
-    <div class="lib-preview-wrap">
-    <div class="lib-preview-overlay"></div>
+    <div class="lib-preview-area">
     <div class="song-grid">
       <div class="song-card">
-        <span class="sc-preview">Preview</span>
         <img class="sc-art" src="https://is1-ssl.mzstatic.com/image/thumb/Music126/v4/c2/3c/54/c23c5414-20d1-7aea-f0f5-187974c58d65/23UMGIM79990.rgb.jpg/300x300bb.jpg" alt="" />
         <div class="sc-name">Peg</div>
         <div class="sc-detail">Steely Dan</div>
         <div class="sc-album">Aja</div>
       </div>
       <div class="song-card">
-        <span class="sc-preview">Preview</span>
         <img class="sc-art" src="https://is1-ssl.mzstatic.com/image/thumb/Music125/v4/dd/77/35/dd773533-06a7-4566-bef4-2c43c24d08f6/603497925759.jpg/300x300bb.jpg" alt="" />
         <div class="sc-name">Dreams</div>
         <div class="sc-detail">Fleetwood Mac</div>
         <div class="sc-album">Rumours</div>
       </div>
       <div class="song-card">
-        <span class="sc-preview">Preview</span>
         <img class="sc-art" src="https://is1-ssl.mzstatic.com/image/thumb/Music124/v4/7a/a0/f4/7aa0f487-f983-390e-73ef-005115eea1e0/dj.oqpplyfm.jpg/300x300bb.jpg" alt="" />
         <div class="sc-name">Gravity</div>
         <div class="sc-detail">John Mayer</div>
         <div class="sc-album">Continuum</div>
       </div>
       <div class="song-card">
-        <span class="sc-preview">Preview</span>
         <img class="sc-art" src="https://is1-ssl.mzstatic.com/image/thumb/Music/47/c3/21/mzi.ciyzkqao.jpg/300x300bb.jpg" alt="" />
         <div class="sc-name">Sultans of Swing</div>
         <div class="sc-detail">Dire Straits</div>
@@ -100,35 +106,30 @@
     </div>
   </div>
 
-  <!-- Recommendations -->
+  <!-- Recommended -->
   <div class="lib-section">
-    <div class="lib-section-title">Recommended for you</div>
-    <div class="lib-preview-wrap">
-    <div class="lib-preview-overlay"></div>
+    <div class="lib-section-title">Recommended for You</div>
+    <div class="lib-preview-area">
     <div class="song-grid">
       <div class="song-card">
-        <span class="sc-preview">Preview</span>
         <img class="sc-art" src="https://is1-ssl.mzstatic.com/image/thumb/Music221/v4/89/82/f1/8982f1c5-a729-40da-146c-92bd8cb1e3f4/25UMGIM68675.rgb.jpg/300x300bb.jpg" alt="" />
         <div class="sc-name">Kid Charlemagne</div>
         <div class="sc-detail">Steely Dan</div>
         <div class="sc-album">The Royal Scam</div>
       </div>
       <div class="song-card">
-        <span class="sc-preview">Preview</span>
         <img class="sc-art" src="https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/69/ce/d2/69ced240-07a7-2a04-bbab-2afbacf30809/074643772822.jpg/300x300bb.jpg" alt="" />
         <div class="sc-name">Rosanna</div>
         <div class="sc-detail">Toto</div>
         <div class="sc-album">Toto IV</div>
       </div>
       <div class="song-card">
-        <span class="sc-preview">Preview</span>
         <img class="sc-art" src="https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/a5/4e/23/a54e2374-dca6-333d-c997-f07cb1acb9e1/00724359030852.rgb.jpg/300x300bb.jpg" alt="" />
         <div class="sc-name">Cliffs of Dover</div>
         <div class="sc-detail">Eric Johnson</div>
         <div class="sc-album">Ah Via Musicom</div>
       </div>
       <div class="song-card">
-        <span class="sc-preview">Preview</span>
         <img class="sc-art" src="https://is1-ssl.mzstatic.com/image/thumb/Music118/v4/eb/1f/12/eb1f12ec-474c-63aa-43af-09282f423b9d/00602537004737.rgb.jpg/300x300bb.jpg" alt="" />
         <div class="sc-name">Sir Duke</div>
         <div class="sc-detail">Stevie Wonder</div>
@@ -138,8 +139,6 @@
     </div>
   </div>
 
-  <div class="site-footer">
-    <div class="footer-note">Riffd by <a href="https://riffdlabs.com" style="color:inherit;text-decoration:none">Riffd Labs</a></div>
-  </div>
+  <div class="site-footer-custom">&copy; 2026 riffd. All rights reserved.</div>
 </div>
 {% endblock %}

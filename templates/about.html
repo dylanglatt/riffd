@@ -2,48 +2,77 @@
 {% block title %}About{% endblock %}
 
 {% block extra_css %}
-  .about-hero { text-align:center; padding:60px 0 48px; max-width:680px; margin:0 auto; }
-  .about-hero .section-title { font-size:2rem; }
-  .about-hero .section-sub { font-size:1rem; line-height:1.7; max-width:560px; margin:12px auto 0; }
-
-  .about-section { margin-bottom:56px; }
-  .about-section-title { font-size:1.15rem; font-weight:800; letter-spacing:-0.02em; margin-bottom:16px; }
-
-  .flow-steps { display:grid; grid-template-columns:repeat(4,1fr); gap:20px; margin-top:24px; }
-  .flow-step {
-    padding:24px 20px; border-radius:var(--radius); background:rgba(255,255,255,.015);
-    border:1px solid var(--border); text-align:center;
+  .about-hero { text-align:center; padding:80px 0 0; max-width:680px; margin:0 auto; }
+  .about-hero .hero-title {
+    font-size:3rem; font-weight:500; letter-spacing:-0.03em; line-height:1.1;
+    color:#F5F5F5; margin-bottom:24px;
   }
+  .about-hero .hero-sub {
+    font-size:1rem; line-height:1.7; font-weight:400; letter-spacing:-0.01em;
+    color:rgba(245,245,245,0.55); max-width:560px; margin:0 auto;
+  }
+
+  .about-section { margin-bottom:128px; }
+  .about-section-label {
+    font-size:0.8125rem; font-weight:500; letter-spacing:0.1em; text-transform:uppercase;
+    color:rgba(245,245,245,0.4); text-align:center; margin-bottom:48px;
+  }
+
+  .flow-steps { display:grid; grid-template-columns:repeat(4,1fr); gap:32px; }
+  .flow-step { text-align:center; }
   .fs-num {
-    width:36px; height:36px; border-radius:50%; display:flex; align-items:center; justify-content:center;
-    font-size:.78rem; font-weight:800; margin:0 auto 14px;
-    background:rgba(124,92,255,.08); border:1px solid rgba(124,92,255,.15); color:var(--accent);
+    width:40px; height:40px; border-radius:50%; display:flex; align-items:center; justify-content:center;
+    font-size:0.9375rem; font-weight:500; margin:0 auto 16px;
+    background:transparent; border:1px solid rgba(255,255,255,0.15); color:rgba(245,245,245,0.7);
   }
-  .fs-title { font-size:.92rem; font-weight:700; margin-bottom:6px; }
-  .fs-desc { font-size:.78rem; color:var(--text-muted); line-height:1.5; }
+  .fs-title {
+    font-size:0.9375rem; font-weight:500; letter-spacing:-0.01em;
+    color:#F5F5F5; margin-bottom:8px;
+  }
+  .fs-desc {
+    font-size:0.875rem; line-height:1.5; font-weight:400; letter-spacing:-0.01em;
+    color:rgba(245,245,245,0.5);
+  }
 
-  .tech-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; }
+  .tech-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:20px; }
   .tech-card {
-    padding:20px; border-radius:var(--radius); background:rgba(255,255,255,.015);
-    border:1px solid var(--border);
+    padding:20px; border:1px solid rgba(255,255,255,0.08); border-radius:0;
+    background:transparent; transition:border-color 0.2s;
   }
-  .tech-name { font-size:.88rem; font-weight:700; margin-bottom:4px; }
-  .tech-role { font-size:.78rem; color:var(--accent-2); margin-bottom:8px; }
-  .tech-desc { font-size:.76rem; color:var(--text-muted); line-height:1.5; }
+  .tech-card:hover { border-color:rgba(255,255,255,0.15); }
+  .tech-name {
+    font-size:0.9375rem; font-weight:500; letter-spacing:-0.01em;
+    color:#F5F5F5; margin-bottom:4px;
+  }
+  .tech-role {
+    font-size:0.8125rem; font-weight:400; letter-spacing:-0.01em;
+    color:#D4691F; opacity:0.8; margin-bottom:8px;
+  }
+  .tech-desc {
+    font-size:0.875rem; line-height:1.5; font-weight:400; letter-spacing:-0.01em;
+    color:rgba(245,245,245,0.5);
+  }
 
-  .principles-list { display:flex; flex-direction:column; gap:16px; max-width:680px; }
-  .principle {
-    display:flex; gap:16px; align-items:flex-start;
-    padding:20px; border-radius:var(--radius); background:rgba(255,255,255,.01);
-    border:1px solid var(--border);
+  .principles-list { display:flex; flex-direction:column; gap:32px; max-width:680px; margin:0 auto; }
+  .principle { }
+  .pr-title {
+    font-size:1rem; font-weight:500; letter-spacing:-0.01em;
+    color:#F5F5F5; margin-bottom:8px;
   }
-  .pr-icon { font-size:1.4rem; flex-shrink:0; width:32px; text-align:center; }
-  .pr-title { font-size:.92rem; font-weight:700; margin-bottom:4px; }
-  .pr-desc { font-size:.8rem; color:var(--text-muted); line-height:1.5; }
+  .pr-desc {
+    font-size:0.9375rem; line-height:1.6; font-weight:400; letter-spacing:-0.01em;
+    color:rgba(245,245,245,0.55);
+  }
+
+  .site-footer-custom {
+    text-align:center; padding:80px 0 40px;
+    font-size:0.8125rem; color:rgba(245,245,245,0.35);
+  }
 
   @media(max-width:768px) {
     .flow-steps { grid-template-columns:repeat(2,1fr); }
     .tech-grid { grid-template-columns:1fr; }
+    .about-hero .hero-title { font-size:2.25rem; }
   }
   @media(max-width:480px) {
     .flow-steps { grid-template-columns:1fr; }
@@ -54,13 +83,15 @@
 <div class="page-content">
 
   <div class="about-hero">
-    <div class="section-title">How Riffd works</div>
-    <div class="section-sub">Riffd uses AI audio analysis to break songs into individual parts, detect musical properties, and give you the tools to learn and play along. No sheet music required.</div>
+    <div class="hero-title">How Riffd works</div>
+    <div class="hero-sub">Riffd uses AI audio analysis to break songs into individual parts, detect musical properties, and give you the tools to learn and play along. No sheet music required.</div>
   </div>
 
-  <!-- Flow -->
+  <div style="height:128px"></div>
+
+  <!-- Pipeline -->
   <div class="about-section">
-    <div class="about-section-title">The Pipeline</div>
+    <div class="about-section-label">The Pipeline</div>
     <div class="flow-steps">
       <div class="flow-step">
         <div class="fs-num">1</div>
@@ -87,76 +118,60 @@
 
   <!-- Technology -->
   <div class="about-section">
-    <div class="about-section-title">Technology</div>
+    <div class="about-section-label">Technology</div>
     <div class="tech-grid">
       <div class="tech-card">
         <div class="tech-name">Demucs</div>
         <div class="tech-role">Stem Separation</div>
-        <div class="tech-desc">Meta's hybrid transformer model separates audio into 6 individual stems with state-of-the-art quality.</div>
+        <div class="tech-desc">Meta's state-of-the-art transformer model for source separation. Isolates vocals, drums, bass, and other instruments with high fidelity.</div>
       </div>
       <div class="tech-card">
         <div class="tech-name">Basic Pitch</div>
         <div class="tech-role">Note Detection</div>
-        <div class="tech-desc">Spotify's neural network converts audio to MIDI — pitch, timing, and velocity for every detected note.</div>
+        <div class="tech-desc">Spotify's neural network for pitch detection. Converts audio to MIDI with accurate note onset and duration.</div>
       </div>
       <div class="tech-card">
         <div class="tech-name">Krumhansl-Schmuckler</div>
         <div class="tech-role">Key Detection</div>
-        <div class="tech-desc">Pitch-class profiling algorithm that matches note distributions against major and minor key profiles.</div>
+        <div class="tech-desc">Pitch-class profiling algorithm that determines the tonal center and mode of a piece.</div>
       </div>
       <div class="tech-card">
         <div class="tech-name">Web Audio API</div>
         <div class="tech-role">Playback Engine</div>
-        <div class="tech-desc">Browser-native audio engine for synchronized stem playback with real-time volume, mute, solo, and transpose.</div>
+        <div class="tech-desc">Browser-native audio processing. Enables real-time mixing, looping, and transposition without server roundtrips.</div>
       </div>
       <div class="tech-card">
         <div class="tech-name">Diatonic Template Matching</div>
         <div class="tech-role">Chord Analysis</div>
-        <div class="tech-desc">Windowed pitch-class histograms scored against diatonic chord templates to identify harmonic progressions.</div>
+        <div class="tech-desc">Windowed pitch-class histogram analysis matched against diatonic chord templates.</div>
       </div>
       <div class="tech-card">
         <div class="tech-name">Flask + Vanilla JS</div>
         <div class="tech-role">Application Stack</div>
-        <div class="tech-desc">Lightweight Python backend with a zero-dependency frontend. Fast iteration, minimal overhead.</div>
+        <div class="tech-desc">Lightweight Python backend with zero-dependency frontend. Fast, simple, and maintainable.</div>
       </div>
     </div>
   </div>
 
   <!-- Principles -->
-  <div class="about-section">
-    <div class="about-section-title">Principles</div>
+  <div class="about-section" style="margin-bottom:80px;">
+    <div class="about-section-label">Principles</div>
     <div class="principles-list">
       <div class="principle">
-        <span class="pr-icon">&#127927;</span>
-        <div>
-          <div class="pr-title">Built for musicians</div>
-          <div class="pr-desc">Every feature is designed for people who play instruments. Not a tech demo — a tool you actually use in your practice room.</div>
-        </div>
+        <div class="pr-title">Built for musicians</div>
+        <div class="pr-desc">Every feature is designed for people who play instruments. Not a tech demo — a tool you actually use in your practice room.</div>
       </div>
       <div class="principle">
-        <span class="pr-icon">&#128270;</span>
-        <div>
-          <div class="pr-title">Honest about limitations</div>
-          <div class="pr-desc">AI analysis isn't perfect. We show confidence levels and suppress low-quality results rather than guessing. You deserve accurate information.</div>
-        </div>
+        <div class="pr-title">Honest about limitations</div>
+        <div class="pr-desc">AI analysis isn't perfect. We show confidence levels and suppress low-quality results rather than guessing.</div>
       </div>
       <div class="principle">
-        <span class="pr-icon">&#9889;</span>
-        <div>
-          <div class="pr-title">Ship and iterate</div>
-          <div class="pr-desc">Core features are live. Tab accuracy, drum detection, and chord analysis are actively improving with every update.</div>
-        </div>
+        <div class="pr-title">Ship and iterate</div>
+        <div class="pr-desc">Core features are live. Tab accuracy, drum detection, and chord analysis are actively improving with every update.</div>
       </div>
     </div>
   </div>
 
-  <div class="site-footer">
-    <div class="footer-links">
-      <a href="/">Home</a>
-      <a href="/decompose">Decompose</a>
-      <a href="/learn">Learn</a>
-    </div>
-    <div class="footer-note">Riffd by <a href="https://riffdlabs.com" style="color:inherit;text-decoration:none">Riffd Labs</a></div>
-  </div>
+  <div class="site-footer-custom">&copy; 2026 riffd. All rights reserved.</div>
 </div>
 {% endblock %}

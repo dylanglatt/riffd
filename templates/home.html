@@ -2,83 +2,138 @@
 {% block title %}Riffd{% endblock %}
 
 {% block extra_css %}
+  /* Hero */
   .home-hero {
-    text-align:center; padding:80px 0 60px; position:relative; z-index:2;
+    display:grid; grid-template-columns:1fr 1fr; gap:64px; align-items:center;
+    padding:192px 0 160px;
   }
+  .hero-text { max-width:540px; }
   .hero-headline {
-    font-size:3.6rem; font-weight:900; letter-spacing:-0.045em; line-height:1.02;
-    margin-bottom:18px; color:var(--text-primary);
-  }
-  .hero-headline span {
-    background:var(--accent-gradient); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text;
+    font-size:4rem; font-weight:500; letter-spacing:-0.04em; line-height:1.05;
+    margin-bottom:20px; color:#F5F5F5;
   }
   .hero-sub {
-    color:var(--text-secondary); font-size:1.12rem; font-weight:400; line-height:1.55;
-    max-width:520px; margin:0 auto 36px;
+    color:rgba(245,245,245,0.55); font-size:1.125rem; font-weight:400; line-height:1.6;
+    max-width:420px; margin-bottom:40px; letter-spacing:-0.01em;
   }
-  .hero-ctas { display:flex; gap:14px; justify-content:center; flex-wrap:wrap; }
+  .hero-ctas { display:flex; gap:16px; }
   .cta-primary {
-    padding:15px 36px; font-size:.95rem; font-weight:700; border-radius:var(--radius-sm);
-    background:var(--accent-gradient); color:white; border:none; cursor:pointer;
-    box-shadow:0 4px 24px rgba(124,92,255,.35); transition:all .3s ease; text-decoration:none;
-    display:inline-flex; align-items:center; gap:8px;
+    padding:14px 32px; font-size:0.9375rem; font-weight:500; border-radius:0;
+    background:#FAFAF9; color:black; border:none; cursor:pointer;
+    transition:opacity .15s ease; text-decoration:none;
+    display:inline-flex; align-items:center; gap:8px; font-family:inherit; letter-spacing:-0.01em;
   }
-  .cta-primary:hover { box-shadow:0 8px 36px rgba(124,92,255,.5); transform:translateY(-2px); }
+  .cta-primary:hover { opacity:0.85; }
   .cta-secondary {
-    padding:15px 36px; font-size:.95rem; font-weight:600; border-radius:var(--radius-sm);
-    background:rgba(255,255,255,.04); color:var(--text-secondary); border:1px solid var(--border-2);
-    cursor:pointer; transition:all .3s ease; text-decoration:none;
-    display:inline-flex; align-items:center; gap:8px;
+    padding:14px 32px; font-size:0.9375rem; font-weight:500; border-radius:0;
+    background:transparent; color:#F5F5F5; border:1px solid rgba(255,255,255,0.15);
+    cursor:pointer; transition:border-color .15s ease; text-decoration:none;
+    display:inline-flex; align-items:center; gap:8px; font-family:inherit; letter-spacing:-0.01em;
   }
-  .cta-secondary:hover { background:rgba(255,255,255,.07); color:var(--text-primary); transform:translateY(-2px); }
+  .cta-secondary:hover { border-color:rgba(255,255,255,0.30); }
 
-  /* How it works */
-  .hiw-section { padding:60px 0; }
-  .hiw-label { text-align:center; font-size:.7rem; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:.14em; margin-bottom:36px; }
-  .hiw-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:40px; max-width:900px; margin:0 auto; }
-  .hiw-step { text-align:center; }
-  .hiw-num {
-    width:44px; height:44px; border-radius:50%; display:flex; align-items:center; justify-content:center;
-    font-size:.82rem; font-weight:800; margin:0 auto 16px;
-    background:rgba(124,92,255,.08); border:1px solid rgba(124,92,255,.15); color:var(--accent);
+  /* Product mockup */
+  .hero-mockup {
+    border:1px solid rgba(255,255,255,0.08); background:transparent;
   }
-  .hiw-title { font-size:1.05rem; font-weight:700; margin-bottom:6px; }
-  .hiw-desc { font-size:.84rem; color:var(--text-muted); line-height:1.5; }
+  .mockup-header {
+    display:flex; align-items:center; gap:6px;
+    padding:12px 16px; border-bottom:1px solid rgba(255,255,255,0.08);
+  }
+  .mockup-dot {
+    width:10px; height:10px; border-radius:50%;
+  }
+  .mockup-dot.red { background:#f87171; }
+  .mockup-dot.yellow { background:#fbbf24; }
+  .mockup-dot.green { background:#4ade80; }
+  .mockup-body {
+    padding:32px 24px 24px;
+  }
+  .mockup-waveform {
+    display:flex; align-items:flex-end; gap:3px; height:100px; margin-bottom:24px;
+  }
+  .mockup-bar {
+    width:2px; background:rgba(245,245,245,0.3); flex-shrink:0;
+  }
+  .mockup-bar.accent {
+    background:rgba(212,105,31,0.7);
+  }
+  .mockup-chords {
+    display:flex; gap:8px;
+  }
+  .mockup-chord {
+    padding:6px 14px; border:1px solid rgba(255,255,255,0.08);
+    font-size:0.8125rem; font-weight:500; color:rgba(245,245,245,0.55);
+    letter-spacing:-0.01em;
+  }
 
-  /* Feature cards */
-  .features-section { padding:40px 0 60px; }
-  .features-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:20px; }
-  .feature-card {
-    padding:28px 24px; border-radius:var(--radius); background:rgba(255,255,255,.015);
-    border:1px solid var(--border); transition:all .3s; cursor:pointer; text-decoration:none; color:inherit; display:block;
+  /* Features */
+  .features-section {
+    padding:160px 0; border-top:1px solid rgba(255,255,255,0.08);
   }
-  .feature-card:hover { background:rgba(124,92,255,.04); border-color:rgba(124,92,255,.15); transform:translateY(-3px); }
-  .fc-icon { font-size:1.6rem; margin-bottom:14px; display:block; }
-  .fc-title { font-size:1rem; font-weight:700; margin-bottom:6px; }
-  .fc-desc { font-size:.82rem; color:var(--text-muted); line-height:1.5; }
-  .fc-tag {
-    display:inline-block; margin-top:12px; padding:3px 10px; border-radius:999px;
-    font-size:.68rem; font-weight:600; background:rgba(94,234,212,.08); color:var(--accent-2);
-    border:1px solid rgba(94,234,212,.12);
+  .features-label {
+    font-size:0.8125rem; font-weight:500; letter-spacing:0.1em; text-transform:uppercase;
+    color:rgba(245,245,245,0.4); margin-bottom:48px;
+  }
+  .features-grid {
+    display:grid; grid-template-columns:repeat(3,1fr); gap:48px;
+  }
+  .feature-item { }
+  .feature-icon {
+    width:40px; height:40px; margin-bottom:20px;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .feature-icon svg {
+    width:28px; height:28px; stroke:rgba(212,105,31,0.85); stroke-width:1.5; fill:none;
+  }
+  .feature-title {
+    font-size:1.25rem; font-weight:500; letter-spacing:-0.02em; margin-bottom:8px; color:#F5F5F5;
+  }
+  .feature-desc {
+    font-size:0.9375rem; color:rgba(245,245,245,0.5); line-height:1.6; letter-spacing:-0.01em; font-weight:400;
   }
 
   /* Bottom CTA */
-  .bottom-cta { text-align:center; padding:60px 0 20px; }
-  .bottom-cta .hero-sub { margin-bottom:24px; }
+  .bottom-cta {
+    text-align:center; padding:160px 0 80px;
+  }
+  .bottom-headline {
+    font-size:3rem; font-weight:500; letter-spacing:-0.03em; line-height:1.1;
+    margin-bottom:32px; color:#F5F5F5;
+  }
 
+  /* Footer */
+  .home-footer {
+    border-top:1px solid rgba(255,255,255,0.08); padding:64px 0;
+    display:flex; justify-content:space-between; align-items:center;
+  }
+  .home-footer-links { display:flex; gap:32px; }
+  .home-footer-links a {
+    color:rgba(245,245,245,0.35); text-decoration:none; font-size:0.875rem;
+    font-weight:400; letter-spacing:-0.01em; transition:color .2s;
+  }
+  .home-footer-links a:hover { color:#F5F5F5; }
+  .home-footer-note {
+    color:rgba(245,245,245,0.35); font-size:0.875rem; font-weight:400; letter-spacing:-0.01em;
+  }
+
+  @media(max-width:960px) {
+    .home-hero { grid-template-columns:1fr; gap:48px; padding:120px 0 100px; }
+    .hero-mockup { max-width:520px; }
+    .features-grid { grid-template-columns:1fr; gap:40px; }
+  }
   @media(max-width:768px) {
-    .home-hero { padding:48px 0 40px; }
-    .hero-headline { font-size:2rem; }
-    .hero-sub { font-size:.95rem; }
-    .hero-ctas { flex-direction:column; align-items:center; }
-    .cta-primary, .cta-secondary { width:100%; max-width:280px; text-align:center; justify-content:center; }
-    .hiw-grid { grid-template-columns:1fr; gap:24px; }
-    .features-grid { grid-template-columns:1fr; }
-    .flow-steps { grid-template-columns:repeat(2,1fr); }
+    .home-hero { padding:80px 0 64px; }
+    .hero-headline { font-size:2.5rem; }
+    .hero-sub { font-size:1rem; }
+    .hero-ctas { flex-direction:column; }
+    .cta-primary, .cta-secondary { width:100%; max-width:280px; justify-content:center; text-align:center; }
+    .bottom-headline { font-size:2rem; }
+    .home-footer { flex-direction:column; gap:24px; text-align:center; }
   }
   @media(max-width:480px) {
-    .hero-headline { font-size:1.7rem; }
-    .flow-steps { grid-template-columns:1fr; }
+    .hero-headline { font-size:2rem; }
+    .bottom-headline { font-size:1.6rem; }
   }
 {% endblock %}
 
@@ -87,74 +142,89 @@
 
   <!-- Hero -->
   <div class="home-hero">
-    <div class="hero-headline">See inside <span>any song.</span></div>
-    <div class="hero-sub">Break any song into stems, chords, and tabs — powered by AI audio analysis.</div>
-    <div class="hero-ctas">
-      <a href="/decompose" class="cta-primary">Decompose a Song</a>
-      <a href="/learn" class="cta-secondary">Learn Music Theory</a>
+    <div class="hero-text">
+      <div class="hero-headline">Analyze any song.</div>
+      <div class="hero-sub">Break any track into stems, chords, and tabs. Powered by AI audio analysis.</div>
+      <div class="hero-ctas">
+        <a href="/decompose" class="cta-primary">Get Started</a>
+        <a href="/learn" class="cta-secondary">See Demo</a>
+      </div>
+    </div>
+    <div class="hero-mockup">
+      <div class="mockup-header">
+        <div class="mockup-dot red"></div>
+        <div class="mockup-dot yellow"></div>
+        <div class="mockup-dot green"></div>
+      </div>
+      <div class="mockup-body">
+        <div class="mockup-waveform" id="mockup-waveform"></div>
+        <div class="mockup-chords">
+          <div class="mockup-chord">Am</div>
+          <div class="mockup-chord">F</div>
+          <div class="mockup-chord">C</div>
+          <div class="mockup-chord">G</div>
+          <div class="mockup-chord">Em</div>
+        </div>
+      </div>
     </div>
   </div>
 
-  <!-- How it Works -->
-  <div class="hiw-section">
-    <div class="hiw-label">How it works</div>
-    <div class="hiw-grid">
-      <div class="hiw-step">
-        <div class="hiw-num">1</div>
-        <div class="hiw-title">Choose a song</div>
-        <div class="hiw-desc">Search by name or drop in an audio file. We handle the rest.</div>
-      </div>
-      <div class="hiw-step">
-        <div class="hiw-num">2</div>
-        <div class="hiw-title">AI breaks it apart</div>
-        <div class="hiw-desc">Stems are separated, notes detected, key and chords analyzed automatically.</div>
-      </div>
-      <div class="hiw-step">
-        <div class="hiw-num">3</div>
-        <div class="hiw-title">Play and learn</div>
-        <div class="hiw-desc">Mix stems, read tabs, loop sections, transpose keys — all in one workspace.</div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Feature entry points -->
+  <!-- Features -->
   <div class="features-section">
+    <div class="features-label">Features</div>
     <div class="features-grid">
-      <a href="/decompose" class="feature-card">
-        <span class="fc-icon">&#127929;</span>
-        <div class="fc-title">Decompose</div>
-        <div class="fc-desc">Isolate vocals, guitar, bass, drums, and more from any track. Mix, mute, solo, and loop individual parts.</div>
-        <span class="fc-tag">Live</span>
-      </a>
-      <a href="/learn" class="feature-card">
-        <span class="fc-icon">&#127932;</span>
-        <div class="fc-title">Learn Theory</div>
-        <div class="fc-desc">Reference guides for chords, scales, progressions, and keys. Built for guitar and piano players.</div>
-        <span class="fc-tag">Preview</span>
-      </a>
-      <a href="/practice" class="feature-card">
-        <span class="fc-icon">&#127928;</span>
-        <div class="fc-title">Practice</div>
-        <div class="fc-desc">Jam tracks, scale drills, chord trainers, and progression loopers to build muscle memory.</div>
-        <span class="fc-tag">Coming Soon</span>
-      </a>
+      <div class="feature-item">
+        <div class="feature-icon">
+          <svg viewBox="0 0 24 24"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+        </div>
+        <div class="feature-title">Stem Separation</div>
+        <div class="feature-desc">Isolate vocals, guitar, bass, and drums from any track. Solo, mute, and mix individual parts.</div>
+      </div>
+      <div class="feature-item">
+        <div class="feature-icon">
+          <svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="0"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+        </div>
+        <div class="feature-title">Chord Detection</div>
+        <div class="feature-desc">Automatic chord analysis with beat-aligned timing. See every change as it happens in the track.</div>
+      </div>
+      <div class="feature-item">
+        <div class="feature-icon">
+          <svg viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+        </div>
+        <div class="feature-title">Theory Reference</div>
+        <div class="feature-desc">Scales, progressions, and key guides built for guitar and piano. Learn the why behind the music.</div>
+      </div>
     </div>
   </div>
 
   <!-- Bottom CTA -->
   <div class="bottom-cta">
-    <div class="hero-sub">Ready to hear what's inside your favorite song?</div>
+    <div class="bottom-headline">Start analyzing music.</div>
     <a href="/decompose" class="cta-primary">Get Started</a>
   </div>
 
   <!-- Footer -->
-  <div class="site-footer">
-    <div class="footer-links">
+  <div class="home-footer">
+    <div class="home-footer-links">
       <a href="/about">About</a>
       <a href="/learn">Learn</a>
       <a href="/library">Library</a>
     </div>
-    <div class="footer-note">Riffd by <a href="https://riffdlabs.com" style="color:inherit;text-decoration:none">Riffd Labs</a></div>
+    <div class="home-footer-note">Riffd by <a href="https://riffdlabs.com" style="color:inherit;text-decoration:none">Riffd Labs</a></div>
   </div>
 </div>
+
+<script>
+(function(){
+  var wf = document.getElementById('mockup-waveform');
+  if (!wf) return;
+  for (var i = 0; i < 80; i++) {
+    var bar = document.createElement('div');
+    bar.className = 'mockup-bar' + (i % 20 === 0 ? ' accent' : '');
+    var h = 15 + Math.random() * 70;
+    bar.style.height = h + 'px';
+    wf.appendChild(bar);
+  }
+})();
+</script>
 {% endblock %}

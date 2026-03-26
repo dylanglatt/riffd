@@ -3,68 +3,47 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Riffd</title>
+  <title>riffd</title>
   <style>
-    :root {
-      --bg: #05060a; --surface: #11131c; --surface-2: #171926;
-      --border: rgba(255,255,255,0.06); --border-2: rgba(255,255,255,0.09);
-      --accent: #7c5cff; --accent-2: #5eead4;
-      --accent-gradient: linear-gradient(135deg, #7c5cff, #5eead4);
-      --text-primary: #f5f7ff; --text-secondary: #9aa0b5; --text-muted: #6b7085;
-      --red: #f87171;
-    }
     * { box-sizing:border-box; margin:0; padding:0; }
     body {
       font-family:"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
-      background:var(--bg); color:var(--text-primary); min-height:100vh;
+      background:#0B0B0B; color:#F5F5F5; min-height:100vh;
       display:flex; align-items:center; justify-content:center;
       -webkit-font-smoothing:antialiased;
     }
-    body::before {
-      content:""; position:fixed; top:-30%; left:50%; transform:translateX(-50%);
-      width:600px; height:500px;
-      background:radial-gradient(ellipse,rgba(124,92,255,0.06) 0%,rgba(94,234,212,0.03) 40%,transparent 70%);
-      pointer-events:none;
-    }
     .login-card {
-      position:relative; width:100%; max-width:360px; padding:40px 32px;
-      background:rgba(17,19,28,0.7); backdrop-filter:blur(20px); -webkit-backdrop-filter:blur(20px);
-      border:1px solid var(--border); border-radius:16px;
-      box-shadow:0 8px 32px rgba(0,0,0,0.4);
+      width:100%; max-width:360px; padding:48px 36px;
+      background:#0D0D0D; border:1px solid rgba(255,255,255,0.08);
     }
     .logo {
-      font-size:1.2rem; font-weight:800; letter-spacing:-0.04em; text-align:center;
-      background:var(--accent-gradient); -webkit-background-clip:text; -webkit-text-fill-color:transparent;
-      margin-bottom:28px;
+      font-size:1.125rem; font-weight:500; letter-spacing:-0.02em;
+      color:#F5F5F5; text-align:center; margin-bottom:36px;
     }
-    .field { margin-bottom:16px; }
+    .field { margin-bottom:20px; }
     .field input {
-      width:100%; padding:12px 16px; font-size:.9rem; font-family:inherit;
-      background:rgba(255,255,255,0.04); border:1px solid var(--border-2);
-      border-radius:10px; color:var(--text-primary); outline:none;
-      transition:border-color .2s, box-shadow .2s;
+      width:100%; padding:14px 16px; font-size:0.9375rem; font-family:inherit;
+      background:transparent; border:1px solid rgba(255,255,255,0.15);
+      color:#F5F5F5; outline:none; letter-spacing:-0.01em;
+      transition:border-color .2s;
     }
-    .field input:focus {
-      border-color:rgba(124,92,255,.4);
-      box-shadow:0 0 0 3px rgba(124,92,255,0.12);
-    }
-    .field input::placeholder { color:var(--text-muted); }
+    .field input:focus { border-color:rgba(255,255,255,0.30); }
+    .field input::placeholder { color:rgba(245,245,245,0.35); }
     .submit-btn {
-      width:100%; padding:12px; font-size:.88rem; font-weight:600; font-family:inherit;
-      background:var(--accent-gradient); color:white; border:none; border-radius:10px;
-      cursor:pointer; box-shadow:0 4px 16px rgba(124,92,255,0.3);
-      transition:box-shadow .2s, transform .1s;
+      width:100%; padding:14px; font-size:0.9375rem; font-weight:500; font-family:inherit;
+      background:#FAFAF9; color:black; border:none; cursor:pointer;
+      letter-spacing:-0.01em; transition:transform .1s;
     }
-    .submit-btn:hover { box-shadow:0 6px 24px rgba(124,92,255,0.45); transform:translateY(-1px); }
+    .submit-btn:hover { transform:translateY(-0.5px); }
     .submit-btn:active { transform:translateY(0); }
     .error {
-      color:var(--red); font-size:.78rem; text-align:center; margin-bottom:14px;
+      color:#f87171; font-size:0.8125rem; text-align:center; margin-bottom:16px;
     }
   </style>
 </head>
 <body>
   <form class="login-card" method="POST" action="/login">
-    <div class="logo">Riffd</div>
+    <div class="logo">riffd</div>
     {% if error %}
     <div class="error">{{ error }}</div>
     {% endif %}
@@ -73,7 +52,6 @@
     </div>
     <button type="submit" class="submit-btn">Enter</button>
   </form>
-  <!-- TEMP: deploy marker -->
   <div style="position:fixed;bottom:6px;right:8px;font-size:.5rem;color:rgba(255,255,255,.1);font-family:monospace;pointer-events:none">auth-v2</div>
 </body>
 </html>
