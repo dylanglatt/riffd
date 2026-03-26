@@ -207,18 +207,9 @@
     .lyrics-container::-webkit-scrollbar { width:3px; } .lyrics-container::-webkit-scrollbar-thumb { background:rgba(255,255,255,.06); border-radius:4px; }
     .lyrics-empty { padding:40px 20px; text-align:center; color:var(--text-muted); font-size:.86rem; }
 
-    /* Similar panel */
-    .rec-group { margin-bottom:20px; }
-    .rec-title { font-size:.82rem; font-weight:700; color:var(--text-primary); margin-bottom:8px; }
-    .rec-title span { color:var(--text-muted); font-weight:400; font-size:.76rem; }
-    .rec-scroll { display:flex; gap:10px; overflow-x:auto; padding-bottom:4px; }
-    .rec-scroll::-webkit-scrollbar { height:2px; } .rec-scroll::-webkit-scrollbar-thumb { background:rgba(255,255,255,.06); border-radius:4px; }
-    .rec-card { flex-shrink:0; width:130px; background:rgba(255,255,255,.02); border:1px solid var(--border); border-radius:var(--radius-sm); padding:10px; cursor:pointer; transition:all .2s; }
-    .rec-card:hover { background:rgba(124,92,255,.06); border-color:rgba(124,92,255,.2); transform:translateY(-2px); }
-    .rec-card img { width:100%; aspect-ratio:1; object-fit:cover; border-radius:var(--radius-xs); margin-bottom:8px; }
-    .rec-card .rec-img-ph { width:100%; aspect-ratio:1; background:var(--surface-3); border-radius:var(--radius-xs); margin-bottom:8px; }
-    .rec-card-name { font-size:.76rem; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-    .rec-card-artist { font-size:.7rem; color:var(--text-muted); margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    /* Similar panel — reuses .try-card / .try-grid / .song-row / .scroll-track */
+    .rec-group { margin-bottom:24px; }
+    .rec-group-title { font-size:.88rem; font-weight:700; color:var(--text-primary); margin-bottom:12px; }
     .new-song-row { padding:18px 22px; border-top:1px solid var(--border); display:flex; justify-content:center; }
     .new-song-btn { background:rgba(255,255,255,.03); color:var(--text-secondary); border:1px solid var(--border-2); border-radius:var(--radius-sm); padding:11px 32px; font-size:.86rem; font-weight:600; cursor:pointer; transition:all .2s; }
     .new-song-btn:hover { background:rgba(124,92,255,.06); border-color:rgba(124,92,255,.25); color:var(--text-primary); }
@@ -868,22 +859,28 @@ async function renderResults(data) {
 function showTab(n,btn){document.querySelectorAll(".tab-pill").forEach(p=>p.classList.remove("active"));btn.classList.add("active");document.getElementById("tab-display").textContent=(jobData?.tabs||{})[n]?.tab_text||"(no tab data)";}
 
 const REC_SECTIONS=[
-  {key:"more_like_this",title:"More Like This",subtitle:"Same artist"},
-  {key:"same_style",title:"Similar Style",subtitle:"Based on listening patterns"},
-  {key:"around_this_time",title:"Around This Time",subtitle:"Released within a few years"},
+  {key:"more_like_this",title:"More like this"},
+  {key:"same_style",title:"Similar style"},
+  {key:"around_this_time",title:"From the same era"},
 ];
 
+let _recRowIdx = 0;
 function renderRecommendations(recs){
-  const content=document.getElementById("recs-content");_recTracks={};
+  const content=document.getElementById("recs-content");_recTracks={};_recRowIdx=0;
   let hasAny=false;
   if(recs&&!recs.error){for(const{key}of REC_SECTIONS){if(recs[key]&&recs[key].length){hasAny=true;break;}}}
   if(!hasAny){content.innerHTML='<div class="lyrics-empty">No recommendations available.</div>';return;}
   let html="";
-  for(const{key,title,subtitle}of REC_SECTIONS){
+  for(const{key,title}of REC_SECTIONS){
     const tracks=recs[key];if(!tracks||!tracks.length)continue;_recTracks[key]=tracks;
-    html+=`<div class="rec-group"><div class="rec-title">${esc(title)} <span>${esc(subtitle)}</span></div><div class="rec-scroll">${tracks.map((t,i)=>`<div class="rec-card" onclick="pickRec('${key}',${i})">${t.image_url?`<img src="${esc(t.image_url)}" alt="" loading="lazy">`:'<div class="rec-img-ph"></div>'}<div class="rec-card-name">${esc(t.name||"")}</div><div class="rec-card-artist">${esc(t.artist||"")}</div></div>`).join("")}</div></div>`;
+    const rid = `rec-row-${_recRowIdx++}`;
+    html+=`<div class="rec-group"><div class="rec-group-title">${esc(title)}</div><div class="song-row"><div class="try-grid" id="${rid}-grid">${tracks.map((t,i)=>`<div class="try-card" onclick="pickRec('${key}',${i})">${_songArt(t)}<div class="try-card-name">${esc(t.name||"")}</div><div class="try-card-artist">${esc(t.artist||"")}</div></div>`).join("")}</div><div class="scroll-track" id="${rid}-track"><div class="scroll-thumb" id="${rid}-thumb"></div></div></div></div>`;
   }
   content.innerHTML=html;
+  // Init scrollbars for each rec row
+  for(let i=0;i<_recRowIdx;i++){
+    _initSongRow(`rec-row-${i}-grid`,`rec-row-${i}-track`,`rec-row-${i}-thumb`);
+  }
 }
 
 // ─── Loop / Transpose ───────────────────────────────────────────────────────

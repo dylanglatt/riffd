@@ -53,6 +53,11 @@
     }
     .nav-link:hover { color:var(--text-secondary); background:rgba(255,255,255,.03); }
     .nav-link.active { color:var(--text-primary); background:rgba(124,92,255,.08); }
+    .nav-soon {
+      font-size:.56rem; font-weight:600; text-transform:uppercase; letter-spacing:.06em;
+      padding:1px 5px; border-radius:3px; margin-left:4px; vertical-align:middle;
+      background:rgba(255,255,255,.04); color:var(--text-muted); border:1px solid rgba(255,255,255,.06);
+    }
     .nav-spacer { flex:1; }
 
     /* ═══ Page shell ═══ */
@@ -121,9 +126,9 @@
   <a href="/" class="nav-logo">Riffd</a>
   <div class="nav-links">
     <a href="/decompose" class="nav-link {% if active_page == 'decompose' %}active{% endif %}">Decompose</a>
-    <a href="/learn" class="nav-link {% if active_page == 'learn' %}active{% endif %}">Learn</a>
-    <a href="/library" class="nav-link {% if active_page == 'library' %}active{% endif %}">Library</a>
-    <a href="/practice" class="nav-link {% if active_page == 'practice' %}active{% endif %}">Practice</a>
+    <a href="/learn" class="nav-link {% if active_page == 'learn' %}active{% endif %}">Learn <span class="nav-soon">Soon</span></a>
+    <a href="/library" class="nav-link {% if active_page == 'library' %}active{% endif %}">Library <span class="nav-soon">Soon</span></a>
+    <a href="/practice" class="nav-link {% if active_page == 'practice' %}active{% endif %}">Practice <span class="nav-soon">Soon</span></a>
   </div>
   <div class="nav-spacer"></div>
 </nav>
