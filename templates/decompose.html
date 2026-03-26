@@ -235,9 +235,37 @@
     .new-song-btn { background:rgba(255,255,255,.03); color:var(--text-secondary); border:1px solid var(--border-2); border-radius:var(--radius-sm); padding:11px 32px; font-size:.86rem; font-weight:600; cursor:pointer; transition:all .2s; }
     .new-song-btn:hover { background:rgba(124,92,255,.06); border-color:rgba(124,92,255,.25); color:var(--text-primary); }
 
-    @media(max-width:640px) {
-      .channel { grid-template-columns:100px 1fr 26px 26px; gap:5px; }
-      .results-nav-btn { padding:10px 10px; font-size:.78rem; }
+    @media(max-width:768px) {
+      .hero-headline { font-size:1.8rem; }
+      .hero-sub { font-size:.9rem; }
+      .search-input { padding:14px 18px 14px 42px; font-size:.95rem; }
+      .proc-hero { min-height:50vh; padding:28px 16px; }
+      .proc-art-wrap { width:140px; height:140px; }
+      .proc-art-wrap img { width:140px; height:140px; }
+      .proc-art-wrap .proc-art-ph { width:140px; height:140px; }
+      .results-header { padding:16px 14px 0; }
+      .results-nav { padding:0 14px; }
+      .results-panel { padding:14px 14px 18px; }
+      .mix-wrapper { padding:14px; margin:0; }
+      .mixer-transport { gap:10px; flex-wrap:wrap; }
+      .transport-btn { width:42px; height:42px; }
+      .transport-seek-wrap { min-width:0; flex:1 1 100%; order:3; }
+      .transport-time { font-size:.7rem; min-width:70px; }
+      .channel { grid-template-columns:90px 1fr 28px 28px; gap:6px; padding:6px 6px; }
+      .channel-name { font-size:.72rem; }
+      .mix-tools { gap:10px; }
+      .tool-grp { padding:5px 8px; }
+      .meta-chip { padding:4px 10px; font-size:.72rem; }
+      .results-nav-btn { padding:8px 10px; font-size:.76rem; }
+      .try-card { width:140px; }
+    }
+    @media(max-width:480px) {
+      .hero-headline { font-size:1.5rem; }
+      .channel { grid-template-columns:80px 1fr 26px 26px; gap:4px; }
+      .channel-name { font-size:.68rem; }
+      .cap-grid { grid-template-columns:1fr; }
+      .results-nav-btn { padding:8px 8px; font-size:.72rem; }
+      .mix-tools { flex-direction:column; }
     }
 {% endblock %}
 

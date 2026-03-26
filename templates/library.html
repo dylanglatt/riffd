@@ -42,7 +42,13 @@
     background:rgba(0,0,0,.5); color:var(--text-muted); backdrop-filter:blur(4px);
   }
 
-  @media(max-width:640px) { .song-grid { grid-template-columns:repeat(2,1fr); } }
+  @media(max-width:768px) {
+    .lib-title { font-size:1.4rem; }
+    .song-grid { grid-template-columns:repeat(2,1fr); gap:10px; }
+    .song-card { padding:10px; }
+    .sc-name { font-size:.78rem; }
+  }
+  @media(max-width:380px) { .song-grid { grid-template-columns:1fr; } }
 {% endblock %}
 
 {% block body %}

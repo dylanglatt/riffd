@@ -37,6 +37,13 @@ app = Flask(__name__)
 app.config["MAX_CONTENT_LENGTH"] = 200 * 1024 * 1024
 app.secret_key = FLASK_SECRET
 
+# Session config: browser-session only (cleared when browser closes)
+app.config["SESSION_COOKIE_HTTPONLY"] = True
+app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
+app.config["SESSION_COOKIE_SECURE"] = False  # Set True if serving over HTTPS only
+app.config["PERMANENT_SESSION_LIFETIME"] = 0  # Non-permanent = browser session only
+app.config["SESSION_COOKIE_NAME"] = "riffd_session"
+
 UPLOAD_DIR = Path("uploads")
 OUTPUT_DIR = Path("outputs")
 UPLOAD_DIR.mkdir(exist_ok=True)
@@ -56,35 +63,53 @@ def allowed_file(filename: str) -> bool:
 
 # ─── Authentication ───────────────────────────────────────────────────────────
 
+# Path-based allowlist — explicit and auditable
+AUTH_PUBLIC_PATHS = ("/login", "/static/")
+
 @app.before_request
 def require_login():
-    # DEBUG: remove after confirming production auth works
-    print(f"[auth] before_request: endpoint={request.endpoint} authenticated={session.get('authenticated', False)} path={request.path}")
+    path = request.path
+    is_public = path == "/login" or path.startswith("/static/")
+    is_authed = session.get("authenticated") is True
 
-    allowed = ("login", "static")
-    if request.endpoint in allowed:
-        return
-    if not session.get("authenticated"):
-        return redirect(url_for("login"))
+    # DEBUG: remove after confirming production auth works
+    print(f"[auth-v2] path={path} public={is_public} authed={is_authed} endpoint={request.endpoint}")
+
+    if is_public:
+        return  # Always allow login page and static assets
+    if is_authed:
+        return  # Session is authenticated — allow
+
+    # Block everything else
+    print(f"[auth-v2] BLOCKED → redirecting to /login")
+    return redirect("/login")
 
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
+    # If already authenticated, go to home
+    if session.get("authenticated") is True:
+        return redirect("/")
+
     error = None
     if request.method == "POST":
-        if request.form.get("password") == SITE_PASSWORD:
+        pw = request.form.get("password", "")
+        if pw == SITE_PASSWORD:
+            session.clear()  # Clear any stale session data
             session["authenticated"] = True
-            print(f"[auth] login SUCCESS")
-            return redirect(url_for("index"))
+            session.permanent = False  # Ensure browser-session only
+            print(f"[auth-v2] LOGIN OK")
+            return redirect("/")
         error = "Incorrect password"
-        print(f"[auth] login FAILED")
+        print(f"[auth-v2] LOGIN FAILED")
     return render_template("login.html", error=error)
 
 
 @app.route("/logout")
 def logout():
     session.clear()
-    return redirect(url_for("login"))
+    print(f"[auth-v2] LOGOUT")
+    return redirect("/login")
 
 
 @app.route("/")

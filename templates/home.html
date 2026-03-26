@@ -67,9 +67,18 @@
   .bottom-cta .hero-sub { margin-bottom:24px; }
 
   @media(max-width:768px) {
-    .hero-headline { font-size:2.4rem; }
-    .hiw-grid { grid-template-columns:1fr; gap:28px; }
+    .home-hero { padding:48px 0 40px; }
+    .hero-headline { font-size:2rem; }
+    .hero-sub { font-size:.95rem; }
+    .hero-ctas { flex-direction:column; align-items:center; }
+    .cta-primary, .cta-secondary { width:100%; max-width:280px; text-align:center; justify-content:center; }
+    .hiw-grid { grid-template-columns:1fr; gap:24px; }
     .features-grid { grid-template-columns:1fr; }
+    .flow-steps { grid-template-columns:repeat(2,1fr); }
+  }
+  @media(max-width:480px) {
+    .hero-headline { font-size:1.7rem; }
+    .flow-steps { grid-template-columns:1fr; }
   }
 {% endblock %}
 
