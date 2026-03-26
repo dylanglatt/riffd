@@ -1,2 +1,0 @@
-- [No forced chord-lyric alignment](feedback_chord_alignment.md) — chords at section level, never tied to specific lyric lines
-- [Mandatory doc sync](feedback_doc_sync.md) — every code change must update project docs before task completion

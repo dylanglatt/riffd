@@ -24,12 +24,10 @@ node_modules/
 dist/
 build/
 
-# Internal — not public-facing
+# Internal
 .claude/
 design/
 static/
 test_*.py
 *.xlsx
-
-# Figma reference (archived)
-design/archive/figma-reference/
+*.log
