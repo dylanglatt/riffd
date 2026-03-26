@@ -521,6 +521,22 @@ def _process_instant(job_id, audio_path, req_data):
                 "track_id": spotify_track_id,
             })
             add_to_history(spotify_track_id, track_meta, job_id)
+
+            # Update DB status so re-selecting this track loads from cache
+            from db import ANALYSIS_VERSION
+            upsert_track(
+                spotify_track_id,
+                track_meta.get("name", ""),
+                track_meta.get("artist", ""),
+                artwork_url=track_meta.get("image_url"),
+                duration_ms=track_meta.get("duration_ms", 0),
+                year=track_meta.get("year", ""),
+                artist_id=track_meta.get("artist_id"),
+                yt_query=track_meta.get("yt_query", ""),
+            )
+            set_track_status(spotify_track_id, "available",
+                             job_id=job_id, analysis_version=ANALYSIS_VERSION)
+            print(f"[job {job_id}] instant: cache+history+db saved")
         except Exception as e:
             print(f"[job {job_id}] instant: cache save failed: {e}")
 

@@ -535,24 +535,30 @@ async function selectTrack(t){
       const d = await r.json();
       if (d.analysis_status === 'available' && d.analysis) {
         currentJobId = d.job_id;
-        jobData = { status:"complete", tabs:d.analysis.tabs||{}, stems:d.analysis.stems||{}, intelligence:d.analysis.intelligence||{}, lyrics:d.analysis.lyrics||null, tags:d.analysis.tags||[], audio_source:d.analysis.audio_source||null, audio_mode:d.analysis.audio_mode||null };
-        renderResults(jobData);
+        jobData = { status:"complete", tabs:d.analysis.tabs||{}, stems:d.analysis.stems||{}, intelligence:d.analysis.intelligence||{}, lyrics:d.analysis.lyrics||null, tags:d.analysis.tags||[], audio_source:d.analysis.audio_source||null, audio_mode:d.analysis.audio_mode||null, analysis_mode:d.analysis.analysis_mode||null };
+        // Route to correct renderer based on analysis type
+        const hasStems = Object.keys(jobData.stems||{}).length > 0;
+        if (hasStems) {
+          renderResults(jobData);
+        } else {
+          renderInstantResults(jobData);
+        }
         return;
       }
       if (d.analysis_status === 'pending') {
-        _showHeroPreProcess(); showView("confirm");
-        document.getElementById("process-btn").textContent = "Processing...";
-        document.getElementById("process-btn").disabled = true;
-        return;
+        // Don't show blocking "Processing..." — fall through to start instant analysis
+        console.log("[selectTrack] track is pending — starting fresh instant analysis");
       }
     } catch(e) { console.warn("[track] lookup failed:", e); }
   }
-  // Auto-start preview analysis — no confirm page needed
+  // Auto-start instant preview analysis
   _currentMode = "preview";
-  _showHeroPreProcess(); showView("confirm");
+  _analysisMode = "instant";
+  console.log("[selectTrack] starting instant preview flow");
+  _showInstantLoading();
   startProcessing();
 }
-function selectAndProcess(t){selectedTrack=t;currentJobId=null;setError("");_currentMode="preview";_showHeroPreProcess();startProcessing();}
+function selectAndProcess(t){selectedTrack=t;currentJobId=null;setError("");_currentMode="preview";_analysisMode="instant";_showInstantLoading();startProcessing();}
 function buildBanner(id,t,audioSource,audioMode){const el=document.getElementById(id);if(!el)return;const img=t.image_url?`<img src="${esc(t.image_url)}" alt="" onerror="_artFailBanner(this)">`:'<div class="cover-placeholder"><svg viewBox="0 0 24 24" width="20" height="20" style="opacity:.3"><path d="M12 3v10.55A4 4 0 1 0 14 17V7h4V3h-6Z" fill="currentColor"/></svg></div>';let sourceLabel="";if(audioSource==="preview"||audioMode==="preview")sourceLabel='<div style="font-size:0.75rem;color:rgba(212,105,31,0.65);margin-top:4px;font-weight:500">Instant analysis</div>';else if(audioSource==="youtube")sourceLabel='<div style="font-size:0.75rem;color:rgba(245,245,245,0.4);margin-top:4px">Full track analysis</div>';el.innerHTML=`${img}<div><div class="track-banner-title">${esc(t.name||"Untitled")}</div><div class="track-banner-sub">${esc(t.artist||"Unknown")}${t.year?" &middot; "+esc(String(t.year)):""}</div>${sourceLabel}</div>`;}
 
 // ─── Upload ─────────────────────────────────────────────────────────────────
@@ -721,6 +727,21 @@ function _showHeroLoading() {
 }
 
 function buildProcessingBanner() { _showHeroLoading(); }
+
+function _showInstantLoading() {
+  // Lightweight loading state for instant analysis — no heavy spinner
+  _populateHero();
+  document.getElementById("hero-actions").classList.add("hidden");
+  document.getElementById("hero-loading").classList.remove("hidden");
+  document.getElementById("wv-fg").style.width = "0%";
+  // Use simple status text, no timer or cancel button for instant
+  const est = document.getElementById("proc-estimate");
+  est.textContent = "Just a moment";
+  est.classList.remove("visible");
+  setTimeout(() => est.classList.add("visible"), 100);
+  _setLT("Getting preview...");
+  showView("confirm");
+}
 
 function _buildWaveform() {
   const N = 50;
@@ -980,7 +1001,8 @@ async function startProcessing(){
 
   if (analysisMode === "instant") {
     // ── Instant analysis: synchronous, no polling ──
-    buildProcessingBanner(); showView("confirm"); setProgress(null, 40);
+    console.log("[startProcessing] instant path — calling /api/process with analysis_mode=instant");
+    setProgress(null, 50);
     _setLT("Analyzing key and tempo...");
 
     try {
@@ -994,10 +1016,12 @@ async function startProcessing(){
         }),
       });
       const d = await r.json();
+      console.log("[startProcessing] instant response:", d.status, d.analysis_mode);
       if (d.error) throw new Error(d.error);
       setProgress(null, 100);
       _resetLoadingUI();
       jobData = d;
+      console.log("[startProcessing] calling renderInstantResults");
       renderInstantResults(d);
     } catch(e) {
       _resetLoadingUI();
@@ -1042,12 +1066,15 @@ async function downloadTrack(mode){
 
   console.log(`[downloadTrack] mode=${mode} preview_url=${selectedTrack?.preview_url || 'null'} artist=${selectedTrack?.artist || ''} name=${selectedTrack?.name || ''}`);
 
-  buildProcessingBanner(); showView("confirm");
-  setProgress(null, isPreview ? 12 : 8);
-  startLoadingMessages("download");
-
-  if (isPreview) {
-    _setLT("Getting preview audio...");
+  if (isPreview && _analysisMode === "instant") {
+    // Instant preview: keep the lightweight loading state, just update text
+    setProgress(null, 15);
+    _setLT("Getting preview...");
+  } else {
+    // Deep/full: show the full processing banner
+    buildProcessingBanner(); showView("confirm");
+    setProgress(null, 8);
+    startLoadingMessages("download");
   }
 
   const postBody = {
@@ -1282,6 +1309,7 @@ async function renderResults(data) {
 }
 
 async function renderInstantResults(data) {
+  console.log("[renderInstantResults] called with:", data.status, data.analysis_mode, data.audio_source);
   _hideResultWarning();
   _previewJobData = data;
   const intel = data.intelligence || {};
