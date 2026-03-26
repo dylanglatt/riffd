@@ -418,10 +418,26 @@ E|-----------3---3---|---3---3---3---3---|---3---3---3---3---|</div>
 {% block extra_js %}
 <script>
 // ─── State ──────────────────────────────────────────────────────────────────
+// Two dimensions of mode:
+//   _currentMode:   "preview" | "full"    — audio source (preview clip vs full track)
+//   _analysisMode:  "instant" | "deep"    — analysis depth (key/BPM only vs stems+tabs)
+//
+// Default flow: preview + instant (fast). User can upgrade to full + deep.
+//
+// Frontend flow:
+//   selectTrack() → _showInstantLoading() → startProcessing()
+//     → downloadTrack("preview") → /api/download mode=preview
+//     → /api/process analysis_mode=instant (synchronous, no polling)
+//     → renderInstantResults() — shows key, BPM, lyrics, audio player
+//   User clicks "Run deep analysis":
+//     → _startDeepAnalysis() → downloadTrack("full") → /api/process analysis_mode=deep
+//     → pollStatus() → renderResults() — shows stems, tabs, mixer
+//
 let currentJobId = null, selectedTrack = null, pollInterval = null, jobData = null;
-let _currentMode = "preview"; // "preview" or "full"
-let _previewJobData = null;   // preserved preview results for non-destructive full-track upgrade
+let _currentMode = "preview"; // "preview" | "full" — audio source mode
+let _previewJobData = null;   // preserved instant results for non-destructive deep upgrade
 let _fullTrackInProgress = false;
+let _instantAlreadyRendered = false; // set when downloadTrack auto-rendered instant results
 let audioCtx = null, stemBuffers = {}, stemSources = {}, stemGains = {};
 let stemVolumes = {}, stemMuted = {}, stemSoloed = {};
 let isPlaying = false, startedAt = 0, pauseOffset = 0, duration = 0, animFrame = null;
@@ -527,16 +543,18 @@ function renderSearchResults() {
 
 function selectByIndex(i){const t=searchResults[i];if(t)selectTrack(t);}
 async function selectTrack(t){
-  selectedTrack=t; currentJobId=null; setError(""); _currentMode="preview"; _analysisMode="instant"; _previewJobData=null; _fullTrackInProgress=false;
-  // Check DB for existing analysis
+  selectedTrack=t; currentJobId=null; setError(""); _currentMode="preview"; _analysisMode="instant"; _previewJobData=null; _fullTrackInProgress=false; _instantAlreadyRendered=false;
+  console.log(`[ui] selectTrack → ${t.name} by ${t.artist} (id=${t.id||'none'})`);
+  // Check DB/cache for existing analysis before starting a new one
   if (t.id) {
     try {
       const r = await fetch(`/api/track/${encodeURIComponent(t.id)}`);
       const d = await r.json();
       if (d.analysis_status === 'available' && d.analysis) {
+        console.log(`[ui] cache hit → loading saved analysis (hasStems=${Object.keys(d.analysis.stems||{}).length > 0})`);
         currentJobId = d.job_id;
         jobData = { status:"complete", tabs:d.analysis.tabs||{}, stems:d.analysis.stems||{}, intelligence:d.analysis.intelligence||{}, lyrics:d.analysis.lyrics||null, tags:d.analysis.tags||[], audio_source:d.analysis.audio_source||null, audio_mode:d.analysis.audio_mode||null, analysis_mode:d.analysis.analysis_mode||null };
-        // Route to correct renderer based on analysis type
+        // Route to correct renderer: instant results have no stems, deep results have stems
         const hasStems = Object.keys(jobData.stems||{}).length > 0;
         if (hasStems) {
           renderResults(jobData);
@@ -546,7 +564,8 @@ async function selectTrack(t){
         return;
       }
       if (d.analysis_status === 'pending') {
-        // Don't show blocking "Processing..." — fall through to start instant analysis
+        // Track was left in pending state from a previous run — fall through to fresh analysis
+        console.log("[ui] track pending in DB — starting fresh instant analysis");
         console.log("[selectTrack] track is pending — starting fresh instant analysis");
       }
     } catch(e) { console.warn("[track] lookup failed:", e); }
@@ -995,12 +1014,33 @@ async function startProcessing(){
     }
     if(!currentJobId) return;
   }
+  // If downloadTrack already rendered instant results (auto-processed by backend), stop here
+  if (_instantAlreadyRendered) {
+    _instantAlreadyRendered = false;
+    console.log("[startProcessing] instant results already rendered by downloadTrack — done");
+    return;
+  }
   if(!currentJobId){ setError("No audio loaded."); return; }
 
   document.getElementById("process-btn").disabled=true;
 
   if (analysisMode === "instant") {
-    // ── Instant analysis: synchronous, no polling ──
+    // ── Instant analysis ──
+    // Check if backend already completed instant analysis during download (preview auto-trigger).
+    // If so, just poll status and render — don't call /api/process again.
+    try {
+      const statusR = await fetch(`/api/status/${currentJobId}`);
+      const statusD = await statusR.json();
+      if (statusD.status === "complete" && statusD.analysis_mode === "instant") {
+        console.log("[ui] skipping process call — backend already handled instant");
+        _resetLoadingUI();
+        jobData = statusD;
+        renderInstantResults(statusD);
+        return;
+      }
+    } catch(e) { console.warn("[startProcessing] status pre-check failed:", e); }
+
+    // Job is still "ready" — need to trigger instant analysis explicitly
     console.log("[startProcessing] instant path — calling /api/process with analysis_mode=instant");
     setProgress(null, 50);
     _setLT("Analyzing key and tempo...");
@@ -1094,8 +1134,19 @@ async function downloadTrack(mode){
     });
     const d = await r.json();
     if(d.error) throw new Error(d.error);
-    await waitForReady(d.job_id, isPreview ? 30 : 120);
+    const readyResult = await waitForReady(d.job_id, isPreview ? 30 : 120);
     currentJobId = d.job_id;
+
+    // Preview mode: backend auto-triggers instant analysis during download.
+    // If the job is already complete, render results directly — skip startProcessing.
+    if (isPreview && readyResult && (readyResult.status === "complete" || readyResult.analysis_mode === "instant")) {
+      console.log("[ui] auto-trigger instant processing — rendering results directly");
+      _resetLoadingUI();
+      jobData = readyResult;
+      renderInstantResults(readyResult);
+      _instantAlreadyRendered = true;
+      return;
+    }
   } catch(e) {
     _resetLoadingUI();
     if (e.message === "upload_required") {
@@ -1122,7 +1173,12 @@ async function waitForReady(jid, mw=120){
     await sleep(1500);
     const r = await fetch(`/api/status/${jid}`);
     const d = await r.json();
-    if(d.status === "ready") return;
+    if(d.status === "ready") return d;
+    // Preview mode: backend auto-triggers instant analysis, so job may already be complete
+    if(d.status === "complete" || d.status === "partial") {
+      console.log("[ui] waitForReady → job already complete (auto-processed)");
+      return d;
+    }
     if(d.status === "preview_unavailable") throw new Error("preview_unavailable");
     if(d.status === "upload_required") throw new Error("upload_required");
     if(d.status === "error") throw new Error(d.error || "Download error");
@@ -1400,7 +1456,8 @@ async function renderInstantResults(data) {
 }
 
 function _startDeepAnalysis() {
-  // Switch to deep analysis mode — downloads full track if needed, runs heavy pipeline
+  // User explicitly requested deep analysis — switch modes and start fresh
+  console.log("[ui] _startDeepAnalysis → switching to full+deep mode");
   _analysisMode = "deep";
   _currentMode = "full";
   currentJobId = null;  // Force new download for full track
@@ -1511,7 +1568,7 @@ function setProgress(t,p){
 }
 function setError(m){const e=document.getElementById("error-msg");e.textContent=m;e.style.display=m?"block":"none";}
 function resetApp(){
-  cleanupAudio();stopLoadingMessages();_stopElapsedTimer();_hideCancelBtn();pauseOffset=0;duration=0;currentJobId=null;selectedTrack=null;jobData=null;_previewJobData=null;_fullTrackInProgress=false;_currentMode="preview";_analysisMode="instant";searchResults=[];lastQuery="";loopActive=false;transposeAmount=0;songKey=null;clearTimeout(pollInterval);
+  cleanupAudio();stopLoadingMessages();_stopElapsedTimer();_hideCancelBtn();pauseOffset=0;duration=0;currentJobId=null;selectedTrack=null;jobData=null;_previewJobData=null;_fullTrackInProgress=false;_instantAlreadyRendered=false;_currentMode="preview";_analysisMode="instant";searchResults=[];lastQuery="";loopActive=false;transposeAmount=0;songKey=null;clearTimeout(pollInterval);
   const confirmUpload=document.getElementById("confirm-upload-area");if(confirmUpload)confirmUpload.style.display="none";
   const retryBtn=document.getElementById("upload-retry-btn");if(retryBtn)retryBtn.style.display="none";
   document.getElementById("process-btn").style.display="";
