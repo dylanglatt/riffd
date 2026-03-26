@@ -751,15 +751,29 @@ loadDiscovery();
 
 // ─── History ────────────────────────────────────────────────────────────────
 let _historySongs = [];
+function _isValidHistoryEntry(t) {
+  // Must have real name, artist, and track_id
+  if (!t || !t.track_id) return false;
+  const name = (t.name || "").trim();
+  const artist = (t.artist || "").trim();
+  if (!name || !artist) return false;
+  // Filter placeholder/test values
+  const low_n = name.toLowerCase(), low_a = artist.toLowerCase();
+  if ((low_n === "test" || low_n === "untitled") && (low_a === "test" || low_a === "unknown" || !low_a)) return false;
+  return true;
+}
+
 async function loadHistory() {
   try {
     const res = await fetch("/api/history");
     const data = await res.json();
     if (!data || !data.length) return;
-    _historySongs = data;
+    // Filter invalid entries client-side too (belt + suspenders)
+    _historySongs = data.filter(_isValidHistoryEntry);
+    if (!_historySongs.length) return;
     const section = document.getElementById("history-section");
     const grid = document.getElementById("history-grid");
-    grid.innerHTML = data.map((t, i) => {
+    grid.innerHTML = _historySongs.map((t, i) => {
       const imgHtml = t.image_url
         ? `<img src="${esc(t.image_url)}" alt="${esc(t.name||"")}" crossorigin="anonymous" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" /><div class="try-card-ph" style="display:none"></div>`
         : '<div class="try-card-ph"></div>';
@@ -769,8 +783,14 @@ async function loadHistory() {
   } catch {}
 }
 async function pickHistory(i) {
-  const entry = _historySongs[i]; if (!entry) return;
-  const track = { id: entry.track_id, name: entry.name, artist: entry.artist, image_url: entry.image_url, year: entry.year || "", artist_id: entry.artist_id, yt_query: entry.yt_query || `${entry.artist} - ${entry.name} official audio` };
+  const entry = _historySongs[i];
+  if (!entry || !entry.track_id) return;
+  // Must have enough data to actually process
+  const name = (entry.name || "").trim();
+  const artist = (entry.artist || "").trim();
+  if (!name || !artist) { setError("This song has incomplete data and cannot be opened."); return; }
+
+  const track = { id: entry.track_id, name: name, artist: artist, image_url: entry.image_url, year: entry.year || "", artist_id: entry.artist_id, yt_query: entry.yt_query || `${artist} - ${name} official audio` };
   selectedTrack = track; currentJobId = null; _showHeroPreProcess(); showView("confirm");
   if (entry.track_id && entry.has_cache) {
     try {

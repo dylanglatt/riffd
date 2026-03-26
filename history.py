@@ -38,8 +38,19 @@ def _save_history(history: dict):
 def add_to_history(track_id: str, track_meta: dict, job_id: str):
     """
     Add or update a history entry after processing a song.
+    Only saves entries with real metadata (name + artist).
     """
     if not track_id:
+        return
+
+    name = (track_meta.get("name") or "").strip()
+    artist = (track_meta.get("artist") or "").strip()
+    if not name or not artist:
+        print(f"[history] SKIPPED: missing name/artist (name={name!r}, artist={artist!r})")
+        return
+    # Filter out placeholder/test data
+    if name.lower() in ("test", "untitled", "uploaded file") and artist.lower() in ("test", "unknown", "uploaded file", ""):
+        print(f"[history] SKIPPED: placeholder data (name={name!r}, artist={artist!r})")
         return
 
     history = _load_history()
@@ -65,14 +76,29 @@ def add_to_history(track_id: str, track_meta: dict, job_id: str):
     print(f"[history] saved: {entry['name']} by {entry['artist']} (job={job_id}, v={ANALYSIS_VERSION})")
 
 
+def _is_valid_entry(entry: dict) -> bool:
+    """Check if a history entry has enough real metadata to display."""
+    name = (entry.get("name") or "").strip()
+    artist = (entry.get("artist") or "").strip()
+    if not name or not artist:
+        return False
+    if not entry.get("track_id"):
+        return False
+    # Filter placeholder/test values
+    if name.lower() in ("test", "untitled") and artist.lower() in ("test", "unknown", ""):
+        return False
+    return True
+
+
 def get_recent(limit: int = 8) -> list[dict]:
     """
     Get recent songs sorted by last_viewed, newest first.
+    Filters out invalid/placeholder entries.
     Returns list of history entry dicts.
     """
     history = _load_history()
     entries = sorted(history.values(), key=lambda e: e.get("last_viewed", 0), reverse=True)
-    result = entries[:limit]
+    result = [e for e in entries if _is_valid_entry(e)][:limit]
     print(f"[history] get_recent: {len(result)} entries (total={len(history)})")
     for e in result[:3]:
         print(f"[history]   {e.get('name','')} by {e.get('artist','')} (v={e.get('analysis_version','?')}, cache={e.get('has_cache',False)})")
