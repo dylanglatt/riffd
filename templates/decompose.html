@@ -338,7 +338,7 @@
           <div class="waveform-fg" id="wv-fg"></div>
         </div>
         <div class="proc-status" id="progress-label">Analyzing the track...</div>
-        <div class="proc-estimate" id="proc-estimate">Usually takes 1–2 minutes</div>
+        <div class="proc-estimate" id="proc-estimate">Instant analysis — usually under a minute</div>
       </div>
     </div>
   </div>
@@ -406,7 +406,8 @@ E|-----------3---3---|---3---3---3---3---|---3---3---3---3---|</div>
       <div class="results-panel" id="panel-lyrics">
         <div id="lyrics-content"></div>
       </div>
-      <div class="new-song-row">
+      <div class="new-song-row" id="results-footer">
+        <button class="new-song-btn" id="full-track-btn" style="display:none;margin-right:12px;border-color:rgba(212,105,31,0.3);color:rgba(245,245,245,0.7)" onclick="_startFullTrackAnalysis()">Analyze full track</button>
         <button class="new-song-btn" onclick="resetApp()">New Song</button>
       </div>
     </div>
@@ -418,6 +419,9 @@ E|-----------3---3---|---3---3---3---3---|---3---3---3---3---|</div>
 <script>
 // ─── State ──────────────────────────────────────────────────────────────────
 let currentJobId = null, selectedTrack = null, pollInterval = null, jobData = null;
+let _currentMode = "preview"; // "preview" or "full"
+let _previewJobData = null;   // preserved preview results for non-destructive full-track upgrade
+let _fullTrackInProgress = false;
 let audioCtx = null, stemBuffers = {}, stemSources = {}, stemGains = {};
 let stemVolumes = {}, stemMuted = {}, stemSoloed = {};
 let isPlaying = false, startedAt = 0, pauseOffset = 0, duration = 0, animFrame = null;
@@ -523,7 +527,7 @@ function renderSearchResults() {
 
 function selectByIndex(i){const t=searchResults[i];if(t)selectTrack(t);}
 async function selectTrack(t){
-  selectedTrack=t; currentJobId=null; setError("");
+  selectedTrack=t; currentJobId=null; setError(""); _currentMode="preview"; _analysisMode="instant"; _previewJobData=null; _fullTrackInProgress=false;
   // Check DB for existing analysis
   if (t.id) {
     try {
@@ -531,7 +535,7 @@ async function selectTrack(t){
       const d = await r.json();
       if (d.analysis_status === 'available' && d.analysis) {
         currentJobId = d.job_id;
-        jobData = { status:"complete", tabs:d.analysis.tabs||{}, stems:d.analysis.stems||{}, intelligence:d.analysis.intelligence||{}, lyrics:d.analysis.lyrics||null, tags:d.analysis.tags||[], audio_source:d.analysis.audio_source||null };
+        jobData = { status:"complete", tabs:d.analysis.tabs||{}, stems:d.analysis.stems||{}, intelligence:d.analysis.intelligence||{}, lyrics:d.analysis.lyrics||null, tags:d.analysis.tags||[], audio_source:d.analysis.audio_source||null, audio_mode:d.analysis.audio_mode||null };
         renderResults(jobData);
         return;
       }
@@ -543,10 +547,13 @@ async function selectTrack(t){
       }
     } catch(e) { console.warn("[track] lookup failed:", e); }
   }
+  // Auto-start preview analysis — no confirm page needed
+  _currentMode = "preview";
   _showHeroPreProcess(); showView("confirm");
+  startProcessing();
 }
-function selectAndProcess(t){selectedTrack=t;currentJobId=null;setError("");_showHeroPreProcess();startProcessing();}
-function buildBanner(id,t,audioSource){const el=document.getElementById(id);if(!el)return;const img=t.image_url?`<img src="${esc(t.image_url)}" alt="" onerror="_artFailBanner(this)">`:'<div class="cover-placeholder"><svg viewBox="0 0 24 24" width="20" height="20" style="opacity:.3"><path d="M12 3v10.55A4 4 0 1 0 14 17V7h4V3h-6Z" fill="currentColor"/></svg></div>';let sourceLabel="";if(audioSource==="preview")sourceLabel='<div style="font-size:0.75rem;color:rgba(245,245,245,0.4);margin-top:4px">Preview-based analysis (30s sample)</div>';else if(audioSource==="youtube")sourceLabel='<div style="font-size:0.75rem;color:rgba(245,245,245,0.4);margin-top:4px">Full track analysis</div>';el.innerHTML=`${img}<div><div class="track-banner-title">${esc(t.name||"Untitled")}</div><div class="track-banner-sub">${esc(t.artist||"Unknown")}${t.year?" &middot; "+esc(String(t.year)):""}</div>${sourceLabel}</div>`;}
+function selectAndProcess(t){selectedTrack=t;currentJobId=null;setError("");_currentMode="preview";_showHeroPreProcess();startProcessing();}
+function buildBanner(id,t,audioSource,audioMode){const el=document.getElementById(id);if(!el)return;const img=t.image_url?`<img src="${esc(t.image_url)}" alt="" onerror="_artFailBanner(this)">`:'<div class="cover-placeholder"><svg viewBox="0 0 24 24" width="20" height="20" style="opacity:.3"><path d="M12 3v10.55A4 4 0 1 0 14 17V7h4V3h-6Z" fill="currentColor"/></svg></div>';let sourceLabel="";if(audioSource==="preview"||audioMode==="preview")sourceLabel='<div style="font-size:0.75rem;color:rgba(212,105,31,0.65);margin-top:4px;font-weight:500">Instant analysis</div>';else if(audioSource==="youtube")sourceLabel='<div style="font-size:0.75rem;color:rgba(245,245,245,0.4);margin-top:4px">Full track analysis</div>';el.innerHTML=`${img}<div><div class="track-banner-title">${esc(t.name||"Untitled")}</div><div class="track-banner-sub">${esc(t.artist||"Unknown")}${t.year?" &middot; "+esc(String(t.year)):""}</div>${sourceLabel}</div>`;}
 
 // ─── Upload ─────────────────────────────────────────────────────────────────
 function handleDragOver(e){e.preventDefault();document.getElementById("upload-area").classList.add("drag-over");}
@@ -564,13 +571,13 @@ async function uploadFile(file){
 // ─── Stage-aware loading messages ────────────────────────────────────────────
 const _stageMsgs = {
   download: [
+    "Getting audio...",
     "Fetching audio source...",
-    "Downloading the track...",
     "Pulling the waveform...",
     "Acquiring audio data...",
-    "Locating the best source...",
+    "Preparing audio...",
     "Streaming audio...",
-    "Preparing the raw signal...",
+    "Almost ready...",
   ],
   stems: [
     "Separating instruments...",
@@ -801,6 +808,63 @@ function _hideUploadRequiredUI() {
   document.getElementById("process-btn").style.display = "";
 }
 
+function _showNoPreview() {
+  // No preview available — offer full-track analysis or upload
+  _showHeroPreProcess();
+  showView("confirm");
+  setError("");
+  const btn = document.getElementById("process-btn");
+  btn.textContent = "Analyze full track";
+  btn.disabled = false;
+  btn.style.display = "";
+  btn.onclick = () => { _currentMode = "full"; startProcessing(); };
+  const errEl = document.getElementById("error-msg");
+  errEl.style.display = "block";
+  errEl.style.color = "rgba(245,245,245,0.55)";
+  errEl.innerHTML = "No preview available for this track. You can analyze the full track (may take longer) or upload your own audio file.";
+
+  // Show upload area
+  let uploadArea = document.getElementById("confirm-upload-area");
+  if (!uploadArea) {
+    uploadArea = document.createElement("div");
+    uploadArea.id = "confirm-upload-area";
+    uploadArea.className = "upload-area";
+    uploadArea.style.cssText = "margin-top:24px;max-width:460px;width:100%;";
+    uploadArea.onclick = () => document.getElementById("confirm-file-input").click();
+    uploadArea.ondragover = (e) => { e.preventDefault(); uploadArea.classList.add("drag-over"); };
+    uploadArea.ondragleave = () => uploadArea.classList.remove("drag-over");
+    uploadArea.ondrop = (e) => { e.preventDefault(); uploadArea.classList.remove("drag-over"); const f=e.dataTransfer.files[0]; if(f) _uploadForTrack(f); };
+    uploadArea.innerHTML = '<input type="file" id="confirm-file-input" accept=".mp3,.wav,.flac,.m4a,.ogg,.aac" style="display:none" />\nDrop an audio file here or click to browse';
+    const actionsEl = document.getElementById("hero-actions");
+    actionsEl.parentElement.appendChild(uploadArea);
+    document.getElementById("confirm-file-input").addEventListener("change", (e) => { const f=e.target.files[0]; if(f) _uploadForTrack(f); });
+  }
+  uploadArea.style.display = "";
+}
+
+function _showFullTrackFailed(msg) {
+  // Full-track failed but preview exists — restore preview results
+  if (_previewJobData) {
+    renderResults(_previewJobData);
+    _showResultWarning(msg);
+  } else {
+    _showHeroPreProcess();
+    showView("confirm");
+    setError(msg);
+  }
+  _fullTrackInProgress = false;
+}
+
+function _startFullTrackAnalysis() {
+  // Triggered from results view — runs full-track without destroying preview
+  if (!selectedTrack || !selectedTrack.yt_query) return;
+  _currentMode = "full";
+  _fullTrackInProgress = true;
+  currentJobId = null;
+  // Keep preview results visible — switch to confirm view for loading
+  startProcessing();
+}
+
 async function _uploadForTrack(file) {
   // Hide the upload required UI and process the uploaded file
   const uploadArea = document.getElementById("confirm-upload-area");
@@ -885,53 +949,139 @@ function _hideCancelBtn() {
   if (btn) btn.style.display = "none";
 }
 
+let _analysisMode = "instant"; // "instant" or "deep"
+
 async function startProcessing(){
   setError("");
-  if(selectedTrack&&!currentJobId&&selectedTrack.yt_query){
-    await downloadTrack();
+  const audioMode = _currentMode || "preview";
+  const analysisMode = _analysisMode || "instant";
+
+  console.log(`[startProcessing] audioMode=${audioMode} analysisMode=${analysisMode} hasJobId=${!!currentJobId}`);
+
+  if(selectedTrack && !currentJobId) {
+    // Need to acquire audio first
+    const hasPreviewSource = selectedTrack.preview_url || (selectedTrack.artist && selectedTrack.name);
+    const hasFullSource = selectedTrack.yt_query;
+
+    if (audioMode === "preview" && hasPreviewSource) {
+      await downloadTrack("preview");
+    } else if (audioMode === "full" && hasFullSource) {
+      await downloadTrack("full");
+    } else if (hasPreviewSource) {
+      await downloadTrack("preview");
+    } else if (hasFullSource) {
+      await downloadTrack("full");
+    }
     if(!currentJobId) return;
   }
   if(!currentJobId){ setError("No audio loaded."); return; }
 
   document.getElementById("process-btn").disabled=true;
-  buildProcessingBanner(); showView("confirm"); setProgress(null,5); startLoadingMessages("stems");
 
-  try {
-    const r = await fetch(`/api/process/${currentJobId}`, {
-      method:"POST", headers:{"Content-Type":"application/json"},
-      body: JSON.stringify({track_id:selectedTrack?.id||null, artist_id:selectedTrack?.artist_id||null, track_meta:selectedTrack||{}}),
-    });
-    const d = await r.json();
-    if(d.error) throw new Error(d.error);
-    pollStatus();
-  } catch(e) {
-    _resetLoadingUI();
-    setError("Processing failed: " + e.message);
-    showView("confirm");
+  if (analysisMode === "instant") {
+    // ── Instant analysis: synchronous, no polling ──
+    buildProcessingBanner(); showView("confirm"); setProgress(null, 40);
+    _setLT("Analyzing key and tempo...");
+
+    try {
+      const r = await fetch(`/api/process/${currentJobId}`, {
+        method:"POST", headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({
+          track_id: selectedTrack?.id || null,
+          artist_id: selectedTrack?.artist_id || null,
+          track_meta: selectedTrack || {},
+          analysis_mode: "instant",
+        }),
+      });
+      const d = await r.json();
+      if (d.error) throw new Error(d.error);
+      setProgress(null, 100);
+      _resetLoadingUI();
+      jobData = d;
+      renderInstantResults(d);
+    } catch(e) {
+      _resetLoadingUI();
+      setError("Analysis failed: " + e.message);
+      showView("confirm");
+    }
+  } else {
+    // ── Deep analysis: async with polling ──
+    buildProcessingBanner(); showView("confirm"); setProgress(null, 5);
+    startLoadingMessages("stems");
+    _setLT("Running deep analysis...");
+
+    try {
+      const r = await fetch(`/api/process/${currentJobId}`, {
+        method:"POST", headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({
+          track_id: selectedTrack?.id || null,
+          artist_id: selectedTrack?.artist_id || null,
+          track_meta: selectedTrack || {},
+          analysis_mode: "deep",
+        }),
+      });
+      const d = await r.json();
+      if (d.error) throw new Error(d.error);
+      pollStatus();
+    } catch(e) {
+      _resetLoadingUI();
+      if (_previewJobData) {
+        _showFullTrackFailed("Deep analysis failed. Your instant analysis is still ready.");
+      } else {
+        setError("Processing failed: " + e.message);
+        showView("confirm");
+      }
+    }
   }
 }
 
-async function downloadTrack(){
-  buildProcessingBanner(); showView("confirm"); setProgress(null,8); startLoadingMessages("download");
+async function downloadTrack(mode){
+  mode = mode || _currentMode || "preview";
+  _currentMode = mode;
+  const isPreview = mode === "preview";
+
+  console.log(`[downloadTrack] mode=${mode} preview_url=${selectedTrack?.preview_url || 'null'} artist=${selectedTrack?.artist || ''} name=${selectedTrack?.name || ''}`);
+
+  buildProcessingBanner(); showView("confirm");
+  setProgress(null, isPreview ? 12 : 8);
+  startLoadingMessages("download");
+
+  if (isPreview) {
+    _setLT("Getting preview audio...");
+  }
+
+  const postBody = {
+    query: isPreview ? null : selectedTrack.yt_query,  // preview mode: do NOT send yt_query
+    track_id: selectedTrack?.id || null,
+    preview_url: selectedTrack?.preview_url || null,
+    artist: selectedTrack?.artist || "",
+    name: selectedTrack?.name || "",
+    mode: mode,
+  };
+  console.log(`[downloadTrack] POST body:`, JSON.stringify(postBody));
+
   try {
     const r = await fetch("/api/download", {
       method:"POST", headers:{"Content-Type":"application/json"},
-      body: JSON.stringify({
-        query: selectedTrack.yt_query,
-        track_id: selectedTrack?.id || null,
-        preview_url: selectedTrack?.preview_url || null,
-        artist: selectedTrack?.artist || "",
-        name: selectedTrack?.name || "",
-      }),
+      body: JSON.stringify(postBody),
     });
     const d = await r.json();
     if(d.error) throw new Error(d.error);
-    await waitForReady(d.job_id);
+    await waitForReady(d.job_id, isPreview ? 30 : 120);
     currentJobId = d.job_id;
   } catch(e) {
     _resetLoadingUI();
     if (e.message === "upload_required") {
       _showUploadRequired();
+    } else if (e.message === "preview_unavailable") {
+      // No preview — offer full-track or upload instead
+      _showNoPreview();
+    } else if (isPreview) {
+      // Preview download failed — offer alternatives
+      _showNoPreview();
+    } else if (_currentMode === "full" && _previewJobData) {
+      // Full-track download failed but preview exists
+      _showFullTrackFailed("Couldn\u2019t retrieve the full track. Your preview analysis is still ready.");
     } else {
       setError("Download failed: " + e.message);
       showView("confirm");
@@ -942,16 +1092,17 @@ async function downloadTrack(){
 async function waitForReady(jid, mw=120){
   const t0 = Date.now();
   while(Date.now() - t0 < mw * 1000){
-    await sleep(2000);
+    await sleep(1500);
     const r = await fetch(`/api/status/${jid}`);
     const d = await r.json();
     if(d.status === "ready") return;
+    if(d.status === "preview_unavailable") throw new Error("preview_unavailable");
     if(d.status === "upload_required") throw new Error("upload_required");
     if(d.status === "error") throw new Error(d.error || "Download error");
     if(d.progress) { const det = _detectStage(d.progress); if(det) setLoadingStage(det); }
     setProgress(null, 18);
   }
-  throw new Error("Download timed out after 2 minutes. Try uploading the file directly.");
+  throw new Error("Download timed out. Try uploading the file directly.");
 }
 
 function pollStatus(){
@@ -1013,9 +1164,13 @@ function pollStatus(){
 
       } else if(d.status === "error") {
         _resetLoadingUI();
-        const step = d.error_step ? ` (at: ${d.error_step})` : "";
-        setError((d.error || "Unknown error") + step);
-        showView("confirm");
+        if (_currentMode === "full" && _previewJobData) {
+          _showFullTrackFailed("Full-track analysis wasn\u2019t available this time. Your preview analysis is still ready.");
+        } else {
+          const step = d.error_step ? ` (at: ${d.error_step})` : "";
+          setError((d.error || "Unknown error") + step);
+          showView("confirm");
+        }
         return; // stop polling
 
       } else {
@@ -1055,7 +1210,14 @@ function _hideResultWarning() {
 // ─── Results ────────────────────────────────────────────────────────────────
 async function renderResults(data) {
   _hideResultWarning();
-  buildBanner("results-banner", selectedTrack||{name:"Result",artist:""}, data.audio_source);
+  _fullTrackInProgress = false;
+  const mode = data.audio_mode || (data.audio_source === "preview" ? "preview" : null);
+  buildBanner("results-banner", selectedTrack||{name:"Result",artist:""}, data.audio_source, mode);
+
+  // Preserve preview results for non-destructive full-track upgrade
+  if (mode === "preview" || data.audio_source === "preview") {
+    _previewJobData = data;
+  }
   const tabs=data.tabs||{}, stems=data.stems||{}, intel=data.intelligence||{}, recs=data.recommendations||{}, lyrics=data.lyrics||null, tags=data.tags||[];
   // Use stems keys as primary list — tabs may be empty on partial results
   const stemNames = Object.keys(stems).filter(n => {const i=stems[n]; return !i||i.active!==false;});
@@ -1099,7 +1261,16 @@ async function renderResults(data) {
 
   // Show results immediately — don't wait for audio decode
   document.getElementById("process-btn").disabled=false;document.getElementById("process-btn").textContent="Dive In";
+  document.getElementById("process-btn").onclick = () => startProcessing();
   showView("results");
+
+  // Show "Analyze full track" button if this is a preview result and full-track is possible
+  const fullBtn = document.getElementById("full-track-btn");
+  if (fullBtn) {
+    const isPreview = mode === "preview" || data.audio_source === "preview";
+    const canFull = selectedTrack && selectedTrack.yt_query;
+    fullBtn.style.display = (isPreview && canFull) ? "" : "none";
+  }
 
   // Load audio in background (parallel decode, non-blocking)
   loadStemAudio(activeNames).then(() => {
@@ -1108,6 +1279,104 @@ async function renderResults(data) {
 
   // Refresh history
   loadHistory();
+}
+
+async function renderInstantResults(data) {
+  _hideResultWarning();
+  _previewJobData = data;
+  const intel = data.intelligence || {};
+  const lyrics = data.lyrics || null;
+  const tags = data.tags || [];
+
+  buildBanner("results-banner", selectedTrack||{name:"Result",artist:""}, data.audio_source, "preview");
+
+  // Meta chips: key, BPM, genre
+  const metaEl = document.getElementById("results-meta");
+  let chips = '';
+  if (tags && tags.length) {
+    const genre = tags[0].charAt(0).toUpperCase() + tags[0].slice(1);
+    chips += `<span class="meta-chip"><span class="mc-label">Genre</span><span class="mc-val">${esc(genre)}</span></span>`;
+  }
+  const bpmVal = Math.round(intel.bpm || 0);
+  const bpmConf = intel.bpm_confidence || 0;
+  if (bpmVal > 0 && bpmConf >= 0.15) {
+    const bpmLabel = bpmConf >= 0.4 ? "BPM" : "Est. BPM";
+    chips += `<span class="meta-chip"><span class="mc-label">${bpmLabel}</span><span class="mc-val">${bpmVal}</span></span>`;
+  }
+  if (intel.key && intel.key !== "Unknown") {
+    chips += `<span class="meta-chip"><span class="mc-label">Key</span><span class="mc-val">${esc(intel.key)}</span></span>`;
+  }
+  metaEl.innerHTML = chips;
+  songKey = (intel.key_num >= 0) ? {num: intel.key_num, mode: intel.mode_num, name: intel.key} : null;
+
+  // No harmonic sections for instant
+  document.getElementById("harmonic-sections").innerHTML = '';
+
+  // Mix panel: single audio player for the raw preview file
+  const mixerChannels = document.getElementById("mixer-channels");
+  mixerChannels.innerHTML = `<div class="channel"><div class="channel-name">Preview</div><div class="channel-volume"><input type="range" class="vol-slider" min="0" max="100" value="100" oninput="setVolume('preview',this.value)" id="vol-preview"/><span class="vol-label" id="vol-label-preview">100</span></div><button class="ch-btn" id="mute-preview" onclick="toggleMute('preview')">M</button><button class="ch-btn" id="solo-preview" onclick="toggleSolo('preview')">S</button></div>`;
+  document.getElementById("loop-start").value = "0:00";
+  document.getElementById("loop-end").value = "";
+  loopActive = false;
+  document.getElementById("loop-btn").classList.remove("active");
+  transposeAmount = 0;
+  document.getElementById("transpose-display").textContent = "0";
+  document.getElementById("transposed-key").textContent = "";
+
+  // Lyrics
+  const lyricsEl = document.getElementById("lyrics-content");
+  if (lyrics && lyrics.trim()) {
+    lyricsEl.innerHTML = `<div class="lyrics-container">${_formatLyrics(lyrics)}</div>`;
+  } else {
+    lyricsEl.innerHTML = '<div class="lyrics-empty">Lyrics not available for this track.</div>';
+  }
+
+  switchPanel("mix");
+  _defaultTab = "mix";
+
+  document.getElementById("process-btn").disabled = false;
+  document.getElementById("process-btn").textContent = "Dive In";
+  showView("results");
+
+  // Show deep analysis button
+  const fullBtn = document.getElementById("full-track-btn");
+  if (fullBtn) {
+    fullBtn.textContent = "Run deep analysis";
+    fullBtn.onclick = () => _startDeepAnalysis();
+    fullBtn.style.display = "";
+  }
+
+  // Load the preview audio file for playback
+  try {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    cleanupAudio();
+    stemBuffers = {}; stemGains = {}; stemVolumes = {}; stemMuted = {}; stemSoloed = {};
+    duration = 0;
+    stemVolumes["preview"] = 1; stemMuted["preview"] = false; stemSoloed["preview"] = false;
+    const g = audioCtx.createGain(); g.connect(audioCtx.destination); stemGains["preview"] = g;
+
+    const r = await fetch(`/api/audio/${currentJobId}/preview`);
+    if (r.ok) {
+      const ab = await r.arrayBuffer();
+      const buf = await audioCtx.decodeAudioData(ab);
+      stemBuffers["preview"] = buf;
+      duration = buf.duration;
+      document.getElementById("seek-bar").max = duration;
+      updateTimeDisplay();
+      _buildPlayerWaveform();
+      console.log("[audio] preview audio loaded");
+    }
+  } catch(e) { console.warn("[audio] preview load failed:", e); }
+
+  loadHistory();
+}
+
+function _startDeepAnalysis() {
+  // Switch to deep analysis mode — downloads full track if needed, runs heavy pipeline
+  _analysisMode = "deep";
+  _currentMode = "full";
+  currentJobId = null;  // Force new download for full track
+  startProcessing();
 }
 
 // Tab panel is Coming Soon — showTab disabled
@@ -1214,13 +1483,14 @@ function setProgress(t,p){
 }
 function setError(m){const e=document.getElementById("error-msg");e.textContent=m;e.style.display=m?"block":"none";}
 function resetApp(){
-  cleanupAudio();stopLoadingMessages();_stopElapsedTimer();_hideCancelBtn();pauseOffset=0;duration=0;currentJobId=null;selectedTrack=null;jobData=null;searchResults=[];lastQuery="";loopActive=false;transposeAmount=0;songKey=null;clearTimeout(pollInterval);
+  cleanupAudio();stopLoadingMessages();_stopElapsedTimer();_hideCancelBtn();pauseOffset=0;duration=0;currentJobId=null;selectedTrack=null;jobData=null;_previewJobData=null;_fullTrackInProgress=false;_currentMode="preview";_analysisMode="instant";searchResults=[];lastQuery="";loopActive=false;transposeAmount=0;songKey=null;clearTimeout(pollInterval);
   const confirmUpload=document.getElementById("confirm-upload-area");if(confirmUpload)confirmUpload.style.display="none";
   const retryBtn=document.getElementById("upload-retry-btn");if(retryBtn)retryBtn.style.display="none";
   document.getElementById("process-btn").style.display="";
   document.getElementById("search-input").value="";document.getElementById("search-results").innerHTML="";document.getElementById("file-input").value="";
-  document.getElementById("process-btn").disabled=false;document.getElementById("process-btn").textContent="Dive In";
+  document.getElementById("process-btn").disabled=false;document.getElementById("process-btn").textContent="Dive In";document.getElementById("process-btn").onclick=()=>startProcessing();
   document.getElementById("hero-actions").classList.remove("hidden");document.getElementById("hero-loading").classList.add("hidden");
+  const ftBtn=document.getElementById("full-track-btn");if(ftBtn)ftBtn.style.display="none";
   const wvFg=document.getElementById("wv-fg");if(wvFg)wvFg.style.width="0%";
   document.getElementById("progress-label").textContent="Analyzing the track...";document.getElementById("progress-label").classList.remove("fading");
   document.getElementById("seek-bar").value=0;document.getElementById("time-display").textContent="0:00 / 0:00";
@@ -1467,7 +1737,7 @@ async function pickHistory(i) {
         const cached = await res.json();
         if (cached && !cached.error) {
           currentJobId = cached.job_id || entry.job_id;
-          jobData = { status: "complete", tabs: cached.tabs || {}, stems: cached.stems || {}, intelligence: cached.intelligence || {}, lyrics: cached.lyrics || null, tags: cached.tags || [], recommendations: cached.recommendations || {}, audio_source: cached.audio_source || null };
+          jobData = { status: "complete", tabs: cached.tabs || {}, stems: cached.stems || {}, intelligence: cached.intelligence || {}, lyrics: cached.lyrics || null, tags: cached.tags || [], recommendations: cached.recommendations || {}, audio_source: cached.audio_source || null, audio_mode: cached.audio_mode || null };
           // Go directly to results — no confirm page, no fake delay
           renderResults(jobData);
           return;

@@ -24,7 +24,7 @@ def _lazy_music_intelligence():
 
 from spotify_search import search_spotify, get_recommendations_for_track, RateLimitError
 from external_apis import get_lyrics, get_track_tags, enrich_recommendations_with_lastfm
-from downloader import download_audio_from_youtube, resolve_audio, AudioUnavailableError
+from downloader import download_audio_from_youtube, resolve_audio, resolve_preview, AudioUnavailableError
 from history import add_to_history, get_recent, get_cached_result, save_cached_result, touch_history
 from db import init_db, migrate_from_history_json, get_track, upsert_track, set_track_status, touch_track, get_recent_tracks, get_analysis_for_track
 
@@ -115,7 +115,7 @@ def _trim_job_result(job_id):
     import time
     job["_finished_at"] = time.time()
     # Keep only what the status endpoint needs
-    kept = {"status", "progress", "audio_source", "error", "errors",
+    kept = {"status", "progress", "audio_source", "audio_mode", "error", "errors",
             "_started_at", "_finished_at", "_result_delivered"}
     for key in list(job.keys()):
         if key not in kept:
@@ -264,14 +264,15 @@ def track_lookup(track_id):
 
 @app.route("/api/download", methods=["POST"])
 def download_track():
-    print(f"[download] triggered")
-    print(f"[download] USE_HOSTED_SEPARATION = {os.getenv('USE_HOSTED_SEPARATION')!r}")
-    print(f"[download] HAS_REPLICATE_TOKEN = {bool(os.getenv('REPLICATE_API_TOKEN'))}")
     data = request.json
     query = data.get("query")
     url = data.get("url")
     track_id = data.get("track_id")
-    if not query and not url:
+    mode = data.get("mode", "preview")  # "preview" (default) or "full"
+
+    print(f"[download] triggered mode={mode} query={bool(query)} url={bool(url)} preview_url={bool(data.get('preview_url'))} artist={data.get('artist','')[:20]}")
+
+    if not query and not url and mode != "preview":
         return jsonify({"error": "Provide 'query' or 'url'"}), 400
 
     # Check if we already have audio from a previous job for this track
@@ -288,14 +289,17 @@ def download_track():
                 if audio_files:
                     job_id = str(uuid.uuid4())[:8]
                     audio_path = str(audio_files[0])
-                    jobs[job_id] = {"status": "ready", "audio_path": audio_path, "audio_source": "cache", "progress": "Download complete"}
-                    print(f"[job {job_id}] DOWNLOAD REUSED from job {old_job} → {audio_path}")
-                    print(f"[job {job_id}] AUDIO SOURCE SELECTED: cache")
+                    cached_source = "cache"
+                    # Detect if cached file is preview or full
+                    if audio_files[0].name == "preview.mp3":
+                        cached_source = "preview"
+                    jobs[job_id] = {"status": "ready", "audio_path": audio_path, "audio_source": cached_source, "audio_mode": mode, "progress": "Download complete"}
+                    print(f"[job {job_id}] DOWNLOAD REUSED from job {old_job} → {audio_path} (mode={mode})")
                     return jsonify({"job_id": job_id})
 
     job_id = str(uuid.uuid4())[:8]
-    jobs[job_id] = {"status": "downloading", "progress": "Starting download..."}
-    print(f"[job {job_id}] DOWNLOAD START query='{query or url}'")
+    jobs[job_id] = {"status": "downloading", "audio_mode": mode, "progress": "Getting audio..."}
+    print(f"[job {job_id}] DOWNLOAD START mode={mode} query='{(query or url or '')[:60]}'")
 
     def run():
         def _on_progress(msg):
@@ -303,46 +307,67 @@ def download_track():
             print(f"[job {job_id}] download progress: {msg}")
 
         try:
-            # Direct YouTube URL — skip waterfall
-            source_input = url if url else query
-            is_direct_yt = (url and url.startswith("http") and
-                            ("youtube.com" in url or "youtu.be" in url))
+            track_data = {
+                "query": query or url,
+                "preview_url": data.get("preview_url"),
+                "artist": data.get("artist", ""),
+                "name": data.get("name", ""),
+            }
 
-            if is_direct_yt:
-                _on_progress("Downloading from YouTube...")
-                audio_path = download_audio_from_youtube(url, job_id)
-                audio_source = "youtube"
-                print(f"[job {job_id}] AUDIO SOURCE SELECTED: youtube (direct URL)")
+            if mode == "preview":
+                # Preview-first: only try preview sources, no YouTube
+                print(f"[job {job_id}] mode=preview — skipping YouTube")
+                _on_progress("Getting preview audio...")
+                audio_path = resolve_preview(track_data, job_id, on_progress=_on_progress)
+                audio_source = "preview"
+
             else:
-                track_data = {
-                    "query": query or url,
-                    "preview_url": data.get("preview_url"),
-                    "artist": data.get("artist", ""),
-                    "name": data.get("name", ""),
-                }
-                audio_path = resolve_audio(track_data, job_id, on_progress=_on_progress)
-                # Determine which source succeeded
-                audio_source = "youtube"
-                if str(audio_path).endswith("preview.mp3"):
-                    audio_source = "preview"
+                # Full-track: try YouTube first, then previews as fallback
+                print(f"[job {job_id}] mode=full — trying YouTube first")
+                is_direct_yt = (url and url.startswith("http") and
+                                ("youtube.com" in url or "youtu.be" in url))
 
-            print(f"[job {job_id}] download finished → {audio_path} (source={audio_source})")
+                if is_direct_yt:
+                    _on_progress("Downloading full track...")
+                    audio_path = download_audio_from_youtube(url, job_id)
+                    audio_source = "youtube"
+                    print(f"[job {job_id}] AUDIO SOURCE SELECTED: youtube (direct URL)")
+                else:
+                    _on_progress("Downloading full track...")
+                    audio_path = resolve_audio(track_data, job_id, on_progress=_on_progress)
+                    audio_source = "youtube"
+                    if str(audio_path).endswith("preview.mp3"):
+                        audio_source = "preview"
+
+            print(f"[job {job_id}] download finished → {audio_path} (source={audio_source}, mode={mode})")
             jobs[job_id].update({
                 "status": "ready",
                 "audio_path": str(audio_path),
                 "audio_source": audio_source,
+                "audio_mode": mode,
                 "progress": "Download complete",
             })
             print(f"[job {job_id}] STATUS → ready")
 
         except AudioUnavailableError as e:
-            print(f"[job {job_id}] ALL SOURCES FAILED: {e}")
-            jobs[job_id].update({
-                "status": "upload_required",
-                "audio_source": None,
-                "error": str(e),
-            })
-            print(f"[job {job_id}] STATUS → upload_required")
+            print(f"[job {job_id}] SOURCES FAILED (mode={mode}): {e}")
+            if mode == "preview":
+                # Preview unavailable — tell frontend, don't try YouTube automatically
+                jobs[job_id].update({
+                    "status": "preview_unavailable",
+                    "audio_source": None,
+                    "audio_mode": mode,
+                    "error": "No preview available for this track.",
+                })
+                print(f"[job {job_id}] STATUS → preview_unavailable")
+            else:
+                jobs[job_id].update({
+                    "status": "upload_required",
+                    "audio_source": None,
+                    "audio_mode": mode,
+                    "error": str(e),
+                })
+                print(f"[job {job_id}] STATUS → upload_required")
 
         except Exception as e:
             print(f"[job {job_id}] DOWNLOAD ERROR: {e}")
@@ -351,7 +376,7 @@ def download_track():
             print(f"[job {job_id}] STATUS → error")
 
     threading.Thread(target=run, daemon=True).start()
-    return jsonify({"job_id": job_id})
+    return jsonify({"job_id": job_id, "mode": mode})
 
 
 @app.route("/api/upload", methods=["POST"])
@@ -370,6 +395,138 @@ def upload_file():
     return jsonify({"job_id": job_id, "filename": filename})
 
 
+def _process_instant(job_id, audio_path, req_data):
+    """
+    Instant analysis: lightweight, synchronous, no Demucs/Basic Pitch.
+    Returns key, BPM, duration, lyrics — fast enough to run in the request thread.
+    """
+    import time as _t
+    _t0 = _t.time()
+    track_meta = req_data.get("track_meta", {})
+    artist = track_meta.get("artist", "")
+    track_name = track_meta.get("name", "")
+
+    print(f"[job {job_id}] process start analysis_mode=instant audio={audio_path}")
+
+    intelligence = {"key": "Unknown", "key_num": -1, "mode_num": -1, "bpm": 120, "progression": None}
+    lyrics = None
+    tags = []
+    audio_duration = 0
+
+    # Copy preview audio to stems dir so /api/audio/<job_id>/preview serves it
+    import shutil as _shutil
+    stems_dir = OUTPUT_DIR / job_id / "stems"
+    stems_dir.mkdir(parents=True, exist_ok=True)
+    audio_ext = Path(audio_path).suffix  # .mp3 or .wav
+    preview_dest = stems_dir / f"preview{audio_ext}"
+    if not preview_dest.exists():
+        _shutil.copy2(audio_path, preview_dest)
+        print(f"[job {job_id}] instant: preview copied to {preview_dest}")
+
+    # Get audio duration from file
+    try:
+        import wave
+        try:
+            with wave.open(str(audio_path), "rb") as wf:
+                audio_duration = wf.getnframes() / wf.getframerate()
+        except Exception:
+            # Not a WAV — try getting duration from file size (MP3 ~128kbps estimate)
+            fsize = Path(audio_path).stat().st_size
+            audio_duration = fsize / 16000  # rough estimate
+        print(f"[job {job_id}] instant: duration={audio_duration:.1f}s")
+    except Exception as e:
+        print(f"[job {job_id}] instant: duration detection failed: {e}")
+
+    # Lightweight BPM + key estimation using Basic Pitch on the raw audio
+    # This runs on the preview file directly (30s) — much faster than stem-separated analysis
+    try:
+        jobs[job_id]["progress"] = "Analyzing key and tempo..."
+        from basic_pitch import ICASSP_2022_MODEL_PATH
+        from basic_pitch.inference import predict as bp_predict
+        print(f"[job {job_id}] instant: running Basic Pitch on raw audio...")
+        _, _, note_events = bp_predict(
+            str(audio_path),
+            ICASSP_2022_MODEL_PATH,
+            minimum_note_length=80, minimum_frequency=40, maximum_frequency=2000,
+        )
+        if note_events and len(note_events) > 10:
+            import pandas as pd
+            df = pd.DataFrame(note_events, columns=["start_time_s", "end_time_s", "pitch_midi", "confidence", "pitch_bends"][:len(note_events[0])])
+            from music_intelligence import detect_key_from_notes, estimate_bpm, format_key
+            key_num, mode_num, key_conf = detect_key_from_notes(df)
+            if key_num >= 0:
+                intelligence["key"] = format_key(key_num, mode_num)
+                intelligence["key_num"] = key_num
+                intelligence["mode_num"] = mode_num
+                intelligence["key_confidence"] = round(key_conf, 3)
+            bpm, bpm_conf = estimate_bpm(df)
+            if bpm > 0 and bpm_conf >= 0.15:
+                intelligence["bpm"] = round(bpm, 1)
+                intelligence["bpm_confidence"] = round(bpm_conf, 3)
+            del df, note_events
+        print(f"[job {job_id}] instant: key={intelligence['key']} bpm={intelligence['bpm']}")
+    except Exception as e:
+        print(f"[job {job_id}] instant: key/bpm detection failed: {e}")
+
+    # Lyrics (fast HTTP call, no ML)
+    if artist and track_name:
+        try:
+            jobs[job_id]["progress"] = "Fetching lyrics..."
+            lyrics = get_lyrics(artist, track_name)
+            print(f"[job {job_id}] instant: lyrics={'found' if lyrics else 'none'}")
+        except Exception as e:
+            print(f"[job {job_id}] instant: lyrics failed: {e}")
+
+    # Tags (fast HTTP call)
+    if artist and track_name:
+        try:
+            tags = get_track_tags(artist, track_name)
+        except Exception:
+            pass
+
+    elapsed = _t.time() - _t0
+    print(f"[job {job_id}] instant analysis complete in {elapsed:.1f}s")
+
+    result = {
+        "status": "complete",
+        "analysis_mode": "instant",
+        "audio_source": jobs[job_id].get("audio_source"),
+        "audio_mode": jobs[job_id].get("audio_mode", "preview"),
+        "intelligence": intelligence,
+        "lyrics": lyrics,
+        "tags": tags,
+        "audio_duration": round(audio_duration, 1),
+        "stems": {},
+        "tabs": {},
+        "recommendations": {"more_like_this": [], "same_style": [], "around_this_time": []},
+        "progress": "Done!",
+    }
+    jobs[job_id].update(result)
+
+    # Save to cache if we have a track ID
+    spotify_track_id = req_data.get("track_id")
+    if spotify_track_id:
+        try:
+            save_cached_result(job_id, {
+                "intelligence": intelligence,
+                "lyrics": lyrics,
+                "tags": tags,
+                "audio_source": jobs[job_id].get("audio_source"),
+                "audio_mode": jobs[job_id].get("audio_mode"),
+                "analysis_mode": "instant",
+                "stems": {},
+                "tabs": {},
+                "recommendations": result["recommendations"],
+                "job_id": job_id,
+                "track_id": spotify_track_id,
+            })
+            add_to_history(spotify_track_id, track_meta, job_id)
+        except Exception as e:
+            print(f"[job {job_id}] instant: cache save failed: {e}")
+
+    return jsonify(result)
+
+
 @app.route("/api/process/<job_id>", methods=["POST"])
 def process_audio(job_id):
     global _active_processing
@@ -382,7 +539,14 @@ def process_audio(job_id):
     if not audio_path:
         return jsonify({"error": "No audio file"}), 400
 
-    # Guard against stacking heavy jobs
+    req_data = request.json or {}
+    analysis_mode = req_data.get("analysis_mode", "deep")  # "instant" or "deep"
+
+    # ── Instant analysis: lightweight, synchronous, no heavy models ──
+    if analysis_mode == "instant":
+        return _process_instant(job_id, audio_path, req_data)
+
+    # Guard against stacking heavy jobs (deep only)
     with _processing_lock:
         if _active_processing >= MAX_CONCURRENT_JOBS:
             print(f"[job {job_id}] REJECTED: {_active_processing} jobs already processing")
@@ -391,7 +555,6 @@ def process_audio(job_id):
     # Prune stale jobs before starting a new one
     _prune_old_jobs()
 
-    req_data = request.json or {}
     spotify_track_id = req_data.get("track_id")
     spotify_artist_id = req_data.get("artist_id")
     track_meta = req_data.get("track_meta", {})
@@ -400,7 +563,7 @@ def process_audio(job_id):
     jobs[job_id]["status"] = "processing"
     jobs[job_id]["progress"] = "Separating stems..."
     jobs[job_id]["_started_at"] = _time_mod.time()
-    print(f"[job {job_id}] PROCESS START audio={audio_path}")
+    print(f"[job {job_id}] process start analysis_mode=deep audio={audio_path}")
 
     # Mark track as pending in DB
     if spotify_track_id:
@@ -464,6 +627,7 @@ def process_audio(job_id):
                 "tags": tags,
                 "recommendations": recs,
                 "audio_source": jobs[job_id].get("audio_source"),
+                "audio_mode": jobs[job_id].get("audio_mode", "preview"),
                 "progress": "Done!" if not partial else "Completed with errors",
             }
             if partial:
@@ -484,6 +648,7 @@ def process_audio(job_id):
                         "tags": tags,
                         "recommendations": recs,
                         "audio_source": jobs[job_id].get("audio_source"),
+                        "audio_mode": jobs[job_id].get("audio_mode", "preview"),
                         "job_id": job_id,
                         "track_id": spotify_track_id,
                     })
@@ -703,7 +868,15 @@ def job_status(job_id):
 
 @app.route("/api/audio/<job_id>/<stem_name>")
 def serve_stem_audio(job_id, stem_name):
-    return send_from_directory(str(OUTPUT_DIR / job_id / "stems"), f"{stem_name}.wav")
+    stems_dir = OUTPUT_DIR / job_id / "stems"
+    # Try WAV first, then MP3 (preview files may be MP3)
+    wav_path = stems_dir / f"{stem_name}.wav"
+    mp3_path = stems_dir / f"{stem_name}.mp3"
+    if wav_path.exists():
+        return send_from_directory(str(stems_dir), f"{stem_name}.wav")
+    elif mp3_path.exists():
+        return send_from_directory(str(stems_dir), f"{stem_name}.mp3")
+    return send_from_directory(str(stems_dir), f"{stem_name}.wav")  # 404 fallback
 
 
 @app.route("/api/download_midi/<job_id>/<stem_name>")

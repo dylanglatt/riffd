@@ -176,6 +176,50 @@ def get_itunes_preview_url(artist: str, track_name: str) -> str | None:
         return None
 
 
+def resolve_preview(track_data: dict, job_id: str, on_progress=None) -> Path:
+    """
+    Preview-only path. Tries preview sources only (no YouTube).
+    Fast, reliable, returns 30-second audio clip.
+
+    track_data keys: preview_url, artist, name
+    Raises AudioUnavailableError if no preview source works.
+    """
+    preview_url = track_data.get("preview_url")
+    artist = track_data.get("artist", "")
+    name = track_data.get("name", "")
+    print(f"[job {job_id}] resolve_preview called — preview_url={bool(preview_url)} artist={artist[:20]} name={name[:30]}")
+
+    # 1. Spotify preview URL
+    if preview_url:
+        if on_progress:
+            on_progress("Getting preview audio...")
+        try:
+            path = download_preview(preview_url, job_id)
+            print(f"[job {job_id}] AUDIO SOURCE SELECTED: preview (spotify)")
+            return path
+        except Exception as e:
+            print(f"[job {job_id}] Spotify preview failed: {e}")
+
+    # 2. iTunes preview
+    if artist and name:
+        if on_progress:
+            on_progress("Getting preview audio...")
+        try:
+            itunes_url = get_itunes_preview_url(artist, name)
+            if itunes_url:
+                path = download_preview(itunes_url, job_id)
+                print(f"[job {job_id}] AUDIO SOURCE SELECTED: preview (itunes)")
+                return path
+            else:
+                print(f"[job {job_id}] iTunes: no preview URL found")
+        except Exception as e:
+            print(f"[job {job_id}] iTunes preview failed: {e}")
+
+    # No preview available
+    print(f"[job {job_id}] no preview source available")
+    raise AudioUnavailableError("No preview audio available for this track.")
+
+
 def resolve_audio(track_data: dict, job_id: str, on_progress=None) -> Path:
     """
     Main entry point. Tries audio sources in waterfall order:
