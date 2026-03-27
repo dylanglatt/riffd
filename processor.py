@@ -112,65 +112,26 @@ def _get_instrument_config(renderer_type: str) -> dict:
 
 # ─── WAV I/O ─────────────────────────────────────────────────────────────────
 
-def _detect_wav_format(filepath):
-    """Detect WAV format tag: 1=PCM, 3=IEEE float."""
-    try:
-        with open(filepath, "rb") as f:
-            riff = f.read(4)
-            if riff != b"RIFF":
-                return 1
-            f.read(4)
-            wav = f.read(4)
-            if wav != b"WAVE":
-                return 1
-            while True:
-                chunk_id = f.read(4)
-                if len(chunk_id) < 4:
-                    return 1
-                chunk_size = _struct.unpack("<I", f.read(4))[0]
-                if chunk_id == b"fmt ":
-                    fmt_tag = _struct.unpack("<H", f.read(2))[0]
-                    return fmt_tag
-                f.seek(chunk_size, 1)
-    except Exception:
-        return 1
-
-
 def _read_wav(filepath):
     """
-    Read a WAV file (PCM or float32).
-    Returns (left, right, sample_rate) as float32 arrays. Mono files return identical L/R.
-    Uses float32 instead of float64 to halve memory usage (~40MB vs ~80MB per 4-min song).
+    Read an audio file (WAV, MP3, FLAC, etc.) via soundfile.
+    Handles all WAV variants including WAVE_FORMAT_EXTENSIBLE (format tag 65534)
+    which Python's wave module cannot read.
+
+    Returns (left, right, sample_rate) as float32 arrays.
+    Mono files return identical L/R.
     """
-    fmt_tag = _detect_wav_format(filepath)
-    is_float = fmt_tag == 3
+    import soundfile as sf
+    data, sr = sf.read(str(filepath), dtype="float32")
 
-    with wave.open(filepath, "rb") as wf:
-        sr = wf.getframerate()
-        n_ch = wf.getnchannels()
-        n_frames = wf.getnframes()
-        sw = wf.getsampwidth()
-        raw = wf.readframes(n_frames)
-
-    if is_float and sw == 4:
-        samples = np.frombuffer(raw, dtype=np.float32).copy()
-    elif sw == 2:
-        samples = np.frombuffer(raw, dtype=np.int16).astype(np.float32) / 32768.0
-    elif sw == 4:
-        samples = np.frombuffer(raw, dtype=np.int32).astype(np.float32) / 2147483648.0
+    if data.ndim == 1:
+        # Mono
+        return data, data.copy(), sr
     else:
-        samples = np.frombuffer(raw, dtype=np.uint8).astype(np.float32)
-        samples = (samples - 128.0) / 128.0
-    del raw  # Release raw bytes immediately
-
-    if n_ch >= 2:
-        samples = samples.reshape(-1, n_ch)
-        left, right = samples[:, 0].copy(), samples[:, 1].copy()
-        del samples
+        # Stereo or multi-channel — take first two channels
+        left, right = data[:, 0].copy(), data[:, 1].copy()
+        del data
         return left, right, sr
-    else:
-        mono = samples.flatten()
-        return mono, mono.copy(), sr
 
 
 def _write_wav(filepath, left, right, sr):
@@ -502,31 +463,28 @@ def _separate_stems_replicate(audio_path: Path, out_dir: Path, progress_callback
     )
 
     # Replicate returns a dict of stem URLs: {"bass": "https://...", "drums": "https://...", ...}
-    # Map Replicate stem names to our expected names
-    _REPLICATE_STEM_MAP = {
-        "vocals": "vocals",
-        "drums": "drums",
-        "bass": "bass",
-        "guitar": "guitar",
-        "piano": "piano",
-        "other": "other",
-    }
+    # Download whatever stems Replicate returned — do not require a fixed set.
+    # htdemucs returns 4 stems (vocals, drums, bass, other).
+    # htdemucs_6s returns 6 (adds guitar, piano) but some may be missing.
+    _KNOWN_STEMS = {"vocals", "drums", "bass", "guitar", "piano", "other"}
 
     raw_stems = {}
-    for replicate_key, url in output.items():
-        stem_name = _REPLICATE_STEM_MAP.get(replicate_key)
-        if not stem_name:
-            # Unknown stem from Replicate — keep it with original name
-            stem_name = replicate_key
-            print(f"[separation] REPLICATE unmapped stem: {replicate_key}")
-
+    for stem_key, url in output.items():
+        if not url or not isinstance(url, str):
+            print(f"[replicate] skipping stem '{stem_key}': no URL")
+            continue
+        stem_name = stem_key if stem_key in _KNOWN_STEMS else stem_key
         dest = out_dir / f"_raw_{stem_name}.wav"
-        print(f"[separation] REPLICATE downloading: {stem_name} → {dest.name}")
+        print(f"[replicate] downloading: {stem_name} → {dest.name}")
 
-        resp = _requests.get(url, timeout=60)
+        resp = _requests.get(url, timeout=120)
         resp.raise_for_status()
         dest.write_bytes(resp.content)
+        print(f"[replicate] saved: {stem_name} ({len(resp.content)} bytes)")
         raw_stems[stem_name] = str(dest)
+
+    if not raw_stems:
+        raise RuntimeError("Replicate returned no downloadable stems")
 
     elapsed = _time.time() - _t0
     print(f"[separation] REPLICATE finished in {elapsed:.1f}s → {len(raw_stems)} stems: {list(raw_stems.keys())}")
