@@ -233,11 +233,15 @@
     .sr-category:last-child { margin-bottom:0; }
     .sr-cat-label { font-size:0.6875rem; font-weight:600; color:rgba(245,245,245,0.4); text-transform:uppercase; letter-spacing:0.06em; margin-bottom:10px; }
     .sr-songs { display:flex; flex-direction:column; gap:6px; }
-    .sr-song { display:flex; align-items:baseline; gap:12px; padding:10px 16px; border:1px solid rgba(255,255,255,0.06); background:rgba(245,245,245,0.02); transition:border-color 0.15s; cursor:default; }
+    .sr-song { display:flex; align-items:baseline; gap:12px; padding:10px 16px; border:1px solid rgba(255,255,255,0.06); background:rgba(245,245,245,0.02); transition:border-color 0.15s; cursor:default; flex-wrap:wrap; }
     .sr-song:hover { border-color:rgba(255,255,255,0.12); }
     .sr-song-title { font-size:0.875rem; font-weight:500; color:rgba(245,245,245,0.8); white-space:nowrap; }
     .sr-song-artist { font-size:0.8125rem; color:rgba(245,245,245,0.35); white-space:nowrap; }
     .sr-song-reason { font-size:0.75rem; color:rgba(212,105,31,0.6); font-style:italic; margin-left:auto; white-space:nowrap; }
+    @media (max-width:600px) {
+      .sr-song { flex-direction:column; gap:4px; }
+      .sr-song-reason { margin-left:0; white-space:normal; }
+    }
     .smart-recs-empty { padding:48px 20px; text-align:center; color:rgba(245,245,245,0.3); font-size:0.875rem; }
 
     /* ═══ Lyrics panel ═══ */
