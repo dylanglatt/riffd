@@ -1036,6 +1036,57 @@ def download_midi(job_id, stem_name):
     return send_from_directory(str(OUTPUT_DIR / job_id / "tabs"), f"{stem_name}.mid", as_attachment=True)
 
 
+@app.route("/api/refresh-recs/<job_id>", methods=["POST"])
+def refresh_recs(job_id):
+    """Re-generate LLM recommendations without re-running analysis."""
+    from insight import generate_insight
+
+    # Try in-memory job first, then filesystem cache
+    job = jobs.get(job_id)
+    intelligence = None
+    lyrics = None
+    tags = []
+    artist = ""
+    track_name = ""
+
+    if job:
+        intelligence = job.get("intelligence")
+        lyrics = job.get("lyrics")
+        tags = job.get("tags", [])
+        # track meta may be on the job or we fall back to selectedTrack from frontend
+    else:
+        # Try filesystem cache
+        cached = get_cached_result(job_id)
+        if cached:
+            intelligence = cached.get("intelligence")
+            lyrics = cached.get("lyrics")
+            tags = cached.get("tags", [])
+
+    if not intelligence:
+        return jsonify({"error": "No analysis data found for this job"}), 404
+
+    req_data = request.json or {}
+    exclude = req_data.get("exclude", [])
+    artist = req_data.get("artist", "")
+    track_name = req_data.get("track_name", "")
+
+    try:
+        result = generate_insight(
+            song_name=track_name,
+            artist=artist,
+            intelligence=intelligence,
+            lyrics=lyrics,
+            tags=tags,
+            exclude_songs=exclude,
+        )
+        if not result:
+            return jsonify({"error": "Failed to generate recommendations"}), 500
+        return jsonify(result)
+    except Exception as e:
+        print(f"[refresh-recs] error: {e}")
+        return jsonify({"error": "Failed to generate recommendations"}), 500
+
+
 # ─── History endpoints ────────────────────────────────────────────────────────
 
 @app.route("/api/history")
@@ -1100,6 +1151,32 @@ def _load_theory(name):
         else:
             _THEORY_DATA[name] = []
     return _THEORY_DATA[name]
+
+
+@app.route("/api/theory/ask", methods=["POST"])
+def theory_ask():
+    """LLM-powered natural language search over theory data."""
+    data = request.get_json(silent=True) or {}
+    question = (data.get("question") or "").strip()
+    section = data.get("section")
+
+    if not question:
+        return jsonify({"error": "No question provided"}), 400
+    if len(question) > 500:
+        return jsonify({"error": "Question too long"}), 400
+
+    # Load all theory data
+    theory_data = {}
+    for sec in ("chords", "scales", "progressions", "keys"):
+        theory_data[sec] = _load_theory(sec)
+
+    from theory_search import ask_theory
+    result = ask_theory(question, section=section, theory_data=theory_data)
+
+    if result is None:
+        return jsonify({"error": "Could not process question"}), 500
+
+    return jsonify(result)
 
 
 @app.route("/api/theory/<section>")

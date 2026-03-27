@@ -6,20 +6,13 @@
     "badge": "No Sharps/Flats",
     "sharps": 0,
     "flats": 0,
-    "desc": "All natural notes. The reference point for understanding every other key.",
+    "desc": "The universal reference point. All natural notes with no accidentals. The foundation for understanding music theory and the easiest key for beginners learning piano.",
     "mode": "Major",
-    "mood": [
-      "Bright",
-      "Clear"
-    ],
-    "brightness": "Neutral",
+    "mood": ["Bright", "Clear", "Joyful"],
+    "brightness": "Bright",
     "difficulty": "Beginner",
-    "genres": [
-      "Pop"
-    ],
-    "context": [
-      "Piano-Friendly"
-    ]
+    "genres": ["Pop", "Classical", "Children's Music"],
+    "context": ["Piano-Friendly", "Common Key"]
   },
   {
     "name": "G Major",
@@ -28,21 +21,13 @@
     "badge": "1 Sharp",
     "sharps": 1,
     "flats": 0,
-    "desc": "The most guitar-friendly key. Open chords G, C, D, Em, Am all live here.",
+    "desc": "The gateway key to guitar playing. Open G, C, D, Em, Am chords sit naturally here. From folk ballads to modern pop, G Major radiates warmth and accessibility.",
     "mode": "Major",
-    "mood": [
-      "Bright",
-      "Clear"
-    ],
-    "brightness": "Balanced",
+    "mood": ["Bright", "Warm", "Uplifting"],
+    "brightness": "Bright",
     "difficulty": "Beginner",
-    "genres": [
-      "Folk",
-      "Rock"
-    ],
-    "context": [
-      "Guitar-Friendly"
-    ]
+    "genres": ["Folk", "Rock", "Country", "Pop"],
+    "context": ["Guitar-Friendly", "Common Key"]
   },
   {
     "name": "D Major",
@@ -51,21 +36,13 @@
     "badge": "2 Sharps",
     "sharps": 2,
     "flats": 0,
-    "desc": "Bright and open. Popular in folk, country, and acoustic singer-songwriter.",
+    "desc": "Brilliant and ringing on acoustic guitar thanks to open D and A strings. A staple of folk, country, and singer-songwriter music with an open, spacious quality.",
     "mode": "Major",
-    "mood": [
-      "Bright",
-      "Clear"
-    ],
+    "mood": ["Bright", "Clear", "Triumphant"],
     "brightness": "Bright",
     "difficulty": "Beginner",
-    "genres": [
-      "Folk",
-      "Country"
-    ],
-    "context": [
-      "Guitar-Friendly"
-    ]
+    "genres": ["Folk", "Country", "Rock", "Bluegrass"],
+    "context": ["Guitar-Friendly", "Common Key"]
   },
   {
     "name": "A Major",
@@ -74,18 +51,13 @@
     "badge": "3 Sharps",
     "sharps": 3,
     "flats": 0,
-    "desc": "Sweet spot between open chords and barre territory. Classic rock and pop.",
+    "desc": "The sweet spot between open chords and barre technique. Popular in rock, pop, and psychedelic music. A Major has an energetic, forward-moving quality that drives modern songwriting.",
     "mode": "Major",
-    "mood": [
-      "Balanced"
-    ],
+    "mood": ["Balanced", "Energetic", "Confident"],
     "brightness": "Bright",
     "difficulty": "Intermediate",
-    "genres": [
-      "Rock",
-      "Pop"
-    ],
-    "context": []
+    "genres": ["Rock", "Pop", "Funk", "Soul"],
+    "context": ["Guitar-Friendly", "Common Key"]
   },
   {
     "name": "E Major",
@@ -94,21 +66,13 @@
     "badge": "4 Sharps",
     "sharps": 4,
     "flats": 0,
-    "desc": "Standard tuning root note. Blues, rock, and metal staple.",
+    "desc": "The root note of standard guitar tuning. Electric blues is built on E Major — Hendrix, Clapton, and Stevie Ray Vaughan lived here. Bright, ringing, and perfect for power chords.",
     "mode": "Major",
-    "mood": [
-      "Balanced"
-    ],
+    "mood": ["Bright", "Energetic", "Fierce"],
     "brightness": "Bright",
     "difficulty": "Intermediate",
-    "genres": [
-      "Blues",
-      "Rock",
-      "Metal"
-    ],
-    "context": [
-      "Guitar-Friendly"
-    ]
+    "genres": ["Blues", "Rock", "Metal", "Funk"],
+    "context": ["Guitar-Friendly", "Common Key"]
   },
   {
     "name": "B Major",
@@ -117,17 +81,13 @@
     "badge": "5 Sharps",
     "sharps": 5,
     "flats": 0,
-    "desc": "Bright and cutting. Common in pop production and worship music.",
+    "desc": "Cutting and brilliant with all those sharps. Common in worship music, pop production, and modern gospel. The brightness intensifies as you move through the sharp keys.",
     "mode": "Major",
-    "mood": [
-      "Balanced"
-    ],
+    "mood": ["Bright", "Triumphant", "Majestic"],
     "brightness": "Bright",
     "difficulty": "Advanced",
-    "genres": [
-      "Pop"
-    ],
-    "context": []
+    "genres": ["Pop", "Gospel", "Worship", "Classical"],
+    "context": ["Common Key"]
   },
   {
     "name": "F# Major",
@@ -136,15 +96,13 @@
     "badge": "6 Sharps",
     "sharps": 6,
     "flats": 0,
-    "desc": "Enharmonic equivalent of Gb. Rarely used directly but important theoretically.",
+    "desc": "Enharmonically equivalent to Gb Major. Rarely written but theoretically important. Chopin and other classical composers occasionally ventured here for special effects.",
     "mode": "Major",
-    "mood": [
-      "Balanced"
-    ],
+    "mood": ["Bright", "Ethereal", "Noble"],
     "brightness": "Bright",
     "difficulty": "Advanced",
-    "genres": [],
-    "context": []
+    "genres": ["Classical", "Uncommon Key"],
+    "context": ["Uncommon Key"]
   },
   {
     "name": "F Major",
@@ -153,20 +111,13 @@
     "badge": "1 Flat",
     "sharps": 0,
     "flats": 1,
-    "desc": "Warm and grounded. Central to R&B, soul, jazz, and classical.",
+    "desc": "Warm, grounded, and fundamental to vocal writing. R&B, soul, and jazz singers favor F Major for its resonant, rounded quality. Mozart and Beethoven wrote beautiful works here.",
     "mode": "Major",
-    "mood": [
-      "Bright",
-      "Clear"
-    ],
-    "brightness": "Balanced",
+    "mood": ["Warm", "Grounded", "Intimate"],
+    "brightness": "Warm",
     "difficulty": "Intermediate",
-    "genres": [
-      "R&B",
-      "Soul",
-      "Jazz"
-    ],
-    "context": []
+    "genres": ["R&B", "Soul", "Jazz", "Classical"],
+    "context": ["Woodwind-Friendly", "Common Key"]
   },
   {
     "name": "Bb Major",
@@ -175,19 +126,13 @@
     "badge": "2 Flats",
     "sharps": 0,
     "flats": 2,
-    "desc": "The key of wind instruments. Jazz, brass bands, New Orleans music.",
+    "desc": "The home key of trumpets and clarinets. Most jazz standards are written in Bb Major. New Orleans jazz, big band, and brass ensemble music all gravitate here naturally.",
     "mode": "Major",
-    "mood": [
-      "Bright",
-      "Clear"
-    ],
+    "mood": ["Warm", "Bright", "Friendly"],
     "brightness": "Warm",
     "difficulty": "Intermediate",
-    "genres": [
-      "Jazz",
-      "Brass"
-    ],
-    "context": []
+    "genres": ["Jazz", "Classical", "Brass", "Swing"],
+    "context": ["Brass-Friendly", "Common Key"]
   },
   {
     "name": "Eb Major",
@@ -196,20 +141,13 @@
     "badge": "3 Flats",
     "sharps": 0,
     "flats": 3,
-    "desc": "Rich and soulful. R&B, gospel, and jazz ballads.",
+    "desc": "Rich and soulful, the favorite of Motown. R&B, gospel, and jazz ballads thrive here. The flatted keys have a darker, more introspective warmth than their sharp counterparts.",
     "mode": "Major",
-    "mood": [
-      "Bright",
-      "Clear"
-    ],
+    "mood": ["Warm", "Soulful", "Expressive"],
     "brightness": "Warm",
     "difficulty": "Intermediate",
-    "genres": [
-      "R&B",
-      "Gospel",
-      "Jazz"
-    ],
-    "context": []
+    "genres": ["R&B", "Gospel", "Jazz", "Soul"],
+    "context": ["Brass-Friendly", "Common Key"]
   },
   {
     "name": "Ab Major",
@@ -218,20 +156,13 @@
     "badge": "4 Flats",
     "sharps": 0,
     "flats": 4,
-    "desc": "Lush and warm. Neo-soul, gospel, and cinematic scoring.",
+    "desc": "Lush and voluminous. Neo-soul, gospel, and cinematic orchestration love Ab Major. The key radiates warmth and depth, perfect for emotional, intimate arrangements.",
     "mode": "Major",
-    "mood": [
-      "Bright",
-      "Clear"
-    ],
+    "mood": ["Warm", "Lush", "Contemplative"],
     "brightness": "Warm",
     "difficulty": "Advanced",
-    "genres": [
-      "Soul",
-      "Gospel",
-      "Cinematic"
-    ],
-    "context": []
+    "genres": ["Soul", "Gospel", "Cinematic", "R&B"],
+    "context": ["Orchestral", "Common Key"]
   },
   {
     "name": "Db Major",
@@ -240,19 +171,13 @@
     "badge": "5 Flats",
     "sharps": 0,
     "flats": 5,
-    "desc": "Smooth and mellow. Common in jazz ballads and R&B slow jams.",
+    "desc": "Smooth and mellow, ideal for ballads. Jazz pianists favor Db Major for its pianistic ease and rich tonal palette. R&B slow jams and ballads flourish in this key.",
     "mode": "Major",
-    "mood": [
-      "Bright",
-      "Clear"
-    ],
+    "mood": ["Warm", "Mellow", "Serene"],
     "brightness": "Warm",
     "difficulty": "Advanced",
-    "genres": [
-      "Jazz",
-      "R&B"
-    ],
-    "context": []
+    "genres": ["Jazz", "R&B", "Ballads", "Soul"],
+    "context": ["Piano-Friendly", "Uncommon Key"]
   },
   {
     "name": "A Minor",
@@ -261,21 +186,13 @@
     "badge": "No Sharps/Flats",
     "sharps": 0,
     "flats": 0,
-    "desc": "The natural minor. Shares all notes with C major but sounds darker.",
+    "desc": "Natural minor shares all notes with C Major but creates darker emotional space. The foundation for rock, pop, and folk. Countless modern hits use this accessible, melancholic key.",
     "mode": "Minor",
-    "mood": [
-      "Emotional",
-      "Expressive"
-    ],
+    "mood": ["Melancholy", "Emotional", "Introspective"],
     "brightness": "Cool",
     "difficulty": "Beginner",
-    "genres": [
-      "Rock",
-      "Pop"
-    ],
-    "context": [
-      "Guitar-Friendly"
-    ]
+    "genres": ["Rock", "Pop", "Folk", "Metal"],
+    "context": ["Guitar-Friendly", "Common Key"]
   },
   {
     "name": "E Minor",
@@ -284,21 +201,13 @@
     "badge": "1 Sharp",
     "sharps": 1,
     "flats": 0,
-    "desc": "One of the most common keys in rock and folk. Open Em is effortless.",
+    "desc": "One of rock's pillars. Open Em chord is effortless and sounds raw, emotional, powerful. From indie to metal, E Minor drives countless modern rock songs with its brooding intensity.",
     "mode": "Minor",
-    "mood": [
-      "Emotional",
-      "Expressive"
-    ],
+    "mood": ["Moody", "Passionate", "Expressive"],
     "brightness": "Cool",
     "difficulty": "Beginner",
-    "genres": [
-      "Rock",
-      "Folk"
-    ],
-    "context": [
-      "Guitar-Friendly"
-    ]
+    "genres": ["Rock", "Folk", "Metal", "Alternative"],
+    "context": ["Guitar-Friendly", "Common Key"]
   },
   {
     "name": "B Minor",
@@ -307,19 +216,13 @@
     "badge": "2 Sharps",
     "sharps": 2,
     "flats": 0,
-    "desc": "Dark and contemplative. Frequent in modern pop and indie.",
+    "desc": "Dark and contemplative with restless energy. Ubiquitous in modern indie, pop, and electronic music. B Minor has a contemporary feel that resonates with today's songwriters.",
     "mode": "Minor",
-    "mood": [
-      "Moody",
-      "Introspective"
-    ],
+    "mood": ["Dark", "Restless", "Introspective"],
     "brightness": "Cool",
     "difficulty": "Intermediate",
-    "genres": [
-      "Pop",
-      "Indie"
-    ],
-    "context": []
+    "genres": ["Pop", "Indie", "Electronic", "Rock"],
+    "context": ["Common Key"]
   },
   {
     "name": "F# Minor",
@@ -328,19 +231,13 @@
     "badge": "3 Sharps",
     "sharps": 3,
     "flats": 0,
-    "desc": "Moody and expressive. Common in alternative and electronic music.",
+    "desc": "Moody and expressive, the cinematic minor. Metal, alternative rock, and film composers favor F# Minor for its dramatic, intense quality. Haunting and unforgettable.",
     "mode": "Minor",
-    "mood": [
-      "Moody",
-      "Introspective"
-    ],
-    "brightness": "Cool",
+    "mood": ["Dark", "Dramatic", "Passionate"],
+    "brightness": "Dark",
     "difficulty": "Intermediate",
-    "genres": [
-      "Alternative",
-      "Electronic"
-    ],
-    "context": []
+    "genres": ["Metal", "Classical", "Cinematic", "Alternative"],
+    "context": ["Uncommon Key"]
   },
   {
     "name": "C# Minor",
@@ -349,19 +246,43 @@
     "badge": "4 Sharps",
     "sharps": 4,
     "flats": 0,
-    "desc": "Deep and introspective. Moonlight Sonata lives here.",
+    "desc": "Deep and introspective. Beethoven's Moonlight Sonata resides here. C# Minor demands technical skill and emotional maturity, conveying melancholy and profound introspection.",
     "mode": "Minor",
-    "mood": [
-      "Moody",
-      "Introspective"
-    ],
-    "brightness": "Cool",
+    "mood": ["Dark", "Mysterious", "Contemplative"],
+    "brightness": "Dark",
     "difficulty": "Intermediate",
-    "genres": [
-      "Classical",
-      "Cinematic"
-    ],
-    "context": []
+    "genres": ["Classical", "Cinematic", "Progressive Rock"],
+    "context": ["Piano-Friendly", "Uncommon Key"]
+  },
+  {
+    "name": "G# Minor",
+    "relative": "B Major",
+    "notes": "G# A# B C# D# E F#",
+    "badge": "5 Sharps",
+    "sharps": 5,
+    "flats": 0,
+    "desc": "Intense and brooding, rarely used but unforgettable. The sharp keys intensify emotional darkness. G# Minor has a mysterious, otherworldly quality in progressive metal and art music.",
+    "mode": "Minor",
+    "mood": ["Dark", "Mysterious", "Fierce"],
+    "brightness": "Dark",
+    "difficulty": "Advanced",
+    "genres": ["Metal", "Progressive Rock", "Classical"],
+    "context": ["Uncommon Key"]
+  },
+  {
+    "name": "D# Minor",
+    "relative": "F# Major",
+    "notes": "D# E# F# G# A# B C#",
+    "badge": "6 Sharps",
+    "sharps": 6,
+    "flats": 0,
+    "desc": "The darkest of the sharp keys. Enharmonically equivalent to Eb Minor. Extremely rare in practice but theoretically important. Classical composers occasionally used this for maximum dramatic intensity.",
+    "mode": "Minor",
+    "mood": ["Dark", "Somber", "Mysterious"],
+    "brightness": "Dark",
+    "difficulty": "Advanced",
+    "genres": ["Classical", "Progressive Metal"],
+    "context": ["Uncommon Key"]
   },
   {
     "name": "D Minor",
@@ -370,19 +291,13 @@
     "badge": "1 Flat",
     "sharps": 0,
     "flats": 1,
-    "desc": "The saddest key, according to Nigel Tufnel. Dark, dramatic, expressive.",
+    "desc": "The saddest key according to Nigel Tufnel. Bach, Mozart, and Beethoven all wrote intensely emotional works here. D Minor exudes nobility, darkness, and classical gravitas.",
     "mode": "Minor",
-    "mood": [
-      "Emotional",
-      "Expressive"
-    ],
+    "mood": ["Dark", "Somber", "Dramatic"],
     "brightness": "Moderate",
     "difficulty": "Intermediate",
-    "genres": [
-      "Classical",
-      "Rock"
-    ],
-    "context": []
+    "genres": ["Classical", "Rock", "Cinematic", "Metal"],
+    "context": ["Common Key"]
   },
   {
     "name": "G Minor",
@@ -391,19 +306,13 @@
     "badge": "2 Flats",
     "sharps": 0,
     "flats": 2,
-    "desc": "Brooding and powerful. Common in hip-hop, trap, and minor-key pop.",
+    "desc": "Brooding and powerful. Hip-hop, trap, and R&B producers love G Minor's dark, driving groove. The key conveys urgency and raw emotional power in contemporary music.",
     "mode": "Minor",
-    "mood": [
-      "Dark",
-      "Melancholy"
-    ],
+    "mood": ["Dark", "Melancholy", "Powerful"],
     "brightness": "Moderate",
     "difficulty": "Intermediate",
-    "genres": [
-      "Hip-Hop",
-      "Pop"
-    ],
-    "context": []
+    "genres": ["Hip-Hop", "Trap", "Pop", "R&B"],
+    "context": ["Common Key"]
   },
   {
     "name": "C Minor",
@@ -412,19 +321,13 @@
     "badge": "3 Flats",
     "sharps": 0,
     "flats": 3,
-    "desc": "Deep and dramatic. Beethoven's key of choice for emotional intensity.",
+    "desc": "Deep, dramatic, and emotionally intense. Beethoven's Symphony No. 5 opens with C Minor's defiant cry. This key conveys struggle, passion, and ultimate triumph through darkness.",
     "mode": "Minor",
-    "mood": [
-      "Dark",
-      "Melancholy"
-    ],
+    "mood": ["Dark", "Dramatic", "Majestic"],
     "brightness": "Dark",
     "difficulty": "Intermediate",
-    "genres": [
-      "Classical",
-      "Cinematic"
-    ],
-    "context": []
+    "genres": ["Classical", "Cinematic", "Metal", "Gospel"],
+    "context": ["Orchestral", "Common Key"]
   },
   {
     "name": "F Minor",
@@ -433,19 +336,13 @@
     "badge": "4 Flats",
     "sharps": 0,
     "flats": 4,
-    "desc": "Dark and lush. Jazz ballads, film noir, and introspective R&B.",
+    "desc": "Dark and lush, the key of introspection. Jazz ballads, film noir, and R&B soul songs flourish here. F Minor blends sadness with sophistication and emotional depth.",
     "mode": "Minor",
-    "mood": [
-      "Dark",
-      "Melancholy"
-    ],
+    "mood": ["Dark", "Melancholy", "Sophisticated"],
     "brightness": "Dark",
     "difficulty": "Advanced",
-    "genres": [
-      "Jazz",
-      "Cinematic"
-    ],
-    "context": []
+    "genres": ["Jazz", "Cinematic", "R&B", "Soul"],
+    "context": ["Orchestral", "Uncommon Key"]
   },
   {
     "name": "Bb Minor",
@@ -454,17 +351,12 @@
     "badge": "5 Flats",
     "sharps": 0,
     "flats": 5,
-    "desc": "Rare but hauntingly beautiful. Deep jazz and art music.",
+    "desc": "Rare but hauntingly beautiful. Deep jazz, art music, and cinematic scoring reach for Bb Minor's uniquely dark, voluminous texture. Complex and sophisticated, for advanced players.",
     "mode": "Minor",
-    "mood": [
-      "Dark",
-      "Melancholy"
-    ],
+    "mood": ["Dark", "Sophisticated", "Mysterious"],
     "brightness": "Dark",
     "difficulty": "Advanced",
-    "genres": [
-      "Jazz"
-    ],
-    "context": []
+    "genres": ["Jazz", "Cinematic", "Classical"],
+    "context": ["Uncommon Key"]
   }
 ]

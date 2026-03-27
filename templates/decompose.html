@@ -164,7 +164,7 @@
     .transport-btn.stop-btn:hover { border-color:#D4691F; }
     .transport-btn.stop-btn svg { width:11px; height:11px; fill:rgba(245,245,245,0.7); }
     .transport-btn.stop-btn:hover svg { fill:#D4691F; }
-    .transport-seek-wrap { flex:1; position:relative; height:48px; cursor:pointer; }
+    .transport-seek-wrap { flex:1; position:relative; height:48px; cursor:pointer; touch-action:none; }
     .player-waveform { display:flex; align-items:flex-end; gap:2px; height:100%; width:100%; position:absolute; top:0; left:0; }
     .player-wv-bar { width:2px; background:rgba(245,245,245,0.18); flex-shrink:0; }
     .player-wv-bar:nth-child(18n) { background:rgba(212,105,31,0.35); }
@@ -238,10 +238,12 @@
     .sr-song:hover { border-color:rgba(255,255,255,0.12); }
     .sr-song-title { font-size:0.875rem; font-weight:500; color:rgba(245,245,245,0.8); white-space:nowrap; }
     .sr-song-artist { font-size:0.8125rem; color:rgba(245,245,245,0.35); white-space:nowrap; }
-    .sr-song-reason { font-size:0.75rem; color:rgba(212,105,31,0.6); font-style:italic; margin-left:auto; white-space:nowrap; }
-    @media (max-width:600px) {
+    .sr-song-reason { font-size:0.75rem; color:rgba(212,105,31,0.6); font-style:italic; margin-left:auto; white-space:normal; text-align:right; flex-shrink:1; min-width:0; }
+    @media (max-width:768px) {
       .sr-song { flex-direction:column; gap:4px; }
-      .sr-song-reason { margin-left:0; white-space:normal; }
+      .sr-song-reason { margin-left:0; text-align:left; }
+      .smart-recs-header { flex-direction:column; align-items:flex-start; gap:4px; }
+      .smart-recs-subtitle { margin-left:0; }
     }
     .smart-recs-empty { padding:48px 20px; text-align:center; color:rgba(245,245,245,0.3); font-size:0.875rem; }
     .sr-loading { display:flex; align-items:center; justify-content:center; padding:48px 20px; }
@@ -277,7 +279,7 @@
       .mixer-transport { gap:10px; flex-wrap:wrap; }
       .transport-btn { width:36px; height:36px; }
       .transport-btn.stop-btn { width:32px; height:32px; }
-      .transport-seek-wrap { min-width:0; flex:1 1 100%; order:3; height:40px; }
+      .transport-seek-wrap { min-width:0; flex:1 1 100%; order:3; height:48px; padding:4px 0; }
       .transport-time { font-size:0.75rem; min-width:70px; }
       .channel { grid-template-columns:90px 1fr 28px 28px; gap:8px; padding:10px 12px; }
       .channel-name { font-size:0.8125rem; min-width:90px; }
@@ -1631,6 +1633,48 @@ function _buildPlayerWaveform() {
   }
   bg.innerHTML = bgHtml;
   fg.innerHTML = fgHtml;
+
+  // ── Touch-friendly waveform scrubbing ──
+  // The hidden range input works on desktop but is hard to grab on mobile.
+  // Add direct pointer events on the waveform wrap for smooth touch scrubbing.
+  (function() {
+    let scrubbing = false;
+    function scrubFromEvent(e) {
+      const rect = wrap.getBoundingClientRect();
+      const x = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
+      const pct = Math.max(0, Math.min(1, x / rect.width));
+      const val = pct * duration;
+      if (duration > 0) {
+        document.getElementById('seek-bar').value = val;
+        seekTo(val);
+      }
+    }
+    wrap.addEventListener('touchstart', function(e) {
+      if (!duration) return;
+      scrubbing = true;
+      scrubFromEvent(e);
+      e.preventDefault(); // prevent scroll while scrubbing
+    }, { passive: false });
+    wrap.addEventListener('touchmove', function(e) {
+      if (!scrubbing) return;
+      scrubFromEvent(e);
+      e.preventDefault();
+    }, { passive: false });
+    wrap.addEventListener('touchend', function() { scrubbing = false; });
+    wrap.addEventListener('touchcancel', function() { scrubbing = false; });
+
+    // Also handle mouse drag for desktop consistency
+    wrap.addEventListener('mousedown', function(e) {
+      if (!duration) return;
+      scrubbing = true;
+      scrubFromEvent(e);
+    });
+    window.addEventListener('mousemove', function(e) {
+      if (!scrubbing) return;
+      scrubFromEvent(e);
+    });
+    window.addEventListener('mouseup', function() { scrubbing = false; });
+  })();
 }
 
 function _updatePlayerProgress() {

@@ -711,5 +711,640 @@
       "Open"
     ],
     "chords": 2
+  },
+  {
+    "name": "I - IV - iv - I",
+    "formula": "C - F - Fm - C",
+    "badge": "Gospel",
+    "desc": "The gospel turnaround. Major IV to minor iv creates a bittersweet pull back to home.",
+    "difficulty": "Intermediate",
+    "category": "Gospel",
+    "function": "Cadence",
+    "genres": [
+      "Gospel",
+      "Soul",
+      "R&B"
+    ],
+    "mood": [
+      "Soulful",
+      "Bittersweet"
+    ],
+    "chords": 4
+  },
+  {
+    "name": "I - I7 - IV - iv - I",
+    "formula": "C - C7 - F - Fm - C",
+    "badge": "Gospel",
+    "desc": "Extended gospel with dominant approach. Common in Motown and modern soul music.",
+    "difficulty": "Intermediate",
+    "category": "Gospel",
+    "function": "Turnaround",
+    "genres": [
+      "Gospel",
+      "Soul",
+      "Motown"
+    ],
+    "mood": [
+      "Soulful",
+      "Energetic"
+    ],
+    "chords": 5
+  },
+  {
+    "name": "IV - iv - I - V",
+    "formula": "F - Fm - C - G",
+    "badge": "Soul",
+    "desc": "Soul cadence, a Motown staple. Major to minor iv creates emotional depth before the V.",
+    "difficulty": "Intermediate",
+    "category": "Gospel",
+    "function": "Cadence",
+    "genres": [
+      "Soul",
+      "R&B",
+      "Motown"
+    ],
+    "mood": [
+      "Soulful",
+      "Emotional"
+    ],
+    "chords": 4
+  },
+  {
+    "name": "I - iii - IV - iv - I",
+    "formula": "C - Em - F - Fm - C",
+    "badge": "Gospel",
+    "desc": "Gospel walk up/down with added emotional color from the iii. Creates complex harmonic movement.",
+    "difficulty": "Intermediate",
+    "category": "Gospel",
+    "function": "Loop",
+    "genres": [
+      "Gospel",
+      "Soul",
+      "Ballad"
+    ],
+    "mood": [
+      "Soulful",
+      "Warm"
+    ],
+    "chords": 5
+  },
+  {
+    "name": "I - vi - ii - V - I",
+    "formula": "C - Am - Dm - G - C",
+    "badge": "Gospel",
+    "desc": "Full gospel cycle with classic voice leading. The complete journey home.",
+    "difficulty": "Intermediate",
+    "category": "Gospel",
+    "function": "Turnaround",
+    "genres": [
+      "Gospel",
+      "Soul",
+      "Jazz"
+    ],
+    "mood": [
+      "Spiritual",
+      "Uplifting"
+    ],
+    "chords": 5
+  },
+  {
+    "name": "Imaj7 - ii7 - iii7 - IVmaj7",
+    "formula": "Cmaj7 - Dm7 - Em7 - Fmaj7",
+    "badge": "Neo-Soul",
+    "desc": "Diatonic climb in seventh chords. Erykah Badu and D'Angelo signature sound.",
+    "difficulty": "Intermediate",
+    "category": "Neo-Soul",
+    "function": "Loop",
+    "genres": [
+      "Neo-Soul",
+      "R&B",
+      "Jazz"
+    ],
+    "mood": [
+      "Smooth",
+      "Sophisticated"
+    ],
+    "chords": 4
+  },
+  {
+    "name": "ii7 - V7 - Imaj7 - vi7",
+    "formula": "Dm7 - G7 - Cmaj7 - Am7",
+    "badge": "R&B",
+    "desc": "R&B turnaround with sophisticated seventh chords. Modern smooth R&B foundation.",
+    "difficulty": "Intermediate",
+    "category": "Neo-Soul",
+    "function": "Turnaround",
+    "genres": [
+      "R&B",
+      "Neo-Soul",
+      "Jazz"
+    ],
+    "mood": [
+      "Smooth",
+      "Sophisticated"
+    ],
+    "chords": 4
+  },
+  {
+    "name": "Imaj9 - IVmaj9",
+    "formula": "Cmaj9 - Fmaj9",
+    "badge": "Neo-Soul",
+    "desc": "Two-chord neo-soul vamp with extended ninth chords. Lush, ambient, hypnotic.",
+    "difficulty": "Beginner",
+    "category": "Neo-Soul",
+    "function": "Loop",
+    "genres": [
+      "Neo-Soul",
+      "Jazz",
+      "Ambient"
+    ],
+    "mood": [
+      "Smooth",
+      "Dreamy"
+    ],
+    "chords": 2
+  },
+  {
+    "name": "iii7 - vi7 - ii7 - V7",
+    "formula": "Em7 - Am7 - Dm7 - G7",
+    "badge": "Neo-Soul",
+    "desc": "Circle of fourths in seventh chords. Descending, meditative R&B vibe.",
+    "difficulty": "Intermediate",
+    "category": "Neo-Soul",
+    "function": "Loop",
+    "genres": [
+      "Neo-Soul",
+      "R&B",
+      "Jazz"
+    ],
+    "mood": [
+      "Smooth",
+      "Introspective"
+    ],
+    "chords": 4
+  },
+  {
+    "name": "i7 - IV7 - bVII7 - III7",
+    "formula": "Cm7 - Fm7 - Bbm7 - Ebm7",
+    "badge": "Neo-Soul",
+    "desc": "Minor neo-soul in dominant sevenths. Robert Glasper and contemporary jazz-soul.",
+    "difficulty": "Advanced",
+    "category": "Neo-Soul",
+    "function": "Loop",
+    "genres": [
+      "Neo-Soul",
+      "Jazz",
+      "Funk"
+    ],
+    "mood": [
+      "Dark",
+      "Sophisticated"
+    ],
+    "chords": 4
+  },
+  {
+    "name": "i - bVII - bVI - V",
+    "formula": "Am - G - F - E",
+    "badge": "Flamenco",
+    "desc": "Andalusian cadence, the classic flamenco descent. Spanish guitar and passionate folk.",
+    "difficulty": "Intermediate",
+    "category": "Flamenco",
+    "function": "Cadence",
+    "genres": [
+      "Flamenco",
+      "Spanish",
+      "Classical"
+    ],
+    "mood": [
+      "Passionate",
+      "Dramatic"
+    ],
+    "chords": 4
+  },
+  {
+    "name": "i - bII - bVII - i",
+    "formula": "Am - Bbm - G - Am",
+    "badge": "Phrygian",
+    "desc": "Phrygian vamp with Middle Eastern and Spanish flavor. Exotic and moody.",
+    "difficulty": "Intermediate",
+    "category": "Flamenco",
+    "function": "Loop",
+    "genres": [
+      "Flamenco",
+      "World",
+      "Ambient"
+    ],
+    "mood": [
+      "Exotic",
+      "Mysterious"
+    ],
+    "chords": 4
+  },
+  {
+    "name": "Im - bVImaj7 - bVII - V7",
+    "formula": "Cm - Abmaj7 - Bb - G7",
+    "badge": "Flamenco",
+    "desc": "Flamenco turnaround with jazz touches. Sophisticated Spanish harmony.",
+    "difficulty": "Advanced",
+    "category": "Flamenco",
+    "function": "Turnaround",
+    "genres": [
+      "Flamenco",
+      "Jazz",
+      "Spanish"
+    ],
+    "mood": [
+      "Passionate",
+      "Sophisticated"
+    ],
+    "chords": 4
+  },
+  {
+    "name": "I - bII - I",
+    "formula": "C - Db - C",
+    "badge": "Cinematic",
+    "desc": "Lydian shift creating ethereal film sound. Mysterious, suspended, otherworldly.",
+    "difficulty": "Beginner",
+    "category": "Cinematic",
+    "function": "Cadence",
+    "genres": [
+      "Film",
+      "Cinematic",
+      "Ambient"
+    ],
+    "mood": [
+      "Ethereal",
+      "Mysterious"
+    ],
+    "chords": 2
+  },
+  {
+    "name": "i - v - bVI - bVII",
+    "formula": "Cm - Gm - Ab - Bb",
+    "badge": "Cinematic",
+    "desc": "Epic minor ascent perfect for trailers and dramatic film sequences.",
+    "difficulty": "Intermediate",
+    "category": "Cinematic",
+    "function": "Loop",
+    "genres": [
+      "Film",
+      "Cinematic",
+      "Trailer"
+    ],
+    "mood": [
+      "Epic",
+      "Intense"
+    ],
+    "chords": 4
+  },
+  {
+    "name": "I - III - bVI - bVII",
+    "formula": "C - E - Ab - Bb",
+    "badge": "Cinematic",
+    "desc": "Chromatic mediant film progression. Bold, modern cinematic sound.",
+    "difficulty": "Advanced",
+    "category": "Cinematic",
+    "function": "Loop",
+    "genres": [
+      "Film",
+      "Cinematic",
+      "Modern"
+    ],
+    "mood": [
+      "Bold",
+      "Modern"
+    ],
+    "chords": 4
+  },
+  {
+    "name": "I - IV - I - V",
+    "formula": "G - C - G - D",
+    "badge": "Country",
+    "desc": "Country shuffle. Simple, driving, foundational for country-rock.",
+    "difficulty": "Beginner",
+    "category": "Country",
+    "function": "Loop",
+    "genres": [
+      "Country",
+      "Americana"
+    ],
+    "mood": [
+      "Driving",
+      "Steady"
+    ],
+    "chords": 3
+  },
+  {
+    "name": "I - V - I - IV - I - V - I",
+    "formula": "G - D - G - C - G - D - G",
+    "badge": "Country",
+    "desc": "Country waltz form. Three-quarter time classic. Perfect for country waltzes.",
+    "difficulty": "Beginner",
+    "category": "Country",
+    "function": "Form",
+    "genres": [
+      "Country",
+      "Waltz",
+      "Americana"
+    ],
+    "mood": [
+      "Nostalgic",
+      "Flowing"
+    ],
+    "chords": 3
+  },
+  {
+    "name": "I - vi - IV - V7",
+    "formula": "C - Am - F - G7",
+    "badge": "Ballad",
+    "desc": "Nashville ballad with dominant seventh. Emotional country vocal foundation.",
+    "difficulty": "Intermediate",
+    "category": "Country",
+    "function": "Loop",
+    "genres": [
+      "Country",
+      "Ballad",
+      "Nashville"
+    ],
+    "mood": [
+      "Emotional",
+      "Warm"
+    ],
+    "chords": 4
+  },
+  {
+    "name": "I - V - bVII - IV",
+    "formula": "C - G - Bb - F",
+    "badge": "Pop-Punk",
+    "desc": "Pop-punk anthem. Blink-182, Green Day. Energetic with hooks and attitude.",
+    "difficulty": "Intermediate",
+    "category": "Punk",
+    "function": "Loop",
+    "genres": [
+      "Pop-Punk",
+      "Punk",
+      "Rock"
+    ],
+    "mood": [
+      "Energetic",
+      "Youthful"
+    ],
+    "chords": 4
+  },
+  {
+    "name": "i - bII - i",
+    "formula": "Em - Fm - Em",
+    "badge": "Metal",
+    "desc": "Phrygian riff foundational to metal. Metallica, Slayer, Megadeth.",
+    "difficulty": "Beginner",
+    "category": "Metal",
+    "function": "Loop",
+    "genres": [
+      "Metal",
+      "Heavy Metal",
+      "Thrash"
+    ],
+    "mood": [
+      "Dark",
+      "Aggressive"
+    ],
+    "chords": 2
+  },
+  {
+    "name": "i - bVI - bVII - V",
+    "formula": "Em - C - D - B",
+    "badge": "Metal",
+    "desc": "Minor metal turnaround. Powerful, dramatic, essential metal progression.",
+    "difficulty": "Intermediate",
+    "category": "Metal",
+    "function": "Loop",
+    "genres": [
+      "Metal",
+      "Rock"
+    ],
+    "mood": [
+      "Powerful",
+      "Dramatic"
+    ],
+    "chords": 4
+  },
+  {
+    "name": "i - bVII - bVI - bVII",
+    "formula": "Em - D - C - D",
+    "badge": "Doom",
+    "desc": "Doom metal descent. Slow, heavy, hypnotic dread.",
+    "difficulty": "Intermediate",
+    "category": "Metal",
+    "function": "Loop",
+    "genres": [
+      "Doom Metal",
+      "Metal"
+    ],
+    "mood": [
+      "Dark",
+      "Heavy"
+    ],
+    "chords": 3
+  },
+  {
+    "name": "I - IV",
+    "formula": "G - C",
+    "badge": "Reggae",
+    "desc": "Reggae two-chord vamp. Bob Marley foundation. Simple, hypnotic, revolutionary.",
+    "difficulty": "Beginner",
+    "category": "Reggae",
+    "function": "Loop",
+    "genres": [
+      "Reggae",
+      "Roots"
+    ],
+    "mood": [
+      "Relaxed",
+      "Groovy"
+    ],
+    "chords": 2
+  },
+  {
+    "name": "i - bVI - bVII - i",
+    "formula": "Cm - Ab - Bb - Cm",
+    "badge": "EDM",
+    "desc": "EDM build and drop. Perfect for electronic music tension and release.",
+    "difficulty": "Intermediate",
+    "category": "Electronic",
+    "function": "Loop",
+    "genres": [
+      "EDM",
+      "House",
+      "Trance"
+    ],
+    "mood": [
+      "Tense",
+      "Hypnotic"
+    ],
+    "chords": 4
+  },
+  {
+    "name": "i - bIII - bVII - IV",
+    "formula": "Cm - Eb - Bb - F",
+    "badge": "Progressive",
+    "desc": "Progressive house with borrowed chords. Hypnotic, driving, sophisticated.",
+    "difficulty": "Intermediate",
+    "category": "Electronic",
+    "function": "Loop",
+    "genres": [
+      "Progressive House",
+      "Techno"
+    ],
+    "mood": [
+      "Hypnotic",
+      "Driving"
+    ],
+    "chords": 4
+  },
+  {
+    "name": "Imaj7 - ii7 - iii7b5 - VI7",
+    "formula": "Cmaj7 - Dm7 - Em7b5 - A7",
+    "badge": "Bossa",
+    "desc": "Bossa standard changes. Sophisticated seventh chord harmony from Brazilian jazz.",
+    "difficulty": "Advanced",
+    "category": "Bossa Nova",
+    "function": "Loop",
+    "genres": [
+      "Bossa Nova",
+      "Jazz"
+    ],
+    "mood": [
+      "Smooth",
+      "Sophisticated"
+    ],
+    "chords": 4
+  },
+  {
+    "name": "Imaj7 - bVmaj7 - Imaj7",
+    "formula": "Cmaj7 - Gbmaj7 - Cmaj7",
+    "badge": "Jobim",
+    "desc": "Jobim shift from Girl from Ipanema. Chromatic mediant creating beautiful tension.",
+    "difficulty": "Advanced",
+    "category": "Bossa Nova",
+    "function": "Loop",
+    "genres": [
+      "Bossa Nova",
+      "Jazz"
+    ],
+    "mood": [
+      "Dreamy",
+      "Sophisticated"
+    ],
+    "chords": 2
+  },
+  {
+    "name": "Imaj7 - IVmaj7",
+    "formula": "Cmaj7 - Fmaj7",
+    "badge": "Lydian",
+    "desc": "Lydian vamp from Maiden Voyage. Herbie Hancock modal classic. Ethereal, floating.",
+    "difficulty": "Beginner",
+    "category": "Modal",
+    "function": "Loop",
+    "genres": [
+      "Jazz",
+      "Modal",
+      "Ambient"
+    ],
+    "mood": [
+      "Ethereal",
+      "Floating"
+    ],
+    "chords": 2
+  },
+  {
+    "name": "i7 - bVII7",
+    "formula": "Cm7 - Bbm7",
+    "badge": "Mixolydian",
+    "desc": "Mixolydian vamp with So What vibe. Bill Evans and modal jazz classic.",
+    "difficulty": "Beginner",
+    "category": "Modal",
+    "function": "Loop",
+    "genres": [
+      "Jazz",
+      "Modal"
+    ],
+    "mood": [
+      "Smooth",
+      "Cool"
+    ],
+    "chords": 2
+  },
+  {
+    "name": "Isus4 - bVIIsus4",
+    "formula": "Csus4 - Bbsus4",
+    "badge": "Dorian",
+    "desc": "Dorian vamp from Herbie Hancock. Suspended chords create floating, modern jazz.",
+    "difficulty": "Intermediate",
+    "category": "Modal",
+    "function": "Loop",
+    "genres": [
+      "Jazz",
+      "Funk",
+      "Modal"
+    ],
+    "mood": [
+      "Modern",
+      "Floating"
+    ],
+    "chords": 2
+  },
+  {
+    "name": "IV - iv - I",
+    "formula": "F - Fm - C",
+    "badge": "Classical",
+    "desc": "Minor plagal cadence with twist. Amen with emotional depth.",
+    "difficulty": "Intermediate",
+    "category": "Cadence",
+    "function": "Cadence",
+    "genres": [
+      "Classical",
+      "Gospel"
+    ],
+    "mood": [
+      "Peaceful",
+      "Bittersweet"
+    ],
+    "chords": 3
+  },
+  {
+    "name": "V - bVI",
+    "formula": "G - Ab",
+    "badge": "Classical",
+    "desc": "Interrupted and deceptive cadence. Classical surprise when expecting resolution.",
+    "difficulty": "Intermediate",
+    "category": "Cadence",
+    "function": "Cadence",
+    "genres": [
+      "Classical",
+      "Romantic"
+    ],
+    "mood": [
+      "Surprising",
+      "Tense"
+    ],
+    "chords": 2
+  },
+  {
+    "name": "bVI - V - i",
+    "formula": "Ab - G - Cm",
+    "badge": "Neapolitan",
+    "desc": "Neapolitan cadence approach. Chromatic, sophisticated, classical surprise.",
+    "difficulty": "Advanced",
+    "category": "Cadence",
+    "function": "Cadence",
+    "genres": [
+      "Classical",
+      "Romantic"
+    ],
+    "mood": [
+      "Sophisticated",
+      "Chromatic"
+    ],
+    "chords": 3
   }
 ]

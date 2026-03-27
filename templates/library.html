@@ -64,7 +64,15 @@
     .lib-title { font-size:2.25rem; }
     .song-grid { grid-template-columns:repeat(2,1fr); gap:12px; }
   }
+  @media(max-width:480px) {
+    .song-grid { gap:8px; }
+    .lib-title { font-size:2rem; }
+  }
   @media(max-width:380px) { .song-grid { grid-template-columns:1fr; } }
+  @media(max-width:360px) {
+    .lib-title { font-size:1.75rem; }
+    .lib-head { padding:48px 0 0; margin-bottom:40px; }
+  }
 {% endblock %}
 
 {% block body %}

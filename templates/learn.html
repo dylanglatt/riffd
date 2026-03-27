@@ -101,6 +101,14 @@
   .tc-extra { font-size:0.75rem; color:rgba(245,245,245,0.35); margin-top:12px; }
   .empty-section { padding:40px 20px; text-align:center; color:rgba(245,245,245,0.5); font-size:0.875rem; letter-spacing:-0.01em; }
 
+  /* AI Search */
+  .ai-answer { max-width:680px; margin-bottom:24px; padding:16px 20px; border:1px solid rgba(212,105,31,0.15); background:rgba(212,105,31,0.03); font-size:0.9375rem; color:rgba(245,245,245,0.7); line-height:1.7; letter-spacing:-0.01em; animation:fadeUp .2s ease; }
+  .ai-answer-label { font-size:0.75rem; font-weight:500; color:#D4691F; text-transform:uppercase; letter-spacing:0.04em; margin-bottom:6px; opacity:0.7; }
+  .ai-searching { font-size:0.875rem; color:rgba(245,245,245,0.4); padding:20px 0; text-align:center; letter-spacing:-0.01em; }
+  .ai-searching::after { content:''; display:inline-block; width:12px; height:12px; margin-left:8px; border:1.5px solid rgba(212,105,31,0.3); border-top-color:#D4691F; border-radius:50%; animation:aiSpin .6s linear infinite; vertical-align:middle; }
+  @keyframes aiSpin { to { transform:rotate(360deg) } }
+  .search-mode-hint { font-size:0.75rem; color:rgba(245,245,245,0.25); margin-top:6px; text-align:center; letter-spacing:-0.01em; transition:opacity .2s; }
+
   /* Pagination */
   .pagination { display:flex; align-items:center; justify-content:center; gap:4px; margin-top:32px; }
   .page-btn {
@@ -163,6 +171,7 @@
   <div class="studio-search-wrap">
     <svg class="studio-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
     <input class="studio-search" id="global-search" placeholder="Search chords, scales, progressions..." autocomplete="off" />
+    <div class="search-mode-hint" id="search-hint">Try asking a question: "What scales work for jazz?"</div>
   </div>
 
   <div class="studio-layout">
@@ -193,24 +202,28 @@
 
     <div class="studio-main">
       <div class="theory-section active" id="section-chords">
+        <div class="ai-answer-box" id="ai-answer-chords"></div>
         <div class="filter-row" id="filters-chords"></div>
         <div class="active-pills" id="active-chords"></div>
         <div class="theory-grid" id="grid-chords"></div>
         <div class="pagination" id="pag-chords"></div>
       </div>
       <div class="theory-section" id="section-scales">
+        <div class="ai-answer-box" id="ai-answer-scales"></div>
         <div class="filter-row" id="filters-scales"></div>
         <div class="active-pills" id="active-scales"></div>
         <div class="theory-grid" id="grid-scales"></div>
         <div class="pagination" id="pag-scales"></div>
       </div>
       <div class="theory-section" id="section-progressions">
+        <div class="ai-answer-box" id="ai-answer-progressions"></div>
         <div class="filter-row" id="filters-progressions"></div>
         <div class="active-pills" id="active-progressions"></div>
         <div class="theory-grid" id="grid-progressions"></div>
         <div class="pagination" id="pag-progressions"></div>
       </div>
       <div class="theory-section" id="section-keys">
+        <div class="ai-answer-box" id="ai-answer-keys"></div>
         <div class="filter-row" id="filters-keys"></div>
         <div class="active-pills" id="active-keys"></div>
         <div class="theory-grid" id="grid-keys"></div>
@@ -277,27 +290,27 @@ let _currentSection = 'chords';
 const FILTER_GROUPS = {
   chords: [
     { label:"Difficulty", field:"difficulty", values:["Beginner","Intermediate","Advanced"] },
-    { label:"Quality", field:"quality", values:["Major","Minor","Dominant 7","Major 7","Minor 7","Diminished","Augmented","Suspended","Add","6th Chord","9th Chord"] },
-    { label:"Genre", field:"genres", values:["Jazz","Blues","Rock","Pop","R&B","Funk","Folk","Country","Neo-Soul","Indie","Ambient"] },
-    { label:"Mood", field:"mood", values:["Bright","Dark","Tense","Dreamy","Warm","Smooth","Bluesy","Rich","Open","Nostalgic","Melancholy","Floating","Mellow","Sparkly"] },
+    { label:"Quality", field:"quality", values:["Major","Minor","Dominant 7","Major 7","Minor 7","Major 9","Minor 9","Dominant 9","11th Chord","Minor 11","13th Chord","Minor 13","Diminished","Diminished 7","Half-Diminished","Augmented","Suspended","Add","6th Chord","9th Chord","Power Chord","Altered Dominant","Slash Chord"] },
+    { label:"Genre", field:"genres", values:["Jazz","Blues","Rock","Pop","R&B","Funk","Folk","Country","Neo-Soul","Indie","Ambient","Metal","Punk","Soul","Classical","Gospel","Bossa Nova","Film"] },
+    { label:"Mood", field:"mood", values:["Bright","Dark","Tense","Dreamy","Warm","Smooth","Bluesy","Rich","Open","Nostalgic","Melancholy","Floating","Mellow","Raw","Powerful","Gritty","Lush","Funky","Groovy","Dramatic","Atmospheric","Complex","Sophisticated","Deep","Soulful"] },
   ],
   scales: [
     { label:"Difficulty", field:"difficulty", values:["Beginner","Intermediate","Advanced"] },
     { label:"Family", field:"family", values:["Major","Minor","Pentatonic","Blues","Harmonic Minor","Melodic Minor","Symmetric","Exotic","Bebop"] },
-    { label:"Genre", field:"genres", values:["Jazz","Blues","Rock","Classical","Metal","Film","Ambient","Funk","Flamenco","World","Bebop","Folk","Country","Pop","Fusion","Avant-Garde","Latin"] },
-    { label:"Mood", field:"mood", values:["Bright","Dark","Exotic","Dreamy","Tense","Smooth","Raw","Dramatic","Complex","Intense","Mysterious","Haunting","Floating","Emotional","Cool","Cinematic"] },
+    { label:"Genre", field:"genres", values:["Jazz","Blues","Rock","Classical","Metal","Film","Ambient","Funk","Flamenco","World","Bebop","Folk","Country","Pop","Fusion","Avant-Garde","Latin","Experimental","Opera"] },
+    { label:"Mood", field:"mood", values:["Bright","Dark","Exotic","Dreamy","Tense","Smooth","Raw","Dramatic","Complex","Intense","Mysterious","Haunting","Floating","Emotional","Cool","Cinematic","Ethereal","Ancient","Gentle","Bluesy","Versatile"] },
   ],
   progressions: [
     { label:"Difficulty", field:"difficulty", values:["Beginner","Intermediate","Advanced"] },
-    { label:"Category", field:"category", values:["Pop","Rock","Blues","Jazz","Minor","Cadence","Chromatic"] },
+    { label:"Category", field:"category", values:["Pop","Rock","Blues","Jazz","Minor","Cadence","Chromatic","Gospel","Neo-Soul","Flamenco","Cinematic","Country","Punk","Metal","Reggae","Electronic","Bossa Nova","Modal"] },
     { label:"Function", field:"function", values:["Loop","Cadence","Form","Turnaround","Bridge"] },
-    { label:"Genre", field:"genres", values:["Pop","Rock","Blues","Jazz","Classical","Folk","Punk","Film","Country","Grunge","Alternative","Indie","Bebop","Gospel","Americana","Bossa Nova","Flamenco"] },
+    { label:"Genre", field:"genres", values:["Pop","Rock","Blues","Jazz","Classical","Folk","Punk","Film","Country","Gospel","Neo-Soul","R&B","Soul","Metal","Reggae","EDM","Bossa Nova","Flamenco","Alternative","Indie","Americana","Cinematic","Funk","Motown"] },
   ],
   keys: [
     { label:"Difficulty", field:"difficulty", values:["Beginner","Intermediate","Advanced"] },
     { label:"Mode", field:"mode", values:["Major","Minor"] },
-    { label:"Brightness", field:"brightness", values:["Bright","Balanced","Neutral","Warm","Cool","Moderate","Dark"] },
-    { label:"Genre", field:"genres", values:["Jazz","Blues","Rock","Pop","R&B","Soul","Classical","Folk","Country","Metal","Hip-Hop","Gospel","Cinematic","Indie","Alternative","Electronic","Brass"] },
+    { label:"Brightness", field:"brightness", values:["Bright","Warm","Cool","Moderate","Dark"] },
+    { label:"Genre", field:"genres", values:["Jazz","Blues","Rock","Pop","R&B","Soul","Classical","Folk","Country","Metal","Hip-Hop","Gospel","Cinematic","Indie","Electronic","Funk","Brass","Bluegrass","Swing"] },
   ],
 };
 
@@ -343,6 +356,7 @@ function _applyFilters(section) {
 let _learnCofMap = null;
 
 function _showSection(id, el) {
+  _clearAiAnswer(_currentSection);
   document.querySelectorAll('.theory-section').forEach(s => s.classList.remove('active'));
   document.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('active'));
   document.getElementById('section-' + id).classList.add('active');
@@ -501,17 +515,113 @@ function _renderSection(section) {
   _renderCards(section);
 }
 
+// AI search state
+let _aiDebounce = null;
+let _aiAbort = null;
+let _aiMode = false;
+
+const AI_TRIGGERS = /^(what|which|how|why|show|give|find|suggest|recommend|list|tell|explain|can|is|are|do|does|should|could|would)\b/i;
+
+function _isAiQuery(q) {
+  if (!q || q.length < 3) return false;
+  if (q.includes('?')) return true;
+  if (q.length > 40) return true;
+  if (AI_TRIGGERS.test(q.trim())) return true;
+  return false;
+}
+
+function _clearAiAnswer(section) {
+  const box = document.getElementById('ai-answer-' + section);
+  if (box) box.innerHTML = '';
+}
+
 // Global search bar
 document.getElementById('global-search').addEventListener('input', function() {
-  _search[_currentSection] = this.value.toLowerCase().trim();
-  _applyFilters(_currentSection);
-  _renderSection(_currentSection);
+  const raw = this.value.trim();
+  const q = raw.toLowerCase();
+  const hint = document.getElementById('search-hint');
+
+  if (_aiDebounce) clearTimeout(_aiDebounce);
+  if (_aiAbort) { _aiAbort.abort(); _aiAbort = null; }
+
+  if (_isAiQuery(raw)) {
+    _aiMode = true;
+    if (hint) hint.style.opacity = '0';
+    _search[_currentSection] = '';
+    _applyFilters(_currentSection);
+    const answerBox = document.getElementById('ai-answer-' + _currentSection);
+    if (answerBox) answerBox.innerHTML = '<div class="ai-searching">Searching</div>';
+    _renderSection(_currentSection);
+    _aiDebounce = setTimeout(() => _doAiSearch(raw, _currentSection), 600);
+  } else {
+    _aiMode = false;
+    _clearAiAnswer(_currentSection);
+    if (hint) hint.style.opacity = raw.length > 0 ? '0' : '1';
+    _search[_currentSection] = q;
+    _applyFilters(_currentSection);
+    _renderSection(_currentSection);
+  }
 });
+
+async function _doAiSearch(question, section) {
+  const answerBox = document.getElementById('ai-answer-' + section);
+  _aiAbort = new AbortController();
+
+  try {
+    const resp = await fetch('/api/theory/ask', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ question, section }),
+      signal: _aiAbort.signal,
+    });
+    if (!resp.ok) throw new Error('API error');
+    const data = await resp.json();
+
+    const targetSection = data.section || section;
+    if (data.section && data.section !== _currentSection && ['chords','scales','progressions','keys'].includes(data.section)) {
+      const link = document.querySelector(`.sidebar-link[onclick*="${data.section}"]`);
+      _showSection(data.section, link);
+    }
+
+    const box = document.getElementById('ai-answer-' + targetSection);
+    if (box && data.answer) {
+      box.innerHTML = `<div class="ai-answer"><div class="ai-answer-label">AI Answer</div>${_esc(data.answer)}</div>`;
+    }
+
+    if (data.results && data.results.length > 0) {
+      const matchSet = new Set(data.results.map(r => r.toLowerCase()));
+      _filtered[targetSection] = (_data[targetSection] || []).filter(
+        item => matchSet.has(item.name.toLowerCase())
+      );
+      const orderMap = {};
+      data.results.forEach((r, i) => orderMap[r.toLowerCase()] = i);
+      _filtered[targetSection].sort((a, b) =>
+        (orderMap[a.name.toLowerCase()] ?? 999) - (orderMap[b.name.toLowerCase()] ?? 999)
+      );
+      _page[targetSection] = 0;
+      _renderCards(targetSection);
+    } else {
+      _filtered[targetSection] = [];
+      _renderCards(targetSection);
+    }
+  } catch (e) {
+    if (e.name === 'AbortError') return;
+    console.warn('[ai-search]', e);
+    if (answerBox) answerBox.innerHTML = '';
+    _search[section] = question.toLowerCase();
+    _applyFilters(section);
+    _renderSection(section);
+  }
+}
 
 function _clearFilters(section) {
   for (const set of Object.values(_filters[section])) set.clear();
   _search[section] = '';
   document.getElementById('global-search').value = '';
+  _clearAiAnswer(section);
+  _aiMode = false;
+  const hint = document.getElementById('search-hint');
+  if (hint) hint.style.opacity = '1';
   _applyFilters(section);
   _renderSection(section);
 }
