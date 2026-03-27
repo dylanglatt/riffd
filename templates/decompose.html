@@ -288,10 +288,63 @@
     }
     @media(max-width:480px) {
       .hero-headline { font-size:2rem; }
-      .channel { grid-template-columns:80px 1fr 28px 28px; gap:4px; padding:8px 10px; }
       .cap-grid { grid-template-columns:1fr; }
-      .results-nav { gap:20px; }
       .mix-tools { flex-direction:column; align-items:flex-start; }
+      .track-meta { display:none; }
+      .proc-art-wrap { width:120px; height:120px; }
+      .proc-art-wrap img { width:120px; height:120px; }
+      .proc-art-wrap .proc-art-ph { width:120px; height:120px; }
+      .results-nav { gap:16px; overflow-x:auto; -webkit-overflow-scrolling:touch; scrollbar-width:none; }
+      .results-nav::-webkit-scrollbar { display:none; }
+      .results-nav-btn { padding:10px 0; font-size:0.75rem; white-space:nowrap; flex-shrink:0; }
+      .ai-mark { font-size:0.5rem; padding:1px 3px; }
+      .transport-btn { width:40px; height:40px; }
+      .transport-btn.stop-btn { width:36px; height:36px; }
+      .vol-label { display:none; }
+      .channel { display:flex; flex-wrap:wrap; gap:8px; padding:12px 12px; border-bottom:1px solid rgba(255,255,255,0.04); }
+      .channel:nth-child(even) { background:transparent; }
+      .channel-name { flex:1; min-width:0; font-size:0.8125rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+      .ch-btn { width:36px; height:36px; font-size:0.75rem; line-height:36px; }
+      .channel-volume { width:100%; order:5; }
+      .vol-slider { width:100%; }
+      .vol-slider::-webkit-slider-thumb { width:16px; height:16px; margin-top:-7px; }
+      .vol-slider::-moz-range-thumb { width:16px; height:16px; }
+      .tool-btn { width:36px; height:36px; }
+      .harmonic-panel { padding:16px; }
+      .harmonic-section { padding:12px 16px; }
+      .hs-row-label { min-width:48px; }
+      .lyrics-container { padding:20px 16px; }
+      .lyrics-line { font-size:0.9375rem; }
+      .new-song-btn { min-height:44px; padding:10px 20px; }
+      .smart-recs { padding:24px 16px; }
+      .sr-song { padding:10px 12px; }
+    }
+    @media(max-width:360px) {
+      .app-head { padding-top:48px; margin-bottom:32px; }
+      .hero-headline { font-size:1.75rem; }
+      .hero-sub { font-size:0.875rem; }
+      .search-input { padding:12px 16px 12px 38px; font-size:0.8125rem; }
+      .search-icon { left:12px; width:16px; height:16px; }
+      .try-card { width:120px; }
+      .try-card-name { font-size:0.75rem; }
+      .cap-grid { gap:16px; }
+      .proc-hero { padding:20px 12px; }
+      .proc-art-wrap { width:100px; height:100px; }
+      .proc-art-wrap img { width:100px; height:100px; }
+      .proc-art-wrap .proc-art-ph { width:100px; height:100px; }
+      .proc-title { font-size:1.25rem; }
+      .proc-sub { font-size:0.8125rem; }
+      .proc-status { font-size:0.75rem; }
+      .results-nav { gap:8px; padding:0 12px; }
+      .results-panel { padding:12px; }
+      .transport-time { font-size:0.6875rem; min-width:60px; }
+      .tool-grp { gap:6px; }
+      .tool-input { width:56px; font-size:0.75rem; }
+      .meta-chip { padding:3px 8px; font-size:0.6875rem; }
+      .lyrics-section-label { font-size:0.625rem; }
+      .smart-recs { padding:20px 12px; }
+      .new-song-row { flex-direction:column; gap:8px; align-items:stretch; padding:24px 16px 20px; }
+      .new-song-btn { text-align:center; }
     }
 {% endblock %}
 
