@@ -60,7 +60,7 @@
     .cap-icon-wrap svg { width:20px; height:20px; stroke:#D4691F; stroke-width:1.5; fill:none; stroke-linecap:round; stroke-linejoin:round; opacity:0.85; display:block; margin-bottom:16px; }
     .cap-card svg.cap-direct-icon { width:20px; height:20px; stroke:#D4691F; stroke-width:1.5; fill:none; stroke-linecap:round; stroke-linejoin:round; opacity:0.85; display:block; margin-bottom:16px; }
     .cap-title { font-size:0.9375rem; font-weight:500; margin-bottom:8px; color:#F5F5F5; letter-spacing:-0.01em; }
-    .cap-desc { font-size:0.875rem; color:rgba(245,245,245,0.5); line-height:1.5; letter-spacing:-0.01em; }
+    .cap-desc { font-size:0.9375rem; color:rgba(245,245,245,0.5); line-height:1.7; letter-spacing:-0.01em; }
     @media(max-width:768px) { .cap-grid { grid-template-columns:repeat(2,1fr); gap:24px; } }
     @media(max-width:480px) { .cap-grid { grid-template-columns:1fr; } }
 
@@ -128,14 +128,14 @@
     .harmonic-panel { padding:20px 24px; border-bottom:1px solid rgba(255,255,255,0.08); }
     .harmonic-label { font-size:0.6875rem; font-weight:500; letter-spacing:0.06em; text-transform:uppercase; color:rgba(245,245,245,0.3); margin-bottom:14px; }
     .harmonic-grid { display:flex; flex-direction:column; gap:8px; }
-    .harmonic-section { border:1px solid rgba(255,255,255,0.06); padding:14px 18px; }
+    .harmonic-section { border:1px solid rgba(255,255,255,0.06); padding:18px 24px; }
     .harmonic-section:hover { border-color:rgba(255,255,255,0.10); }
     .hs-header { margin-bottom:8px; display:flex; align-items:center; justify-content:space-between; }
     .hs-label { font-size:0.8125rem; font-weight:500; color:#F5F5F5; letter-spacing:-0.01em; }
     .hs-conf { font-size:0.625rem; color:rgba(245,245,245,0.25); letter-spacing:0.02em; }
     .hs-row { display:flex; gap:8px; align-items:baseline; margin-bottom:3px; }
     .hs-row-label { font-size:0.6875rem; color:rgba(245,245,245,0.3); min-width:60px; flex-shrink:0; }
-    .hs-chords { font-family:monospace; font-size:0.8125rem; color:rgba(245,245,245,0.65); letter-spacing:-0.005em; }
+    .hs-chords { font-family:monospace; font-size:0.875rem; color:rgba(245,245,245,0.75); letter-spacing:-0.005em; }
     .hs-numerals { font-family:monospace; font-size:0.75rem; color:#D4691F; opacity:0.7; }
     .hs-summary { font-size:0.6875rem; color:rgba(245,245,245,0.25); margin-top:4px; }
     .harmonic-empty { padding:20px 24px; color:rgba(245,245,245,0.3); font-size:0.8125rem; border-bottom:1px solid rgba(255,255,255,0.08); }
@@ -152,14 +152,16 @@
     .mix-wrapper { padding:0; margin:0; background:transparent; }
 
     /* Transport bar */
-    .mixer-transport { display:flex; align-items:center; gap:16px; padding:0 0 24px; border-bottom:1px solid rgba(255,255,255,0.08); margin-bottom:24px; }
-    .transport-btn { width:48px; height:48px; display:flex; align-items:center; justify-content:center; background:#FAFAF9; border:none; padding:0; flex-shrink:0; transition:transform .1s; }
-    .transport-btn:hover { transform:translateY(-0.5px); }
-    .transport-btn:active { transform:translateY(0); }
-    .transport-btn svg { width:20px; height:20px; fill:#0B0B0B; }
-    .transport-btn.stop-btn { width:40px; height:40px; background:transparent; border:1px solid rgba(255,255,255,0.15); }
-    .transport-btn.stop-btn:hover { border-color:rgba(255,255,255,0.30); }
-    .transport-btn.stop-btn svg { width:12px; height:12px; fill:rgba(245,245,245,0.7); }
+    .mixer-transport { display:flex; align-items:center; gap:12px; padding:0 0 20px; border-bottom:1px solid rgba(255,255,255,0.06); margin-bottom:20px; }
+    .transport-btn { width:40px; height:40px; display:flex; align-items:center; justify-content:center; background:transparent; border:1px solid rgba(255,255,255,0.15); padding:0; flex-shrink:0; transition:all .15s; }
+    .transport-btn:hover { border-color:#D4691F; transform:none; }
+    .transport-btn:active { transform:none; }
+    .transport-btn svg { width:16px; height:16px; fill:rgba(245,245,245,0.7); }
+    .transport-btn:hover svg { fill:#D4691F; }
+    .transport-btn.stop-btn { width:36px; height:36px; }
+    .transport-btn.stop-btn:hover { border-color:#D4691F; }
+    .transport-btn.stop-btn svg { width:11px; height:11px; fill:rgba(245,245,245,0.7); }
+    .transport-btn.stop-btn:hover svg { fill:#D4691F; }
     .transport-seek-wrap { flex:1; position:relative; height:48px; cursor:pointer; }
     .player-waveform { display:flex; align-items:flex-end; gap:2px; height:100%; width:100%; position:absolute; top:0; left:0; }
     .player-wv-bar { width:2px; background:rgba(245,245,245,0.18); flex-shrink:0; }
@@ -173,55 +175,65 @@
     .transport-time { font-size:0.8125rem; color:rgba(245,245,245,0.5); font-family:monospace; min-width:80px; text-align:right; }
 
     /* Channel strips */
-    .mixer-channels { display:flex; flex-direction:column; gap:12px; }
-    .channel { display:grid; grid-template-columns:100px 1fr auto auto; align-items:center; gap:16px; padding:0; border:none; }
-    .channel:hover { background:transparent; border-color:transparent; }
-    .channel-name { font-size:0.875rem; font-weight:400; color:#F5F5F5; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; letter-spacing:-0.01em; }
+    .mixer-channels { display:flex; flex-direction:column; gap:0; }
+    .channel { display:grid; grid-template-columns:120px 1fr auto auto; align-items:center; gap:16px; padding:12px 16px; border:none; transition:opacity .15s; }
+    .channel:nth-child(even) { background:rgba(245,245,245,0.02); }
+    .channel:hover { background:rgba(245,245,245,0.03); border-color:transparent; }
+    .channel.muted { opacity:0.4; }
+    .channel-name { font-size:0.8125rem; font-weight:500; color:rgba(245,245,245,0.7); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; letter-spacing:-0.01em; min-width:120px; }
     .channel.muted .channel-name { color:rgba(245,245,245,0.35); }
     .channel-volume { display:flex; align-items:center; gap:10px; }
-    .vol-slider { flex:1; height:4px; -webkit-appearance:none; appearance:none; background:rgba(255,255,255,0.1); outline:none; cursor:pointer; }
-    .vol-slider::-webkit-slider-thumb { -webkit-appearance:none; width:10px; height:10px; border-radius:50%; background:#D4691F; cursor:pointer; }
-    .channel.muted .vol-slider::-webkit-slider-thumb { background:rgba(245,245,245,0.35); }
-    .vol-label { font-size:0.6875rem; color:rgba(245,245,245,0.35); min-width:22px; text-align:right; font-variant-numeric:tabular-nums; }
-    .ch-btn { width:24px; height:24px; font-size:0.6875rem; font-weight:500; display:flex; align-items:center; justify-content:center; cursor:pointer; border:1px solid rgba(255,255,255,0.15); background:transparent; color:rgba(245,245,245,0.6); transition:all .15s; padding:0; font-family:inherit; }
-    .ch-btn:hover { border-color:rgba(255,255,255,0.30); transform:none; }
-    .ch-btn.mute-active { background:rgba(248,113,113,.1); color:#f87171; border-color:rgba(248,113,113,.3); }
-    .ch-btn.solo-active { background:rgba(251,191,36,.1); color:#fbbf24; border-color:rgba(251,191,36,.3); }
+    .vol-slider { flex:1; -webkit-appearance:none; appearance:none; background:transparent; outline:none; cursor:pointer; height:2px; }
+    .vol-slider::-webkit-slider-runnable-track { height:2px; background:rgba(245,245,245,0.1); }
+    .vol-slider::-webkit-slider-thumb { -webkit-appearance:none; width:10px; height:10px; border-radius:50%; background:#D4691F; cursor:pointer; margin-top:-4px; transition:transform .15s; border:none; }
+    .vol-slider::-webkit-slider-thumb:hover { transform:scale(1.3); }
+    .vol-slider::-moz-range-track { height:2px; background:rgba(245,245,245,0.1); border:none; }
+    .vol-slider::-moz-range-thumb { width:10px; height:10px; background:#D4691F; border:none; border-radius:50%; }
+    .vol-slider::-moz-range-progress { background:#D4691F; height:2px; }
+    .channel.muted .vol-slider::-webkit-slider-thumb { background:rgba(245,245,245,0.25); }
+    .channel.muted .vol-slider::-moz-range-thumb { background:rgba(245,245,245,0.25); }
+    .vol-label { font-size:0.75rem; color:rgba(245,245,245,0.35); min-width:32px; text-align:right; font-family:monospace; font-variant-numeric:tabular-nums; }
+    .ch-btn { width:28px; height:28px; font-size:0.6875rem; font-weight:600; display:flex; align-items:center; justify-content:center; cursor:pointer; border:1px solid rgba(255,255,255,0.08); background:transparent; color:rgba(245,245,245,0.35); transition:all .15s; padding:0; font-family:inherit; line-height:28px; }
+    .ch-btn:hover { border-color:rgba(255,255,255,0.15); color:rgba(245,245,245,0.55); transform:none; }
+    .ch-btn.mute-active { background:rgba(245,245,245,0.06); color:rgba(245,245,245,0.15); border-color:rgba(255,255,255,0.04); }
+    .ch-btn.solo-active { background:rgba(212,105,31,0.15); color:#D4691F; border-color:rgba(212,105,31,0.3); }
+    .ch-btn + .ch-btn { margin-left:4px; }
 
     /* Tools row */
-    .mix-tools { display:flex; gap:32px; margin-top:24px; padding-top:24px; border-top:1px solid rgba(255,255,255,0.08); flex-wrap:wrap; align-items:center; }
+    .mix-tools { display:flex; gap:32px; margin-top:20px; padding-top:20px; border-top:1px solid rgba(255,255,255,0.06); flex-wrap:wrap; align-items:center; }
     .tool-grp { display:flex; align-items:center; gap:8px; padding:0; background:transparent; border:none; }
-    .tool-lbl { font-size:0.75rem; color:rgba(245,245,245,0.4); text-transform:uppercase; letter-spacing:0.05em; font-weight:500; }
-    .tool-input { width:64px; background:transparent; border:1px solid rgba(255,255,255,0.15); padding:4px 8px; color:#F5F5F5; font-size:0.8125rem; font-family:inherit; text-align:center; outline:none; transition:border-color .2s; }
-    .tool-input:focus { border-color:rgba(255,255,255,0.30); }
+    .tool-lbl { font-size:0.6875rem; color:rgba(245,245,245,0.3); text-transform:uppercase; letter-spacing:0.06em; font-weight:600; }
+    .tool-input { width:64px; background:rgba(245,245,245,0.04); border:1px solid rgba(255,255,255,0.08); padding:6px 10px; color:rgba(245,245,245,0.6); font-size:0.8125rem; font-family:monospace; text-align:center; outline:none; transition:border-color .2s; }
+    .tool-input:focus { border-color:rgba(255,255,255,0.20); }
     .tool-input.loop-active { border-color:rgba(212,105,31,0.5); }
-    .tool-btn { width:28px; height:28px; font-size:0.875rem; font-weight:400; display:flex; align-items:center; justify-content:center; cursor:pointer; border:1px solid rgba(255,255,255,0.15); background:transparent; color:#F5F5F5; transition:all .15s; padding:0; font-family:inherit; }
-    .tool-btn:hover { border-color:rgba(255,255,255,0.30); transform:none; }
+    .tool-btn { width:28px; height:28px; font-size:0.875rem; font-weight:400; display:flex; align-items:center; justify-content:center; cursor:pointer; border:1px solid rgba(255,255,255,0.08); background:transparent; color:rgba(245,245,245,0.3); transition:all .15s; padding:0; font-family:inherit; }
+    .tool-btn:hover { border-color:rgba(255,255,255,0.15); color:rgba(245,245,245,0.5); transform:none; }
     .tool-btn.active { border-color:rgba(212,105,31,0.5); color:#D4691F; }
     .loop-hint { font-size:0.75rem; color:rgba(245,245,245,0.4); }
-    .transpose-val { font-size:0.875rem; font-weight:500; color:#F5F5F5; min-width:26px; text-align:center; }
+    .transpose-val { font-size:0.875rem; font-weight:500; color:rgba(245,245,245,0.6); min-width:24px; text-align:center; font-family:monospace; }
     .transposed-key { font-size:0.8125rem; color:rgba(245,245,245,0.5); }
 
-    /* ═══ Tab panel — Coming Soon ═══ */
-    .tab-coming-soon { position:relative; min-height:300px; overflow:hidden; }
-    .tab-preview-blur { border:1px solid rgba(255,255,255,0.08); padding:16px; font-family:monospace; font-size:0.8125rem; line-height:1.5; color:rgba(245,245,245,0.5); white-space:pre; filter:blur(2px); opacity:.3; pointer-events:none; user-select:none; }
-    .tab-coming-overlay { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px; z-index:1; }
-    .tab-coming-label { font-size:1rem; font-weight:500; color:#F5F5F5; letter-spacing:-0.01em; }
-    .tab-coming-sub { font-size:0.875rem; color:rgba(245,245,245,0.5); letter-spacing:-0.01em; }
+    /* ═══ Insight panel ═══ */
+    .insight-content { padding:32px; max-width:680px; }
+    .insight-text { font-size:0.9375rem; line-height:1.8; color:rgba(245,245,245,0.85); letter-spacing:-0.01em; }
+    .insight-text p { margin-bottom:16px; }
+    .insight-text p:last-child { margin-bottom:0; }
+    .insight-empty { padding:40px 20px; text-align:center; color:rgba(245,245,245,0.4); font-size:0.875rem; }
 
     /* ═══ Lyrics panel ═══ */
-    .lyrics-container { border:1px solid rgba(255,255,255,0.08); padding:32px; max-height:65vh; overflow-y:auto; background:transparent; }
+    .lyrics-container { padding:32px 36px; max-height:65vh; overflow-y:auto; background:transparent; }
     .lyrics-container::-webkit-scrollbar { width:3px; } .lyrics-container::-webkit-scrollbar-thumb { background:rgba(255,255,255,.08); }
-    .lyrics-section-label { font-size:0.8125rem; font-weight:500; color:rgba(245,245,245,0.4); text-transform:uppercase; letter-spacing:0.1em; margin:32px 0 12px; }
+    .lyrics-section-label { font-size:0.6875rem; font-weight:600; color:#D4691F; text-transform:uppercase; letter-spacing:0.08em; margin:40px 0 14px; padding-bottom:8px; border-bottom:1px solid rgba(212,105,31,0.15); }
     .lyrics-section-label:first-child { margin-top:0; }
-    .lyrics-line { font-size:0.9375rem; line-height:1.9; color:rgba(245,245,245,0.55); transition:color .15s; letter-spacing:-0.01em; }
+    .lyrics-line { font-size:1rem; line-height:2; color:rgba(245,245,245,0.8); transition:color .15s; letter-spacing:-0.01em; }
     .lyrics-line:hover { color:#F5F5F5; }
+    .lyrics-break { height:12px; }
     .lyrics-break { height:20px; }
     .lyrics-empty { padding:40px 20px; text-align:center; color:rgba(245,245,245,0.5); font-size:0.875rem; letter-spacing:-0.01em; }
 
-    .new-song-row { padding:24px; border-top:1px solid rgba(255,255,255,0.08); display:flex; justify-content:center; }
-    .new-song-btn { background:transparent; color:#F5F5F5; border:1px solid rgba(255,255,255,0.15); padding:10px 24px; font-size:0.9375rem; font-weight:400; cursor:pointer; transition:border-color .2s; letter-spacing:-0.01em; }
-    .new-song-btn:hover { border-color:rgba(255,255,255,0.30); }
+    .new-song-row { padding:32px 24px 24px; border-top:1px solid rgba(255,255,255,0.06); display:flex; justify-content:center; }
+    .new-song-btn { background:transparent; color:rgba(245,245,245,0.5); border:1px solid rgba(255,255,255,0.1); padding:10px 28px; font-size:0.875rem; font-weight:400; cursor:pointer; transition:all .2s; letter-spacing:-0.01em; }
+    .new-song-btn:hover { border-color:rgba(255,255,255,0.2); color:rgba(245,245,245,0.7); }
 
     @media(max-width:768px) {
       .app-head { padding-top:64px; margin-bottom:48px; }
@@ -236,11 +248,12 @@
       .results-nav { padding:0 16px; }
       .results-panel { padding:16px; }
       .mixer-transport { gap:10px; flex-wrap:wrap; }
-      .transport-btn { width:42px; height:42px; }
+      .transport-btn { width:36px; height:36px; }
+      .transport-btn.stop-btn { width:32px; height:32px; }
       .transport-seek-wrap { min-width:0; flex:1 1 100%; order:3; height:40px; }
       .transport-time { font-size:0.75rem; min-width:70px; }
-      .channel { grid-template-columns:90px 1fr 24px 24px; gap:8px; }
-      .channel-name { font-size:0.8125rem; }
+      .channel { grid-template-columns:90px 1fr 28px 28px; gap:8px; padding:10px 12px; }
+      .channel-name { font-size:0.8125rem; min-width:90px; }
       .mix-tools { gap:16px; }
       .meta-chip { padding:4px 10px; font-size:0.75rem; }
       .results-nav-btn { padding:12px 0; font-size:0.8125rem; }
@@ -248,7 +261,7 @@
     }
     @media(max-width:480px) {
       .hero-headline { font-size:2rem; }
-      .channel { grid-template-columns:80px 1fr 24px 24px; gap:4px; }
+      .channel { grid-template-columns:80px 1fr 28px 28px; gap:4px; padding:8px 10px; }
       .cap-grid { grid-template-columns:1fr; }
       .results-nav { gap:20px; }
       .mix-tools { flex-direction:column; align-items:flex-start; }
@@ -344,12 +357,17 @@
         <div id="harmonic-sections"></div>
       </div>
       <div class="results-nav" id="results-nav">
-        <button class="results-nav-btn active" data-panel="mix" onclick="switchPanel('mix',this)">Mix</button>
+        <button class="results-nav-btn active" data-panel="insight" onclick="switchPanel('insight',this)">Insight</button>
+        <button class="results-nav-btn" data-panel="mix" onclick="switchPanel('mix',this)">Mix</button>
         <button class="results-nav-btn" data-panel="key" onclick="switchPanel('key',this)">Key</button>
-        <button class="results-nav-btn" data-panel="tab" onclick="switchPanel('tab',this)">Tab</button>
         <button class="results-nav-btn" data-panel="lyrics" onclick="switchPanel('lyrics',this)">Lyrics</button>
       </div>
-      <div class="results-panel active" id="panel-mix">
+      <div class="results-panel active" id="panel-insight">
+        <div class="insight-content" id="insight-content">
+          <div class="insight-text" id="insight-text"></div>
+        </div>
+      </div>
+      <div class="results-panel" id="panel-mix">
         <div class="mix-wrapper">
           <div class="mixer-transport">
             <button class="transport-btn" onclick="togglePlayback()" title="Play / Pause">
@@ -369,7 +387,7 @@
           </div>
           <div class="mixer-channels" id="mixer-channels"></div>
           <div class="mix-tools">
-            <div class="tool-grp"><span class="tool-lbl">Loop</span><input type="text" class="tool-input" id="loop-start" value="0:00" /><span style="color:var(--text-muted);font-size:.72rem">to</span><input type="text" class="tool-input" id="loop-end" placeholder="end" /><button class="tool-btn" id="loop-btn" onclick="toggleLoop()">&#8635;</button><span class="loop-hint" id="loop-hint"></span></div>
+            <div class="tool-grp"><span class="tool-lbl">Loop</span><input type="text" class="tool-input" id="loop-start" value="0:00" /><span style="color:rgba(245,245,245,0.25);font-size:0.8125rem">to</span><input type="text" class="tool-input" id="loop-end" placeholder="end" /><button class="tool-btn" id="loop-btn" onclick="toggleLoop()">&#8635;</button><span class="loop-hint" id="loop-hint"></span></div>
             <div class="tool-grp"><span class="tool-lbl">Key</span><button class="tool-btn" onclick="transposeBy(-1)">-</button><div class="transpose-val" id="transpose-display">0</div><button class="tool-btn" onclick="transposeBy(1)">+</button><span class="transposed-key" id="transposed-key"></span></div>
           </div>
         </div>
@@ -378,27 +396,6 @@
         <div style="display:flex;gap:32px;flex-wrap:wrap">
           <div id="decompose-cof" style="flex-shrink:0"></div>
           <div id="decompose-key-detail" style="flex:1;min-width:260px"></div>
-        </div>
-      </div>
-      <div class="results-panel" id="panel-tab">
-        <div class="tab-coming-soon">
-          <div class="tab-preview-blur" id="tab-preview-blur">e|---3---3---2---0---|---3---3---2---0---|---3---3---2---0---|
-B|---0---0---3---1---|---0---0---3---1---|---0---0---3---1---|
-G|---0---0---2---0---|---0---0---2---0---|---0---0---2---0---|
-D|---0---0---0---2---|---0---0---0---2---|---0---0---0---2---|
-A|---2---2-------3---|---2---2-------3---|---2---2-------3---|
-E|---3---3-----------|---3---3-----------|---3---3-----------|
-
-e|---0---0---2---3---|---0---0---2---3---|---0---0---2---3---|
-B|---1---1---3---0---|---1---1---3---0---|---1---1---3---0---|
-G|---0---0---2---0---|---0---0---2---0---|---0---0---2---0---|
-D|---2---2---0---0---|---2---2---0---0---|---2---2---0---0---|
-A|---3---3-------2---|---3---3-------2---|---3---3-------2---|
-E|-----------3---3---|---3---3---3---3---|---3---3---3---3---|</div>
-          <div class="tab-coming-overlay">
-            <div class="tab-coming-label">Tabs coming soon</div>
-            <div class="tab-coming-sub">Auto-generated tablature for every instrument</div>
-          </div>
         </div>
       </div>
       <div class="results-panel" id="panel-lyrics">
@@ -443,7 +440,7 @@ let isPlaying = false, startedAt = 0, pauseOffset = 0, duration = 0, animFrame =
 let loopActive = false, transposeAmount = 0, songKey = null;
 const KEY_NAMES_JS = ["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"];
 const views = ["search","confirm","results"];
-let _defaultTab = "mix";
+let _defaultTab = "insight";
 
 function showView(n) { views.forEach(v => { const el=document.getElementById(`view-${v}`); if(el) el.classList.toggle("active",v===n); }); }
 
@@ -552,7 +549,7 @@ async function selectTrack(t){
       if (d.analysis_status === 'available' && d.analysis) {
         console.log(`[ui] cache hit → loading saved analysis (hasStems=${Object.keys(d.analysis.stems||{}).length > 0})`);
         currentJobId = d.job_id;
-        jobData = { status:"complete", tabs:d.analysis.tabs||{}, stems:d.analysis.stems||{}, intelligence:d.analysis.intelligence||{}, lyrics:d.analysis.lyrics||null, tags:d.analysis.tags||[], audio_source:d.analysis.audio_source||null, audio_mode:d.analysis.audio_mode||null, analysis_mode:d.analysis.analysis_mode||null };
+        jobData = { status:"complete", tabs:d.analysis.tabs||{}, stems:d.analysis.stems||{}, intelligence:d.analysis.intelligence||{}, lyrics:d.analysis.lyrics||null, tags:d.analysis.tags||[], insight:d.analysis.insight||null, audio_source:d.analysis.audio_source||null, audio_mode:d.analysis.audio_mode||null, analysis_mode:d.analysis.analysis_mode||null };
         // Route to correct renderer: instant results have no stems, deep results have stems
         const hasStems = Object.keys(jobData.stems||{}).length > 0;
         if (hasStems) {
@@ -607,7 +604,7 @@ const _stageMsgs = {
     "Separating instruments...",
     "Splitting the mix into stems...",
     "Isolating individual parts...",
-    "Running source separation model...",
+    "Running stem separation...",
     "Deconstructing the arrangement...",
     "Extracting each instrument layer...",
     "Pulling apart the frequency spectrum...",
@@ -1338,12 +1335,20 @@ async function renderResults(data) {
   document.getElementById("mixer-channels").innerHTML=activeNames.map(n=>{const l=formatStemLabel(n,(stems[n]&&stems[n].label)||"");return`<div class="channel" id="ch-${n}"><div class="channel-name">${esc(l)}</div><div class="channel-volume"><input type="range" class="vol-slider" min="0" max="100" value="100" oninput="setVolume('${n}',this.value)" id="vol-${n}"/><span class="vol-label" id="vol-label-${n}">100</span></div><button class="ch-btn" id="mute-${n}" onclick="toggleMute('${n}')">M</button><button class="ch-btn" id="solo-${n}" onclick="toggleSolo('${n}')">S</button></div>`;}).join("");
   document.getElementById("loop-start").value="0:00";document.getElementById("loop-end").value="";loopActive=false;document.getElementById("loop-btn").classList.remove("active");
   transposeAmount=0;document.getElementById("transpose-display").textContent="0";document.getElementById("transposed-key").textContent="";
-  // Tab panel is Coming Soon — no dynamic rendering needed
+  // Insight
+  const insightEl = document.getElementById("insight-text");
+  const insightData = data.insight || null;
+  if (insightData && insightData.trim()) {
+    insightEl.innerHTML = insightData.split(/\n\n+/).map(p => `<p>${esc(p.trim())}</p>`).join("");
+  } else {
+    insightEl.innerHTML = '<div class="insight-empty">Insight is being generated and will appear on your next visit.</div>';
+  }
+
   const lyricsEl=document.getElementById("lyrics-content");
   if(lyrics&&lyrics.trim()){lyricsEl.innerHTML=`<div class="lyrics-container">${_formatLyrics(lyrics)}</div>`;}
   else{lyricsEl.innerHTML='<div class="lyrics-empty">Lyrics not available for this track.</div>';}
-  switchPanel(_defaultTab || "mix");
-  _defaultTab = "mix";
+  switchPanel(_defaultTab || "insight");
+  _defaultTab = "insight";
 
   // Show results immediately — don't wait for audio decode
   document.getElementById("process-btn").disabled=false;document.getElementById("process-btn").textContent="Dive In";
@@ -1411,6 +1416,15 @@ async function renderInstantResults(data) {
   document.getElementById("transpose-display").textContent = "0";
   document.getElementById("transposed-key").textContent = "";
 
+  // Insight
+  const insightEl = document.getElementById("insight-text");
+  const insightData = data.insight || null;
+  if (insightData && insightData.trim()) {
+    insightEl.innerHTML = insightData.split(/\n\n+/).map(p => `<p>${esc(p.trim())}</p>`).join("");
+  } else {
+    insightEl.innerHTML = '<div class="insight-empty">Insight is being generated and will appear on your next visit.</div>';
+  }
+
   // Lyrics
   const lyricsEl = document.getElementById("lyrics-content");
   if (lyrics && lyrics.trim()) {
@@ -1419,8 +1433,8 @@ async function renderInstantResults(data) {
     lyricsEl.innerHTML = '<div class="lyrics-empty">Lyrics not available for this track.</div>';
   }
 
-  switchPanel("mix");
-  _defaultTab = "mix";
+  switchPanel("insight");
+  _defaultTab = "insight";
 
   document.getElementById("process-btn").disabled = false;
   document.getElementById("process-btn").textContent = "Dive In";
@@ -1466,7 +1480,6 @@ function _startDeepAnalysis() {
   startProcessing();
 }
 
-// Tab panel is Coming Soon — showTab disabled
 
 
 // ─── Loop / Transpose ───────────────────────────────────────────────────────
@@ -1519,8 +1532,9 @@ function _buildPlayerWaveform() {
   const fg = document.getElementById('player-waveform-fg-inner');
   if (!bg) return;
   // Measure container width to determine bar count
+  // Fallback to 600 if panel is hidden (offsetWidth=0 when mix tab isn't active)
   const wrap = document.getElementById('player-waveform-wrap');
-  const w = wrap ? wrap.offsetWidth : 600;
+  const w = (wrap && wrap.offsetWidth > 0) ? wrap.offsetWidth : 600;
   const barCount = Math.floor(w / 4); // 2px bar + 2px gap
   let bgHtml = '', fgHtml = '';
   for (let i = 0; i < barCount; i++) {
@@ -1787,23 +1801,16 @@ function _initDecomposeKeyTab(detectedKey) {
 
   _cofMap = createTonalityMap("decompose-cof", {
     size: 300,
-    interactive: true,
+    interactive: false,
     compact: true,
     initialKey: detectedKey || null,
-    onKeySelect: function(key) {
-      if (key) {
-        renderKeyDetail("decompose-key-detail", key, { expanded: false });
-      } else {
-        document.getElementById("decompose-key-detail").innerHTML = '<div style="color:rgba(245,245,245,0.3);font-size:0.875rem">Click a key on the circle to explore.</div>';
-      }
-    },
   });
 
-  // Render initial detail panel for detected key
+  // Render detail panel for detected key (static — no clicking)
   if (detectedKey && detectedKey !== "Unknown") {
     renderKeyDetail("decompose-key-detail", detectedKey, { expanded: false });
   } else {
-    document.getElementById("decompose-key-detail").innerHTML = '<div style="color:rgba(245,245,245,0.3);font-size:0.875rem">Key not detected. Click any key on the circle to explore.</div>';
+    document.getElementById("decompose-key-detail").innerHTML = '<div style="color:rgba(245,245,245,0.3);font-size:0.875rem">Key not detected.</div>';
   }
 }
 </script>

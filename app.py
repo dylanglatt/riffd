@@ -165,12 +165,12 @@ _log_memory("startup")
 # ─── Authentication ───────────────────────────────────────────────────────────
 
 # Path-based allowlist — explicit and auditable
-AUTH_PUBLIC_PATHS = ("/login", "/static/")
+AUTH_PUBLIC_PATHS = ("/login", "/static/", "/", "/favicon.ico")
 
 @app.before_request
 def require_login():
     path = request.path
-    is_public = path == "/login" or path.startswith("/static/")
+    is_public = path == "/login" or path == "/" or path == "/favicon.ico" or path.startswith("/static/")
     is_authed = session.get("authenticated") is True
 
     # DEBUG: remove after confirming production auth works
@@ -564,6 +564,22 @@ def _process_instant(job_id, audio_path, req_data):
         except Exception:
             pass
 
+    # LLM Insight (non-blocking — failure is fine)
+    insight_text = None
+    if artist and track_name:
+        try:
+            from insight import generate_insight
+            jobs[job_id]["progress"] = "Generating insight..."
+            insight_text = generate_insight(
+                song_name=track_name,
+                artist=artist,
+                intelligence=intelligence,
+                lyrics=lyrics,
+                tags=tags,
+            )
+        except Exception as e:
+            print(f"[job {job_id}] insight failed: {e}")
+
     elapsed = _t.time() - _t0
     print(f"[job {job_id}] instant analysis complete in {elapsed:.1f}s")
 
@@ -575,6 +591,7 @@ def _process_instant(job_id, audio_path, req_data):
         "intelligence": intelligence,
         "lyrics": lyrics,
         "tags": tags,
+        "insight": insight_text,
         "audio_duration": round(audio_duration, 1),
         "stems": {},
         "tabs": {},
@@ -591,6 +608,7 @@ def _process_instant(job_id, audio_path, req_data):
                 "intelligence": intelligence,
                 "lyrics": lyrics,
                 "tags": tags,
+                "insight": insight_text,
                 "audio_source": jobs[job_id].get("audio_source"),
                 "audio_mode": jobs[job_id].get("audio_mode"),
                 "analysis_mode": "instant",
@@ -713,6 +731,7 @@ def process_audio(job_id):
         intelligence = {"key": "Unknown", "key_num": -1, "mode_num": -1, "bpm": 120, "progression": None}
         lyrics = None
         tags = []
+        insight_text = None
         recs = {"more_like_this": [], "same_style": [], "around_this_time": []}
         failed_steps = []
 
@@ -736,6 +755,7 @@ def process_audio(job_id):
                 "intelligence": intelligence,
                 "lyrics": lyrics,
                 "tags": tags,
+                "insight": insight_text,
                 "recommendations": recs,
                 "audio_source": jobs[job_id].get("audio_source"),
                 "audio_mode": jobs[job_id].get("audio_mode", "preview"),
@@ -757,6 +777,7 @@ def process_audio(job_id):
                         "intelligence": intelligence,
                         "lyrics": lyrics,
                         "tags": tags,
+                        "insight": insight_text,
                         "recommendations": recs,
                         "audio_source": jobs[job_id].get("audio_source"),
                         "audio_mode": jobs[job_id].get("audio_mode", "preview"),
@@ -899,6 +920,21 @@ def process_audio(job_id):
                     print(f"[job {job_id}] [{_elapsed()}] TAGS → {tags}")
                 except Exception as e:
                     _fail("tags", e)
+
+            # ── Stage 6.5: LLM Insight (non-blocking) ──
+            if artist_name and track_name:
+                try:
+                    from insight import generate_insight
+                    on_progress("Generating insight...")
+                    insight_text = generate_insight(
+                        song_name=track_name,
+                        artist=artist_name,
+                        intelligence=intelligence,
+                        lyrics=lyrics,
+                        tags=tags,
+                    )
+                except Exception as e:
+                    _fail("insight", e)
 
             # ── Stage 7: Recommendations ──
             if spotify_track_id:
