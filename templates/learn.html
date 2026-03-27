@@ -165,6 +165,10 @@
           <svg class="sidebar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2v20M2 12h20"/></svg>
           Keys
         </a>
+        <a class="sidebar-link" onclick="_showSection('circle',this)">
+          <svg class="sidebar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/></svg>
+          Circle of Fifths
+        </a>
       </nav>
     </div>
 
@@ -193,6 +197,42 @@
         <div class="theory-grid" id="grid-keys"></div>
         <div class="pagination" id="pag-keys"></div>
       </div>
+
+      <div class="theory-section" id="section-circle">
+        <div style="max-width:680px;margin-bottom:48px">
+          <div style="font-size:1.25rem;font-weight:500;color:#F5F5F5;letter-spacing:-0.02em;margin-bottom:16px">The Circle of Fifths</div>
+          <div style="font-size:0.9375rem;color:rgba(245,245,245,0.55);line-height:1.7;letter-spacing:-0.01em;margin-bottom:24px">
+            The most important diagram in Western music theory. It arranges all 12 keys by how closely related they are harmonically — each key is a perfect fifth from the next. Adjacent keys share almost all the same notes and chords, which is why movement between them sounds natural.
+          </div>
+
+          <div style="font-size:0.9375rem;font-weight:500;color:#F5F5F5;margin-bottom:8px">Key signatures</div>
+          <div style="font-size:0.875rem;color:rgba(245,245,245,0.5);line-height:1.65;margin-bottom:20px">
+            The circle is a map of sharps and flats. Moving clockwise from C adds one sharp at each step. Moving counter-clockwise adds one flat. Every musician internalizes this relationship whether they know the circle by name or not.
+          </div>
+
+          <div style="font-size:0.9375rem;font-weight:500;color:#F5F5F5;margin-bottom:8px">Chord relationships</div>
+          <div style="font-size:0.875rem;color:rgba(245,245,245,0.5);line-height:1.65;margin-bottom:20px">
+            The I, IV, and V chords of any key are always neighbors on the circle. This is why those three chords are the foundation of nearly every song in Western music — they are harmonically closest to each other.
+          </div>
+
+          <div style="font-size:0.9375rem;font-weight:500;color:#F5F5F5;margin-bottom:8px">Transposition</div>
+          <div style="font-size:0.875rem;color:rgba(245,245,245,0.5);line-height:1.65;margin-bottom:20px">
+            To move a song to a different key, find your starting key on the circle, count the number of steps to the target, and shift every chord the same distance. The harmonic relationships stay identical.
+          </div>
+
+          <div style="font-size:0.9375rem;font-weight:500;color:#F5F5F5;margin-bottom:8px">Songwriting and modulation</div>
+          <div style="font-size:0.875rem;color:rgba(245,245,245,0.5);line-height:1.65;margin-bottom:32px">
+            The circle reveals which key changes will sound smooth (adjacent keys) and which will sound dramatic (distant keys). Most pop songs that change key go up one step on the circle. Jazz standards often walk through several adjacent keys in sequence.
+          </div>
+        </div>
+
+        <div style="display:flex;gap:40px;flex-wrap:wrap;align-items:flex-start">
+          <div id="learn-cof" style="flex-shrink:0"></div>
+          <div id="learn-key-detail" style="flex:1;min-width:280px">
+            <div style="color:rgba(245,245,245,0.3);font-size:0.875rem">Click any key on the circle to explore its chords, progressions, and relationships.</div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -203,6 +243,7 @@
 {% endblock %}
 
 {% block extra_js %}
+{% include '_tonality_map.html' %}
 <script>
 const _esc = s => String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
 
@@ -279,6 +320,8 @@ function _applyFilters(section) {
   _page[section] = 0;
 }
 
+let _learnCofMap = null;
+
 function _showSection(id, el) {
   document.querySelectorAll('.theory-section').forEach(s => s.classList.remove('active'));
   document.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('active'));
@@ -287,6 +330,21 @@ function _showSection(id, el) {
   _currentSection = id;
   // Sync search bar
   document.getElementById('global-search').value = _search[id] || '';
+  // Initialize Circle of Fifths on first view
+  if (id === 'circle' && !_learnCofMap) {
+    _learnCofMap = createTonalityMap("learn-cof", {
+      size: 380,
+      interactive: true,
+      compact: false,
+      onKeySelect: function(key) {
+        if (key) {
+          renderKeyDetail("learn-key-detail", key, { expanded: true, showSignature: true });
+        } else {
+          document.getElementById("learn-key-detail").innerHTML = '<div style="color:rgba(245,245,245,0.3);font-size:0.875rem">Click any key on the circle to explore its chords, progressions, and relationships.</div>';
+        }
+      },
+    });
+  }
 }
 
 function _toggleFilter(section, field, val) {
