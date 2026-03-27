@@ -1802,22 +1802,30 @@ function _isValidHistoryEntry(t) {
   return true;
 }
 
+let _historyScrollInit = false;
 async function loadHistory() {
   try {
     const res = await fetch("/api/history");
+    if (!res.ok) return;
     const data = await res.json();
     if (!data || !data.length) return;
-    // Filter invalid entries client-side too (belt + suspenders)
     _historySongs = data.filter(_isValidHistoryEntry);
-    if (!_historySongs.length) return;
+    if (!_historySongs.length) {
+      document.getElementById("history-section").style.display = "none";
+      return;
+    }
     const section = document.getElementById("history-section");
     const grid = document.getElementById("history-grid");
     grid.innerHTML = _historySongs.map((t, i) => {
       return `<div class="try-card" onclick="pickHistory(${i})">${_songArt(t)}<div class="try-card-name">${esc(t.name||"")}</div><div class="try-card-artist">${esc(t.artist||"")}</div></div>`;
     }).join("");
     section.style.display = "block";
-    requestAnimationFrame(() => _initSongRow('history-grid', 'history-track', 'history-thumb'));
-  } catch {}
+    // Only init scroll once — re-renders reuse existing listeners
+    if (!_historyScrollInit) {
+      _historyScrollInit = true;
+      requestAnimationFrame(() => _initSongRow('history-grid', 'history-track', 'history-thumb'));
+    }
+  } catch (e) { console.warn("[history] load failed:", e); }
 }
 async function pickHistory(i) {
   const entry = _historySongs[i];
@@ -1829,7 +1837,7 @@ async function pickHistory(i) {
   const track = { id: entry.track_id, name: name, artist: artist, image_url: entry.image_url, year: entry.year || "", artist_id: entry.artist_id, yt_query: entry.yt_query || `${artist} - ${name} official audio`, preview_url: entry.preview_url || null };
   selectedTrack = track; currentJobId = null;
 
-  // Try cache first — if valid, skip confirm page entirely
+  // Try cache first — if valid, skip to results directly
   if (entry.has_cache) {
     try {
       const res = await fetch(`/api/cache/${entry.track_id}`);
@@ -1838,7 +1846,6 @@ async function pickHistory(i) {
         if (cached && !cached.error) {
           currentJobId = cached.job_id || entry.job_id;
           jobData = { status: "complete", tabs: cached.tabs || {}, stems: cached.stems || {}, intelligence: cached.intelligence || {}, lyrics: cached.lyrics || null, tags: cached.tags || [], recommendations: cached.recommendations || {}, audio_source: cached.audio_source || null, audio_mode: cached.audio_mode || null };
-          // Go directly to results — no confirm page, no fake delay
           renderResults(jobData);
           return;
         }
@@ -1846,7 +1853,9 @@ async function pickHistory(i) {
     } catch (e) { console.warn("[history] cache miss, will reprocess:", e); }
   }
 
-  // No cache — show confirm page for reprocessing
+  // No cache — set modes properly then process
+  _currentMode = "preview";
+  _analysisMode = "instant";
   _showHeroPreProcess(); showView("confirm");
   startProcessing();
 }
