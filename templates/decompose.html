@@ -280,15 +280,6 @@
       </div>
     </div>
 
-    <!-- Recent Songs -->
-    <div class="landing-section" id="history-section" style="display:none">
-      <div class="landing-section-title">Recents</div>
-      <div class="song-row" id="history-row">
-        <div class="try-grid" id="history-grid"></div>
-        <div class="scroll-track" id="history-track"><div class="scroll-thumb" id="history-thumb"></div></div>
-      </div>
-    </div>
-
     <!-- Capabilities -->
     <div class="landing-section">
       <div class="landing-section-title">What Riffd does</div>
@@ -1372,8 +1363,6 @@ async function renderResults(data) {
     console.log("[audio] all stems decoded and ready");
   }).catch(e => console.warn("[audio] decode error:", e));
 
-  // Refresh history
-  loadHistory();
 }
 
 async function renderInstantResults(data) {
@@ -1466,8 +1455,6 @@ async function renderInstantResults(data) {
       console.log("[audio] preview audio loaded");
     }
   } catch(e) { console.warn("[audio] preview load failed:", e); }
-
-  loadHistory();
 }
 
 function _startDeepAnalysis() {
@@ -1788,78 +1775,7 @@ function _initSongRow(gridId, trackId, thumbId) {
   new ResizeObserver(sync).observe(grid);
 }
 
-// ─── History ────────────────────────────────────────────────────────────────
-let _historySongs = [];
-function _isValidHistoryEntry(t) {
-  // Must have real name, artist, and track_id
-  if (!t || !t.track_id) return false;
-  const name = (t.name || "").trim();
-  const artist = (t.artist || "").trim();
-  if (!name || !artist) return false;
-  // Filter placeholder/test values
-  const low_n = name.toLowerCase(), low_a = artist.toLowerCase();
-  if ((low_n === "test" || low_n === "untitled") && (low_a === "test" || low_a === "unknown" || !low_a)) return false;
-  return true;
-}
-
-let _historyScrollInit = false;
-async function loadHistory() {
-  try {
-    const res = await fetch("/api/history");
-    if (!res.ok) return;
-    const data = await res.json();
-    if (!data || !data.length) return;
-    _historySongs = data.filter(_isValidHistoryEntry);
-    if (!_historySongs.length) {
-      document.getElementById("history-section").style.display = "none";
-      return;
-    }
-    const section = document.getElementById("history-section");
-    const grid = document.getElementById("history-grid");
-    grid.innerHTML = _historySongs.map((t, i) => {
-      return `<div class="try-card" onclick="pickHistory(${i})">${_songArt(t)}<div class="try-card-name">${esc(t.name||"")}</div><div class="try-card-artist">${esc(t.artist||"")}</div></div>`;
-    }).join("");
-    section.style.display = "block";
-    // Only init scroll once — re-renders reuse existing listeners
-    if (!_historyScrollInit) {
-      _historyScrollInit = true;
-      requestAnimationFrame(() => _initSongRow('history-grid', 'history-track', 'history-thumb'));
-    }
-  } catch (e) { console.warn("[history] load failed:", e); }
-}
-async function pickHistory(i) {
-  const entry = _historySongs[i];
-  if (!entry || !entry.track_id) return;
-  const name = (entry.name || "").trim();
-  const artist = (entry.artist || "").trim();
-  if (!name || !artist) { setError("This song has incomplete data and cannot be opened."); return; }
-
-  const track = { id: entry.track_id, name: name, artist: artist, image_url: entry.image_url, year: entry.year || "", artist_id: entry.artist_id, yt_query: entry.yt_query || `${artist} - ${name} official audio`, preview_url: entry.preview_url || null };
-  selectedTrack = track; currentJobId = null;
-
-  // Try cache first — if valid, skip to results directly
-  if (entry.has_cache) {
-    try {
-      const res = await fetch(`/api/cache/${entry.track_id}`);
-      if (res.ok) {
-        const cached = await res.json();
-        if (cached && !cached.error) {
-          currentJobId = cached.job_id || entry.job_id;
-          jobData = { status: "complete", tabs: cached.tabs || {}, stems: cached.stems || {}, intelligence: cached.intelligence || {}, lyrics: cached.lyrics || null, tags: cached.tags || [], recommendations: cached.recommendations || {}, audio_source: cached.audio_source || null, audio_mode: cached.audio_mode || null };
-          renderResults(jobData);
-          return;
-        }
-      }
-    } catch (e) { console.warn("[history] cache miss, will reprocess:", e); }
-  }
-
-  // No cache — set modes properly then process
-  _currentMode = "preview";
-  _analysisMode = "instant";
-  _showHeroPreProcess(); showView("confirm");
-  startProcessing();
-}
-loadHistory();
+// ─── History UI removed (privacy) — backend cache still active for fast reloads ───
 
 // ─── Tonality Map (Key tab) ──────────────────────────────────────────────────
 let _cofMap = null;
