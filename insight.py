@@ -9,7 +9,7 @@ import os
 import time
 
 
-def generate_insight(song_name, artist, intelligence, lyrics=None, tags=None):
+def generate_insight(song_name, artist, intelligence, lyrics=None, tags=None, exclude_songs=None):
     """
     Generate structured musical insight using Claude Haiku.
 
@@ -19,6 +19,7 @@ def generate_insight(song_name, artist, intelligence, lyrics=None, tags=None):
         intelligence: Dict with key, bpm, harmonic_sections, progression, etc.
         lyrics: Raw lyrics text (first 20 lines used)
         tags: List of genre/style tags
+        exclude_songs: Optional list of song titles to exclude from recommendations
 
     Returns:
         dict | None: Structured insight data, or None on failure
@@ -77,27 +78,51 @@ Genre/Tags: {genre}
 
     user_msg += "\nReturn the JSON analysis object."
 
-    system_prompt = """You are a music theory expert. Given analysis data about a song, return ONLY a JSON object with these fields:
+    system_prompt = f"""You are a music theory expert. Given analysis data about a song, return ONLY a JSON object with these fields:
 
 1. "progression_names": For each harmonic section provided, if the chord progression matches or closely resembles a well-known named progression, provide the name. Return as an object mapping section labels to names. Only include sections where you're confident of the name. Examples of named progressions: "50s progression", "Axis of Awesome", "Andalusian cadence", "12-bar blues", "Nashville progression", "Royal Road", "Pachelbel's Canon", "ii-V-I turnaround", "Plagal cadence". If a section's progression doesn't have a well-known name, omit it.
 
-2. "smart_recs": Theory-based song recommendations. This is the KEY feature — recommend songs based on MUSICAL DNA, not genre. Return an object with three categories:
-   - "same_progression": 2-3 songs that use the same or very similar chord progression pattern (e.g., if the song uses I-V-vi-IV, find other songs with that exact progression regardless of genre). Include the shared progression in the "reason" field.
-   - "same_key_tempo": 2-3 songs in the same key AND a similar tempo range (within ~15 BPM). These are ideal for DJ sets, mashups, or practice sessions. Include key and BPM in the "reason" field.
-   - "similar_harmony": 2-3 songs with similar harmonic movement or voice leading — songs that "feel" harmonically similar even if the exact chords differ (e.g., both use descending bass lines, both use modal interchange, both use the same cadence patterns).
-   Each entry should be: {"title": "...", "artist": "...", "reason": "..."}
-   The "reason" should be SHORT (under 12 words) and specific — e.g., "Same I-V-vi-IV progression", "G Major at 122 BPM", "Descending bass line over major chords".
-   Pick well-known songs musicians would recognize. Never pick songs by the same artist as the input.
+2. "smart_recs": Recommend songs based on MUSICAL DNA, not genre or mood. Return an object with exactly four categories:
+
+   - "same_progression": 2-3 songs using the same chord progression PATTERN.
+     GOOD reasons: "Same I-V-vi-IV progression", "Identical vi-IV-I-V loop"
+     BAD reasons: "Similar harmonic movement", "Comparable progression feel"
+
+   - "same_key_tempo": 2-3 songs in {key} near {round(bpm) if bpm else '?'} BPM (±15).
+     GOOD reasons: "{key} at ~{round(bpm) if bpm else '?'} BPM", "{key}, {round(bpm)-10 if bpm else '?'}-{round(bpm)+10 if bpm else '?'} BPM range"
+     BAD reasons: "Same key with similar tempo feel", "Mid-tempo ballad pacing"
+     ONLY include songs you are CERTAIN are in {key}. If unsure, skip.
+
+   - "similar_harmony": 2-3 songs sharing a SPECIFIC harmonic technique.
+     GOOD reasons: "Descending chromatic bass line", "Borrows iv from parallel minor", "Same I-IV plagal cadence", "Pedal tone under changing chords"
+     BAD reasons: "Emotional harmonic landscape", "Rich harmonic movement", "Melancholic major key feel", "Vulnerable harmonic character"
+     The reason MUST name a theory concept. If you can't name one, don't include the song.
+
+   - "more_by_artist": 3-4 other songs by {artist}.
+     GOOD reasons: "Waltz time — rare 3/4 for them", "Only minor-key single", "Extended jazz chords in bridge", "12-string acoustic, open tuning"
+     BAD reasons: "Classic hit", "Fan favorite", "Emotional ballad", "Upbeat feel-good track"
+
+   Rules:
+   - same_progression, same_key_tempo, similar_harmony: DIFFERENT artists than {artist}
+   - more_by_artist: songs by {artist} ONLY
+   - Each entry: {{"title": "...", "artist": "...", "reason": "..."}}
+   - Reasons MUST be under 8 words. No exceptions.
+   - BANNED words in reasons: "feel", "vibe", "emotional", "intimate", "landscape", "character", "comparable", "accessible", "melancholic", "vulnerable", "yearning", "carefree", "laid-back", "breezy", "smooth", "warm", "rich"
+   - Mix eras — at least one song from before 2000 across the first three categories
+   - Pick well-known songs musicians would recognize
 
 3. "key_context": A single sentence (under 20 words) about the character or common usage of the detected key. Examples: "A bright, open key — the natural home of folk and country guitar." or "Dark and dramatic — a favorite of classical composers and metal bands alike." Do NOT mention specific instruments or production details you cannot know from the data.
 
 Return ONLY the JSON object. No markdown, no code fences, no explanation."""
 
+    if exclude_songs:
+        system_prompt += f"\n\nDo NOT recommend these songs: {', '.join(exclude_songs)}. Pick different songs instead."
+
     try:
         t0 = time.time()
         response = client.messages.create(
             model="claude-haiku-4-5-20251001",
-            max_tokens=700,
+            max_tokens=1100,
             system=system_prompt,
             messages=[{"role": "user", "content": user_msg}],
         )
