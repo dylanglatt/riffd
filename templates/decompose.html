@@ -354,6 +354,7 @@
       </div>
       <div class="results-nav" id="results-nav">
         <button class="results-nav-btn active" data-panel="mix" onclick="switchPanel('mix',this)">Mix</button>
+        <button class="results-nav-btn" data-panel="key" onclick="switchPanel('key',this)">Key</button>
         <button class="results-nav-btn" data-panel="tab" onclick="switchPanel('tab',this)">Tab</button>
         <button class="results-nav-btn" data-panel="lyrics" onclick="switchPanel('lyrics',this)">Lyrics</button>
       </div>
@@ -380,6 +381,12 @@
             <div class="tool-grp"><span class="tool-lbl">Loop</span><input type="text" class="tool-input" id="loop-start" value="0:00" /><span style="color:var(--text-muted);font-size:.72rem">to</span><input type="text" class="tool-input" id="loop-end" placeholder="end" /><button class="tool-btn" id="loop-btn" onclick="toggleLoop()">&#8635;</button><span class="loop-hint" id="loop-hint"></span></div>
             <div class="tool-grp"><span class="tool-lbl">Key</span><button class="tool-btn" onclick="transposeBy(-1)">-</button><div class="transpose-val" id="transpose-display">0</div><button class="tool-btn" onclick="transposeBy(1)">+</button><span class="transposed-key" id="transposed-key"></span></div>
           </div>
+        </div>
+      </div>
+      <div class="results-panel" id="panel-key">
+        <div style="display:flex;gap:32px;flex-wrap:wrap">
+          <div id="decompose-cof" style="flex-shrink:0"></div>
+          <div id="decompose-key-detail" style="flex:1;min-width:260px"></div>
         </div>
       </div>
       <div class="results-panel" id="panel-tab">
@@ -416,6 +423,7 @@ E|-----------3---3---|---3---3---3---3---|---3---3---3---3---|</div>
 {% endblock %}
 
 {% block extra_js %}
+{% include '_tonality_map.html' %}
 <script>
 // ─── State ──────────────────────────────────────────────────────────────────
 // Two dimensions of mode:
@@ -1332,6 +1340,10 @@ async function renderResults(data) {
   // Render section-based harmonic analysis
   _renderHarmonicSections(intel.harmonic_sections || []);
   songKey=(intel.key_num>=0)?{num:intel.key_num,mode:intel.mode_num,name:intel.key}:null;
+
+  // Initialize Tonality Map in the Key tab
+  _initDecomposeKeyTab(intel.key);
+
   document.getElementById("mixer-channels").innerHTML=activeNames.map(n=>{const l=formatStemLabel(n,(stems[n]&&stems[n].label)||"");return`<div class="channel" id="ch-${n}"><div class="channel-name">${esc(l)}</div><div class="channel-volume"><input type="range" class="vol-slider" min="0" max="100" value="100" oninput="setVolume('${n}',this.value)" id="vol-${n}"/><span class="vol-label" id="vol-label-${n}">100</span></div><button class="ch-btn" id="mute-${n}" onclick="toggleMute('${n}')">M</button><button class="ch-btn" id="solo-${n}" onclick="toggleSolo('${n}')">S</button></div>`;}).join("");
   document.getElementById("loop-start").value="0:00";document.getElementById("loop-end").value="";loopActive=false;document.getElementById("loop-btn").classList.remove("active");
   transposeAmount=0;document.getElementById("transpose-display").textContent="0";document.getElementById("transposed-key").textContent="";
@@ -1395,6 +1407,9 @@ async function renderInstantResults(data) {
 
   // No harmonic sections for instant
   document.getElementById("harmonic-sections").innerHTML = '';
+
+  // Initialize Tonality Map in the Key tab
+  _initDecomposeKeyTab(intel.key);
 
   // Mix panel: single audio player for the raw preview file
   const mixerChannels = document.getElementById("mixer-channels");
@@ -1836,5 +1851,35 @@ async function pickHistory(i) {
   startProcessing();
 }
 loadHistory();
+
+// ─── Tonality Map (Key tab) ──────────────────────────────────────────────────
+let _cofMap = null;
+
+function _initDecomposeKeyTab(detectedKey) {
+  // Destroy previous instance
+  if (_cofMap) { _cofMap.destroy(); _cofMap = null; }
+  document.getElementById("decompose-key-detail").innerHTML = '';
+
+  _cofMap = createTonalityMap("decompose-cof", {
+    size: 300,
+    interactive: true,
+    compact: true,
+    initialKey: detectedKey || null,
+    onKeySelect: function(key) {
+      if (key) {
+        renderKeyDetail("decompose-key-detail", key, { expanded: false });
+      } else {
+        document.getElementById("decompose-key-detail").innerHTML = '<div style="color:rgba(245,245,245,0.3);font-size:0.875rem">Click a key on the circle to explore.</div>';
+      }
+    },
+  });
+
+  // Render initial detail panel for detected key
+  if (detectedKey && detectedKey !== "Unknown") {
+    renderKeyDetail("decompose-key-detail", detectedKey, { expanded: false });
+  } else {
+    document.getElementById("decompose-key-detail").innerHTML = '<div style="color:rgba(245,245,245,0.3);font-size:0.875rem">Key not detected. Click any key on the circle to explore.</div>';
+  }
+}
 </script>
 {% endblock %}

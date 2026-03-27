@@ -1,0 +1,442 @@
+<!-- Tonality Map — reusable Circle of Fifths component
+     Include this in any template that needs createTonalityMap().
+     Usage: const map = createTonalityMap('container-id', { size: 320, interactive: true }); -->
+<script>
+// ─── Tonality Map: Circle of Fifths ─────────────────────────────────────────
+
+const _COF_MAJOR = ["C","G","D","A","E","B","F#","Db","Ab","Eb","Bb","F"];
+const _COF_MINOR = ["Am","Em","Bm","F#m","C#m","G#m","Ebm","Bbm","Fm","Cm","Gm","Dm"];
+
+const _KEY_DATA = {
+  "C":  {sharps:0,flats:0,sig:[],rel:"Am",par:"Cm",char:"Neutral, pure, foundational. No sharps or flats.",
+         chords:["C","Dm","Em","F","G","Am","Bdim"],rn:["I","ii","iii","IV","V","vi","vii\u00b0"]},
+  "G":  {sharps:1,flats:0,sig:["F#"],rel:"Em",par:"Gm",char:"Bright, open. Natural guitar key, common in folk and pop.",
+         chords:["G","Am","Bm","C","D","Em","F#dim"],rn:["I","ii","iii","IV","V","vi","vii\u00b0"]},
+  "D":  {sharps:2,flats:0,sig:["F#","C#"],rel:"Bm",par:"Dm",char:"Triumphant, bright. Great guitar key, common in rock and folk.",
+         chords:["D","Em","F#m","G","A","Bm","C#dim"],rn:["I","ii","iii","IV","V","vi","vii\u00b0"]},
+  "A":  {sharps:3,flats:0,sig:["F#","C#","G#"],rel:"F#m",par:"Am",char:"Warm, confident. Another natural guitar key.",
+         chords:["A","Bm","C#m","D","E","F#m","G#dim"],rn:["I","ii","iii","IV","V","vi","vii\u00b0"]},
+  "E":  {sharps:4,flats:0,sig:["F#","C#","G#","D#"],rel:"C#m",par:"Em",char:"Bold, driving. The quintessential rock and blues guitar key.",
+         chords:["E","F#m","G#m","A","B","C#m","D#dim"],rn:["I","ii","iii","IV","V","vi","vii\u00b0"]},
+  "B":  {sharps:5,flats:0,sig:["F#","C#","G#","D#","A#"],rel:"G#m",par:"Bm",char:"Bright but slightly exotic. Common in R&B and gospel.",
+         chords:["B","C#m","D#m","E","F#","G#m","A#dim"],rn:["I","ii","iii","IV","V","vi","vii\u00b0"]},
+  "F#": {sharps:6,flats:0,sig:["F#","C#","G#","D#","A#","E#"],rel:"Ebm",par:"F#m",char:"Dreamy, unusual. Rare as a song key.",
+         chords:["F#","G#m","A#m","B","C#","D#m","E#dim"],rn:["I","ii","iii","IV","V","vi","vii\u00b0"]},
+  "Db": {sharps:0,flats:5,sig:["Bb","Eb","Ab","Db","Gb"],rel:"Bbm",par:"C#m",char:"Smooth, warm. Very common in R&B, soul, and jazz ballads.",
+         chords:["Db","Ebm","Fm","Gb","Ab","Bbm","Cdim"],rn:["I","ii","iii","IV","V","vi","vii\u00b0"]},
+  "Ab": {sharps:0,flats:4,sig:["Bb","Eb","Ab","Db"],rel:"Fm",par:"G#m",char:"Rich, romantic. Common in R&B, soul, and musical theater.",
+         chords:["Ab","Bbm","Cm","Db","Eb","Fm","Gdim"],rn:["I","ii","iii","IV","V","vi","vii\u00b0"]},
+  "Eb": {sharps:0,flats:3,sig:["Bb","Eb","Ab"],rel:"Cm",par:"D#m",char:"Majestic, warm. Very common in jazz, soul, and R&B.",
+         chords:["Eb","Fm","Gm","Ab","Bb","Cm","Ddim"],rn:["I","ii","iii","IV","V","vi","vii\u00b0"]},
+  "Bb": {sharps:0,flats:2,sig:["Bb","Eb"],rel:"Gm",par:"A#m",char:"Warm, mellow. Natural key for brass instruments, common in jazz.",
+         chords:["Bb","Cm","Dm","Eb","F","Gm","Adim"],rn:["I","ii","iii","IV","V","vi","vii\u00b0"]},
+  "F":  {sharps:0,flats:1,sig:["Bb"],rel:"Dm",par:"Fm",char:"Pastoral, gentle. Common in folk, pop, and classical.",
+         chords:["F","Gm","Am","Bb","C","Dm","Edim"],rn:["I","ii","iii","IV","V","vi","vii\u00b0"]},
+};
+
+// Minor key data derived from relative major
+const _MINOR_DATA = {};
+for (const [maj, d] of Object.entries(_KEY_DATA)) {
+  const minKey = d.rel;
+  _MINOR_DATA[minKey] = {
+    sharps: d.sharps, flats: d.flats, sig: d.sig, rel: maj, par: maj.replace(/b$/,"").replace(/#$/,"") + "m",
+    // Natural minor diatonic: i ii° III iv v VI VII
+    chords: [d.chords[5], d.chords[6], d.chords[0], d.chords[1], d.chords[2], d.chords[3], d.chords[4]],
+    rn: ["i","ii\u00b0","III","iv","v","VI","VII"],
+    char: "Darker, moodier counterpart of " + maj + " major."
+  };
+}
+
+// Enharmonic mapping for normalization
+const _ENHARMONIC = {
+  "Gb":"F#","G#":"Ab","D#":"Eb","A#":"Bb","C#":"Db","Cb":"B","Fb":"E","E#":"F","B#":"C",
+  "Gbm":"F#m","G#m":"Abm","D#m":"Ebm","A#m":"Bbm","Dbm":"C#m",
+};
+
+// Common progressions as roman numerals + names generator
+const _PROGRESSIONS = [
+  {rn:["I","V","vi","IV"], name:"Pop anthem"},
+  {rn:["I","IV","V","I"], name:"Classic cadence"},
+  {rn:["ii","V","I"],     name:"Jazz ii-V-I"},
+  {rn:["vi","IV","I","V"],name:"Sensitive"},
+  {rn:["I","vi","IV","V"],name:"50s doo-wop"},
+  {rn:["I","bVII","IV"],  name:"Mixolydian rock"},
+];
+
+function _normalizeKey(raw) {
+  if (!raw) return null;
+  let s = String(raw).trim()
+    .replace(/\u266d/g,"b").replace(/\u266f/g,"#")
+    .replace(/ major$/i,"").replace(/ minor$/i,"m")
+    .replace(/maj$/i,"").replace(/min$/i,"m");
+  // Capitalize first letter
+  s = s.charAt(0).toUpperCase() + s.slice(1);
+  // Fix double-lowercase: "am" → "Am"
+  if (s.length >= 2 && s === s.toLowerCase()) s = s.charAt(0).toUpperCase() + s.slice(1);
+  // Enharmonic
+  if (_ENHARMONIC[s]) s = _ENHARMONIC[s];
+  // Validate
+  if (_KEY_DATA[s] || _MINOR_DATA[s]) return s;
+  // Try without trailing 'm' as major
+  const noM = s.replace(/m$/,"");
+  if (_KEY_DATA[noM]) return noM;
+  return s;
+}
+
+function _getKeyInfo(keyName) {
+  const k = _normalizeKey(keyName);
+  if (!k) return null;
+  if (_KEY_DATA[k]) return { ...(_KEY_DATA[k]), name: k, isMinor: false };
+  if (_MINOR_DATA[k]) return { ...(_MINOR_DATA[k]), name: k, isMinor: true };
+  return null;
+}
+
+function _chordForRN(rn, keyInfo) {
+  const idx = keyInfo.rn.indexOf(rn);
+  if (idx >= 0) return keyInfo.chords[idx];
+  // Handle borrowed chords like bVII
+  if (rn === "bVII") {
+    const root = keyInfo.name.replace(/m$/,"");
+    const rootIdx = "C D E F G A B".split(" ").indexOf(root.replace(/[#b]/g,""));
+    if (rootIdx >= 0) {
+      const notes = ["C","Db","D","Eb","E","F","F#","G","Ab","A","Bb","B"];
+      const semitones = [0,2,4,5,7,9,11];
+      let base = semitones[rootIdx];
+      if (root.includes("#")) base++;
+      if (root.includes("b")) base--;
+      return notes[(base + 10) % 12];
+    }
+  }
+  return rn;
+}
+
+function createTonalityMap(containerId, opts) {
+  opts = opts || {};
+  const size = opts.size || 320;
+  const interactive = opts.interactive !== false;
+  const compact = opts.compact || false;
+  const showLabels = opts.showLabels !== false;
+  const onKeySelect = opts.onKeySelect || null;
+
+  const container = document.getElementById(containerId);
+  if (!container) return null;
+
+  let selectedKey = null;
+  let hoveredKey = null;
+  const cx = size / 2, cy = size / 2;
+  const outerR = size * 0.42, innerR = size * 0.30;
+  const outerW = size * 0.10, innerW = size * 0.08;
+
+  // Create SVG
+  const ns = "http://www.w3.org/2000/svg";
+  const svg = document.createElementNS(ns, "svg");
+  svg.setAttribute("viewBox", `0 0 ${size} ${size}`);
+  svg.setAttribute("width", size);
+  svg.setAttribute("height", size);
+  svg.style.display = "block";
+  svg.style.margin = compact ? "0 auto" : "0 auto";
+
+  // Tooltip
+  const tooltip = document.createElement("div");
+  tooltip.style.cssText = "position:absolute;z-index:20;padding:12px 16px;background:#141414;border:1px solid rgba(255,255,255,0.12);font-size:0.8125rem;color:rgba(245,245,245,0.7);pointer-events:none;opacity:0;transition:opacity .15s;max-width:280px;line-height:1.5;white-space:pre-line;";
+  container.style.position = "relative";
+  container.appendChild(tooltip);
+
+  function arcPath(cx, cy, r, startAngle, endAngle) {
+    const s = startAngle * Math.PI / 180;
+    const e = endAngle * Math.PI / 180;
+    const x1 = cx + r * Math.sin(s), y1 = cy - r * Math.cos(s);
+    const x2 = cx + r * Math.sin(e), y2 = cy - r * Math.cos(e);
+    const large = endAngle - startAngle > 180 ? 1 : 0;
+    return `M ${x1} ${y1} A ${r} ${r} 0 ${large} 1 ${x2} ${y2}`;
+  }
+
+  function wedgePath(cx, cy, r1, r2, a1, a2) {
+    const s1 = a1*Math.PI/180, e1 = a2*Math.PI/180;
+    const ox1=cx+r2*Math.sin(s1), oy1=cy-r2*Math.cos(s1);
+    const ox2=cx+r2*Math.sin(e1), oy2=cy-r2*Math.cos(e1);
+    const ix2=cx+r1*Math.sin(e1), iy2=cy-r1*Math.cos(e1);
+    const ix1=cx+r1*Math.sin(s1), iy1=cy-r1*Math.cos(s1);
+    return `M${ox1} ${oy1} A${r2} ${r2} 0 0 1 ${ox2} ${oy2} L${ix2} ${iy2} A${r1} ${r1} 0 0 0 ${ix1} ${iy1} Z`;
+  }
+
+  const segments = [];
+  const segAngle = 360 / 12;
+
+  // Draw outer ring (major keys)
+  _COF_MAJOR.forEach((key, i) => {
+    const a1 = i * segAngle - segAngle/2;
+    const a2 = a1 + segAngle;
+    const g = document.createElementNS(ns, "g");
+    g.style.cursor = interactive ? "pointer" : "default";
+    g.dataset.key = key;
+    g.dataset.ring = "outer";
+
+    const path = document.createElementNS(ns, "path");
+    path.setAttribute("d", wedgePath(cx, cy, outerR - outerW, outerR, a1, a2));
+    path.setAttribute("fill", "rgba(245,245,245,0.06)");
+    path.setAttribute("stroke", "rgba(255,255,255,0.08)");
+    path.setAttribute("stroke-width", "0.5");
+    path.style.transition = "fill 0.2s ease-out";
+    g.appendChild(path);
+
+    if (showLabels) {
+      const midA = (a1 + a2) / 2 * Math.PI / 180;
+      const labelR = outerR - outerW/2;
+      const tx = cx + labelR * Math.sin(midA);
+      const ty = cy - labelR * Math.cos(midA);
+      const text = document.createElementNS(ns, "text");
+      text.setAttribute("x", tx);
+      text.setAttribute("y", ty);
+      text.setAttribute("text-anchor", "middle");
+      text.setAttribute("dominant-baseline", "central");
+      text.setAttribute("fill", "rgba(245,245,245,0.55)");
+      text.setAttribute("font-size", compact ? "9" : "11");
+      text.setAttribute("font-weight", "500");
+      text.setAttribute("font-family", "Inter,system-ui,sans-serif");
+      text.style.transition = "fill 0.2s ease-out";
+      text.textContent = key;
+      g.appendChild(text);
+    }
+
+    svg.appendChild(g);
+    segments.push({key, el:g, path, text: g.querySelector("text"), ring:"outer", idx:i});
+  });
+
+  // Draw inner ring (minor keys)
+  _COF_MINOR.forEach((key, i) => {
+    const a1 = i * segAngle - segAngle/2;
+    const a2 = a1 + segAngle;
+    const g = document.createElementNS(ns, "g");
+    g.style.cursor = interactive ? "pointer" : "default";
+    g.dataset.key = key;
+    g.dataset.ring = "inner";
+
+    const path = document.createElementNS(ns, "path");
+    path.setAttribute("d", wedgePath(cx, cy, innerR - innerW, innerR, a1, a2));
+    path.setAttribute("fill", "rgba(245,245,245,0.03)");
+    path.setAttribute("stroke", "rgba(255,255,255,0.06)");
+    path.setAttribute("stroke-width", "0.5");
+    path.style.transition = "fill 0.2s ease-out";
+    g.appendChild(path);
+
+    if (showLabels) {
+      const midA = (a1 + a2) / 2 * Math.PI / 180;
+      const labelR = innerR - innerW/2;
+      const tx = cx + labelR * Math.sin(midA);
+      const ty = cy - labelR * Math.cos(midA);
+      const text = document.createElementNS(ns, "text");
+      text.setAttribute("x", tx);
+      text.setAttribute("y", ty);
+      text.setAttribute("text-anchor", "middle");
+      text.setAttribute("dominant-baseline", "central");
+      text.setAttribute("fill", "rgba(245,245,245,0.35)");
+      text.setAttribute("font-size", compact ? "7.5" : "9");
+      text.setAttribute("font-weight", "400");
+      text.setAttribute("font-family", "Inter,system-ui,sans-serif");
+      text.style.transition = "fill 0.2s ease-out";
+      text.textContent = key;
+      g.appendChild(text);
+    }
+
+    svg.appendChild(g);
+    segments.push({key, el:g, path, text: g.querySelector("text"), ring:"inner", idx:i});
+  });
+
+  function _findSeg(k) { return segments.find(s => s.key === k); }
+
+  function _updateVisuals() {
+    const sel = selectedKey ? _normalizeKey(selectedKey) : null;
+    const hov = hoveredKey ? _normalizeKey(hoveredKey) : null;
+    const active = sel || hov;
+    const info = active ? _getKeyInfo(active) : null;
+
+    // Find adjacent keys on circle
+    let adjKeys = new Set();
+    let relKey = null;
+    if (info) {
+      relKey = info.rel;
+      const majIdx = _COF_MAJOR.indexOf(info.isMinor ? info.rel : info.name);
+      const minIdx = _COF_MINOR.indexOf(info.isMinor ? info.name : info.rel);
+      if (majIdx >= 0) {
+        adjKeys.add(_COF_MAJOR[(majIdx + 1) % 12]);
+        adjKeys.add(_COF_MAJOR[(majIdx + 11) % 12]);
+        adjKeys.add(_COF_MINOR[(majIdx + 1) % 12]);
+        adjKeys.add(_COF_MINOR[(majIdx + 11) % 12]);
+      }
+    }
+
+    for (const seg of segments) {
+      const isActive = seg.key === active;
+      const isRel = seg.key === relKey || (info && !info.isMinor && seg.key === info.rel) || (info && info.isMinor && seg.key === info.rel);
+      const isAdj = adjKeys.has(seg.key);
+      const isMuted = active && !isActive && !isRel && !isAdj;
+
+      if (isActive && sel) {
+        seg.path.setAttribute("fill", "rgba(212,105,31,0.35)");
+        if (seg.text) seg.text.setAttribute("fill", "#D4691F");
+      } else if (isActive && hov && !sel) {
+        seg.path.setAttribute("fill", "rgba(245,245,245,0.15)");
+        if (seg.text) seg.text.setAttribute("fill", "#F5F5F5");
+      } else if (isRel && active) {
+        seg.path.setAttribute("fill", "rgba(212,105,31,0.12)");
+        if (seg.text) seg.text.setAttribute("fill", "rgba(212,105,31,0.8)");
+      } else if (isAdj && active) {
+        seg.path.setAttribute("fill", seg.ring === "outer" ? "rgba(245,245,245,0.09)" : "rgba(245,245,245,0.05)");
+        if (seg.text) seg.text.setAttribute("fill", seg.ring === "outer" ? "rgba(245,245,245,0.6)" : "rgba(245,245,245,0.4)");
+      } else if (isMuted) {
+        seg.path.setAttribute("fill", seg.ring === "outer" ? "rgba(245,245,245,0.02)" : "rgba(245,245,245,0.01)");
+        if (seg.text) seg.text.setAttribute("fill", "rgba(245,245,245,0.15)");
+      } else {
+        seg.path.setAttribute("fill", seg.ring === "outer" ? "rgba(245,245,245,0.06)" : "rgba(245,245,245,0.03)");
+        if (seg.text) seg.text.setAttribute("fill", seg.ring === "outer" ? "rgba(245,245,245,0.55)" : "rgba(245,245,245,0.35)");
+      }
+    }
+  }
+
+  function _showTooltip(key, evt) {
+    const info = _getKeyInfo(key);
+    if (!info) return;
+    const sigStr = info.sharps > 0 ? `${info.sharps} sharp${info.sharps>1?"s":""}` : info.flats > 0 ? `${info.flats} flat${info.flats>1?"s":""}` : "no sharps or flats";
+    const relLabel = info.isMinor ? `Relative major: ${info.rel}` : `Relative minor: ${info.rel}`;
+    const chordsLine = info.chords.join("  ");
+    const rnLine = info.rn.join("   ");
+    tooltip.innerHTML = `<div style="font-weight:500;color:#F5F5F5;margin-bottom:4px">${info.name}${info.isMinor?" minor":" major"}</div><div style="margin-bottom:6px">${sigStr} \u00b7 ${relLabel}</div><div style="font-family:monospace;font-size:0.75rem;color:rgba(245,245,245,0.5);margin-bottom:2px">${rnLine}</div><div style="font-family:monospace;font-size:0.8125rem">${chordsLine}</div>`;
+    const rect = container.getBoundingClientRect();
+    const x = evt.clientX - rect.left + 12;
+    const y = evt.clientY - rect.top - 10;
+    tooltip.style.left = x + "px";
+    tooltip.style.top = y + "px";
+    tooltip.style.opacity = "1";
+  }
+
+  function _hideTooltip() { tooltip.style.opacity = "0"; }
+
+  // Events
+  for (const seg of segments) {
+    seg.el.addEventListener("mouseenter", (e) => {
+      hoveredKey = seg.key;
+      _updateVisuals();
+      _showTooltip(seg.key, e);
+    });
+    seg.el.addEventListener("mousemove", (e) => _showTooltip(seg.key, e));
+    seg.el.addEventListener("mouseleave", () => {
+      hoveredKey = null;
+      _updateVisuals();
+      _hideTooltip();
+    });
+    if (interactive) {
+      seg.el.addEventListener("click", () => {
+        if (selectedKey === seg.key) {
+          selectedKey = null;
+        } else {
+          selectedKey = seg.key;
+        }
+        _updateVisuals();
+        if (onKeySelect) onKeySelect(selectedKey);
+      });
+    }
+  }
+
+  container.appendChild(svg);
+
+  // Public API
+  function highlightKey(keyName) {
+    selectedKey = _normalizeKey(keyName);
+    _updateVisuals();
+    if (onKeySelect) onKeySelect(selectedKey);
+  }
+
+  if (opts.initialKey) {
+    selectedKey = _normalizeKey(opts.initialKey);
+    _updateVisuals();
+  }
+
+  return {
+    highlightKey,
+    clearSelection() { selectedKey = null; _updateVisuals(); },
+    getSelectedKey() { return selectedKey; },
+    destroy() { container.innerHTML = ""; },
+  };
+}
+
+// ─── Key Detail Panel renderer ──────────────────────────────────────────────
+
+function renderKeyDetail(containerId, keyName, opts) {
+  opts = opts || {};
+  const el = document.getElementById(containerId);
+  if (!el) return;
+  const info = _getKeyInfo(keyName);
+  if (!info) {
+    el.innerHTML = '<div style="color:rgba(245,245,245,0.3);font-size:0.875rem">Select a key to see details.</div>';
+    return;
+  }
+
+  const sigStr = info.sharps > 0 ? `${info.sharps} sharp${info.sharps>1?"s":""}` : info.flats > 0 ? `${info.flats} flat${info.flats>1?"s":""}` : "No sharps or flats";
+  const relLabel = info.isMinor ? `Relative major: ${info.rel}` : `Relative minor: ${info.rel}`;
+
+  // Find adjacent, parallel, distant keys
+  const majName = info.isMinor ? info.rel : info.name;
+  const majIdx = _COF_MAJOR.indexOf(majName);
+  const adjKeys = majIdx >= 0 ? [_COF_MAJOR[(majIdx+1)%12], _COF_MAJOR[(majIdx+11)%12]] : [];
+  const distKey = majIdx >= 0 ? _COF_MAJOR[(majIdx+6)%12] : "?";
+
+  let html = '';
+
+  // Header
+  html += `<div style="margin-bottom:20px">`;
+  html += `<div style="font-size:1.25rem;font-weight:500;color:#F5F5F5;letter-spacing:-0.02em">${info.name}${info.isMinor?" minor":" major"}</div>`;
+  html += `<div style="font-size:0.8125rem;color:rgba(245,245,245,0.4);margin-top:4px">${sigStr} \u00b7 ${relLabel}</div>`;
+  html += `<div style="font-size:0.875rem;color:rgba(245,245,245,0.5);margin-top:8px;line-height:1.5">${info.char}</div>`;
+  html += `</div>`;
+
+  // Key signature detail (for Learn page)
+  if (opts.showSignature && info.sig.length > 0) {
+    html += `<div style="margin-bottom:20px;padding:12px 16px;border:1px solid rgba(255,255,255,0.06)">`;
+    html += `<div style="font-size:0.6875rem;font-weight:500;letter-spacing:0.06em;text-transform:uppercase;color:rgba(245,245,245,0.3);margin-bottom:8px">Key Signature</div>`;
+    html += `<div style="font-family:monospace;font-size:0.875rem;color:rgba(245,245,245,0.65)">${info.sig.join("  ")}</div>`;
+    html += `</div>`;
+  }
+
+  // Diatonic chords
+  html += `<div style="margin-bottom:20px">`;
+  html += `<div style="font-size:0.6875rem;font-weight:500;letter-spacing:0.06em;text-transform:uppercase;color:rgba(245,245,245,0.3);margin-bottom:10px">Diatonic Chords</div>`;
+  html += `<div style="display:flex;gap:8px;flex-wrap:wrap">`;
+  for (let i = 0; i < 7; i++) {
+    const isPrimary = [0,3,4].includes(i); // I, IV, V
+    const borderColor = isPrimary ? "rgba(212,105,31,0.25)" : "rgba(255,255,255,0.06)";
+    const rnColor = isPrimary ? "rgba(212,105,31,0.7)" : "rgba(245,245,245,0.35)";
+    html += `<div style="text-align:center;padding:8px 10px;border:1px solid ${borderColor};min-width:44px">`;
+    html += `<div style="font-size:0.6875rem;color:${rnColor};margin-bottom:4px;font-family:monospace">${info.rn[i]}</div>`;
+    html += `<div style="font-size:0.8125rem;color:#F5F5F5;font-weight:500">${info.chords[i]}</div>`;
+    html += `</div>`;
+  }
+  html += `</div></div>`;
+
+  // Common progressions
+  const progs = opts.expanded ? _PROGRESSIONS : _PROGRESSIONS.slice(0, 4);
+  html += `<div style="margin-bottom:20px">`;
+  html += `<div style="font-size:0.6875rem;font-weight:500;letter-spacing:0.06em;text-transform:uppercase;color:rgba(245,245,245,0.3);margin-bottom:10px">Common Progressions</div>`;
+  html += `<div style="display:flex;flex-direction:column;gap:6px">`;
+  for (const prog of progs) {
+    const chordNames = prog.rn.map(rn => _chordForRN(rn, info));
+    html += `<div style="display:flex;align-items:center;gap:12px;padding:6px 0">`;
+    html += `<div style="font-family:monospace;font-size:0.8125rem;color:rgba(212,105,31,0.7);min-width:100px">${prog.rn.join(" \u2013 ")}</div>`;
+    html += `<div style="font-size:0.8125rem;color:rgba(245,245,245,0.55)">${chordNames.join(" \u2013 ")}</div>`;
+    html += `<div style="font-size:0.75rem;color:rgba(245,245,245,0.25);margin-left:auto">${prog.name}</div>`;
+    html += `</div>`;
+  }
+  html += `</div></div>`;
+
+  // Key relationships
+  html += `<div>`;
+  html += `<div style="font-size:0.6875rem;font-weight:500;letter-spacing:0.06em;text-transform:uppercase;color:rgba(245,245,245,0.3);margin-bottom:10px">Key Relationships</div>`;
+  html += `<div style="font-size:0.8125rem;color:rgba(245,245,245,0.5);line-height:1.8">`;
+  if (adjKeys.length) html += `Closely related: ${adjKeys.join(", ")}<br>`;
+  html += `Parallel ${info.isMinor?"major":"minor"}: ${info.par}<br>`;
+  html += `Distant key: ${distKey}`;
+  html += `</div></div>`;
+
+  el.innerHTML = html;
+}
+</script>
