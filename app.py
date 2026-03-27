@@ -505,17 +505,17 @@ def _process_instant(job_id, audio_path, req_data):
 
     # Get audio duration from file
     try:
-        import wave
+        import soundfile as sf
+        info = sf.info(str(audio_path))
+        audio_duration = info.duration
+        print(f"[job {job_id}] instant: duration={audio_duration:.1f}s (via soundfile)")
+    except Exception:
         try:
-            with wave.open(str(audio_path), "rb") as wf:
-                audio_duration = wf.getnframes() / wf.getframerate()
-        except Exception:
-            # Not a WAV — try getting duration from file size (MP3 ~128kbps estimate)
             fsize = Path(audio_path).stat().st_size
-            audio_duration = fsize / 16000  # rough estimate
-        print(f"[job {job_id}] instant: duration={audio_duration:.1f}s")
-    except Exception as e:
-        print(f"[job {job_id}] instant: duration detection failed: {e}")
+            audio_duration = fsize / 16000  # rough MP3 estimate
+            print(f"[job {job_id}] instant: duration={audio_duration:.1f}s (estimated)")
+        except Exception as e:
+            print(f"[job {job_id}] instant: duration detection failed: {e}")
 
     # Lightweight BPM + key estimation using Basic Pitch on the raw audio
     # This runs on the preview file directly (30s) — much faster than stem-separated analysis
