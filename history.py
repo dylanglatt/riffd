@@ -65,6 +65,7 @@ def add_to_history(track_id: str, track_meta: dict, job_id: str):
         "year": track_meta.get("year", ""),
         "artist_id": track_meta.get("artist_id"),
         "yt_query": track_meta.get("yt_query", ""),
+        "preview_url": track_meta.get("preview_url") or entry.get("preview_url"),
         "job_id": job_id,
         "last_viewed": time.time(),
         "times_opened": entry.get("times_opened", 0) + 1,
