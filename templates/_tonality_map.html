@@ -136,11 +136,7 @@ function createTonalityMap(containerId, opts) {
   svg.style.display = "block";
   svg.style.margin = compact ? "0 auto" : "0 auto";
 
-  // Tooltip
-  const tooltip = document.createElement("div");
-  tooltip.style.cssText = "position:absolute;z-index:20;padding:12px 16px;background:#141414;border:1px solid rgba(255,255,255,0.12);font-size:0.8125rem;color:rgba(245,245,245,0.7);pointer-events:none;opacity:0;transition:opacity .15s;max-width:280px;line-height:1.5;white-space:pre-line;";
   container.style.position = "relative";
-  container.appendChild(tooltip);
 
   function arcPath(cx, cy, r, startAngle, endAngle) {
     const s = startAngle * Math.PI / 180;
@@ -190,9 +186,9 @@ function createTonalityMap(containerId, opts) {
       text.setAttribute("y", ty);
       text.setAttribute("text-anchor", "middle");
       text.setAttribute("dominant-baseline", "central");
-      text.setAttribute("fill", "rgba(245,245,245,0.55)");
-      text.setAttribute("font-size", compact ? "9" : "11");
-      text.setAttribute("font-weight", "500");
+      text.setAttribute("fill", "rgba(245,245,245,0.75)");
+      text.setAttribute("font-size", compact ? "11" : "13");
+      text.setAttribute("font-weight", "600");
       text.setAttribute("font-family", "Inter,system-ui,sans-serif");
       text.style.transition = "fill 0.2s ease-out";
       text.textContent = key;
@@ -230,9 +226,9 @@ function createTonalityMap(containerId, opts) {
       text.setAttribute("y", ty);
       text.setAttribute("text-anchor", "middle");
       text.setAttribute("dominant-baseline", "central");
-      text.setAttribute("fill", "rgba(245,245,245,0.35)");
-      text.setAttribute("font-size", compact ? "7.5" : "9");
-      text.setAttribute("font-weight", "400");
+      text.setAttribute("fill", "rgba(245,245,245,0.55)");
+      text.setAttribute("font-size", compact ? "9" : "11");
+      text.setAttribute("font-weight", "500");
       text.setAttribute("font-family", "Inter,system-ui,sans-serif");
       text.style.transition = "fill 0.2s ease-out";
       text.textContent = key;
@@ -248,16 +244,14 @@ function createTonalityMap(containerId, opts) {
   function _updateVisuals() {
     const sel = selectedKey ? _normalizeKey(selectedKey) : null;
     const hov = hoveredKey ? _normalizeKey(hoveredKey) : null;
-    const active = sel || hov;
-    const info = active ? _getKeyInfo(active) : null;
 
-    // Find adjacent keys on circle
+    // Relative/adjacent highlighting only for selected keys, not hover
+    const info = sel ? _getKeyInfo(sel) : null;
     let adjKeys = new Set();
     let relKey = null;
     if (info) {
       relKey = info.rel;
       const majIdx = _COF_MAJOR.indexOf(info.isMinor ? info.rel : info.name);
-      const minIdx = _COF_MINOR.indexOf(info.isMinor ? info.name : info.rel);
       if (majIdx >= 0) {
         adjKeys.add(_COF_MAJOR[(majIdx + 1) % 12]);
         adjKeys.add(_COF_MAJOR[(majIdx + 11) % 12]);
@@ -267,65 +261,48 @@ function createTonalityMap(containerId, opts) {
     }
 
     for (const seg of segments) {
-      const isActive = seg.key === active;
-      const isRel = seg.key === relKey || (info && !info.isMinor && seg.key === info.rel) || (info && info.isMinor && seg.key === info.rel);
-      const isAdj = adjKeys.has(seg.key);
-      const isMuted = active && !isActive && !isRel && !isAdj;
+      const isSel = seg.key === sel;
+      const isHov = seg.key === hov && !sel;
+      const isRel = sel && (seg.key === relKey);
+      const isAdj = sel && adjKeys.has(seg.key);
+      const isMuted = sel && !isSel && !isRel && !isAdj;
 
-      if (isActive && sel) {
+      if (isSel) {
+        // Selected (clicked) key — orange accent
         seg.path.setAttribute("fill", "rgba(212,105,31,0.35)");
         if (seg.text) seg.text.setAttribute("fill", "#D4691F");
-      } else if (isActive && hov && !sel) {
-        seg.path.setAttribute("fill", "rgba(245,245,245,0.15)");
-        if (seg.text) seg.text.setAttribute("fill", "#F5F5F5");
-      } else if (isRel && active) {
+      } else if (isHov) {
+        // Hovered key (no selection) — orange accent, lighter
+        seg.path.setAttribute("fill", "rgba(212,105,31,0.2)");
+        if (seg.text) seg.text.setAttribute("fill", "#D4691F");
+      } else if (isRel) {
         seg.path.setAttribute("fill", "rgba(212,105,31,0.12)");
         if (seg.text) seg.text.setAttribute("fill", "rgba(212,105,31,0.8)");
-      } else if (isAdj && active) {
+      } else if (isAdj) {
         seg.path.setAttribute("fill", seg.ring === "outer" ? "rgba(245,245,245,0.09)" : "rgba(245,245,245,0.05)");
         if (seg.text) seg.text.setAttribute("fill", seg.ring === "outer" ? "rgba(245,245,245,0.6)" : "rgba(245,245,245,0.4)");
       } else if (isMuted) {
         seg.path.setAttribute("fill", seg.ring === "outer" ? "rgba(245,245,245,0.02)" : "rgba(245,245,245,0.01)");
         if (seg.text) seg.text.setAttribute("fill", "rgba(245,245,245,0.15)");
       } else {
+        // Default — everything normal
         seg.path.setAttribute("fill", seg.ring === "outer" ? "rgba(245,245,245,0.06)" : "rgba(245,245,245,0.03)");
-        if (seg.text) seg.text.setAttribute("fill", seg.ring === "outer" ? "rgba(245,245,245,0.55)" : "rgba(245,245,245,0.35)");
+        if (seg.text) seg.text.setAttribute("fill", seg.ring === "outer" ? "rgba(245,245,245,0.75)" : "rgba(245,245,245,0.55)");
       }
     }
   }
 
-  function _showTooltip(key, evt) {
-    const info = _getKeyInfo(key);
-    if (!info) return;
-    const sigStr = info.sharps > 0 ? `${info.sharps} sharp${info.sharps>1?"s":""}` : info.flats > 0 ? `${info.flats} flat${info.flats>1?"s":""}` : "no sharps or flats";
-    const relLabel = info.isMinor ? `Relative major: ${info.rel}` : `Relative minor: ${info.rel}`;
-    const chordsLine = info.chords.join("  ");
-    const rnLine = info.rn.join("   ");
-    tooltip.innerHTML = `<div style="font-weight:500;color:#F5F5F5;margin-bottom:4px">${info.name}${info.isMinor?" minor":" major"}</div><div style="margin-bottom:6px">${sigStr} \u00b7 ${relLabel}</div><div style="font-family:monospace;font-size:0.75rem;color:rgba(245,245,245,0.5);margin-bottom:2px">${rnLine}</div><div style="font-family:monospace;font-size:0.8125rem">${chordsLine}</div>`;
-    const rect = container.getBoundingClientRect();
-    const x = evt.clientX - rect.left + 12;
-    const y = evt.clientY - rect.top - 10;
-    tooltip.style.left = x + "px";
-    tooltip.style.top = y + "px";
-    tooltip.style.opacity = "1";
-  }
-
-  function _hideTooltip() { tooltip.style.opacity = "0"; }
-
-  // Events
-  for (const seg of segments) {
-    seg.el.addEventListener("mouseenter", (e) => {
-      hoveredKey = seg.key;
-      _updateVisuals();
-      _showTooltip(seg.key, e);
-    });
-    seg.el.addEventListener("mousemove", (e) => _showTooltip(seg.key, e));
-    seg.el.addEventListener("mouseleave", () => {
-      hoveredKey = null;
-      _updateVisuals();
-      _hideTooltip();
-    });
-    if (interactive) {
+  // Events — only hover/click if interactive
+  if (interactive) {
+    for (const seg of segments) {
+      seg.el.addEventListener("mouseenter", () => {
+        hoveredKey = seg.key;
+        _updateVisuals();
+      });
+      seg.el.addEventListener("mouseleave", () => {
+        hoveredKey = null;
+        _updateVisuals();
+      });
       seg.el.addEventListener("click", () => {
         if (selectedKey === seg.key) {
           selectedKey = null;
@@ -423,7 +400,7 @@ function renderKeyDetail(containerId, keyName, opts) {
     html += `<div style="display:flex;align-items:center;gap:12px;padding:6px 0">`;
     html += `<div style="font-family:monospace;font-size:0.8125rem;color:rgba(212,105,31,0.7);min-width:100px">${prog.rn.join(" \u2013 ")}</div>`;
     html += `<div style="font-size:0.8125rem;color:rgba(245,245,245,0.55)">${chordNames.join(" \u2013 ")}</div>`;
-    html += `<div style="font-size:0.75rem;color:rgba(245,245,245,0.25);margin-left:auto">${prog.name}</div>`;
+    html += `<div style="font-size:0.75rem;color:rgba(245,245,245,0.25);margin-left:12px">${prog.name}</div>`;
     html += `</div>`;
   }
   html += `</div></div>`;

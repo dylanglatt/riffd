@@ -10,3 +10,4 @@ gunicorn
 torchcodec
 replicate
 soundfile
+anthropic>=0.40.0
