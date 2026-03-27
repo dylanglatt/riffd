@@ -416,7 +416,7 @@
         <div id="smart-recs-content"></div>
       </div>
       <div class="new-song-row" id="results-footer">
-        <button class="new-song-btn" id="full-track-btn" style="display:none;margin-right:12px;border-color:rgba(212,105,31,0.3);color:rgba(245,245,245,0.7)" onclick="_startFullTrackAnalysis()">Analyze full track</button>
+        <button class="new-song-btn" id="full-track-btn" style="display:none;margin-right:12px;border-color:rgba(212,105,31,0.3);color:rgba(245,245,245,0.7)" onclick="_startFullTrackAnalysis()">Separate Stems</button>
         <button class="new-song-btn" onclick="resetApp()">New Song</button>
       </div>
     </div>
@@ -439,7 +439,7 @@
 //     → downloadTrack("preview") → /api/download mode=preview
 //     → /api/process analysis_mode=instant (synchronous, no polling)
 //     → renderInstantResults() — shows key, BPM, lyrics, audio player
-//   User clicks "Run deep analysis":
+//   User clicks "Separate Stems":
 //     → _startDeepAnalysis() → downloadTrack("full") → /api/process analysis_mode=deep
 //     → pollStatus() → renderResults() — shows stems, tabs, mixer
 //
@@ -867,14 +867,14 @@ function _showNoPreview() {
   showView("confirm");
   setError("");
   const btn = document.getElementById("process-btn");
-  btn.textContent = "Analyze full track";
+  btn.textContent = "Separate Stems";
   btn.disabled = false;
   btn.style.display = "";
   btn.onclick = () => { _currentMode = "full"; startProcessing(); };
   const errEl = document.getElementById("error-msg");
   errEl.style.display = "block";
   errEl.style.color = "rgba(245,245,245,0.55)";
-  errEl.innerHTML = "No preview available for this track. You can analyze the full track (may take longer) or upload your own audio file.";
+  errEl.innerHTML = "No preview available for this track. You can separate stems from the full track (may take longer) or upload your own audio file.";
 
   // Show upload area
   let uploadArea = document.getElementById("confirm-upload-area");
@@ -1085,7 +1085,7 @@ async function startProcessing(){
     // ── Deep analysis: async with polling ──
     buildProcessingBanner(); showView("confirm"); setProgress(null, 5);
     startLoadingMessages("stems");
-    _setLT("Running deep analysis...");
+    _setLT("Separating stems and analyzing...");
 
     try {
       const r = await fetch(`/api/process/${currentJobId}`, {
@@ -1103,7 +1103,7 @@ async function startProcessing(){
     } catch(e) {
       _resetLoadingUI();
       if (_previewJobData) {
-        _showFullTrackFailed("Deep analysis failed. Your preview results are still available.");
+        _showFullTrackFailed("Stem separation failed. Your preview results are still available.");
       } else {
         setError("Processing failed: " + e.message);
         showView("confirm");
@@ -1466,10 +1466,10 @@ async function renderInstantResults(data) {
   document.getElementById("process-btn").textContent = "Dive In";
   showView("results");
 
-  // Show deep analysis button
+  // Show full breakdown button
   const fullBtn = document.getElementById("full-track-btn");
   if (fullBtn) {
-    fullBtn.textContent = "Run deep analysis";
+    fullBtn.textContent = "Separate Stems";
     fullBtn.onclick = () => _startDeepAnalysis();
     fullBtn.style.display = "";
   }
