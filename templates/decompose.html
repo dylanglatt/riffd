@@ -231,6 +231,7 @@
     .smart-recs-subtitle { font-size:0.6875rem; color:rgba(245,245,245,0.25); margin-left:auto; }
     .sr-category { margin-bottom:24px; }
     .sr-category:last-child { margin-bottom:0; }
+    .sr-category-artist { margin-top:32px; padding-top:20px; border-top:1px solid rgba(255,255,255,0.04); }
     .sr-cat-label { font-size:0.6875rem; font-weight:600; color:rgba(245,245,245,0.4); text-transform:uppercase; letter-spacing:0.06em; margin-bottom:10px; }
     .sr-songs { display:flex; flex-direction:column; gap:6px; }
     .sr-song { display:flex; align-items:baseline; gap:12px; padding:10px 16px; border:1px solid rgba(255,255,255,0.06); background:rgba(245,245,245,0.02); transition:border-color 0.15s; cursor:default; flex-wrap:wrap; }
@@ -243,6 +244,8 @@
       .sr-song-reason { margin-left:0; white-space:normal; }
     }
     .smart-recs-empty { padding:48px 20px; text-align:center; color:rgba(245,245,245,0.3); font-size:0.875rem; }
+    .sr-loading { display:flex; align-items:center; justify-content:center; padding:48px 20px; }
+    .sr-spinner { width:20px; height:20px; border:2px solid rgba(255,255,255,0.06); border-top-color:rgba(212,105,31,0.5); animation:srSpin .6s linear infinite; }
 
     /* ═══ Lyrics panel ═══ */
     .lyrics-container { padding:32px 36px; max-height:65vh; overflow-y:auto; background:transparent; }
@@ -1712,7 +1715,8 @@ function _renderSmartRecs(recs) {
     { key: 'similar_harmony', label: 'Similar Harmony' },
   ];
 
-  const hasAny = categories.some(c => (recs[c.key] || []).length > 0);
+  const artistSongs = recs['more_by_artist'] || [];
+  const hasAny = categories.some(c => (recs[c.key] || []).length > 0) || artistSongs.length > 0;
   if (!hasAny) {
     el.innerHTML = '<div class="smart-recs-empty">Theory-based recommendations will appear here once analysis completes.</div>';
     return;
@@ -1731,6 +1735,21 @@ function _renderSmartRecs(recs) {
       html += `<div class="sr-song">`;
       html += `<span class="sr-song-title">${esc(s.title)}</span>`;
       html += `<span class="sr-song-artist">${esc(s.artist)}</span>`;
+      if (s.reason) html += `<span class="sr-song-reason">${esc(s.reason)}</span>`;
+      html += `</div>`;
+    }
+    html += `</div></div>`;
+  }
+
+  // "More from [Artist]" section
+  if (artistSongs.length > 0) {
+    const artistName = (selectedTrack && selectedTrack.artist) ? selectedTrack.artist : artistSongs[0].artist;
+    html += `<div class="sr-category sr-category-artist">`;
+    html += `<div class="sr-cat-label">More from ${esc(artistName)}</div>`;
+    html += `<div class="sr-songs">`;
+    for (const s of artistSongs) {
+      html += `<div class="sr-song">`;
+      html += `<span class="sr-song-title">${esc(s.title)}</span>`;
       if (s.reason) html += `<span class="sr-song-reason">${esc(s.reason)}</span>`;
       html += `</div>`;
     }
