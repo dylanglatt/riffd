@@ -1,16 +1,17 @@
 """
 insight.py
-LLM-powered song analysis using Claude Haiku.
-Generates a plain-language musical breakdown from analysis data.
+LLM-powered structured song analysis using Claude Haiku.
+Returns JSON with progression names, smart recommendations, and key context.
 """
 
+import json
 import os
 import time
 
 
 def generate_insight(song_name, artist, intelligence, lyrics=None, tags=None):
     """
-    Generate a musical insight summary using Claude Haiku.
+    Generate structured musical insight using Claude Haiku.
 
     Args:
         song_name: Track name
@@ -20,7 +21,7 @@ def generate_insight(song_name, artist, intelligence, lyrics=None, tags=None):
         tags: List of genre/style tags
 
     Returns:
-        str: Generated insight text, or None on failure
+        dict | None: Structured insight data, or None on failure
     """
     api_key = os.environ.get("ANTHROPIC_API_KEY")
     if not api_key:
@@ -74,29 +75,49 @@ Genre/Tags: {genre}
     if lyrics_snippet:
         user_msg += f"\nLyrics (excerpt):\n{lyrics_snippet}\n"
 
-    user_msg += "\nWrite a musical analysis of this song."
+    user_msg += "\nReturn the JSON analysis object."
 
-    system_prompt = """You are a music analyst writing for musicians and curious listeners.
-Be specific and insightful — reference the actual chords, key, tempo, and structure from the data provided.
-Explain what makes this song work musically. Talk about the harmony, the feel, the rhythm, and how the parts fit together.
-If the chord progression is a well-known pattern, name it and mention other famous songs that use it.
-If the key has a particular character or is common in the genre, mention that.
-Make it feel like a smart friend explaining the song over coffee — not a textbook, not a blog post.
-Write 2-3 short paragraphs. No bullet points. No headers. No bold text. No markdown formatting.
-Keep it under 200 words. Every sentence should say something specific and interesting."""
+    system_prompt = """You are a music theory expert. Given analysis data about a song, return ONLY a JSON object with these fields:
+
+1. "progression_names": For each harmonic section provided, if the chord progression matches or closely resembles a well-known named progression, provide the name. Return as an object mapping section labels to names. Only include sections where you're confident of the name. Examples of named progressions: "50s progression", "Axis of Awesome", "Andalusian cadence", "12-bar blues", "Nashville progression", "Royal Road", "Pachelbel's Canon", "ii-V-I turnaround", "Plagal cadence". If a section's progression doesn't have a well-known name, omit it.
+
+2. "smart_recs": Theory-based song recommendations. This is the KEY feature — recommend songs based on MUSICAL DNA, not genre. Return an object with three categories:
+   - "same_progression": 2-3 songs that use the same or very similar chord progression pattern (e.g., if the song uses I-V-vi-IV, find other songs with that exact progression regardless of genre). Include the shared progression in the "reason" field.
+   - "same_key_tempo": 2-3 songs in the same key AND a similar tempo range (within ~15 BPM). These are ideal for DJ sets, mashups, or practice sessions. Include key and BPM in the "reason" field.
+   - "similar_harmony": 2-3 songs with similar harmonic movement or voice leading — songs that "feel" harmonically similar even if the exact chords differ (e.g., both use descending bass lines, both use modal interchange, both use the same cadence patterns).
+   Each entry should be: {"title": "...", "artist": "...", "reason": "..."}
+   The "reason" should be SHORT (under 12 words) and specific — e.g., "Same I-V-vi-IV progression", "G Major at 122 BPM", "Descending bass line over major chords".
+   Pick well-known songs musicians would recognize. Never pick songs by the same artist as the input.
+
+3. "key_context": A single sentence (under 20 words) about the character or common usage of the detected key. Examples: "A bright, open key — the natural home of folk and country guitar." or "Dark and dramatic — a favorite of classical composers and metal bands alike." Do NOT mention specific instruments or production details you cannot know from the data.
+
+Return ONLY the JSON object. No markdown, no code fences, no explanation."""
 
     try:
         t0 = time.time()
         response = client.messages.create(
             model="claude-haiku-4-5-20251001",
-            max_tokens=300,
+            max_tokens=700,
             system=system_prompt,
             messages=[{"role": "user", "content": user_msg}],
         )
-        text = response.content[0].text.strip()
+        raw = response.content[0].text.strip()
         elapsed = time.time() - t0
-        print(f"[insight] generated in {elapsed:.1f}s ({len(text)} chars)")
-        return text
+        print(f"[insight] generated in {elapsed:.1f}s ({len(raw)} chars)")
+
+        # Strip markdown code fences if present
+        if raw.startswith("```"):
+            raw = raw.split("\n", 1)[1] if "\n" in raw else raw[3:]
+            if raw.endswith("```"):
+                raw = raw[:-3]
+            raw = raw.strip()
+
+        result = json.loads(raw)
+        print(f"[insight] parsed: prog_names={list(result.get('progression_names', {}).keys())}, recs={list(result.get('smart_recs', {}).keys())}")
+        return result
+    except json.JSONDecodeError as e:
+        print(f"[insight] JSON parse failed: {e}\nRaw: {raw[:200]}")
+        return None
     except Exception as e:
         print(f"[insight] LLM call failed: {e}")
         return None

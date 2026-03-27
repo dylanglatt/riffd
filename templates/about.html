@@ -18,7 +18,7 @@
     color:rgba(245,245,245,0.4); text-align:center; margin-bottom:48px;
   }
 
-  .flow-steps { display:grid; grid-template-columns:repeat(4,1fr); gap:32px; }
+  .flow-steps { display:grid; grid-template-columns:repeat(5,1fr); gap:32px; }
   .flow-step { text-align:center; }
   .fs-num {
     width:40px; height:40px; border-radius:50%; display:flex; align-items:center; justify-content:center;
@@ -81,12 +81,12 @@
   }
 
   @media(max-width:768px) {
-    .flow-steps { grid-template-columns:repeat(2,1fr); }
+    .flow-steps { grid-template-columns:repeat(3,1fr); }
     .tech-grid { grid-template-columns:1fr; }
     .about-hero .hero-title { font-size:2.25rem; }
   }
   @media(max-width:480px) {
-    .flow-steps { grid-template-columns:1fr; }
+    .flow-steps { grid-template-columns:repeat(2,1fr); }
   }
 {% endblock %}
 
@@ -94,8 +94,8 @@
 <div class="page-content">
 
   <div class="about-hero">
-    <div class="hero-title">How Riffd works</div>
-    <div class="hero-sub">Riffd uses AI audio analysis to break songs into individual parts, detect musical properties, and give you the tools to learn and play along. No sheet music required.</div>
+    <div class="hero-title">See how songs work.</div>
+    <div class="hero-sub">Riffd uses AI audio analysis to break songs into individual parts, detect musical properties, and give you the tools to learn and play along.</div>
   </div>
 
   <div style="height:128px"></div>
@@ -106,23 +106,28 @@
     <div class="flow-steps">
       <div class="flow-step">
         <div class="fs-num">1</div>
-        <div class="fs-title">Input</div>
-        <div class="fs-desc">Search for any song or upload an audio file directly.</div>
+        <div class="fs-title">Start</div>
+        <div class="fs-desc">Search for a song or upload audio.</div>
       </div>
       <div class="flow-step">
         <div class="fs-num">2</div>
-        <div class="fs-title">Separate</div>
-        <div class="fs-desc">AI isolates vocals, guitar, bass, drums, piano, and other instruments.</div>
+        <div class="fs-title">Isolate</div>
+        <div class="fs-desc">Separate vocals, instruments, and parts.</div>
       </div>
       <div class="flow-step">
         <div class="fs-num">3</div>
-        <div class="fs-title">Analyze</div>
-        <div class="fs-desc">Detect key, BPM, chord progression, and generate tablature from each stem.</div>
+        <div class="fs-title">Understand</div>
+        <div class="fs-desc">See key, chords, and structure.</div>
       </div>
       <div class="flow-step">
         <div class="fs-num">4</div>
-        <div class="fs-title">Explore</div>
-        <div class="fs-desc">Mix stems, read tabs, loop sections, transpose, and learn at your own pace.</div>
+        <div class="fs-title">Interact</div>
+        <div class="fs-desc">Loop, focus, and explore sections.</div>
+      </div>
+      <div class="flow-step">
+        <div class="fs-num">5</div>
+        <div class="fs-title">Discover</div>
+        <div class="fs-desc">Find songs with similar musical structure.</div>
       </div>
     </div>
   </div>
@@ -162,6 +167,11 @@
         <div class="tech-desc">Anthropic's language model generates plain-language musical analysis from detected chords, key, tempo, and structure.</div>
       </div>
       <div class="tech-card">
+        <div class="tech-name">Smart Recommendations</div>
+        <div class="tech-role">Song Discovery</div>
+        <div class="tech-desc">AI-driven recommendations that match songs by harmonic DNA — same progressions, key relationships, and voice leading patterns.</div>
+      </div>
+      <div class="tech-card">
         <div class="tech-name">Flask + Vanilla JS</div>
         <div class="tech-role">Application Stack</div>
         <div class="tech-desc">Lightweight Python backend with zero-dependency frontend. Fast, simple, and maintainable.</div>
@@ -171,19 +181,23 @@
 
   <!-- Principles -->
   <div class="about-section" style="margin-bottom:80px;">
-    <div class="about-section-label">Principles</div>
+    <div class="about-section-label"></div>
     <div class="principles-list">
       <div class="principle">
         <div class="pr-title">Built for musicians</div>
         <div class="pr-desc">Every feature is designed for people who play instruments. Not a tech demo — a tool you actually use in your practice room.</div>
       </div>
       <div class="principle">
-        <div class="pr-title">Honest about limitations</div>
-        <div class="pr-desc">AI analysis isn't perfect. We show confidence levels and suppress low-quality results rather than guessing.</div>
+        <div class="pr-title">Only what matters</div>
+        <div class="pr-desc">We cut through the noise and show you exactly what you need to play the song.</div>
       </div>
       <div class="principle">
-        <div class="pr-title">Ship and iterate</div>
-        <div class="pr-desc">Core features are live. Tab accuracy, drum detection, and chord analysis are actively improving with every update.</div>
+        <div class="pr-title">Get better, faster</div>
+        <div class="pr-desc">Riffd helps you learn faster, practice smarter, and improve.</div>
+      </div>
+      <div class="principle">
+        <div class="pr-title">Discover through theory</div>
+        <div class="pr-desc">Find songs connected by how they sound harmonically, not by what an algorithm thinks you'll click on.</div>
       </div>
     </div>
   </div>

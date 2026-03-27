@@ -3,15 +3,17 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>{% block title %}riffd{% endblock %} | Stems, Chords, and Tabs for Any Song</title>
-  <meta name="description" content="Riffd breaks any song into stems, chords, and tabs. Separate instruments, analyze harmony, and practice faster." />
-  <meta property="og:title" content="riffd | Stems, Chords, and Tabs for Any Song" />
-  <meta property="og:description" content="Break any song into stems, chords, and tabs. Separate instruments, analyze harmony, and practice faster." />
+  <title>{% block title %}riffd{% endblock %} | Break Down Real Songs</title>
+  <link rel="icon" type="image/svg+xml" href="/static/favicon.svg" />
+  <link rel="icon" type="image/x-icon" href="/static/favicon.ico" />
+  <meta name="description" content="Break down real songs. Key detection, stem separation, AI-powered musical insight, and an interactive mixer — all in one place." />
+  <meta property="og:title" content="riffd | Break Down Real Songs" />
+  <meta property="og:description" content="Break down real songs. Key detection, stem separation, AI-powered musical insight, and an interactive mixer — all in one place." />
   <meta property="og:type" content="website" />
   <meta property="og:url" content="https://riffdlabs.com" />
   <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="riffd | Stems, Chords, and Tabs for Any Song" />
-  <meta name="twitter:description" content="Break any song into stems, chords, and tabs. Separate instruments, analyze harmony, and practice faster." />
+  <meta name="twitter:title" content="riffd | Break Down Real Songs" />
+  <meta name="twitter:description" content="Break down real songs. Key detection, stem separation, AI-powered musical insight, and an interactive mixer — all in one place." />
   <style>
     :root {
       --bg: #0B0B0B; --bg-soft: #0D0D0D; --surface: #0D0D0D; --surface-2: #141414;
@@ -25,6 +27,7 @@
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: "Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; background: var(--bg); color: var(--text-primary); min-height: 100vh; -webkit-font-smoothing: antialiased; overflow-x: hidden; }
+    body::before { content:""; position:fixed; top:-120px; left:50%; transform:translateX(-50%); width:900px; height:500px; background:radial-gradient(ellipse at center, rgba(212,105,31,0.045) 0%, transparent 70%); pointer-events:none; z-index:0; }
 
     /* ═══ Global Nav ═══ */
     .global-nav {
