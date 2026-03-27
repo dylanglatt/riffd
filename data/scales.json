@@ -667,5 +667,347 @@
       "Complex"
     ],
     "notes": 8
+  },
+  {
+    "name": "Composite Blues",
+    "formula": "H - W - H - H - W - W - H - H - H - W",
+    "badge": "Blues",
+    "desc": "Combines major and minor pentatonic plus blue notes. Nine notes of pure blues flexibility.",
+    "difficulty": "Intermediate",
+    "family": "Blues",
+    "genres": [
+      "Blues",
+      "Rock",
+      "Jazz"
+    ],
+    "mood": [
+      "Bluesy",
+      "Versatile",
+      "Expressive"
+    ],
+    "notes": 10
+  },
+  {
+    "name": "Bebop Minor",
+    "formula": "W - H - W - W - H - W - H - H",
+    "badge": "Bebop",
+    "desc": "Natural minor with a passing tone between 7 and octave. Charlie Parker and Art Tatum's modernized minor.",
+    "difficulty": "Advanced",
+    "family": "Bebop",
+    "genres": [
+      "Jazz",
+      "Bebop",
+      "Fusion"
+    ],
+    "mood": [
+      "Driving",
+      "Sophisticated",
+      "Complex"
+    ],
+    "notes": 8
+  },
+  {
+    "name": "Persian Scale",
+    "formula": "H - WH - H - H - H - WH - H",
+    "badge": "Exotic",
+    "desc": "Middle Eastern and classical Persian music. Haunting, complex intervals create deeply exotic color.",
+    "difficulty": "Advanced",
+    "family": "Exotic",
+    "genres": [
+      "World",
+      "Classical",
+      "Film"
+    ],
+    "mood": [
+      "Exotic",
+      "Haunting",
+      "Mysterious"
+    ],
+    "notes": 7
+  },
+  {
+    "name": "Prometheus Scale",
+    "formula": "W - W - W - WH - H - W",
+    "badge": "Symmetric",
+    "desc": "Scriabin's invention. Six notes with floating, ethereal quality. Used in film and experimental music.",
+    "difficulty": "Advanced",
+    "family": "Symmetric",
+    "genres": [
+      "Classical",
+      "Film",
+      "Ambient"
+    ],
+    "mood": [
+      "Ethereal",
+      "Floating",
+      "Bright"
+    ],
+    "notes": 6
+  },
+  {
+    "name": "Tritone Scale",
+    "formula": "H - WH - H - H - WH - H",
+    "badge": "Symmetric",
+    "desc": "Symmetric scale with tritone intervals. Tension and dissonance. Used in metal and dark ambient.",
+    "difficulty": "Advanced",
+    "family": "Symmetric",
+    "genres": [
+      "Metal",
+      "Ambient",
+      "Avant-Garde"
+    ],
+    "mood": [
+      "Tense",
+      "Dark",
+      "Dissonant"
+    ],
+    "notes": 6
+  },
+  {
+    "name": "Iwato Scale",
+    "formula": "H - WW - H - WW - W",
+    "badge": "Exotic",
+    "desc": "Japanese pentatonic with unique leaps. Minimalist, haunting, and deeply traditional sound.",
+    "difficulty": "Advanced",
+    "family": "Exotic",
+    "genres": [
+      "World",
+      "Ambient",
+      "Classical"
+    ],
+    "mood": [
+      "Haunting",
+      "Minimal",
+      "Traditional"
+    ],
+    "notes": 5
+  },
+  {
+    "name": "Kumoi Scale",
+    "formula": "W - H - WW - W - WH",
+    "badge": "Exotic",
+    "desc": "Japanese pentatonic with minor third leap. Soft, lyrical, and gentle character.",
+    "difficulty": "Advanced",
+    "family": "Exotic",
+    "genres": [
+      "World",
+      "Ambient",
+      "Classical"
+    ],
+    "mood": [
+      "Soft",
+      "Lyrical",
+      "Gentle"
+    ],
+    "notes": 5
+  },
+  {
+    "name": "Pelog Scale",
+    "formula": "H - W - WW - H - WW",
+    "badge": "Exotic",
+    "desc": "Javanese and Balinese gamelan scale. Irregular intervals create microtonal complexity and beauty.",
+    "difficulty": "Advanced",
+    "family": "Exotic",
+    "genres": [
+      "World",
+      "Ambient",
+      "Fusion"
+    ],
+    "mood": [
+      "Exotic",
+      "Complex",
+      "Beautiful"
+    ],
+    "notes": 5
+  },
+  {
+    "name": "Egyptian Scale",
+    "formula": "W - WH - W - WH - W",
+    "badge": "Exotic",
+    "desc": "Also called suspended pentatonic. Five notes with ancient character. Used in world and fusion.",
+    "difficulty": "Intermediate",
+    "family": "Exotic",
+    "genres": [
+      "World",
+      "Ambient",
+      "Fusion"
+    ],
+    "mood": [
+      "Ancient",
+      "Mysterious",
+      "Open"
+    ],
+    "notes": 5
+  },
+  {
+    "name": "Yo Scale",
+    "formula": "W - WH - W - W - WH",
+    "badge": "Exotic",
+    "desc": "Japanese pentatonic variant. Major sound with open, bright character. Traditional and modern fusion use.",
+    "difficulty": "Intermediate",
+    "family": "Exotic",
+    "genres": [
+      "World",
+      "Ambient",
+      "Jazz"
+    ],
+    "mood": [
+      "Bright",
+      "Open",
+      "Lyrical"
+    ],
+    "notes": 5
+  },
+  {
+    "name": "Blues Major Scale",
+    "formula": "W - H - H - WH - W - WH",
+    "badge": "Blues",
+    "desc": "Major pentatonic flavor with blues alterations. Combines brightness with grit. Modern blues innovation.",
+    "difficulty": "Intermediate",
+    "family": "Blues",
+    "genres": [
+      "Blues",
+      "Rock",
+      "Jazz"
+    ],
+    "mood": [
+      "Bright",
+      "Bluesy",
+      "Expressive"
+    ],
+    "notes": 6
+  },
+  {
+    "name": "Harmonic Major",
+    "formula": "W - W - H - W - H - WH - H",
+    "badge": "Major",
+    "desc": "Major scale with a flat 6th. Adds harmonic minor color to major tonality. Used in Neo-Classical.",
+    "difficulty": "Advanced",
+    "family": "Major",
+    "genres": [
+      "Classical",
+      "Metal",
+      "Fusion"
+    ],
+    "mood": [
+      "Dramatic",
+      "Exotic",
+      "Tense"
+    ],
+    "notes": 7
+  },
+  {
+    "name": "Hungarian Major",
+    "formula": "WH - H - W - H - W - H - W",
+    "badge": "Exotic",
+    "desc": "Major with raised 2nd and 4th. Angular, exotic, and dramatic. Eastern European and film music.",
+    "difficulty": "Advanced",
+    "family": "Exotic",
+    "genres": [
+      "Film",
+      "Classical",
+      "Metal"
+    ],
+    "mood": [
+      "Exotic",
+      "Dramatic",
+      "Angular"
+    ],
+    "notes": 7
+  },
+  {
+    "name": "Neapolitan Major",
+    "formula": "H - W - W - W - W - W - H",
+    "badge": "Exotic",
+    "desc": "Major scale with a flat 2nd. Dark and operatic major quality. Used in advanced harmony.",
+    "difficulty": "Advanced",
+    "family": "Exotic",
+    "genres": [
+      "Classical",
+      "Film",
+      "Opera"
+    ],
+    "mood": [
+      "Dark",
+      "Operatic",
+      "Dramatic"
+    ],
+    "notes": 7
+  },
+  {
+    "name": "Leading Whole Tone",
+    "formula": "W - W - W - W - W - H - H",
+    "badge": "Symmetric",
+    "desc": "Whole tone with leading tone resolution. Dreamy but grounded. Debussy-influenced modern jazz.",
+    "difficulty": "Advanced",
+    "family": "Symmetric",
+    "genres": [
+      "Jazz",
+      "Film",
+      "Classical"
+    ],
+    "mood": [
+      "Dreamy",
+      "Unresolved",
+      "Complex"
+    ],
+    "notes": 7
+  },
+  {
+    "name": "Algerian Scale",
+    "formula": "W - H - WH - H - H - WH - H",
+    "badge": "Exotic",
+    "desc": "Also called Hejaz or Arabic scale variant. Eight-note variant with North African and Middle Eastern color.",
+    "difficulty": "Advanced",
+    "family": "Exotic",
+    "genres": [
+      "World",
+      "Classical",
+      "Fusion"
+    ],
+    "mood": [
+      "Exotic",
+      "Dramatic",
+      "Complex"
+    ],
+    "notes": 8
+  },
+  {
+    "name": "Istrian Scale",
+    "formula": "H - W - H - W - H - rest",
+    "badge": "Exotic",
+    "desc": "Ultra-rare six-note scale. Used in avant-garde and experimental music. Symmetrical and dissonant.",
+    "difficulty": "Advanced",
+    "family": "Exotic",
+    "genres": [
+      "Avant-Garde",
+      "Classical",
+      "Experimental"
+    ],
+    "mood": [
+      "Dissonant",
+      "Rare",
+      "Abstract"
+    ],
+    "notes": 6
+  },
+  {
+    "name": "Dominant Diminished",
+    "formula": "H - W - H - W - H - W - W - H",
+    "badge": "Symmetric",
+    "desc": "Half-whole diminished from the dominant. Eight-note symmetrical scale used in dominant alterations.",
+    "difficulty": "Advanced",
+    "family": "Symmetric",
+    "genres": [
+      "Jazz",
+      "Fusion",
+      "Classical"
+    ],
+    "mood": [
+      "Tense",
+      "Complex",
+      "Rich"
+    ],
+    "notes": 8
   }
 ]

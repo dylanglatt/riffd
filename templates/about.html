@@ -87,6 +87,23 @@
   }
   @media(max-width:480px) {
     .flow-steps { grid-template-columns:repeat(2,1fr); }
+    .about-hero .hero-title { font-size:2rem; }
+    .about-hero .hero-sub { font-size:0.875rem; }
+    .tech-card { padding:20px; }
+    .tech-desc { font-size:0.8125rem; }
+    .fs-desc { font-size:0.8125rem; }
+  }
+  @media(max-width:360px) {
+    .flow-steps { grid-template-columns:1fr; }
+    .fs-num { width:32px; height:32px; font-size:0.8125rem; }
+    .about-hero .hero-title { font-size:1.75rem; }
+    .about-hero .hero-sub { font-size:0.8125rem; }
+    .about-section { margin-bottom:80px; }
+    .tech-card { padding:16px; }
+    .tech-name { font-size:0.875rem; }
+    .pr-title { font-size:0.9375rem; }
+    .pr-desc { font-size:0.8125rem; }
+    .creator-credit { padding:64px 0 0; }
   }
 {% endblock %}
 

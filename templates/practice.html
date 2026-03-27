@@ -59,6 +59,17 @@
     .practice-title { font-size:2.25rem; }
     .modules-grid { grid-template-columns:1fr; }
   }
+  @media(max-width:480px) {
+    .module-card { padding:16px; }
+    .practice-title { font-size:2rem; }
+  }
+  @media(max-width:360px) {
+    .practice-title { font-size:1.75rem; }
+    .practice-head { padding:48px 0 0; margin-bottom:40px; }
+    .module-card { padding:14px; }
+    .mod-title { font-size:0.875rem; }
+    .mod-desc { font-size:0.75rem; }
+  }
 {% endblock %}
 
 {% block body %}
