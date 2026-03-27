@@ -11,3 +11,4 @@ torchcodec
 replicate
 soundfile
 anthropic>=0.40.0
+essentia

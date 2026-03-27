@@ -186,6 +186,11 @@ def require_login():
     return redirect("/login")
 
 
+@app.route("/favicon.ico")
+def favicon():
+    return send_from_directory("static", "favicon.ico", mimetype="image/x-icon")
+
+
 @app.route("/login", methods=["GET", "POST"])
 def login():
     # If already authenticated, go to home
@@ -488,7 +493,7 @@ def _process_instant(job_id, audio_path, req_data):
 
     print(f"[job {job_id}] process start analysis_mode=instant audio={audio_path}")
 
-    intelligence = {"key": "Unknown", "key_num": -1, "mode_num": -1, "bpm": 120, "progression": None}
+    intelligence = {"key": "Unknown", "key_num": -1, "mode_num": -1, "bpm": 0, "bpm_confidence": 0, "progression": None}
     lyrics = None
     tags = []
     audio_duration = 0
@@ -517,33 +522,25 @@ def _process_instant(job_id, audio_path, req_data):
         except Exception as e:
             print(f"[job {job_id}] instant: duration detection failed: {e}")
 
-    # Lightweight BPM + key estimation using Basic Pitch on the raw audio
-    # This runs on the preview file directly (30s) — much faster than stem-separated analysis
+    # Key + BPM detection using Essentia (fast, lightweight, no TensorFlow)
+    # Runs directly on the audio file — no intermediate note detection needed
     try:
         jobs[job_id]["progress"] = "Analyzing key and tempo..."
-        from basic_pitch import ICASSP_2022_MODEL_PATH
-        from basic_pitch.inference import predict as bp_predict
-        print(f"[job {job_id}] instant: running Basic Pitch on raw audio...")
-        _, _, note_events = bp_predict(
-            str(audio_path),
-            ICASSP_2022_MODEL_PATH,
-            minimum_note_length=80, minimum_frequency=40, maximum_frequency=2000,
-        )
-        if note_events and len(note_events) > 10:
-            import pandas as pd
-            df = pd.DataFrame(note_events, columns=["start_time_s", "end_time_s", "pitch_midi", "confidence", "pitch_bends"][:len(note_events[0])])
-            from music_intelligence import detect_key_from_notes, estimate_bpm, format_key
-            key_num, mode_num, key_conf = detect_key_from_notes(df)
-            if key_num >= 0:
-                intelligence["key"] = format_key(key_num, mode_num)
-                intelligence["key_num"] = key_num
-                intelligence["mode_num"] = mode_num
-                intelligence["key_confidence"] = round(key_conf, 3)
-            bpm, bpm_conf = estimate_bpm(df)
-            if bpm > 0 and bpm_conf >= 0.15:
-                intelligence["bpm"] = round(bpm, 1)
-                intelligence["bpm_confidence"] = round(bpm_conf, 3)
-            del df, note_events
+        from music_intelligence import detect_key_from_audio, detect_bpm_from_audio, format_key
+        print(f"[job {job_id}] instant: running Essentia on raw audio...")
+
+        key_num, mode_num, key_conf = detect_key_from_audio(audio_path)
+        if key_num >= 0:
+            intelligence["key"] = format_key(key_num, mode_num)
+            intelligence["key_num"] = key_num
+            intelligence["mode_num"] = mode_num
+            intelligence["key_confidence"] = round(key_conf, 3)
+
+        bpm, bpm_conf = detect_bpm_from_audio(audio_path)
+        if bpm > 0 and bpm_conf >= 0.1:
+            intelligence["bpm"] = round(bpm, 1)
+            intelligence["bpm_confidence"] = round(bpm_conf, 3)
+
         print(f"[job {job_id}] instant: key={intelligence['key']} bpm={intelligence['bpm']}")
     except Exception as e:
         print(f"[job {job_id}] instant: key/bpm detection failed: {e}")
@@ -561,6 +558,7 @@ def _process_instant(job_id, audio_path, req_data):
     if artist and track_name:
         try:
             tags = get_track_tags(artist, track_name)
+            print(f"[job {job_id}] instant: tags={tags}")
         except Exception:
             pass
 
@@ -728,7 +726,7 @@ def process_audio(job_id):
         # Partial results accumulate — returned even if a later stage fails
         stems = {}
         tabs = {}
-        intelligence = {"key": "Unknown", "key_num": -1, "mode_num": -1, "bpm": 120, "progression": None}
+        intelligence = {"key": "Unknown", "key_num": -1, "mode_num": -1, "bpm": 0, "bpm_confidence": 0, "progression": None}
         lyrics = None
         tags = []
         insight_text = None
@@ -832,37 +830,31 @@ def process_audio(job_id):
             artist_name = track_meta.get("artist", "")
             track_name = track_meta.get("name", "")
 
-            # ── Stage 2: BPM detection ──
-            on_progress("Detecting tempo...")
-            bpm_stem_key = None
-            for priority_list in [["guitar", "piano", "bass", "other"], list(active_stems.keys())]:
-                for k in priority_list:
-                    if k in active_stems and k not in ("drums",):
-                        bpm_stem_key = k
-                        break
-                if bpm_stem_key:
-                    break
+            # ── Stage 2: Key + BPM detection (Essentia — fast, direct on audio) ──
+            on_progress("Detecting key and tempo...")
+            essentia_key_num, essentia_mode_num, essentia_key_conf = -1, -1, 0.0
+            try:
+                from music_intelligence import detect_key_from_audio, detect_bpm_from_audio, format_key
+                print(f"[job {job_id}] [{_elapsed()}] Essentia key/BPM starting...")
 
-            if bpm_stem_key:
-                try:
-                    print(f"[job {job_id}] [{_elapsed()}] BPM detection starting (stem={bpm_stem_key})...")
-                    from basic_pitch import ICASSP_2022_MODEL_PATH
-                    from basic_pitch.inference import predict as bp_predict
-                    _, _, bpm_notes = bp_predict(
-                        active_stems[bpm_stem_key]["path"],
-                        ICASSP_2022_MODEL_PATH,
-                        minimum_note_length=80, minimum_frequency=40, maximum_frequency=2000,
-                    )
-                    if bpm_notes and len(bpm_notes) > 10:
-                        import pandas as pd
-                        bpm_df = pd.DataFrame(bpm_notes, columns=["start_time_s", "end_time_s", "pitch_midi", "confidence", "pitch_bends"][:len(bpm_notes[0])])
-                        from music_intelligence import estimate_bpm
-                        est_bpm, bpm_conf = estimate_bpm(bpm_df)
-                        if est_bpm > 0 and bpm_conf >= 0.15:
-                            detected_bpm = est_bpm
-                    print(f"[job {job_id}] [{_elapsed()}] BPM detection finished → {detected_bpm}")
-                except Exception as e:
-                    _fail("bpm_detection", e)
+                essentia_key_num, essentia_mode_num, essentia_key_conf = detect_key_from_audio(audio_path)
+                if essentia_key_num >= 0:
+                    intelligence["key"] = format_key(essentia_key_num, essentia_mode_num)
+                    intelligence["key_num"] = essentia_key_num
+                    intelligence["mode_num"] = essentia_mode_num
+                    intelligence["key_confidence"] = round(essentia_key_conf, 3)
+                    print(f"[job {job_id}] [{_elapsed()}] Essentia key → {intelligence['key']} (conf={essentia_key_conf:.3f})")
+
+                ess_bpm, ess_bpm_conf = detect_bpm_from_audio(audio_path)
+                if ess_bpm > 0 and ess_bpm_conf >= 0.1:
+                    detected_bpm = ess_bpm
+                    intelligence["bpm"] = round(ess_bpm, 1)
+                    intelligence["bpm_confidence"] = round(ess_bpm_conf, 3)
+                    print(f"[job {job_id}] [{_elapsed()}] Essentia BPM → {ess_bpm} (conf={ess_bpm_conf:.3f})")
+
+                print(f"[job {job_id}] [{_elapsed()}] Essentia key/BPM finished")
+            except Exception as e:
+                _fail("essentia_detection", e)
 
             # ── Stage 3: Tab generation (Basic Pitch) ──
             print(f"[job {job_id}] [{_elapsed()}] TAB GENERATION starting ({len(active_stems)} stems)...")
@@ -877,6 +869,8 @@ def process_audio(job_id):
                     csv_path = tab_result.get("notes_csv")
                     if csv_path:
                         try:
+                            from processor import _patch_lzma
+                            _patch_lzma()
                             import pandas as pd
                             df = pd.read_csv(csv_path)
                             if len(df) > 0:
@@ -903,9 +897,20 @@ def process_audio(job_id):
             print(f"[job {job_id}] [{_elapsed()}] INTELLIGENCE starting...")
             try:
                 if note_events_all:
+                    # Pass Essentia key/BPM as overrides — analyze_song_from_notes uses them
+                    # instead of recalculating from note data
+                    essentia_override = None
+                    if essentia_key_num >= 0:
+                        essentia_override = {
+                            "key_num": essentia_key_num,
+                            "mode_num": essentia_mode_num,
+                            "key_conf": essentia_key_conf,
+                            "bpm": detected_bpm,
+                            "bpm_conf": intelligence.get("bpm_confidence", 0),
+                        }
                     intelligence = analyze_song_from_notes(
                         note_events_all, song_name=track_name, artist=artist_name,
-                        lyrics_text=lyrics,
+                        lyrics_text=lyrics, audio_key_override=essentia_override,
                     )
                     print(f"[job {job_id}] [{_elapsed()}] INTELLIGENCE finished → key={intelligence['key']}, bpm={intelligence['bpm']}, sections={len(intelligence.get('harmonic_sections',[]))}")
                 else:

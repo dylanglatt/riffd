@@ -63,21 +63,56 @@
     font-size:0.875rem; font-weight:500; color:rgba(245,245,245,0.7); letter-spacing:-0.01em;
   }
 
+  /* Studio section */
+  .studio-section {
+    display:grid; grid-template-columns:1fr 1fr; gap:64px; align-items:center;
+    padding:160px 0; border-top:1px solid rgba(255,255,255,0.08);
+  }
+  .studio-preview { border:1px solid rgba(255,255,255,0.08); padding:32px; }
+  .studio-preview-label {
+    font-size:0.6875rem; font-weight:500; letter-spacing:0.08em; text-transform:uppercase;
+    color:rgba(245,245,245,0.3); margin-bottom:24px;
+  }
+  .studio-key-title {
+    font-size:1.75rem; font-weight:500; letter-spacing:-0.02em; color:#F5F5F5; margin-bottom:4px;
+  }
+  .studio-key-meta {
+    font-size:0.8125rem; color:rgba(245,245,245,0.4); margin-bottom:24px; letter-spacing:-0.01em;
+  }
+  .studio-chords { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:24px; }
+  .studio-chord {
+    padding:8px 0; width:64px; text-align:center;
+    border:1px solid rgba(255,255,255,0.08); font-size:0.8125rem; color:rgba(245,245,245,0.7);
+  }
+  .studio-chord .sc-numeral {
+    display:block; font-size:0.625rem; color:#D4691F; opacity:0.7; margin-bottom:2px;
+  }
+  .studio-chord.sc-highlight { border-color:rgba(212,105,31,0.3); }
+  .studio-chord.sc-highlight .sc-numeral { opacity:1; }
+  .studio-progressions { display:flex; flex-direction:column; gap:8px; }
+  .studio-prog-row {
+    display:flex; align-items:baseline; gap:12px;
+    font-size:0.8125rem; letter-spacing:-0.01em;
+  }
+  .studio-prog-numerals { color:#D4691F; font-family:monospace; min-width:140px; }
+  .studio-prog-chords { color:rgba(245,245,245,0.5); }
+  .studio-prog-name { color:rgba(245,245,245,0.25); margin-left:auto; font-style:italic; }
+
   /* Features */
   .features-section { padding:160px 0; border-top:1px solid rgba(255,255,255,0.08); }
   .features-label {
     font-size:0.8125rem; font-weight:500; letter-spacing:0.1em; text-transform:uppercase;
     color:rgba(245,245,245,0.4); margin-bottom:48px;
   }
-  .features-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:48px; }
+  .features-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:48px; }
   .feature-icon { margin-bottom:20px; }
   .feature-icon svg { width:24px; height:24px; stroke:rgba(212,105,31,0.85); stroke-width:1.5; fill:none; }
   .feature-title { font-size:1.25rem; font-weight:500; letter-spacing:-0.02em; margin-bottom:8px; color:#F5F5F5; }
   .feature-desc { font-size:0.9375rem; color:rgba(245,245,245,0.5); line-height:1.7; letter-spacing:-0.01em; max-width:680px; }
 
   /* Bottom CTA */
-  .bottom-cta { text-align:center; padding:160px 0 80px; }
-  .bottom-headline { font-size:3rem; font-weight:500; letter-spacing:-0.03em; line-height:1.15; margin-bottom:32px; color:#F5F5F5; }
+  .bottom-cta { text-align:center; padding:96px 0 80px; border-top:1px solid rgba(255,255,255,0.08); }
+  .bottom-headline { font-size:2.5rem; font-weight:500; letter-spacing:-0.03em; line-height:1.15; margin-bottom:24px; color:rgba(245,245,245,0.85); }
 
   /* Footer */
   .home-footer {
@@ -91,8 +126,10 @@
 
   @media(max-width:960px) {
     .home-hero { grid-template-columns:1fr; gap:48px; padding:120px 0 100px; }
+    .studio-section { grid-template-columns:1fr; gap:48px; }
     .preview-card { max-width:520px; }
-    .features-grid { grid-template-columns:1fr; gap:40px; }
+    .studio-preview { max-width:520px; }
+    .features-grid { grid-template-columns:repeat(2,1fr); gap:40px; }
   }
   @media(max-width:768px) {
     .home-hero { padding:80px 0 64px; }
@@ -106,20 +143,21 @@
   @media(max-width:480px) {
     .hero-headline { font-size:2rem; }
     .bottom-headline { font-size:1.6rem; }
+    .studio-chords { gap:4px; }
+    .studio-chord { width:52px; font-size:0.75rem; }
   }
 {% endblock %}
 
 {% block body %}
 <div class="page-content">
 
-  <!-- Hero -->
+  <!-- Hero: Decompose -->
   <div class="home-hero">
     <div class="hero-text">
-      <div class="hero-headline">Analyze any song.</div>
-      <div class="hero-sub">Isolate stems, identify chords, and generate tabs — so you understand how songs actually work.</div>
+      <div class="hero-headline">Break down real songs.</div>
+      <div class="hero-sub">Separate stems, see the chords, and understand the harmony behind the music you play.</div>
       <div class="hero-ctas">
         <a href="/decompose" class="cta-primary">Get Started</a>
-        <a href="/about" class="cta-secondary">Learn More</a>
       </div>
     </div>
 
@@ -150,6 +188,54 @@
     </div>
   </div>
 
+  <!-- Studio: Theory Reference -->
+  <div class="studio-section">
+    <div class="studio-preview">
+      <div class="studio-preview-label">Studio — G Major</div>
+      <div class="studio-key-title">G major</div>
+      <div class="studio-key-meta">1 sharp · Relative minor: Em</div>
+      <div class="studio-chords">
+        <div class="studio-chord sc-highlight"><span class="sc-numeral">I</span>G</div>
+        <div class="studio-chord"><span class="sc-numeral">ii</span>Am</div>
+        <div class="studio-chord"><span class="sc-numeral">iii</span>Bm</div>
+        <div class="studio-chord sc-highlight"><span class="sc-numeral">IV</span>C</div>
+        <div class="studio-chord sc-highlight"><span class="sc-numeral">V</span>D</div>
+        <div class="studio-chord"><span class="sc-numeral">vi</span>Em</div>
+        <div class="studio-chord"><span class="sc-numeral">vii°</span>F#dim</div>
+      </div>
+      <div class="studio-progressions">
+        <div class="studio-prog-row">
+          <span class="studio-prog-numerals">I – V – vi – IV</span>
+          <span class="studio-prog-chords">G – D – Em – C</span>
+          <span class="studio-prog-name">Pop anthem</span>
+        </div>
+        <div class="studio-prog-row">
+          <span class="studio-prog-numerals">I – IV – V – I</span>
+          <span class="studio-prog-chords">G – C – D – G</span>
+          <span class="studio-prog-name">Classic cadence</span>
+        </div>
+        <div class="studio-prog-row">
+          <span class="studio-prog-numerals">ii – V – I</span>
+          <span class="studio-prog-chords">Am – D – G</span>
+          <span class="studio-prog-name">Jazz ii-V-I</span>
+        </div>
+        <div class="studio-prog-row">
+          <span class="studio-prog-numerals">vi – IV – I – V</span>
+          <span class="studio-prog-chords">Em – C – G – D</span>
+          <span class="studio-prog-name">Sensitive</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="hero-text">
+      <div class="hero-headline">Know every key.</div>
+      <div class="hero-sub">Pick a key. See the chords, the progressions, and how it all connects.</div>
+      <div class="hero-ctas">
+        <a href="/learn" class="cta-primary">Open Studio</a>
+      </div>
+    </div>
+  </div>
+
   <!-- Features -->
   <div class="features-section">
     <div class="features-label">Features</div>
@@ -173,24 +259,27 @@
           <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
         </div>
         <div class="feature-title">Play</div>
-        <div class="feature-desc">Generate tabs and practice any part of the song at your own pace.</div>
+        <div class="feature-desc">Loop sections, adjust tempo, and practice any part of the song at your own pace.</div>
+      </div>
+      <div>
+        <div class="feature-icon">
+          <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 12h8M12 8v8"/></svg>
+        </div>
+        <div class="feature-title">Discover</div>
+        <div class="feature-desc">AI finds songs with matching harmonic DNA — same progressions, keys, and voice leading.</div>
       </div>
     </div>
   </div>
 
   <!-- Bottom CTA -->
   <div class="bottom-cta">
-    <div class="bottom-headline">Start analyzing music.</div>
-    <a href="/decompose" class="cta-primary">Get Started</a>
+    <div class="bottom-headline">See how it works.</div>
+    <a href="/about" class="cta-secondary">Learn More</a>
   </div>
 
   <!-- Footer -->
   <div class="home-footer">
     <div class="home-footer-note">&copy; 2026 Riffd</div>
-    <div class="home-footer-links">
-      <a href="/about">About</a>
-      <a href="/learn">Studio</a>
-    </div>
   </div>
 </div>
 

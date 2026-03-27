@@ -11,10 +11,26 @@ np = None
 pd = None
 
 
+def _patch_lzma():
+    """Stub out _lzma if missing — pandas imports it but we never use lzma compression."""
+    import importlib, sys
+    if importlib.util.find_spec("_lzma") is None:
+        import types
+        _fake = types.ModuleType("_lzma")
+        for attr, val in [("FORMAT_AUTO", 0), ("FORMAT_XZ", 1), ("FORMAT_ALONE", 2),
+                          ("FORMAT_RAW", 3), ("CHECK_NONE", 0), ("CHECK_CRC32", 1),
+                          ("CHECK_CRC64", 4), ("CHECK_SHA256", 10), ("MEM_ERROR", 5),
+                          ("LZMADecompressor", None), ("LZMACompressor", None)]:
+            setattr(_fake, attr, val)
+        sys.modules["_lzma"] = _fake
+        print("[music_intelligence] patched missing _lzma module")
+
+
 def _ensure_imports():
     global np, pd
     if np is not None:
         return
+    _patch_lzma()
     import numpy as _np
     import pandas as _pd
     np = _np
@@ -87,9 +103,75 @@ STEM_PRIORITY = {
 MIN_PROGRESSION_CONFIDENCE = 0.35
 
 
-# ─── Key Detection ────────────────────────────────────────────────────────────
+# ─── Key Detection (Essentia — primary) ──────────────────────────────────────
+
+# Map Essentia key strings to our note index
+_ESSENTIA_KEY_MAP = {
+    "C": 0, "C#": 1, "Db": 1, "D": 2, "D#": 3, "Eb": 3,
+    "E": 4, "F": 5, "F#": 6, "Gb": 6, "G": 7, "G#": 8,
+    "Ab": 8, "A": 9, "A#": 10, "Bb": 10, "B": 11,
+}
+
+
+def detect_key_from_audio(audio_path):
+    """
+    Detect key directly from audio file using Essentia.
+    Works on any audio format (mp3, wav, etc).
+    Returns (key_num, mode_num, confidence) — same format as detect_key_from_notes.
+    mode_num: 1=major, 0=minor
+    """
+    try:
+        import essentia.standard as es
+
+        # Load audio at 44100Hz mono (Essentia's default)
+        audio = es.MonoLoader(filename=str(audio_path), sampleRate=44100)()
+
+        # KeyExtractor runs HPCP + key profile correlation internally
+        # It's the same Krumhansl-Schmuckler idea but on raw audio chromagram
+        # which is far more accurate than routing through Basic Pitch first
+        key, scale, confidence = es.KeyExtractor()(audio)
+
+        key_num = _ESSENTIA_KEY_MAP.get(key, -1)
+        mode_num = 1 if scale == "major" else 0
+
+        print(f"[essentia] key={key} {scale} confidence={confidence:.3f}")
+        return key_num, mode_num, float(confidence)
+
+    except Exception as e:
+        print(f"[essentia] key detection failed: {e}")
+        return -1, -1, 0.0
+
+
+def detect_bpm_from_audio(audio_path):
+    """
+    Detect BPM directly from audio file using Essentia's RhythmExtractor.
+    Returns (bpm, confidence).
+    """
+    try:
+        import essentia.standard as es
+
+        audio = es.MonoLoader(filename=str(audio_path), sampleRate=44100)()
+        rhythm = es.RhythmExtractor2013(method="multifeature")
+        bpm, beats, beats_confidence, _, beats_intervals = rhythm(audio)
+
+        # Confidence: average of per-beat confidences
+        conf = float(beats_confidence.mean()) if len(beats_confidence) > 0 else 0.0
+        # Clamp to plausible range
+        if bpm < 40 or bpm > 250:
+            return 0, 0.0
+
+        print(f"[essentia] bpm={bpm:.1f} confidence={conf:.3f} ({len(beats)} beats)")
+        return round(float(bpm), 1), round(min(1.0, conf), 3)
+
+    except Exception as e:
+        print(f"[essentia] bpm detection failed: {e}")
+        return 0, 0.0
+
+
+# ─── Key Detection (Krumhansl-Schmuckler fallback from note data) ────────────
 
 def detect_key_from_notes(note_events_df):
+    """Fallback: detect key from Basic Pitch note data. Used when Essentia unavailable."""
     _ensure_profiles()
     if note_events_df is None or len(note_events_df) == 0:
         return -1, -1, 0.0
@@ -558,14 +640,17 @@ def _match_known(pattern):
 
 # ─── Full Analysis (hybrid: external chords → audio fallback) ─────────────
 
-def analyze_song_from_notes(all_note_events, song_name="", artist="", lyrics_text=None):
+def analyze_song_from_notes(all_note_events, song_name="", artist="", lyrics_text=None, audio_key_override=None):
     """
     Complete song analysis.
-    1. Detect key from note data
+    1. Use Essentia key/BPM if provided (audio_key_override), else detect from notes
     2. Try external chord source for progression
     3. Fall back to audio-based estimation
     4. Build section-based harmonic analysis
     5. Suppress low-confidence results
+
+    audio_key_override: dict with key_num, mode_num, key_conf, bpm, bpm_conf from Essentia.
+                        When provided, skips note-based key/BPM detection.
 
     Returns dict with key, bpm, progression, harmonic_sections, etc.
     """
@@ -583,14 +668,25 @@ def analyze_song_from_notes(all_note_events, song_name="", artist="", lyrics_tex
 
     merged = pd.concat(frames, ignore_index=True)
 
-    # Key detection
-    key_num, mode_num, key_conf = detect_key_from_notes(merged)
-    key_str = format_key(key_num, mode_num)
-    print(f"[intel] key: {key_str} (confidence={key_conf:.2f})")
+    # Key detection — prefer Essentia (audio-based) over note-based
+    if audio_key_override and audio_key_override.get("key_num", -1) >= 0:
+        key_num = audio_key_override["key_num"]
+        mode_num = audio_key_override["mode_num"]
+        key_conf = audio_key_override["key_conf"]
+        key_str = format_key(key_num, mode_num)
+        print(f"[intel] key (Essentia override): {key_str} (confidence={key_conf:.2f})")
 
-    # BPM (with confidence)
-    bpm, bpm_conf = estimate_bpm(merged)
-    print(f"[intel] bpm: {bpm} (confidence={bpm_conf:.2f})")
+        bpm = audio_key_override.get("bpm", 120)
+        bpm_conf = audio_key_override.get("bpm_conf", 0)
+        print(f"[intel] bpm (Essentia override): {bpm} (confidence={bpm_conf:.2f})")
+    else:
+        # Fallback: detect from note data (Krumhansl-Schmuckler)
+        key_num, mode_num, key_conf = detect_key_from_notes(merged)
+        key_str = format_key(key_num, mode_num)
+        print(f"[intel] key (note-based fallback): {key_str} (confidence={key_conf:.2f})")
+
+        bpm, bpm_conf = estimate_bpm(merged)
+        print(f"[intel] bpm (note-based fallback): {bpm} (confidence={bpm_conf:.2f})")
 
     # ── Progression: try external source first ──
     progression = None

@@ -3,19 +3,21 @@
 
 {% block extra_css %}
     .narrow { max-width:640px; margin-left:auto; margin-right:auto; }
-    .app-head { text-align:center; margin-bottom:80px; padding-top:128px; position:relative; }
+    .app-head { text-align:center; margin-bottom:48px; padding-top:100px; position:relative; }
     .brand-glow { display:none; }
-    .hero-headline { font-size:4rem; font-weight:500; letter-spacing:-0.04em; line-height:1.05; margin-bottom:24px; color:#F5F5F5; }
-    .hero-sub { color:rgba(245,245,245,0.55); font-size:1.125rem; font-weight:400; line-height:1.65; max-width:520px; margin:0 auto; letter-spacing:-0.01em; }
+    .app-head-greeting { font-size:1.5rem; font-weight:500; letter-spacing:-0.02em; color:#F5F5F5; margin-bottom:8px; position:relative; z-index:1; }
+    .app-head-sub { color:rgba(245,245,245,0.35); font-size:0.875rem; font-weight:400; letter-spacing:-0.01em; position:relative; z-index:1; }
+    .hero-headline { font-size:4rem; font-weight:500; letter-spacing:-0.04em; line-height:1.05; margin-bottom:24px; color:#F5F5F5; position:relative; z-index:1; }
+    .hero-sub { color:rgba(245,245,245,0.55); font-size:1.125rem; font-weight:400; line-height:1.65; max-width:520px; margin:0 auto; letter-spacing:-0.01em; position:relative; z-index:1; }
 
     /* Search */
     .search-shell { padding:0; position:relative; background:none; border:none; max-width:640px; margin:0 auto; }
     .search-wrap { position:relative; }
     .search-icon { position:absolute; left:16px; top:50%; transform:translateY(-50%); width:20px; height:20px; color:rgba(245,245,245,0.3); pointer-events:none; }
-    .search-input { width:100%; background:transparent; border:1px solid rgba(255,255,255,0.15); padding:16px 20px 16px 48px; color:#F5F5F5; font-size:0.9375rem; font-family:inherit; outline:none; transition:border-color .2s; letter-spacing:-0.01em; }
-    .search-input:focus { border-color:rgba(255,255,255,0.30); }
-    .search-input:focus ~ .search-icon { color:rgba(245,245,245,0.5); }
-    .search-input::placeholder { color:rgba(245,245,245,0.35); }
+    .search-input { width:100%; background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.12); padding:18px 22px 18px 50px; color:#F5F5F5; font-size:1rem; font-family:inherit; outline:none; transition:border-color .25s, background .25s, box-shadow .25s; letter-spacing:-0.01em; }
+    .search-input:focus { border-color:rgba(212,105,31,0.5); background:rgba(212,105,31,0.03); box-shadow:0 0 0 1px rgba(212,105,31,0.15); }
+    .search-input:focus ~ .search-icon { color:#D4691F; opacity:0.7; }
+    .search-input::placeholder { color:rgba(245,245,245,0.3); }
     .search-results { margin-top:8px; display:flex; flex-direction:column; gap:2px; max-height:400px; overflow-y:auto; }
     .search-results::-webkit-scrollbar { width:3px; } .search-results::-webkit-scrollbar-thumb { background:rgba(255,255,255,.08); }
     .track-result { display:flex; align-items:center; gap:12px; padding:10px 12px; border:1px solid transparent; cursor:pointer; transition:all .15s; user-select:none; }
@@ -27,8 +29,8 @@
     .track-meta { color:rgba(245,245,245,0.35); font-size:0.75rem; text-align:right; white-space:nowrap; flex-shrink:0; }
     .divider { display:flex; align-items:center; gap:16px; color:rgba(245,245,245,0.35); font-size:0.8125rem; margin:48px 0; font-weight:400; }
     .divider::before,.divider::after { content:""; flex:1; height:1px; background:rgba(255,255,255,0.08); }
-    .upload-area { border:2px dashed rgba(255,255,255,0.15); padding:64px 14px; text-align:center; color:rgba(245,245,245,0.5); cursor:pointer; transition:border-color .2s; font-size:0.9375rem; font-weight:400; letter-spacing:-0.01em; }
-    .upload-area:hover,.upload-area.drag-over { border-color:rgba(255,255,255,0.25); }
+    .upload-area { border:1px dashed rgba(255,255,255,0.12); padding:48px 14px; text-align:center; color:rgba(245,245,245,0.4); cursor:pointer; transition:border-color .25s, background .25s, color .25s; font-size:0.875rem; font-weight:400; letter-spacing:-0.01em; background:rgba(255,255,255,0.015); }
+    .upload-area:hover,.upload-area.drag-over { border-color:rgba(212,105,31,0.4); background:rgba(212,105,31,0.03); color:rgba(245,245,245,0.6); }
     .upload-area input { display:none; }
     .empty-state { color:rgba(245,245,245,0.35); font-size:0.875rem; padding:8px 2px; }
 
@@ -53,10 +55,10 @@
     .try-card-ph { width:100%; aspect-ratio:1; margin-bottom:10px; background:#0D0D0D; border:1px solid rgba(255,255,255,0.08); display:flex; align-items:center; justify-content:center; }
 
     /* ═══ Capabilities ═══ */
-    .cap-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:32px; }
-    .cap-card { padding:0; border:none; background:transparent; }
-    .cap-card:hover { background:transparent; }
-    .cap-icon-wrap { display:none; }
+    .cap-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:32px; max-width:720px; margin:0 auto; }
+    .cap-card { padding:24px; border:1px solid rgba(255,255,255,0.06); background:rgba(255,255,255,0.015); transition:border-color .2s; }
+    .cap-card:hover { border-color:rgba(212,105,31,0.2); background:rgba(212,105,31,0.02); }
+    .cap-icon-wrap { display:block; }
     .cap-icon-wrap svg { width:20px; height:20px; stroke:#D4691F; stroke-width:1.5; fill:none; stroke-linecap:round; stroke-linejoin:round; opacity:0.85; display:block; margin-bottom:16px; }
     .cap-card svg.cap-direct-icon { width:20px; height:20px; stroke:#D4691F; stroke-width:1.5; fill:none; stroke-linecap:round; stroke-linejoin:round; opacity:0.85; display:block; margin-bottom:16px; }
     .cap-title { font-size:0.9375rem; font-weight:500; margin-bottom:8px; color:#F5F5F5; letter-spacing:-0.01em; }
@@ -213,12 +215,30 @@
     .transpose-val { font-size:0.875rem; font-weight:500; color:rgba(245,245,245,0.6); min-width:24px; text-align:center; font-family:monospace; }
     .transposed-key { font-size:0.8125rem; color:rgba(245,245,245,0.5); }
 
-    /* ═══ Insight panel ═══ */
-    .insight-content { padding:32px; max-width:680px; }
-    .insight-text { font-size:0.9375rem; line-height:1.8; color:rgba(245,245,245,0.85); letter-spacing:-0.01em; }
-    .insight-text p { margin-bottom:16px; }
-    .insight-text p:last-child { margin-bottom:0; }
-    .insight-empty { padding:40px 20px; text-align:center; color:rgba(245,245,245,0.4); font-size:0.875rem; }
+    /* ═══ Progression name in harmonic sections ═══ */
+    .hs-prog-name { font-size:0.75rem; color:#D4691F; opacity:0.7; margin-top:6px; font-style:italic; letter-spacing:0.01em; }
+
+    /* ═══ AI mark on tab button ═══ */
+    .ai-mark { display:inline-block; font-size:0.5625rem; font-weight:700; letter-spacing:0.05em; color:#D4691F; border:1px solid rgba(212,105,31,0.3); padding:1px 4px; margin-left:5px; vertical-align:middle; line-height:1.2; position:relative; top:-1px; }
+
+    /* ═══ Key context ═══ */
+    .key-context { font-size:0.8125rem; color:rgba(245,245,245,0.45); text-align:center; padding:12px 24px 0; font-style:italic; letter-spacing:-0.01em; }
+
+    /* ═══ Smart Recommendations (Recommended tab) ═══ */
+    .smart-recs { padding:32px 36px; max-width:780px; }
+    .smart-recs-header { display:flex; align-items:center; gap:8px; margin-bottom:28px; padding-bottom:16px; border-bottom:1px solid rgba(212,105,31,0.15); }
+    .smart-recs-title { font-size:0.6875rem; font-weight:600; text-transform:uppercase; letter-spacing:0.08em; color:#D4691F; }
+    .smart-recs-subtitle { font-size:0.6875rem; color:rgba(245,245,245,0.25); margin-left:auto; }
+    .sr-category { margin-bottom:24px; }
+    .sr-category:last-child { margin-bottom:0; }
+    .sr-cat-label { font-size:0.6875rem; font-weight:600; color:rgba(245,245,245,0.4); text-transform:uppercase; letter-spacing:0.06em; margin-bottom:10px; }
+    .sr-songs { display:flex; flex-direction:column; gap:6px; }
+    .sr-song { display:flex; align-items:baseline; gap:12px; padding:10px 16px; border:1px solid rgba(255,255,255,0.06); background:rgba(245,245,245,0.02); transition:border-color 0.15s; cursor:default; }
+    .sr-song:hover { border-color:rgba(255,255,255,0.12); }
+    .sr-song-title { font-size:0.875rem; font-weight:500; color:rgba(245,245,245,0.8); white-space:nowrap; }
+    .sr-song-artist { font-size:0.8125rem; color:rgba(245,245,245,0.35); white-space:nowrap; }
+    .sr-song-reason { font-size:0.75rem; color:rgba(212,105,31,0.6); font-style:italic; margin-left:auto; white-space:nowrap; }
+    .smart-recs-empty { padding:48px 20px; text-align:center; color:rgba(245,245,245,0.3); font-size:0.875rem; }
 
     /* ═══ Lyrics panel ═══ */
     .lyrics-container { padding:32px 36px; max-height:65vh; overflow-y:auto; background:transparent; }
@@ -273,49 +293,44 @@
 
   <div class="app-head">
     <div class="brand-glow"></div>
-    <div class="hero-headline">Decompose any song.</div>
-    <div class="hero-sub">Separate stems, uncover structure, and play along in seconds.</div>
-    <div class="beta-msg">Beta — continuously improving with every analysis.</div>
+    <div class="app-head-greeting">What do you want to learn?</div>
+    <div class="app-head-sub">Search for a song or drop an audio file to get started.</div>
   </div>
 
   <!-- SEARCH -->
   <div id="view-search" class="view active">
     <div class="search-shell">
       <div class="search-wrap">
-        <input type="text" class="search-input" id="search-input" placeholder="Search any song or artist..." autocomplete="off" />
+        <input type="text" class="search-input" id="search-input" placeholder="Search for a song or artist..." autocomplete="off" />
         <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
       </div>
       <div id="search-results" class="search-results"></div>
       <div class="divider">or</div>
       <div class="upload-area" id="upload-area" onclick="document.getElementById('file-input').click()" ondragover="handleDragOver(event)" ondrop="handleDrop(event)" ondragleave="handleDragLeave(event)">
         <input type="file" id="file-input" accept=".mp3,.wav,.flac,.m4a,.ogg,.aac" onchange="handleFileSelect(event)" />
-        Drop a file
+        <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="rgba(245,245,245,0.25)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom:10px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        <div>Drop an audio file or click to browse</div>
       </div>
     </div>
 
     <!-- Capabilities -->
     <div class="landing-section">
-      <div class="landing-section-title">What Riffd does</div>
+      <div class="landing-section-title"></div>
       <div class="cap-grid">
         <div class="cap-card">
           <div class="cap-icon-wrap"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h10M4 18h6"/></svg></div>
-          <div class="cap-title">Separate stems</div>
-          <div class="cap-desc">Vocals, drums, bass, guitar, keys — isolated from any track.</div>
+          <div class="cap-title">Break down the song</div>
+          <div class="cap-desc">Isolate stems and hear every part clearly.</div>
         </div>
         <div class="cap-card">
           <div class="cap-icon-wrap"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v4m0 12v4m10-10h-4M6 12H2m15.07-7.07l-2.83 2.83M9.76 14.24l-2.83 2.83m11.14 0l-2.83-2.83M9.76 9.76L6.93 6.93"/></svg></div>
-          <div class="cap-title">Read the structure</div>
-          <div class="cap-desc">Key, tempo, chord progression, and harmonic analysis.</div>
+          <div class="cap-title">Understand the structure</div>
+          <div class="cap-desc">See key, chords, and how the song is actually built.</div>
         </div>
         <div class="cap-card">
           <div class="cap-icon-wrap"><svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg></div>
-          <div class="cap-title">Play it back</div>
-          <div class="cap-desc">Solo any stem, loop sections, transpose to any key.</div>
-        </div>
-        <div class="cap-card">
-          <div class="cap-icon-wrap"><svg viewBox="0 0 24 24"><path d="M12 3v10.55A4 4 0 1 0 14 17V7h4V3h-6Z"/></svg></div>
-          <div class="cap-title">Learn faster</div>
-          <div class="cap-desc">Auto-generated tabs and MIDI for every instrument.</div>
+          <div class="cap-title">Play with it</div>
+          <div class="cap-desc">Loop sections, focus on parts, and learn faster.</div>
         </div>
       </div>
     </div>
@@ -342,7 +357,7 @@
           <div class="waveform-fg" id="wv-fg"></div>
         </div>
         <div class="proc-status" id="progress-label">Analyzing the track...</div>
-        <div class="proc-estimate" id="proc-estimate">Instant analysis — usually under a minute</div>
+        <div class="proc-estimate" id="proc-estimate">Analyzing...</div>
       </div>
     </div>
   </div>
@@ -352,22 +367,17 @@
     <div class="card results-shell">
       <div class="results-header">
         <div class="track-banner" id="results-banner"></div>
-        <div id="result-warning" style="display:none;margin-top:12px;padding:10px 14px;background:rgba(251,191,36,.08);border:1px solid rgba(251,191,36,.2);border-radius:var(--radius-xs);color:var(--yellow);font-size:.78rem;line-height:1.5;white-space:pre-wrap;"></div>
+        <div id="result-warning" style="display:none;margin-top:12px;padding:10px 14px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:var(--radius-xs);color:rgba(245,245,245,0.4);font-size:.78rem;line-height:1.5;"></div>
         <div class="results-meta" id="results-meta"></div>
         <div id="harmonic-sections"></div>
       </div>
       <div class="results-nav" id="results-nav">
-        <button class="results-nav-btn active" data-panel="insight" onclick="switchPanel('insight',this)">Insight</button>
-        <button class="results-nav-btn" data-panel="mix" onclick="switchPanel('mix',this)">Mix</button>
+        <button class="results-nav-btn active" data-panel="mix" onclick="switchPanel('mix',this)">Mix</button>
         <button class="results-nav-btn" data-panel="key" onclick="switchPanel('key',this)">Key</button>
         <button class="results-nav-btn" data-panel="lyrics" onclick="switchPanel('lyrics',this)">Lyrics</button>
+        <button class="results-nav-btn" data-panel="recommended" onclick="switchPanel('recommended',this)">Recommended <span class="ai-mark">AI</span></button>
       </div>
-      <div class="results-panel active" id="panel-insight">
-        <div class="insight-content" id="insight-content">
-          <div class="insight-text" id="insight-text"></div>
-        </div>
-      </div>
-      <div class="results-panel" id="panel-mix">
+      <div class="results-panel active" id="panel-mix">
         <div class="mix-wrapper">
           <div class="mixer-transport">
             <button class="transport-btn" onclick="togglePlayback()" title="Play / Pause">
@@ -397,9 +407,13 @@
           <div id="decompose-cof" style="flex-shrink:0"></div>
           <div id="decompose-key-detail" style="flex:1;min-width:260px"></div>
         </div>
+        <div class="key-context" id="key-context"></div>
       </div>
       <div class="results-panel" id="panel-lyrics">
         <div id="lyrics-content"></div>
+      </div>
+      <div class="results-panel" id="panel-recommended">
+        <div id="smart-recs-content"></div>
       </div>
       <div class="new-song-row" id="results-footer">
         <button class="new-song-btn" id="full-track-btn" style="display:none;margin-right:12px;border-color:rgba(212,105,31,0.3);color:rgba(245,245,245,0.7)" onclick="_startFullTrackAnalysis()">Analyze full track</button>
@@ -440,7 +454,10 @@ let isPlaying = false, startedAt = 0, pauseOffset = 0, duration = 0, animFrame =
 let loopActive = false, transposeAmount = 0, songKey = null;
 const KEY_NAMES_JS = ["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"];
 const views = ["search","confirm","results"];
-let _defaultTab = "insight";
+let _defaultTab = "mix";
+let _progressionNames = {};
+let _smartRecs = {};
+let _keyContext = "";
 
 function showView(n) { views.forEach(v => { const el=document.getElementById(`view-${v}`); if(el) el.classList.toggle("active",v===n); }); }
 
@@ -1086,7 +1103,7 @@ async function startProcessing(){
     } catch(e) {
       _resetLoadingUI();
       if (_previewJobData) {
-        _showFullTrackFailed("Deep analysis failed. Your instant analysis is still ready.");
+        _showFullTrackFailed("Deep analysis failed. Your preview results are still available.");
       } else {
         setError("Processing failed: " + e.message);
         showView("confirm");
@@ -1236,8 +1253,8 @@ function pollStatus(){
           setProgress(null, 100);
           _resetLoadingUI();
           renderResults(d);
-          const errMsg = (d.errors || []).map(e => e.step + ": " + e.message).join("\n");
-          _showResultWarning("Some analysis steps failed. Showing available results.\n" + errMsg);
+          console.warn("[partial] errors:", (d.errors || []).map(e => e.step + ": " + e.message));
+          _showResultWarning("Some analysis features are limited for this track.");
         }, 600);
         return; // stop polling
 
@@ -1325,6 +1342,12 @@ async function renderResults(data) {
 
   metaEl.innerHTML=chips;
 
+  // LLM-derived intelligence
+  const llmData = data.insight || {};
+  _progressionNames = llmData.progression_names || {};
+  _smartRecs = llmData.smart_recs || {};
+  _keyContext = llmData.key_context || "";
+
   // Render section-based harmonic analysis
   _renderHarmonicSections(intel.harmonic_sections || []);
   songKey=(intel.key_num>=0)?{num:intel.key_num,mode:intel.mode_num,name:intel.key}:null;
@@ -1332,23 +1355,22 @@ async function renderResults(data) {
   // Initialize Tonality Map in the Key tab
   _initDecomposeKeyTab(intel.key);
 
+  // Key context from LLM
+  const keyCtxEl = document.getElementById("key-context");
+  if (keyCtxEl) { keyCtxEl.textContent = _keyContext || ""; keyCtxEl.style.display = _keyContext ? "block" : "none"; }
+
+  // Smart recommendations
+  _renderSmartRecs(_smartRecs);
+
   document.getElementById("mixer-channels").innerHTML=activeNames.map(n=>{const l=formatStemLabel(n,(stems[n]&&stems[n].label)||"");return`<div class="channel" id="ch-${n}"><div class="channel-name">${esc(l)}</div><div class="channel-volume"><input type="range" class="vol-slider" min="0" max="100" value="100" oninput="setVolume('${n}',this.value)" id="vol-${n}"/><span class="vol-label" id="vol-label-${n}">100</span></div><button class="ch-btn" id="mute-${n}" onclick="toggleMute('${n}')">M</button><button class="ch-btn" id="solo-${n}" onclick="toggleSolo('${n}')">S</button></div>`;}).join("");
   document.getElementById("loop-start").value="0:00";document.getElementById("loop-end").value="";loopActive=false;document.getElementById("loop-btn").classList.remove("active");
   transposeAmount=0;document.getElementById("transpose-display").textContent="0";document.getElementById("transposed-key").textContent="";
-  // Insight
-  const insightEl = document.getElementById("insight-text");
-  const insightData = data.insight || null;
-  if (insightData && insightData.trim()) {
-    insightEl.innerHTML = insightData.split(/\n\n+/).map(p => `<p>${esc(p.trim())}</p>`).join("");
-  } else {
-    insightEl.innerHTML = '<div class="insight-empty">Insight is being generated and will appear on your next visit.</div>';
-  }
 
   const lyricsEl=document.getElementById("lyrics-content");
   if(lyrics&&lyrics.trim()){lyricsEl.innerHTML=`<div class="lyrics-container">${_formatLyrics(lyrics)}</div>`;}
   else{lyricsEl.innerHTML='<div class="lyrics-empty">Lyrics not available for this track.</div>';}
-  switchPanel(_defaultTab || "insight");
-  _defaultTab = "insight";
+  switchPanel(_defaultTab || "mix");
+  _defaultTab = "mix";
 
   // Show results immediately — don't wait for audio decode
   document.getElementById("process-btn").disabled=false;document.getElementById("process-btn").textContent="Dive In";
@@ -1399,11 +1421,24 @@ async function renderInstantResults(data) {
   metaEl.innerHTML = chips;
   songKey = (intel.key_num >= 0) ? {num: intel.key_num, mode: intel.mode_num, name: intel.key} : null;
 
+  // LLM-derived intelligence
+  const llmData2 = data.insight || {};
+  _progressionNames = llmData2.progression_names || {};
+  _smartRecs = llmData2.smart_recs || {};
+  _keyContext = llmData2.key_context || "";
+
   // No harmonic sections for instant
   document.getElementById("harmonic-sections").innerHTML = '';
 
   // Initialize Tonality Map in the Key tab
   _initDecomposeKeyTab(intel.key);
+
+  // Key context from LLM
+  const keyCtxEl2 = document.getElementById("key-context");
+  if (keyCtxEl2) { keyCtxEl2.textContent = _keyContext || ""; keyCtxEl2.style.display = _keyContext ? "block" : "none"; }
+
+  // Smart recommendations
+  _renderSmartRecs(_smartRecs);
 
   // Mix panel: single audio player for the raw preview file
   const mixerChannels = document.getElementById("mixer-channels");
@@ -1416,15 +1451,6 @@ async function renderInstantResults(data) {
   document.getElementById("transpose-display").textContent = "0";
   document.getElementById("transposed-key").textContent = "";
 
-  // Insight
-  const insightEl = document.getElementById("insight-text");
-  const insightData = data.insight || null;
-  if (insightData && insightData.trim()) {
-    insightEl.innerHTML = insightData.split(/\n\n+/).map(p => `<p>${esc(p.trim())}</p>`).join("");
-  } else {
-    insightEl.innerHTML = '<div class="insight-empty">Insight is being generated and will appear on your next visit.</div>';
-  }
-
   // Lyrics
   const lyricsEl = document.getElementById("lyrics-content");
   if (lyrics && lyrics.trim()) {
@@ -1433,8 +1459,8 @@ async function renderInstantResults(data) {
     lyricsEl.innerHTML = '<div class="lyrics-empty">Lyrics not available for this track.</div>';
   }
 
-  switchPanel("insight");
-  _defaultTab = "insight";
+  switchPanel("mix");
+  _defaultTab = "mix";
 
   document.getElementById("process-btn").disabled = false;
   document.getElementById("process-btn").textContent = "Dive In";
@@ -1595,7 +1621,7 @@ function resetApp(){
   const wvFg=document.getElementById("wv-fg");if(wvFg)wvFg.style.width="0%";
   document.getElementById("progress-label").textContent="Analyzing the track...";document.getElementById("progress-label").classList.remove("fading");
   document.getElementById("seek-bar").value=0;document.getElementById("time-display").textContent="0:00 / 0:00";
-  document.getElementById("results-meta").innerHTML="";document.getElementById("harmonic-sections").innerHTML="";document.getElementById("lyrics-content").innerHTML="";
+  document.getElementById("results-meta").innerHTML="";document.getElementById("harmonic-sections").innerHTML="";document.getElementById("lyrics-content").innerHTML="";document.getElementById("smart-recs-content").innerHTML="";_progressionNames={};_smartRecs={};_keyContext="";
   document.getElementById("loop-btn").classList.remove("active");document.getElementById("transpose-display").textContent="0";document.getElementById("transposed-key").textContent="";
   document.getElementById("proc-estimate").classList.remove("visible");
   _hideResultWarning();setError("");showView("search");
@@ -1622,14 +1648,14 @@ function _renderHarmonicSections(sections) {
 
   // Fallback: no data
   if (!sections || !sections.length) {
-    el.innerHTML = '<div class="harmonic-empty">Section analysis not available for this track.</div>';
+    el.innerHTML = '<div class="harmonic-empty">Harmonic analysis requires a full-track analysis.</div>';
     return;
   }
 
   // Filter sections that actually have chords
   const valid = sections.filter(s => s.chords && s.chords.length > 0);
   if (!valid.length) {
-    el.innerHTML = '<div class="harmonic-empty">Section analysis not available for this track.</div>';
+    el.innerHTML = '<div class="harmonic-empty">Harmonic analysis requires a full-track analysis.</div>';
     return;
   }
 
@@ -1649,6 +1675,11 @@ function _renderHarmonicSections(sections) {
     if (sec.summary && sec.summary.is_repeating_pattern && sec.summary.summary_numerals) {
       s += `<div class="hs-summary">Repeating: ${sec.summary.summary_numerals.join(' \u2013 ')} \u00d7${sec.summary.repeated_units || ''}</div>`;
     }
+    // Progression name from LLM
+    const progName = _progressionNames[sec.label] || _progressionNames[sec.section] || null;
+    if (progName) {
+      s += `<div class="hs-prog-name">${esc(progName)}</div>`;
+    }
     s += '</div>';
     return s;
   }
@@ -1664,6 +1695,45 @@ function _renderHarmonicSections(sections) {
   }
 
   html += '</div></div>';
+  el.innerHTML = html;
+}
+
+function _renderSmartRecs(recs) {
+  const el = document.getElementById('smart-recs-content');
+  if (!el) return;
+
+  const categories = [
+    { key: 'same_progression', label: 'Same Progression' },
+    { key: 'same_key_tempo', label: 'Same Key + Tempo' },
+    { key: 'similar_harmony', label: 'Similar Harmony' },
+  ];
+
+  const hasAny = categories.some(c => (recs[c.key] || []).length > 0);
+  if (!hasAny) {
+    el.innerHTML = '<div class="smart-recs-empty">Theory-based recommendations will appear here once analysis completes.</div>';
+    return;
+  }
+
+  let html = '<div class="smart-recs">';
+  html += '<div class="smart-recs-header"><span class="smart-recs-title">Songs with Similar Musical DNA</span><span class="smart-recs-subtitle">Based on harmony, not genre</span></div>';
+
+  for (const cat of categories) {
+    const songs = recs[cat.key] || [];
+    if (!songs.length) continue;
+    html += `<div class="sr-category">`;
+    html += `<div class="sr-cat-label">${cat.label}</div>`;
+    html += `<div class="sr-songs">`;
+    for (const s of songs) {
+      html += `<div class="sr-song">`;
+      html += `<span class="sr-song-title">${esc(s.title)}</span>`;
+      html += `<span class="sr-song-artist">${esc(s.artist)}</span>`;
+      if (s.reason) html += `<span class="sr-song-reason">${esc(s.reason)}</span>`;
+      html += `</div>`;
+    }
+    html += `</div></div>`;
+  }
+
+  html += '</div>';
   el.innerHTML = html;
 }
 
@@ -1688,13 +1758,12 @@ function _formatLyrics(raw) {
     // Before the first [Section] label, aggressively skip everything.
     // This catches Genius commentary, album descriptions, "Read More", contributor text, etc.
     if (!hitFirstSection) {
-      // But allow bare lyrics that don't have a section label (some songs start without one)
-      // Heuristic: if a line contains "Read More", "contributor", "lyrics", or is > 120 chars, it's chrome
       const lower = trimmed.toLowerCase();
       if (lower.includes('read more') || lower.includes('contributor') || lower.endsWith(' lyrics')
           || lower === 'embed' || lower === 'you might also like' || trimmed.length > 120) continue;
-      // Short lines before any section are likely real lyrics — allow them
+      // This is a real lyric line with no preceding section tag — insert a default header
       hitFirstSection = true;
+      html += '<div class="lyrics-section-label">Verse</div>';
     }
 
     // Always skip known Genius junk regardless of position
