@@ -1,5 +1,33 @@
 """
-app.py — Flask web server.
+app.py — Riffd Flask web server.
+
+Request lifecycle:
+  1. User searches via /api/spotify/search → Spotify API (with local fallback)
+  2. User selects a track → frontend checks /api/track/<id> for cached analysis
+  3. If no cache: frontend calls /api/download with mode=preview|full
+     - preview: resolve_preview() → iTunes/Spotify preview (~2s, 30s audio)
+     - full: resolve_audio() → YouTube first, then preview fallback (~30-120s)
+  4. Frontend calls /api/process/<job_id> with analysis_mode=instant|deep
+     - instant: synchronous, returns in ~3-5s (key, BPM, lyrics, no stems)
+     - deep: async background thread, returns via polling (~2-5min, full stems + tabs)
+  5. Frontend polls /api/status/<job_id> for deep analysis progress
+  6. Results served via /api/audio/<job_id>/<stem> for playback
+
+Job status lifecycle:
+  downloading → ready → processing → complete|partial|error
+  downloading → preview_unavailable  (preview mode, no source)
+  downloading → upload_required      (full mode, all sources failed)
+  downloading → error                (unexpected failure)
+
+Two analysis modes:
+  - instant: _process_instant() — synchronous, no Demucs, no threading
+  - deep:    process_audio() run() thread — full 7-stage pipeline
+
+Memory management:
+  - Heavy imports (numpy, pandas, basic_pitch) deferred to first job
+  - Jobs pruned from memory after 10 minutes
+  - Job payloads trimmed after frontend polls the result
+  - MAX_CONCURRENT_JOBS=1 prevents stacking deep analysis
 """
 
 import os
@@ -65,10 +93,16 @@ init_db()
 migrate_from_history_json()
 
 ALLOWED_EXTENSIONS = {".mp3", ".wav", ".flac", ".m4a", ".ogg", ".aac"}
+
+# ─── Job State ────────────────────────────────────────────────────────────────
+# In-memory dict tracking all active jobs. Pruned after 10 min, trimmed after delivery.
+# Keys: job_id (8-char UUID prefix)
+# Values: dict with status, progress, audio_path, audio_source, audio_mode, analysis results
+# WARNING: all state lost on server restart — persistent results are in filesystem cache + SQLite
 jobs = {}
 _processing_lock = threading.Lock()
 _active_processing = 0
-MAX_CONCURRENT_JOBS = 1  # Prevent stacking heavy processing in one process
+MAX_CONCURRENT_JOBS = 1  # Only one deep analysis at a time (Demucs uses ~500MB RAM)
 
 
 def _log_memory(label=""):
@@ -264,10 +298,17 @@ def track_lookup(track_id):
 
 @app.route("/api/download", methods=["POST"])
 def download_track():
+    """
+    Audio acquisition endpoint. Accepts mode="preview" or mode="full".
+    - preview: resolve_preview() — Spotify/iTunes only, no YouTube. ~2s.
+    - full: resolve_audio() — YouTube first, then preview fallback. ~30-120s.
+    Downloads run in a background thread. Frontend polls /api/status/<job_id>.
+    Returns immediately with {job_id, mode}.
+    """
     data = request.json
-    query = data.get("query")
-    url = data.get("url")
-    track_id = data.get("track_id")
+    query = data.get("query")       # YouTube search query (null in preview mode)
+    url = data.get("url")           # Direct URL (rare, for YouTube links)
+    track_id = data.get("track_id") # Spotify track ID for cache lookup
     mode = data.get("mode", "preview")  # "preview" (default) or "full"
 
     print(f"[download] triggered mode={mode} query={bool(query)} url={bool(url)} preview_url={bool(data.get('preview_url'))} artist={data.get('artist','')[:20]}")
@@ -320,6 +361,34 @@ def download_track():
                 _on_progress("Getting preview audio...")
                 audio_path = resolve_preview(track_data, job_id, on_progress=_on_progress)
                 audio_source = "preview"
+
+                # Auto-trigger instant analysis immediately after preview download
+                # This avoids a second round-trip from the frontend.
+                # Must run inside app context since _process_instant uses jsonify().
+                print(f"[process] [job {job_id}] auto-trigger instant after preview")
+                jobs[job_id].update({
+                    "status": "ready",
+                    "audio_path": str(audio_path),
+                    "audio_source": audio_source,
+                    "audio_mode": mode,
+                })
+                req_data = {
+                    "track_id": data.get("track_id"),
+                    "track_meta": {
+                        "artist": data.get("artist", ""),
+                        "name": data.get("name", ""),
+                        "image_url": data.get("image_url"),
+                        "duration_ms": data.get("duration_ms", 0),
+                        "year": data.get("year", ""),
+                        "artist_id": data.get("artist_id"),
+                        "yt_query": data.get("query", ""),
+                    },
+                    "analysis_mode": "instant",
+                }
+                with app.app_context():
+                    _process_instant(job_id, str(audio_path), req_data)
+                print(f"[process] [job {job_id}] instant analysis auto-completed")
+                return  # Skip the normal "ready" status — job is already "complete"
 
             else:
                 # Full-track: try YouTube first, then previews as fallback
@@ -397,8 +466,19 @@ def upload_file():
 
 def _process_instant(job_id, audio_path, req_data):
     """
-    Instant analysis: lightweight, synchronous, no Demucs/Basic Pitch.
-    Returns key, BPM, duration, lyrics — fast enough to run in the request thread.
+    Instant analysis: lightweight, synchronous, no Demucs.
+    Runs in the request thread — no background processing, no polling needed.
+
+    Steps (~3-5s total):
+      1. Copy preview audio to stems dir for playback       ~0.1s
+      2. Detect audio duration from file header              ~0.1s
+      3. Run Basic Pitch on raw audio for key + BPM          ~1-3s
+      4. Fetch lyrics from Genius API                        ~1s
+      5. Fetch tags from Last.fm API                         ~0.5s
+      6. Save to cache + history + DB                        ~0.1s
+
+    Returns JSON result directly (no job polling).
+    Frontend calls renderInstantResults() with the response.
     """
     import time as _t
     _t0 = _t.time()
@@ -545,6 +625,21 @@ def _process_instant(job_id, audio_path, req_data):
 
 @app.route("/api/process/<job_id>", methods=["POST"])
 def process_audio(job_id):
+    """
+    Processing endpoint. Routes to instant or deep analysis based on analysis_mode.
+
+    analysis_mode="instant" → _process_instant() — synchronous, ~3-5s
+    analysis_mode="deep"   → background thread with 7-stage pipeline, ~2-5min
+
+    Deep analysis stages (all non-fatal except stage 1):
+      1. Stem separation (Demucs)       — FATAL if fails, ~2-5min
+      2. BPM detection (Basic Pitch)    — ~10s
+      3. Tab generation (Basic Pitch)   — ~30s per stem
+      4. Lyrics (Genius API)            — ~1s
+      5. Harmonic analysis              — ~5s
+      6. Tags (Last.fm API)             — ~1s
+      7. Recommendations (Last.fm)      — ~1s
+    """
     global _active_processing
     if job_id not in jobs:
         return jsonify({"error": "Unknown job ID"}), 404

@@ -1,7 +1,27 @@
 """
-downloader.py
-Audio source router: YouTube → Spotify/iTunes preview → upload prompt.
-Tries full-song sources first, falls back to 30-second previews, then asks user to upload.
+downloader.py — Audio acquisition for Riffd.
+
+Two entry points:
+  resolve_preview(track_data, job_id)  — Preview-only. Spotify → iTunes. No YouTube. ~2s.
+  resolve_audio(track_data, job_id)    — Full waterfall. YouTube → Spotify → iTunes. ~30-120s.
+
+Audio source hierarchy:
+  1. Spotify preview_url (if provided by search results)  — direct MP3 download, ~1s
+  2. iTunes preview (API lookup by artist+name)            — MP3 download, ~2s
+  3. YouTube via yt-dlp (search or direct URL)             — WAV download, ~30-120s
+  4. AudioUnavailableError → frontend prompts file upload
+
+Preview files saved as:  uploads/<job_id>/preview.mp3
+YouTube files saved as:  uploads/<job_id>/<title>.wav
+
+Failure modes:
+  - Spotify preview_url is often null (most tracks don't have one)
+  - iTunes lookup can return wrong track or no results
+  - YouTube frequently fails on Render (bot detection, missing JS runtime)
+  - All failures are caught and logged, never crash the server
+
+The preview path (resolve_preview) is the default for instant analysis.
+The full path (resolve_audio) is only used when user explicitly requests deep analysis.
 """
 
 import re

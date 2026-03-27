@@ -1,10 +1,27 @@
 """
-processor.py
-Core audio processing pipeline:
-  1. Stem separation via Demucs (6-stem model)
-  2. Stereo-field analysis to split stems into individually panned instruments
-  3. Spectral classification to label each sub-stem
-  4. Tab/MIDI generation via Basic Pitch
+processor.py — Core audio processing pipeline for Riffd.
+
+Used ONLY in deep analysis mode (not instant). All functions here are heavy.
+Imports (numpy, pandas, basic_pitch) are deferred via _ensure_imports().
+
+Pipeline (called by app.py process_audio deep path):
+  1. separate_stems()  — Demucs subprocess → stereo refinement → labeled WAV stems
+     - Tries htdemucs_6stems first, falls back to htdemucs 4-stem
+     - Can use Replicate hosted GPU via USE_HOSTED_SEPARATION env var
+     - Output: {stem_key: {path, energy, active, label}} saved to outputs/<job_id>/stems/
+     - Execution time: 2-5 min on CPU, ~20s on GPU (Replicate)
+     - Peak memory: ~500MB during Demucs
+
+  2. generate_tabs()   — Basic Pitch per stem → MIDI + CSV + ASCII tab
+     - Per-instrument confidence thresholds and frequency ranges
+     - Output: MIDI file + CSV notes + ASCII tab text in outputs/<job_id>/tabs/
+     - Execution time: ~5-10s per stem
+
+Downstream contract (must not change):
+  - separate_stems() returns {stem_key: {path: str, energy: float, active: bool, label: str}}
+  - Stem WAV files at outputs/<job_id>/stems/<stem_key>.wav
+  - Tab files at outputs/<job_id>/tabs/<stem_key>.mid, <stem_key>_notes.csv, <stem_key>_tab.txt
+  - Audio served via /api/audio/<job_id>/<stem_name> in app.py
 """
 
 import struct as _struct
@@ -417,6 +434,12 @@ def _separate_stems_local(audio_path: Path, out_dir: Path, progress_callback=Non
     Run Demucs locally as subprocess. Returns (raw_stems, model_name).
     raw_stems: {stem_name: path_to_raw_wav}
     """
+    import os as _os
+    hosted = _os.getenv("USE_HOSTED_SEPARATION", "false").strip().lower() in ("true", "1", "yes")
+    if hosted:
+        raise RuntimeError("Local separation blocked: USE_HOSTED_SEPARATION is enabled. "
+                           "Local Demucs must not run in hosted mode.")
+
     import time as _time
     _t0 = _time.time()
 
@@ -471,65 +494,148 @@ def _separate_stems_local(audio_path: Path, out_dir: Path, progress_callback=Non
 
 def _separate_stems_replicate(audio_path: Path, out_dir: Path, progress_callback=None) -> tuple[dict, str]:
     """
-    Run Demucs via Replicate hosted API. Returns (raw_stems, model_name).
+    Run Demucs via Replicate REST API. Returns (raw_stems, model_name).
     raw_stems: {stem_name: path_to_raw_wav}
+
+    Uses the REST API directly (not the replicate Python client) for full control
+    over the request/response lifecycle and transparent error handling.
+
+    Verified model: cjwbw/demucs
+    Verified version: 25a173108cff36ef9f80f854c162d01df9e6528be175794b81158fa03836d953
+    API schema confirmed via /v1/models/cjwbw/demucs — 2026-03-26
+
+    Input params (verified from openapi_schema):
+      audio:         file URI or URL (required)
+      model_name:    "htdemucs" | "htdemucs_ft" | "htdemucs_6s" | etc.
+      output_format: "wav" | "mp3" (default mp3)
+      shifts:        int (default 1)
+
+    Output (verified from openapi_schema):
+      dict with keys: bass, drums, other, piano, guitar, vocals
+      each value is a URI string pointing to the separated audio file
     """
     import os
     import time as _time
+    import base64
     import requests as _requests
 
-    token = os.getenv("REPLICATE_API_TOKEN", "")
+    token = os.getenv("REPLICATE_API_TOKEN", "").strip()
     if not token:
         raise RuntimeError("REPLICATE_API_TOKEN not set")
 
     _t0 = _time.time()
+    REPLICATE_API = "https://api.replicate.com/v1"
+    VERSION = "25a173108cff36ef9f80f854c162d01df9e6528be175794b81158fa03836d953"
+    POLL_INTERVAL = 5  # seconds between status checks
+    MAX_WAIT = 600     # 10 minutes max for separation
+
+    # Expected stems from the model output
+    EXPECTED_STEMS = {"vocals", "drums", "bass", "guitar", "piano", "other"}
+
+    headers = {
+        "Authorization": f"Bearer {token}",
+        "Content-Type": "application/json",
+    }
 
     if progress_callback:
         progress_callback("Running stem separation (cloud)...")
 
-    print(f"[separation] REPLICATE starting: {audio_path.name}")
+    print(f"[replicate] starting: {audio_path.name}")
+    print(f"[replicate] model = cjwbw/demucs")
+    print(f"[replicate] version = {VERSION[:16]}...")
 
-    import replicate
+    # ── Step 1: Prepare audio as base64 data URI ──
+    audio_bytes = audio_path.read_bytes()
+    suffix = audio_path.suffix.lower().lstrip(".")
+    mime = {"mp3": "audio/mpeg", "wav": "audio/wav", "m4a": "audio/mp4",
+            "ogg": "audio/ogg", "flac": "audio/flac"}.get(suffix, "audio/mpeg")
+    audio_b64 = base64.b64encode(audio_bytes).decode("ascii")
+    audio_uri = f"data:{mime};base64,{audio_b64}"
+    print(f"[replicate] audio: {len(audio_bytes)} bytes, mime={mime}")
+    del audio_bytes, audio_b64  # free memory
 
-    # Use the official htdemucs model on Replicate
-    # This runs the same Demucs model on GPU — identical output, much faster
-    output = replicate.run(
-        "cjwbw/demucs:25a173108cff36ef9f80f854c162d01df9e6528be175794b81571db50571f6d7",
-        input={
-            "audio": open(str(audio_path), "rb"),
-            "jobs": 0,  # auto
+    # ── Step 2: Create prediction ──
+    payload = {
+        "version": VERSION,
+        "input": {
+            "audio": audio_uri,
+            "model_name": "htdemucs",
+            "output_format": "wav",
+            "shifts": 1,
         },
-    )
-
-    # Replicate returns a dict of stem URLs: {"bass": "https://...", "drums": "https://...", ...}
-    # Map Replicate stem names to our expected names
-    _REPLICATE_STEM_MAP = {
-        "vocals": "vocals",
-        "drums": "drums",
-        "bass": "bass",
-        "guitar": "guitar",
-        "piano": "piano",
-        "other": "other",
     }
+    del audio_uri  # free the large string
+
+    print(f"[replicate] creating prediction...")
+    resp = _requests.post(f"{REPLICATE_API}/predictions", headers=headers, json=payload, timeout=30)
+
+    if resp.status_code == 422:
+        err = resp.json().get("detail", resp.text[:200])
+        raise RuntimeError(f"Replicate rejected request (422): {err}")
+    if resp.status_code == 402:
+        raise RuntimeError("Replicate account has insufficient credit. Add billing at replicate.com/account/billing")
+    if not resp.ok:
+        raise RuntimeError(f"Replicate API error (HTTP {resp.status_code}): {resp.text[:300]}")
+
+    prediction = resp.json()
+    pred_id = prediction["id"]
+    print(f"[replicate] prediction created: id={pred_id} status={prediction['status']}")
+
+    # ── Step 3: Poll until complete ──
+    poll_start = _time.time()
+    while True:
+        elapsed_poll = _time.time() - poll_start
+        if elapsed_poll > MAX_WAIT:
+            raise RuntimeError(f"Replicate prediction timed out after {int(elapsed_poll)}s")
+
+        _time.sleep(POLL_INTERVAL)
+
+        poll_resp = _requests.get(f"{REPLICATE_API}/predictions/{pred_id}", headers=headers, timeout=15)
+        if not poll_resp.ok:
+            raise RuntimeError(f"Replicate poll failed (HTTP {poll_resp.status_code}): {poll_resp.text[:200]}")
+
+        pred = poll_resp.json()
+        status = pred["status"]
+        print(f"[replicate] poll: status={status} ({int(elapsed_poll)}s elapsed)")
+
+        if progress_callback:
+            progress_callback(f"Separating stems ({int(elapsed_poll)}s)...")
+
+        if status == "succeeded":
+            break
+        elif status in ("failed", "canceled"):
+            error_msg = pred.get("error", "Unknown error")
+            raise RuntimeError(f"Replicate prediction {status}: {error_msg}")
+        # else: "starting" or "processing" — keep polling
+
+    # ── Step 4: Download output stems ──
+    output = pred.get("output")
+    if not output or not isinstance(output, dict):
+        raise RuntimeError(f"Replicate returned unexpected output type: {type(output).__name__} = {str(output)[:200]}")
+
+    print(f"[replicate] output received: keys={list(output.keys())}")
 
     raw_stems = {}
-    for replicate_key, url in output.items():
-        stem_name = _REPLICATE_STEM_MAP.get(replicate_key)
-        if not stem_name:
-            # Unknown stem from Replicate — keep it with original name
-            stem_name = replicate_key
-            print(f"[separation] REPLICATE unmapped stem: {replicate_key}")
+    for stem_name in EXPECTED_STEMS:
+        url = output.get(stem_name)
+        if not url:
+            print(f"[replicate] WARNING: missing stem '{stem_name}' in output")
+            continue
 
         dest = out_dir / f"_raw_{stem_name}.wav"
-        print(f"[separation] REPLICATE downloading: {stem_name} → {dest.name}")
+        print(f"[replicate] downloading: {stem_name} → {dest.name}")
 
-        resp = _requests.get(url, timeout=60)
-        resp.raise_for_status()
-        dest.write_bytes(resp.content)
+        dl_resp = _requests.get(url, timeout=120)
+        dl_resp.raise_for_status()
+        dest.write_bytes(dl_resp.content)
+        print(f"[replicate] saved: {stem_name} ({len(dl_resp.content)} bytes)")
         raw_stems[stem_name] = str(dest)
 
+    if not raw_stems:
+        raise RuntimeError("Replicate returned no downloadable stems")
+
     elapsed = _time.time() - _t0
-    print(f"[separation] REPLICATE finished in {elapsed:.1f}s → {len(raw_stems)} stems: {list(raw_stems.keys())}")
+    print(f"[replicate] COMPLETE in {elapsed:.1f}s → {len(raw_stems)} stems: {list(raw_stems.keys())}")
     return raw_stems, "replicate_htdemucs"
 
 
@@ -559,18 +665,17 @@ def separate_stems(audio_path: str, song_id: str, progress_callback=None) -> dic
     print(f"[separation] HAS_REPLICATE_TOKEN = {has_token}")
 
     if use_hosted and not has_token:
-        print(f"[separation] WARNING: hosted separation enabled but REPLICATE_API_TOKEN is missing — using local")
-        use_hosted = False
+        raise RuntimeError("USE_HOSTED_SEPARATION is enabled but REPLICATE_API_TOKEN is missing. "
+                           "Set the token or disable hosted separation.")
 
     if use_hosted:
-        print(f"[separation] path = replicate")
+        print(f"[separation] path = replicate (hosted-only, no local fallback)")
         try:
             raw_stems, model = _separate_stems_replicate(audio_path, out_dir, progress_callback)
         except Exception as e:
-            print(f"[separation] REPLICATE FAILED: {e} — falling back to local Demucs")
-            if progress_callback:
-                progress_callback("Cloud separation failed, using local...")
-            raw_stems, model = _separate_stems_local(audio_path, out_dir, progress_callback)
+            # NO fallback to local — hosted mode means hosted only
+            print(f"[separation] REPLICATE FAILED — aborting (no fallback): {e}")
+            raise RuntimeError(f"Cloud stem separation failed: {e}")
     else:
         print(f"[separation] path = local")
         raw_stems, model = _separate_stems_local(audio_path, out_dir, progress_callback)
