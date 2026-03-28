@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% block title %}{{ track.title }} by {{ track.artist }} — Riffd{% endblock %}
+
+{% block extra_css %}
+  .shared-wrap { max-width:640px; margin:0 auto; padding:80px 24px 60px; }
+  .shared-art { width:180px; height:180px; object-fit:cover; margin-bottom:24px; }
+  .shared-title { font-size:2rem; font-weight:500; color:#F5F5F5; letter-spacing:-0.03em; margin-bottom:4px; }
+  .shared-artist { font-size:1.125rem; color:rgba(245,245,245,0.5); margin-bottom:32px; }
+  .shared-meta { display:flex; gap:12px; flex-wrap:wrap; margin-bottom:40px; }
+  .shared-chip { padding:6px 14px; font-size:0.875rem; border:1px solid rgba(255,255,255,0.1); color:rgba(245,245,245,0.7); }
+  .shared-section { margin-bottom:32px; }
+  .shared-section-label { font-size:0.6875rem; font-weight:600; text-transform:uppercase; letter-spacing:0.08em; color:#D4691F; margin-bottom:12px; padding-bottom:8px; border-bottom:1px solid rgba(212,105,31,0.15); }
+  .shared-recs { display:flex; flex-direction:column; gap:8px; }
+  .shared-rec { padding:10px 16px; border:1px solid rgba(255,255,255,0.06); background:rgba(245,245,245,0.02); }
+  .shared-rec-title { font-size:0.875rem; font-weight:500; color:rgba(245,245,245,0.8); }
+  .shared-rec-artist { font-size:0.8125rem; color:rgba(245,245,245,0.35); }
+  .shared-rec-reason { font-size:0.75rem; color:rgba(212,105,31,0.6); font-style:italic; margin-top:4px; }
+  .shared-cta { text-align:center; margin-top:48px; padding-top:32px; border-top:1px solid rgba(255,255,255,0.06); }
+  .shared-cta-btn { display:inline-block; padding:12px 32px; font-size:0.9375rem; color:#F5F5F5; border:1px solid rgba(255,255,255,0.2); text-decoration:none; transition:all .2s; }
+  .shared-cta-btn:hover { border-color:#D4691F; color:#D4691F; }
+  .shared-key-context { font-size:0.9375rem; color:rgba(245,245,245,0.6); line-height:1.7; margin-bottom:32px; padding:16px 20px; border-left:2px solid rgba(212,105,31,0.3); }
+  @media(max-width:480px) {
+    .shared-wrap { padding:48px 16px 40px; }
+    .shared-title { font-size:1.5rem; }
+    .shared-art { width:140px; height:140px; }
+  }
+{% endblock %}
+
+{% block body %}
+<div class="shared-wrap">
+  {% if track.artwork_url %}
+    <img class="shared-art" src="{{ track.artwork_url }}" alt="" />
+  {% endif %}
+  <div class="shared-title">{{ track.title }}</div>
+  <div class="shared-artist">{{ track.artist }}{% if track.year %} &middot; {{ track.year }}{% endif %}</div>
+
+  <div class="shared-meta">
+    {% if analysis.intelligence %}
+      {% if analysis.intelligence.key and analysis.intelligence.key != 'Unknown' %}
+        <span class="shared-chip">Key: {{ analysis.intelligence.key }}</span>
+      {% endif %}
+      {% if analysis.intelligence.bpm and analysis.intelligence.bpm > 0 %}
+        <span class="shared-chip">{{ analysis.intelligence.bpm }} BPM</span>
+      {% endif %}
+    {% endif %}
+    {% for tag in (analysis.tags or [])[:4] %}
+      <span class="shared-chip">{{ tag }}</span>
+    {% endfor %}
+  </div>
+
+  {% if analysis.insight and analysis.insight.key_context %}
+    <div class="shared-key-context">{{ analysis.insight.key_context }}</div>
+  {% endif %}
+
+  {% if analysis.insight and analysis.insight.smart_recs %}
+    {% set sr = analysis.insight.smart_recs %}
+    {% set has_recs = (sr.get('same_progression', []) | length > 0) or (sr.get('same_key_tempo', []) | length > 0) or (sr.get('similar_harmony', []) | length > 0) %}
+    {% if has_recs %}
+    <div class="shared-section">
+      <div class="shared-section-label">Songs with similar musical DNA</div>
+      <div class="shared-recs">
+        {% for cat_key in ['same_progression', 'same_key_tempo', 'similar_harmony'] %}
+          {% for rec in (sr.get(cat_key, []))[:3] %}
+            <div class="shared-rec">
+              <span class="shared-rec-title">{{ rec.title }}</span>
+              <span class="shared-rec-artist">{{ rec.artist }}</span>
+              {% if rec.reason %}<div class="shared-rec-reason">{{ rec.reason }}</div>{% endif %}
+            </div>
+          {% endfor %}
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+  {% endif %}
+
+  <div class="shared-cta">
+    <div style="font-size:0.875rem;color:rgba(245,245,245,0.4);margin-bottom:12px">Analyzed with Riffd</div>
+    <a class="shared-cta-btn" href="/decompose">Try it yourself &rarr;</a>
+  </div>
+</div>
+{% endblock %}

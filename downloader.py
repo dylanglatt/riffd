@@ -75,11 +75,19 @@ def _run_ytdlp(source: str, job_id: str) -> Path:
         "--extractor-args", "youtube:player_client=web",
         "--retries", "3",
         "--socket-timeout", "30",
-        source,
     ]
 
+    # Add proxy if configured
+    import os as _os
+    proxy_url = _os.environ.get("YT_PROXY_URL")
+    if proxy_url:
+        cmd.extend(["--proxy", proxy_url])
+        print(f"[downloader] using proxy: {proxy_url[:30]}...")
+
+    cmd.append(source)
+
     print(f"[downloader] yt-dlp starting: {source[:80]}")
-    result = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
+    result = subprocess.run(cmd, capture_output=True, text=True, timeout=180)
 
     if result.returncode != 0:
         raise RuntimeError(f"yt-dlp failed:\n{result.stderr[:500]}")

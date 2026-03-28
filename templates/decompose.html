@@ -241,7 +241,9 @@
     .sr-song-reason { font-size:0.75rem; color:rgba(212,105,31,0.6); font-style:italic; margin-left:auto; white-space:normal; text-align:right; flex-shrink:1; min-width:0; }
     @media (max-width:768px) {
       .sr-song { flex-direction:column; gap:4px; }
-      .sr-song-reason { margin-left:0; text-align:left; }
+      .sr-song-title { white-space:normal; word-break:break-word; }
+      .sr-song-artist { white-space:normal; }
+      .sr-song-reason { margin-left:0; text-align:left; white-space:normal; }
       .smart-recs-header { flex-direction:column; align-items:flex-start; gap:4px; }
       .smart-recs-subtitle { margin-left:0; }
     }
@@ -279,7 +281,7 @@
       .mixer-transport { gap:10px; flex-wrap:wrap; }
       .transport-btn { width:36px; height:36px; }
       .transport-btn.stop-btn { width:32px; height:32px; }
-      .transport-seek-wrap { min-width:0; flex:1 1 100%; order:3; height:48px; padding:4px 0; }
+      .transport-seek-wrap { min-width:0; flex:1 1 100%; order:3; height:56px; padding:8px 0; }
       .transport-time { font-size:0.75rem; min-width:70px; }
       .channel { grid-template-columns:90px 1fr 28px 28px; gap:8px; padding:10px 12px; }
       .channel-name { font-size:0.8125rem; min-width:90px; }
@@ -300,9 +302,11 @@
       .results-nav::-webkit-scrollbar { display:none; }
       .results-nav-btn { padding:10px 0; font-size:0.75rem; white-space:nowrap; flex-shrink:0; }
       .ai-mark { font-size:0.5rem; padding:1px 3px; }
-      .transport-btn { width:40px; height:40px; }
-      .transport-btn.stop-btn { width:36px; height:36px; }
+      .transport-btn { width:44px; height:44px; }
+      .transport-btn.stop-btn { width:40px; height:40px; }
+      .transport-seek-wrap { height:56px; padding:8px 0; }
       .vol-label { display:none; }
+      .results-meta { padding:16px; gap:8px; }
       .channel { display:flex; flex-wrap:wrap; gap:8px; padding:12px 12px; border-bottom:1px solid rgba(255,255,255,0.04); }
       .channel:nth-child(even) { background:transparent; }
       .channel-name { flex:1; min-width:0; font-size:0.8125rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
@@ -345,6 +349,14 @@
       .meta-chip { padding:3px 8px; font-size:0.6875rem; }
       .lyrics-section-label { font-size:0.625rem; }
       .smart-recs { padding:20px 12px; }
+      .smart-recs-header { gap:4px; margin-bottom:20px; padding-bottom:12px; }
+      .sr-song { padding:8px 10px; gap:3px; }
+      .sr-song-title { font-size:0.8125rem; }
+      .sr-song-artist { font-size:0.75rem; }
+      .sr-song-reason { font-size:0.6875rem; }
+      .sr-cat-label { font-size:0.625rem; }
+      .sr-category { margin-bottom:20px; }
+      .results-meta { padding:12px; }
       .new-song-row { flex-direction:column; gap:8px; align-items:stretch; padding:24px 16px 20px; }
       .new-song-btn { text-align:center; }
     }
@@ -520,6 +532,8 @@ let _defaultTab = "mix";
 let _progressionNames = {};
 let _smartRecs = {};
 let _keyContext = "";
+let _prefetchId = null;
+let _prefetchReady = false;
 
 function showView(n) { views.forEach(v => { const el=document.getElementById(`view-${v}`); if(el) el.classList.toggle("active",v===n); }); }
 
@@ -618,7 +632,7 @@ function renderSearchResults() {
 
 function selectByIndex(i){const t=searchResults[i];if(t)selectTrack(t);}
 async function selectTrack(t){
-  selectedTrack=t; currentJobId=null; setError(""); _currentMode="preview"; _analysisMode="instant"; _previewJobData=null; _fullTrackInProgress=false; _instantAlreadyRendered=false;
+  selectedTrack=t; currentJobId=null; setError(""); _currentMode="preview"; _analysisMode="instant"; _previewJobData=null; _fullTrackInProgress=false; _instantAlreadyRendered=false; _prefetchId=null; _prefetchReady=false;
   console.log(`[ui] selectTrack → ${t.name} by ${t.artist} (id=${t.id||'none'})`);
   // Check DB/cache for existing analysis before starting a new one
   if (t.id) {
@@ -645,6 +659,32 @@ async function selectTrack(t){
       }
     } catch(e) { console.warn("[track] lookup failed:", e); }
   }
+  // ── Background prefetch: start full YouTube download silently ──
+  if (t.yt_query) {
+    fetch('/api/prefetch', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        track_id: t.id || null,
+        yt_query: t.yt_query,
+        artist: t.artist || '',
+        name: t.name || '',
+      }),
+    })
+    .then(r => r.json())
+    .then(d => {
+      if (d.prefetch_id) {
+        _prefetchId = d.prefetch_id;
+        console.log(`[prefetch] started: ${d.prefetch_id} (status=${d.status})`);
+        if (d.status === 'ready') {
+          _prefetchReady = true;
+          console.log('[prefetch] already ready (instant cache hit)');
+        }
+      }
+    })
+    .catch(e => console.warn('[prefetch] failed to start:', e));
+  }
+
   // Auto-start instant preview analysis
   _currentMode = "preview";
   _analysisMode = "instant";
@@ -1192,8 +1232,26 @@ async function downloadTrack(mode){
     startLoadingMessages("download");
   }
 
+  // If background prefetch is running, poll it briefly before starting a fresh download
+  if (mode === "full" && _prefetchId && !_prefetchReady) {
+    try {
+      const pfResp = await fetch(`/api/prefetch/${_prefetchId}/status`);
+      const pfData = await pfResp.json();
+      console.log(`[downloadTrack] prefetch status: ${pfData.status}`);
+      if (pfData.status === 'ready') {
+        _prefetchReady = true;
+      } else if (pfData.status === 'downloading') {
+        if (_analysisMode === "deep") {
+          _setLT("Preparing full track audio...");
+        }
+      }
+    } catch (e) {
+      console.warn('[downloadTrack] prefetch status check failed:', e);
+    }
+  }
+
   const postBody = {
-    query: isPreview ? null : selectedTrack.yt_query,  // preview mode: do NOT send yt_query
+    query: isPreview ? null : selectedTrack.yt_query,
     track_id: selectedTrack?.id || null,
     preview_url: selectedTrack?.preview_url || null,
     artist: selectedTrack?.artist || "",
@@ -1447,6 +1505,11 @@ async function renderResults(data) {
     fullBtn.style.display = (isPreview && canFull) ? "" : "none";
   }
 
+  // Share button
+  if (selectedTrack && selectedTrack.id) {
+    _addShareButton();
+  }
+
   // Load audio in background (parallel decode, non-blocking)
   loadStemAudio(activeNames).then(() => {
     console.log("[audio] all stems decoded and ready");
@@ -1536,6 +1599,11 @@ async function renderInstantResults(data) {
     fullBtn.style.display = "";
   }
 
+  // Share button
+  if (selectedTrack && selectedTrack.id) {
+    _addShareButton();
+  }
+
   // Load the preview audio file for playback
   try {
     if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -1559,12 +1627,40 @@ async function renderInstantResults(data) {
   } catch(e) { console.warn("[audio] preview load failed:", e); }
 }
 
+function _addShareButton() {
+  // Remove existing share button if any
+  const existing = document.getElementById('share-btn');
+  if (existing) existing.remove();
+  const shareUrl = `${window.location.origin}/s/${selectedTrack.id}`;
+  const shareBtn = document.createElement('button');
+  shareBtn.id = 'share-btn';
+  shareBtn.className = 'new-song-btn';
+  shareBtn.style.cssText = 'font-size:0.8125rem; padding:8px 20px;';
+  shareBtn.textContent = 'Share Analysis';
+  shareBtn.onclick = () => {
+    navigator.clipboard.writeText(shareUrl).then(() => {
+      shareBtn.textContent = 'Link Copied!';
+      setTimeout(() => { shareBtn.textContent = 'Share Analysis'; }, 2000);
+    }).catch(() => {
+      prompt('Copy this link:', shareUrl);
+    });
+  };
+  const newSongRow = document.getElementById('results-footer');
+  if (newSongRow) newSongRow.appendChild(shareBtn);
+}
+
 function _startDeepAnalysis() {
-  // User explicitly requested deep analysis — switch modes and start fresh
   console.log("[ui] _startDeepAnalysis → switching to full+deep mode");
   _analysisMode = "deep";
   _currentMode = "full";
-  currentJobId = null;  // Force new download for full track
+
+  // If background prefetch completed, log it — the /api/download endpoint
+  // will find the prefetched audio automatically via the track_id lookup
+  if (_prefetchId && _prefetchReady) {
+    console.log("[ui] prefetch already ready — skipping download step");
+  }
+
+  currentJobId = null;  // Force new download (which will find prefetch if ready)
   startProcessing();
 }
 
@@ -1635,45 +1731,90 @@ function _buildPlayerWaveform() {
   fg.innerHTML = fgHtml;
 
   // ── Touch-friendly waveform scrubbing ──
-  // The hidden range input works on desktop but is hard to grab on mobile.
-  // Add direct pointer events on the waveform wrap for smooth touch scrubbing.
+  // Drag updates the visual progress in real-time without restarting playback.
+  // Actual seek (audio commit) happens only on release for smooth feel.
   (function() {
     let scrubbing = false;
-    function scrubFromEvent(e) {
+    let scrubVal = 0;
+    let wasPlaying = false;
+
+    function pctFromEvent(e) {
       const rect = wrap.getBoundingClientRect();
       const x = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
-      const pct = Math.max(0, Math.min(1, x / rect.width));
-      const val = pct * duration;
-      if (duration > 0) {
-        document.getElementById('seek-bar').value = val;
-        seekTo(val);
-      }
+      return Math.max(0, Math.min(1, x / rect.width));
     }
+
+    function visualUpdate(pct) {
+      scrubVal = pct * duration;
+      // Update visual progress without seeking audio
+      const fg = document.getElementById('player-waveform-fg');
+      const cursor = document.getElementById('player-cursor');
+      const seekBar = document.getElementById('seek-bar');
+      const pctStr = (pct * 100) + '%';
+      if (fg) fg.style.width = pctStr;
+      if (cursor) { cursor.style.transition = 'none'; cursor.style.left = pctStr; }
+      if (seekBar) seekBar.value = scrubVal;
+      // Update time display
+      const t = scrubVal;
+      const d = duration || 0;
+      const tEl = document.getElementById('time-display');
+      if (tEl) tEl.textContent = fmtSec(t) + ' / ' + fmtSec(d);
+    }
+
+    function commitSeek() {
+      // Restore cursor transition
+      const cursor = document.getElementById('player-cursor');
+      if (cursor) cursor.style.transition = '';
+      if (duration > 0) seekTo(scrubVal);
+    }
+
+    // Touch events
     wrap.addEventListener('touchstart', function(e) {
       if (!duration) return;
       scrubbing = true;
-      scrubFromEvent(e);
-      e.preventDefault(); // prevent scroll while scrubbing
-    }, { passive: false });
-    wrap.addEventListener('touchmove', function(e) {
-      if (!scrubbing) return;
-      scrubFromEvent(e);
+      wasPlaying = isPlaying;
+      if (isPlaying) { pausePlayback(); }
+      visualUpdate(pctFromEvent(e));
       e.preventDefault();
     }, { passive: false });
-    wrap.addEventListener('touchend', function() { scrubbing = false; });
-    wrap.addEventListener('touchcancel', function() { scrubbing = false; });
 
-    // Also handle mouse drag for desktop consistency
+    wrap.addEventListener('touchmove', function(e) {
+      if (!scrubbing) return;
+      visualUpdate(pctFromEvent(e));
+      e.preventDefault();
+    }, { passive: false });
+
+    wrap.addEventListener('touchend', function() {
+      if (!scrubbing) return;
+      scrubbing = false;
+      commitSeek();
+      if (wasPlaying) playAll();
+    });
+    wrap.addEventListener('touchcancel', function() {
+      if (!scrubbing) return;
+      scrubbing = false;
+      commitSeek();
+      if (wasPlaying) playAll();
+    });
+
+    // Mouse events (desktop)
     wrap.addEventListener('mousedown', function(e) {
       if (!duration) return;
       scrubbing = true;
-      scrubFromEvent(e);
+      wasPlaying = isPlaying;
+      if (isPlaying) { pausePlayback(); }
+      visualUpdate(pctFromEvent(e));
     });
     window.addEventListener('mousemove', function(e) {
       if (!scrubbing) return;
-      scrubFromEvent(e);
+      visualUpdate(pctFromEvent(e));
     });
-    window.addEventListener('mouseup', function() { scrubbing = false; });
+    window.addEventListener('mouseup', function() {
+      if (!scrubbing) return;
+      scrubbing = false;
+      commitSeek();
+      if (wasPlaying) playAll();
+    });
   })();
 }
 

@@ -53,6 +53,7 @@ def _lazy_music_intelligence():
 from spotify_search import search_spotify, get_recommendations_for_track, RateLimitError
 from external_apis import get_lyrics, get_track_tags, enrich_recommendations_with_lastfm
 from downloader import download_audio_from_youtube, resolve_audio, resolve_preview, AudioUnavailableError
+from analytics import log_event
 from history import add_to_history, get_recent, get_cached_result, save_cached_result, touch_history
 from db import init_db, migrate_from_history_json, get_track, upsert_track, set_track_status, touch_track, get_recent_tracks, get_analysis_for_track
 
@@ -67,6 +68,7 @@ print(f"[auth] FLASK_SECRET_KEY set: {bool(FLASK_SECRET)}")
 print(f"[env] USE_HOSTED_SEPARATION = {os.getenv('USE_HOSTED_SEPARATION')!r}")
 print(f"[env] HAS_REPLICATE_TOKEN = {bool(os.getenv('REPLICATE_API_TOKEN'))}")
 print(f"[env] CWD = {os.getcwd()}")
+print(f"[env] YT_PROXY_URL set: {bool(os.getenv('YT_PROXY_URL'))}")
 
 if not SITE_PASSWORD:
     raise RuntimeError("SITE_PASSWORD environment variable is required. Set it in .env or your hosting platform.")
@@ -104,6 +106,12 @@ _processing_lock = threading.Lock()
 _active_processing = 0
 MAX_CONCURRENT_JOBS = 1  # Only one deep analysis at a time (Demucs uses ~500MB RAM)
 
+# ─── Background prefetch ─────────────────────────────────────────────────────
+# In-memory dict tracking background downloads. Keyed by spotify_track_id.
+# Separate from `jobs` — these are invisible to the user until they click Separate Stems.
+_bg_downloads = {}
+_bg_lock = threading.Lock()
+
 
 def _log_memory(label=""):
     """Log current process RSS memory usage."""
@@ -135,6 +143,16 @@ def _prune_old_jobs():
     if stale:
         print(f"[mem] pruned {len(stale)} stale jobs: {stale}")
 
+    # Also prune stale prefetch entries (older than 15 minutes)
+    with _bg_lock:
+        stale_bg = [pid for pid, e in _bg_downloads.items()
+                    if e.get("status") in ("ready", "failed") and
+                    e.get("_started_at", 0) and (now - e["_started_at"]) > 900]
+        for pid in stale_bg:
+            del _bg_downloads[pid]
+        if stale_bg:
+            print(f"[mem] pruned {len(stale_bg)} stale prefetch entries")
+
 
 def _trim_job_result(job_id):
     """Strip heavy payload from a completed job after the frontend has polled it.
@@ -165,12 +183,13 @@ _log_memory("startup")
 # ─── Authentication ───────────────────────────────────────────────────────────
 
 # Path-based allowlist — explicit and auditable
-AUTH_PUBLIC_PATHS = ("/login", "/static/", "/", "/favicon.ico")
+AUTH_PUBLIC_PATHS = ("/login", "/static/", "/", "/favicon.ico", "/s/")
 
 @app.before_request
 def require_login():
     path = request.path
-    is_public = path == "/login" or path == "/" or path == "/favicon.ico" or path.startswith("/static/")
+    is_public = (path == "/login" or path == "/" or path == "/favicon.ico" or
+                 path.startswith("/static/") or path.startswith("/s/"))
     is_authed = session.get("authenticated") is True
 
     # DEBUG: remove after confirming production auth works
@@ -317,6 +336,7 @@ def download_track():
     mode = data.get("mode", "preview")  # "preview" (default) or "full"
 
     print(f"[download] triggered mode={mode} query={bool(query)} url={bool(url)} preview_url={bool(data.get('preview_url'))} artist={data.get('artist','')[:20]}")
+    log_event("download_start", {"mode": mode, "artist": data.get("artist", "")[:30], "track": data.get("name", "")[:40]})
 
     if not query and not url and mode != "preview":
         return jsonify({"error": "Provide 'query' or 'url'"}), 400
@@ -342,6 +362,24 @@ def download_track():
                     jobs[job_id] = {"status": "ready", "audio_path": audio_path, "audio_source": cached_source, "audio_mode": mode, "progress": "Download complete"}
                     print(f"[job {job_id}] DOWNLOAD REUSED from job {old_job} → {audio_path} (mode={mode})")
                     return jsonify({"job_id": job_id})
+
+    # Check if background prefetch already has the full track ready
+    if mode == "full" and track_id:
+        with _bg_lock:
+            bg = _bg_downloads.get(track_id)
+            if bg and bg["status"] == "ready" and bg["audio_path"]:
+                job_id = str(uuid.uuid4())[:8]
+                audio_path = bg["audio_path"]
+                jobs[job_id] = {
+                    "status": "ready",
+                    "audio_path": audio_path,
+                    "audio_source": "youtube",
+                    "audio_mode": mode,
+                    "progress": "Download complete",
+                }
+                print(f"[job {job_id}] DOWNLOAD REUSED from prefetch → {audio_path}")
+                log_event("prefetch_hit", {"track_id": track_id})
+                return jsonify({"job_id": job_id, "mode": mode})
 
     job_id = str(uuid.uuid4())[:8]
     jobs[job_id] = {"status": "downloading", "audio_mode": mode, "progress": "Getting audio..."}
@@ -425,6 +463,7 @@ def download_track():
 
         except AudioUnavailableError as e:
             print(f"[job {job_id}] SOURCES FAILED (mode={mode}): {e}")
+            log_event("youtube_failed", {"job_id": job_id, "error": str(e)[:100]})
             if mode == "preview":
                 # Preview unavailable — tell frontend, don't try YouTube automatically
                 jobs[job_id].update({
@@ -446,11 +485,94 @@ def download_track():
         except Exception as e:
             print(f"[job {job_id}] DOWNLOAD ERROR: {e}")
             traceback.print_exc()
+            log_event("youtube_failed", {"job_id": job_id, "error": str(e)[:100]})
             jobs[job_id].update({"status": "error", "error": str(e)})
             print(f"[job {job_id}] STATUS → error")
 
     threading.Thread(target=run, daemon=True).start()
     return jsonify({"job_id": job_id, "mode": mode})
+
+
+@app.route("/api/prefetch", methods=["POST"])
+def prefetch_full_track():
+    """
+    Start downloading the full YouTube track in the background.
+    Called by the frontend immediately when a song is selected.
+    Does NOT block the instant analysis flow.
+    Returns immediately with {prefetch_id}.
+    """
+    data = request.get_json(silent=True) or {}
+    track_id = data.get("track_id")
+    yt_query = data.get("yt_query")
+    artist = data.get("artist", "")
+    name = data.get("name", "")
+
+    if not yt_query:
+        return jsonify({"error": "No yt_query provided"}), 400
+
+    # Don't start duplicate downloads for the same track
+    with _bg_lock:
+        if track_id and track_id in _bg_downloads:
+            existing = _bg_downloads[track_id]
+            if existing["status"] in ("downloading", "ready"):
+                print(f"[prefetch] already running/ready for track_id={track_id}")
+                return jsonify({"prefetch_id": existing["prefetch_id"], "status": existing["status"]})
+
+    import time as _pf_time
+    prefetch_id = str(uuid.uuid4())[:8]
+    entry = {
+        "prefetch_id": prefetch_id,
+        "track_id": track_id,
+        "status": "downloading",
+        "audio_path": None,
+        "error": None,
+        "_started_at": _pf_time.time(),
+    }
+
+    with _bg_lock:
+        if track_id:
+            _bg_downloads[track_id] = entry
+        _bg_downloads[prefetch_id] = entry
+
+    print(f"[prefetch {prefetch_id}] starting background download: {yt_query[:60]}")
+    log_event("prefetch_start", {"track": name[:40], "artist": artist[:30]})
+
+    def bg_download():
+        try:
+            track_data = {
+                "query": yt_query,
+                "preview_url": None,
+                "artist": artist,
+                "name": name,
+            }
+            audio_path = resolve_audio(track_data, prefetch_id)
+            entry["status"] = "ready"
+            entry["audio_path"] = str(audio_path)
+            print(f"[prefetch {prefetch_id}] download complete → {audio_path}")
+        except AudioUnavailableError as e:
+            entry["status"] = "failed"
+            entry["error"] = str(e)
+            print(f"[prefetch {prefetch_id}] download failed (unavailable): {e}")
+        except Exception as e:
+            entry["status"] = "failed"
+            entry["error"] = str(e)
+            print(f"[prefetch {prefetch_id}] download failed: {e}")
+
+    threading.Thread(target=bg_download, daemon=True).start()
+    return jsonify({"prefetch_id": prefetch_id, "status": "downloading"})
+
+
+@app.route("/api/prefetch/<prefetch_id>/status")
+def prefetch_status(prefetch_id):
+    """Check if a background download is done."""
+    entry = _bg_downloads.get(prefetch_id)
+    if not entry:
+        return jsonify({"status": "unknown"}), 404
+    return jsonify({
+        "status": entry["status"],
+        "audio_path": entry["audio_path"],
+        "error": entry["error"],
+    })
 
 
 @app.route("/api/upload", methods=["POST"])
@@ -691,6 +813,7 @@ def process_audio(job_id):
     jobs[job_id]["progress"] = "Separating stems..."
     jobs[job_id]["_started_at"] = _time_mod.time()
     print(f"[job {job_id}] process start analysis_mode=deep audio={audio_path}")
+    log_event("deep_analysis_start", {"job_id": job_id, "audio_source": job.get("audio_source")})
 
     # Mark track as pending in DB
     if spotify_track_id:
@@ -765,6 +888,7 @@ def process_audio(job_id):
             jobs[job_id].update(result)
             status_label = result["status"]
             print(f"[job {job_id}] [{_elapsed()}] STATUS → {status_label}" + (f" (failed: {[s['step'] for s in failed_steps]})" if partial else ""))
+            log_event("analysis_complete", {"job_id": job_id, "status": result["status"], "elapsed": round(_time.time() - _t0, 1)})
 
             # Save to cache + history + DB
             if spotify_track_id and (not partial or stems):
@@ -1184,6 +1308,27 @@ def theory_data(section):
     if section not in ("chords", "scales", "progressions", "keys"):
         return jsonify({"error": "Unknown section"}), 404
     return jsonify(_load_theory(section))
+
+
+@app.route("/s/<track_id>")
+def shared_analysis(track_id):
+    """Shareable analysis page. Shows cached analysis results for a track."""
+    track = get_track(track_id)
+    if not track or track["analysis_status"] != "available":
+        return render_template("shared_404.html"), 404
+
+    analysis = get_analysis_for_track(track_id)
+    if not analysis:
+        return render_template("shared_404.html"), 404
+
+    touch_track(track_id)
+    log_event("shared_view", {"track_id": track_id})
+
+    return render_template("shared.html",
+        track=track,
+        analysis=analysis,
+        active_page="decompose",
+    )
 
 
 if __name__ == "__main__":
