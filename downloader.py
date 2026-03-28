@@ -59,15 +59,38 @@ def _simplify_query(query: str) -> str | None:
 
 
 def _run_ytdlp(source: str, job_id: str) -> Path:
-    """Run yt-dlp with hardened flags. Returns path to audio file or raises."""
+    """Run yt-dlp with hardened flags. Tries yt-dlp first, falls back to yt-dlp-ejs."""
     out_dir = UPLOAD_DIR / job_id
     out_dir.mkdir(parents=True, exist_ok=True)
     out_template = str(out_dir / "%(title)s.%(ext)s")
 
+    # Determine which binary to try
+    binaries = ["yt-dlp"]
+    if shutil.which("yt-dlp-ejs"):
+        binaries.append("yt-dlp-ejs")
+
+    last_error = None
+    for binary in binaries:
+        try:
+            result = _run_ytdlp_with_binary(binary, source, out_template, out_dir, job_id)
+            return result
+        except Exception as e:
+            last_error = e
+            print(f"[downloader] {binary} failed: {e}")
+            # Clean up partial downloads before retry with next binary
+            for f in out_dir.glob("*.part"):
+                f.unlink(missing_ok=True)
+            continue
+
+    raise last_error or RuntimeError("All yt-dlp binaries failed")
+
+
+def _run_ytdlp_with_binary(binary: str, source: str, out_template: str, out_dir: Path, job_id: str) -> Path:
+    """Execute a specific yt-dlp binary with full hardened flags."""
     cmd = [
-        "yt-dlp",
+        binary,
         "--extract-audio",
-        "--audio-format", "wav",
+        "--audio-format", "mp3",
         "--audio-quality", "0",
         "--no-playlist",
         "--output", out_template,
@@ -75,7 +98,17 @@ def _run_ytdlp(source: str, job_id: str) -> Path:
         "--user-agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
         "--retries", "3",
         "--socket-timeout", "30",
+        "--extractor-args", "youtube:player_client=web,default;lang=en",
+        "--no-check-certificates",
+        "--prefer-free-formats",
+        "--force-ipv4",
     ]
+
+    # Add cookies if available
+    cookies_path = Path("cookies.txt")
+    if cookies_path.exists():
+        cmd.extend(["--cookies", str(cookies_path)])
+        print(f"[downloader] using cookies.txt")
 
     # Add proxy if configured
     proxy_url = os.environ.get("YT_PROXY_URL")
@@ -85,26 +118,33 @@ def _run_ytdlp(source: str, job_id: str) -> Path:
 
     cmd.append(source)
 
-    print(f"[downloader] yt-dlp starting: {source[:80]}")
-    result = subprocess.run(cmd, capture_output=True, text=True, timeout=180)
+    print(f"[downloader] {binary} starting: {source[:80]}")
+    result = subprocess.run(cmd, capture_output=True, text=True, timeout=300)
 
     if result.returncode != 0:
-        raise RuntimeError(f"yt-dlp failed:\n{result.stderr[:500]}")
+        raise RuntimeError(f"{binary} failed:\n{result.stderr[:500]}")
 
-    # Find the downloaded audio file
-    wav_files = list(out_dir.glob("*.wav"))
-    if not wav_files:
-        audio_files = [
-            f for f in out_dir.iterdir()
-            if f.suffix.lower() in {".wav", ".mp3", ".m4a", ".webm", ".ogg"}
-        ]
-        if not audio_files:
-            raise RuntimeError("yt-dlp ran but no audio file was found.")
-        print(f"[downloader] yt-dlp success → {audio_files[0].name}")
+    # Find the downloaded audio file — look for MP3 first (default), then WAV (fallback)
+    audio_files = list(out_dir.glob("*.mp3"))
+    if not audio_files:
+        audio_files = list(out_dir.glob("*.wav"))
+    if audio_files:
+        audio_files = [f for f in audio_files if not f.name.startswith("preview")]
+    if audio_files:
+        print(f"[downloader] {binary} success → {audio_files[0].name}")
         return audio_files[0]
 
-    print(f"[downloader] yt-dlp success → {wav_files[0].name}")
-    return wav_files[0]
+    # Broader fallback — any audio file
+    other_audio = [
+        f for f in out_dir.iterdir()
+        if f.suffix.lower() in {".wav", ".mp3", ".m4a", ".webm", ".ogg"}
+        and not f.name.startswith("preview")
+    ]
+    if other_audio:
+        print(f"[downloader] {binary} success → {other_audio[0].name}")
+        return other_audio[0]
+
+    raise RuntimeError(f"{binary} ran but no audio file was found.")
 
 
 def download_audio_from_youtube(query_or_url: str, job_id: str) -> Path:
@@ -247,12 +287,12 @@ def resolve_preview(track_data: dict, job_id: str, on_progress=None) -> Path:
     raise AudioUnavailableError("No preview audio available for this track.")
 
 
-def resolve_audio(track_data: dict, job_id: str, on_progress=None) -> Path:
+def resolve_audio(track_data: dict, job_id: str, on_progress=None, allow_preview_fallback: bool = True) -> Path:
     """
     Main entry point. Tries audio sources in waterfall order:
     1. YouTube (full song)
-    2. Spotify preview URL
-    3. iTunes preview URL
+    2. Spotify preview URL (only if allow_preview_fallback=True)
+    3. iTunes preview URL (only if allow_preview_fallback=True)
     4. Raises AudioUnavailableError
 
     track_data keys: query, preview_url, artist, name
@@ -272,6 +312,12 @@ def resolve_audio(track_data: dict, job_id: str, on_progress=None) -> Path:
             return path
         except Exception as e:
             print(f"[job {job_id}] YouTube failed: {e}")
+            if not allow_preview_fallback:
+                print(f"[job {job_id}] preview fallback DISABLED — raising")
+                raise AudioUnavailableError(
+                    f"YouTube download failed and preview fallback is disabled. "
+                    f"Please upload your own audio file. (Error: {str(e)[:100]})"
+                )
             if on_progress:
                 on_progress("YouTube unavailable, trying preview...")
 

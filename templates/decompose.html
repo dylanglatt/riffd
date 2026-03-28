@@ -666,7 +666,18 @@ function _pollPrefetch(pfId) {
       } else if (d.status === 'failed') {
         clearInterval(_prefetchPollTimer);
         _prefetchPollTimer = null;
+        _prefetchReady = false;
         console.warn('[prefetch] failed:', d.error);
+        // Update button to show ready state (clicking will trigger download attempt → upload prompt)
+        const btn = document.getElementById('stem-cta-btn');
+        const ring = document.getElementById('stem-btn-ring');
+        const icon = document.getElementById('stem-btn-icon');
+        if (btn) {
+          btn.classList.add('stem-btn-ready');
+          btn.classList.remove('stem-btn-loading');
+          if (ring) ring.style.display = 'none';
+          if (icon) icon.innerHTML = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12h4l3-9 4 18 3-9h4"/></svg>';
+        }
       }
     } catch (e) {
       console.warn('[prefetch] poll error:', e);
@@ -812,7 +823,8 @@ function _pollStemProgress(jobId) {
         if (d.insight) { const llm = d.insight; _progressionNames = llm.progression_names || {}; _smartRecs = llm.smart_recs || {}; _keyContext = llm.key_context || ""; _renderSmartRecs(_smartRecs); const keyCtxEl = document.getElementById("key-context"); if (keyCtxEl) { keyCtxEl.textContent = _keyContext; keyCtxEl.style.display = _keyContext ? "block" : "none"; } }
         jobData = d; currentJobId = jobId;
         setTimeout(() => { const progress = document.getElementById('stem-progress'); if (progress) { progress.style.opacity = '0'; progress.style.maxHeight = '0'; progress.style.overflow = 'hidden'; setTimeout(() => progress.remove(), 400); } }, 1500);
-        const previewCh = document.querySelector('.preview-channel'); if (previewCh && Object.keys(_loadedStems).length > 0) { previewCh.style.transition = 'opacity .3s ease'; previewCh.style.opacity = '0'; setTimeout(() => previewCh.remove(), 300); }
+        // Clean up preview audio when stems are loaded
+        if (Object.keys(_loadedStems).length > 0) { delete stemBuffers['preview']; if (stemGains['preview']) { try { stemGains['preview'].disconnect(); } catch(e){} delete stemGains['preview']; } delete stemVolumes['preview']; delete stemMuted['preview']; delete stemSoloed['preview']; if (stemSources['preview']) { try { stemSources['preview'].stop(); } catch(e){} delete stemSources['preview']; } }
         _notifyMixTab();
         console.log(`[stems] separation complete — ${Object.keys(_loadedStems).length} stems loaded`);
       } else if (d.status === 'error') {
@@ -879,8 +891,70 @@ function _silentlyUpdateMetaChips(intel) {
 function _showStemError(message) {
   const card = document.getElementById('stem-cta-card');
   if (!card) return;
-  card.innerHTML = `<div class="stem-cta-inner"><div class="stem-cta-desc" style="color:rgba(245,245,245,0.4)">${esc(message)}</div><button class="stem-cta-btn" onclick="_startStemSeparation()" style="margin-top:12px"><span class="stem-btn-text">Try Again</span></button></div>`;
+
+  const isAudioError = message.toLowerCase().includes('upload') ||
+                       message.toLowerCase().includes('unavailable') ||
+                       message.toLowerCase().includes('youtube') ||
+                       message.toLowerCase().includes('download failed');
+
+  let html = '<div class="stem-cta-inner">';
+  html += `<div class="stem-cta-desc" style="color:rgba(245,245,245,0.5)">${esc(message)}</div>`;
+
+  if (isAudioError) {
+    html += `<div style="margin-top:16px;text-align:center">`;
+    html += `<label class="stem-cta-btn" style="cursor:pointer;display:inline-flex;align-items:center;gap:8px">`;
+    html += `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>`;
+    html += `<span>Upload Audio File</span>`;
+    html += `<input type="file" accept=".mp3,.wav,.flac,.m4a,.ogg,.aac" style="display:none" onchange="_uploadForStemSeparation(this.files[0])">`;
+    html += `</label>`;
+    html += `<div style="margin-top:8px;font-size:12px;color:rgba(245,245,245,0.3)">MP3, WAV, FLAC, M4A, OGG, or AAC</div>`;
+    html += `</div>`;
+  } else {
+    html += `<button class="stem-cta-btn" onclick="_startStemSeparation()" style="margin-top:12px"><span class="stem-btn-text">Try Again</span></button>`;
+  }
+
+  html += '</div>';
+  card.innerHTML = html;
   _stemSeparationActive = false;
+}
+
+async function _uploadForStemSeparation(file) {
+  if (!file) return;
+  _stemSeparationActive = true;
+  _showStemProgress();
+  _updateStemStage('download', 'active');
+  _updateStemContextText('Uploading your file...');
+
+  try {
+    const fd = new FormData();
+    fd.append('file', file);
+    const uploadResp = await fetch('/api/upload', { method: 'POST', body: fd });
+    const uploadData = await uploadResp.json();
+    if (uploadData.error) throw new Error(uploadData.error);
+
+    _stemJobId = uploadData.job_id;
+    _updateStemStage('download', 'complete');
+    _updateStemStage('separate', 'active');
+    _updateStemContextText('Pulling apart the layers...');
+
+    const procResp = await fetch(`/api/process/${_stemJobId}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        track_id: selectedTrack?.id || null,
+        artist_id: selectedTrack?.artist_id || null,
+        track_meta: selectedTrack || {},
+        analysis_mode: 'deep',
+      }),
+    });
+    const procData = await procResp.json();
+    if (procData.error) throw new Error(procData.error);
+    _pollStemProgress(_stemJobId);
+  } catch (e) {
+    console.warn('[stems] upload+separation failed:', e);
+    _stemSeparationActive = false;
+    _showStemError(e.message);
+  }
 }
 
 function showView(n) { views.forEach(v => { const el=document.getElementById(`view-${v}`); if(el) el.classList.toggle("active",v===n); }); }
@@ -1853,7 +1927,7 @@ async function renderInstantResults(data) {
 
   // Mix panel: preview player + stem separation CTA
   const mixerChannels = document.getElementById("mixer-channels");
-  mixerChannels.innerHTML = `<div class="preview-channel"><div class="channel" id="ch-preview"><div class="channel-name">Preview</div><div class="channel-volume"><input type="range" class="vol-slider" min="0" max="100" value="100" oninput="setVolume('preview',this.value)" id="vol-preview"/><span class="vol-label" id="vol-label-preview">100</span></div><button class="ch-btn" id="mute-preview" onclick="toggleMute('preview')">M</button><button class="ch-btn" id="solo-preview" onclick="toggleSolo('preview')">S</button></div></div><div class="stem-cta-card" id="stem-cta-card"><div class="stem-cta-inner"><div class="stem-cta-title">Isolate Instruments</div><div class="stem-cta-desc">Separate vocals, drums, bass, and more into individual tracks</div><button class="stem-cta-btn" id="stem-cta-btn" onclick="_startStemSeparation()"><span class="stem-btn-icon" id="stem-btn-icon"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v8M8 12h8"/></svg></span><span class="stem-btn-text">Separate Stems</span><span class="stem-btn-ring" id="stem-btn-ring"></span></button></div></div>`;
+  mixerChannels.innerHTML = `<div class="stem-cta-card" id="stem-cta-card"><div class="stem-cta-inner"><div class="stem-cta-title">Isolate Instruments</div><div class="stem-cta-desc">Separate vocals, drums, bass, and more into individual tracks</div><button class="stem-cta-btn" id="stem-cta-btn" onclick="_startStemSeparation()"><span class="stem-btn-icon" id="stem-btn-icon"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v8M8 12h8"/></svg></span><span class="stem-btn-text">Separate Stems</span><span class="stem-btn-ring" id="stem-btn-ring"></span></button></div></div>`;
   _updateStemButton();
   document.getElementById("loop-start").value = "0:00";
   document.getElementById("loop-end").value = "";
@@ -2235,8 +2309,14 @@ function _renderSmartRecs(recs) {
   let html = '<div class="smart-recs">';
   html += '<div class="smart-recs-header"><span class="smart-recs-title">Songs with Similar Musical DNA</span><span class="smart-recs-subtitle">Based on harmony, not genre</span></div>';
 
+  const currentArtist = (selectedTrack && selectedTrack.artist) ? selectedTrack.artist.toLowerCase().trim() : '';
+
   for (const cat of categories) {
-    const songs = recs[cat.key] || [];
+    // Filter out songs by the same artist — those belong in "More from [Artist]" only
+    const songs = (recs[cat.key] || []).filter(s => {
+      if (!currentArtist || !s.artist) return true;
+      return s.artist.toLowerCase().trim() !== currentArtist;
+    });
     if (!songs.length) continue;
     html += `<div class="sr-category">`;
     html += `<div class="sr-cat-label">${cat.label}</div>`;

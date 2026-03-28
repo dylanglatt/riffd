@@ -82,3 +82,10 @@
 {"ts": 1774728098.731058, "event": "prefetch_hit", "props": {"track_id": "5MLLuLqPdUlx8bfKtdkLwO"}}
 {"ts": 1774728098.736518, "event": "deep_analysis_start", "props": {"job_id": "12dd1252", "audio_source": "youtube"}}
 {"ts": 1774728140.183705, "event": "analysis_complete", "props": {"job_id": "12dd1252", "status": "partial", "elapsed": 41.4}}
+{"ts": 1774739943.233484, "event": "prefetch_start", "props": {"track": "Take It Easy - 2013 Remaster", "artist": "Eagles"}}
+{"ts": 1774741584.067573, "event": "prefetch_start", "props": {"track": "Kiss Me", "artist": "Sixpence None The Richer"}}
+{"ts": 1774741584.0831912, "event": "download_start", "props": {"mode": "preview", "artist": "Sixpence None The Richer", "track": "Kiss Me"}}
+{"ts": 1774741608.2189188, "event": "download_start", "props": {"mode": "full", "artist": "Sixpence None The Richer", "track": "Kiss Me"}}
+{"ts": 1774741610.224072, "event": "prefetch_hit", "props": {"track_id": "754kgU5rWscRTfvlsuEwFp"}}
+{"ts": 1774741612.2423282, "event": "deep_analysis_start", "props": {"job_id": "3f234c26", "audio_source": "youtube"}}
+{"ts": 1774741668.033172, "event": "analysis_complete", "props": {"job_id": "3f234c26", "status": "partial", "elapsed": 55.8}}
