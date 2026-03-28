@@ -341,33 +341,27 @@ def download_track():
     if not query and not url and mode != "preview":
         return jsonify({"error": "Provide 'query' or 'url'"}), 400
 
-    # Check if we already have audio from a previous job for this track
-    if track_id:
-        from history import _load_history
-        hist = _load_history()
-        entry = hist.get(track_id)
-        if entry and entry.get("job_id"):
-            old_job = entry["job_id"]
-            old_upload = UPLOAD_DIR / old_job
-            if old_upload.exists():
-                audio_files = [f for f in old_upload.iterdir()
-                               if f.suffix.lower() in {".wav", ".mp3", ".m4a", ".webm", ".ogg", ".flac"}]
-                if audio_files:
-                    job_id = str(uuid.uuid4())[:8]
-                    audio_path = str(audio_files[0])
-                    cached_source = "cache"
-                    # Detect if cached file is preview or full
-                    if audio_files[0].name == "preview.mp3":
-                        cached_source = "preview"
-                    jobs[job_id] = {"status": "ready", "audio_path": audio_path, "audio_source": cached_source, "audio_mode": mode, "progress": "Download complete"}
-                    print(f"[job {job_id}] DOWNLOAD REUSED from job {old_job} → {audio_path} (mode={mode})")
-                    return jsonify({"job_id": job_id})
-
-    # Check if background prefetch already has the full track ready
+    # Check if background prefetch has (or will soon have) the full track
     if mode == "full" and track_id:
         with _bg_lock:
             bg = _bg_downloads.get(track_id)
-            if bg and bg["status"] == "ready" and bg["audio_path"]:
+
+        if bg:
+            # If prefetch is still downloading, wait for it (up to 60s) instead of starting a duplicate
+            if bg["status"] == "downloading":
+                import time as _wait_time
+                print(f"[download] prefetch in progress for track_id={track_id} — waiting...")
+                deadline = _wait_time.time() + 60
+                while _wait_time.time() < deadline:
+                    _wait_time.sleep(2)
+                    with _bg_lock:
+                        bg = _bg_downloads.get(track_id)
+                    if not bg or bg["status"] != "downloading":
+                        break
+                    print(f"[download] still waiting for prefetch... ({bg['status']})")
+
+            # Re-check after potential wait
+            if bg and bg["status"] == "ready" and bg.get("audio_path"):
                 job_id = str(uuid.uuid4())[:8]
                 audio_path = bg["audio_path"]
                 jobs[job_id] = {
@@ -380,6 +374,31 @@ def download_track():
                 print(f"[job {job_id}] DOWNLOAD REUSED from prefetch → {audio_path}")
                 log_event("prefetch_hit", {"track_id": track_id})
                 return jsonify({"job_id": job_id, "mode": mode})
+
+    # Check if we already have audio from a previous job for this track
+    if track_id:
+        from history import _load_history
+        hist = _load_history()
+        entry = hist.get(track_id)
+        if entry and entry.get("job_id"):
+            old_job = entry["job_id"]
+            old_upload = UPLOAD_DIR / old_job
+            if old_upload.exists():
+                audio_files = [f for f in old_upload.iterdir()
+                               if f.suffix.lower() in {".wav", ".mp3", ".m4a", ".webm", ".ogg", ".flac"}]
+                if audio_files:
+                    # In full mode, skip cached previews — we want the full track
+                    if mode == "full" and audio_files[0].name == "preview.mp3":
+                        print(f"[download] skipping cached preview for mode=full (track_id={track_id})")
+                    else:
+                        job_id = str(uuid.uuid4())[:8]
+                        audio_path = str(audio_files[0])
+                        cached_source = "cache"
+                        if audio_files[0].name == "preview.mp3":
+                            cached_source = "preview"
+                        jobs[job_id] = {"status": "ready", "audio_path": audio_path, "audio_source": cached_source, "audio_mode": mode, "progress": "Download complete"}
+                        print(f"[job {job_id}] DOWNLOAD REUSED from job {old_job} → {audio_path} (mode={mode})")
+                        return jsonify({"job_id": job_id})
 
     job_id = str(uuid.uuid4())[:8]
     jobs[job_id] = {"status": "downloading", "audio_mode": mode, "progress": "Getting audio..."}
@@ -539,6 +558,7 @@ def prefetch_full_track():
 
     def bg_download():
         try:
+            print(f"[prefetch {prefetch_id}] bg_download thread started")
             track_data = {
                 "query": yt_query,
                 "preview_url": None,
@@ -546,17 +566,22 @@ def prefetch_full_track():
                 "name": name,
             }
             audio_path = resolve_audio(track_data, prefetch_id)
+            is_full = not str(audio_path).endswith("preview.mp3")
             entry["status"] = "ready"
             entry["audio_path"] = str(audio_path)
-            print(f"[prefetch {prefetch_id}] download complete → {audio_path}")
+            entry["is_full_track"] = is_full
+            source_type = "youtube (full)" if is_full else "preview (fallback)"
+            print(f"[prefetch {prefetch_id}] COMPLETE → {source_type} → {audio_path}")
         except AudioUnavailableError as e:
             entry["status"] = "failed"
             entry["error"] = str(e)
-            print(f"[prefetch {prefetch_id}] download failed (unavailable): {e}")
+            print(f"[prefetch {prefetch_id}] FAILED (unavailable): {e}")
         except Exception as e:
             entry["status"] = "failed"
             entry["error"] = str(e)
-            print(f"[prefetch {prefetch_id}] download failed: {e}")
+            import traceback
+            print(f"[prefetch {prefetch_id}] FAILED: {e}")
+            traceback.print_exc()
 
     threading.Thread(target=bg_download, daemon=True).start()
     return jsonify({"prefetch_id": prefetch_id, "status": "downloading"})
@@ -936,7 +961,8 @@ def process_audio(job_id):
                 gc.collect()  # Release Demucs intermediates
                 print(f"[job {job_id}] [{_elapsed()}] DEMUCS finished → {len(stems)} stems: {list(stems.keys())}")
                 _log_memory(f"[job {job_id}] post-demucs")
-                jobs[job_id]["stems"] = stems
+                jobs[job_id]["stems"] = {k: {"label": v.get("label", k), "energy": v.get("energy", 0), "active": v.get("active", True)} for k, v in stems.items()}
+                jobs[job_id]["progress"] = "Stems ready — analyzing..."
             except Exception as e:
                 # Demucs failure is fatal — nothing to work with
                 print(f"[job {job_id}] [{_elapsed()}] DEMUCS FATAL: {e}")
@@ -1003,6 +1029,7 @@ def process_audio(job_id):
                             pass
                     print(f"[job {job_id}] [{_elapsed()}] Basic Pitch → {stem_key} done")
                 print(f"[job {job_id}] [{_elapsed()}] TAB GENERATION finished")
+                jobs[job_id]["tabs"] = tabs  # Progressive: make tabs available immediately
             except Exception as e:
                 _fail("tab_generation", e)
 
@@ -1037,6 +1064,7 @@ def process_audio(job_id):
                         lyrics_text=lyrics, audio_key_override=essentia_override,
                     )
                     print(f"[job {job_id}] [{_elapsed()}] INTELLIGENCE finished → key={intelligence['key']}, bpm={intelligence['bpm']}, sections={len(intelligence.get('harmonic_sections',[]))}")
+                    jobs[job_id]["intelligence"] = intelligence  # Progressive: make intelligence available immediately
                 else:
                     print(f"[job {job_id}] [{_elapsed()}] INTELLIGENCE skipped (no note events)")
             except Exception as e:

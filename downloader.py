@@ -73,10 +73,8 @@ def _run_ytdlp(source: str, job_id: str) -> Path:
         "--output", out_template,
         "--no-progress",
         "--user-agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
-        "--extractor-args", "youtube:player_client=web",
         "--retries", "3",
         "--socket-timeout", "30",
-        "--remote-components", "ejs:github",
     ]
 
     # Add proxy if configured

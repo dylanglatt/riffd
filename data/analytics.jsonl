@@ -1,0 +1,84 @@
+{"ts": 1774720491.584754, "event": "shared_view", "props": {"track_id": "4yugZvBYaoREkJKtbG08Qr"}}
+{"ts": 1774720696.947818, "event": "prefetch_start", "props": {"track": "Juno", "artist": "Sabrina Carpenter"}}
+{"ts": 1774720696.9486809, "event": "download_start", "props": {"mode": "preview", "artist": "Sabrina Carpenter", "track": "Juno"}}
+{"ts": 1774720710.2275789, "event": "download_start", "props": {"mode": "full", "artist": "Sabrina Carpenter", "track": "Juno"}}
+{"ts": 1774720711.737107, "event": "deep_analysis_start", "props": {"job_id": "b8101ed2", "audio_source": "preview"}}
+{"ts": 1774720730.8497531, "event": "analysis_complete", "props": {"job_id": "b8101ed2", "status": "partial", "elapsed": 19.1}}
+{"ts": 1774720788.206084, "event": "prefetch_start", "props": {"track": "It's Five O'Clock Somewhere", "artist": "Alan Jackson, Jimmy Buffett"}}
+{"ts": 1774720788.206368, "event": "download_start", "props": {"mode": "preview", "artist": "Alan Jackson, Jimmy Buffett", "track": "It's Five O'Clock Somewhere"}}
+{"ts": 1774720833.254501, "event": "download_start", "props": {"mode": "full", "artist": "Alan Jackson, Jimmy Buffett", "track": "It's Five O'Clock Somewhere"}}
+{"ts": 1774720834.7662091, "event": "deep_analysis_start", "props": {"job_id": "cb7bd05f", "audio_source": "preview"}}
+{"ts": 1774720860.488592, "event": "analysis_complete", "props": {"job_id": "cb7bd05f", "status": "partial", "elapsed": 25.7}}
+{"ts": 1774721196.333986, "event": "prefetch_start", "props": {"track": "Already Gone - 2013 Remaster", "artist": "Eagles"}}
+{"ts": 1774721196.335165, "event": "download_start", "props": {"mode": "preview", "artist": "Eagles", "track": "Already Gone - 2013 Remaster"}}
+{"ts": 1774721207.729336, "event": "download_start", "props": {"mode": "full", "artist": "Eagles", "track": "Already Gone - 2013 Remaster"}}
+{"ts": 1774721209.24128, "event": "deep_analysis_start", "props": {"job_id": "bf7046dc", "audio_source": "preview"}}
+{"ts": 1774721287.070047, "event": "prefetch_start", "props": {"track": "Already Gone - 2013 Remaster", "artist": "Eagles"}}
+{"ts": 1774721287.071615, "event": "download_start", "props": {"mode": "preview", "artist": "Eagles", "track": "Already Gone - 2013 Remaster"}}
+{"ts": 1774721303.9815218, "event": "download_start", "props": {"mode": "full", "artist": "Eagles", "track": "Already Gone - 2013 Remaster"}}
+{"ts": 1774721355.264252, "event": "deep_analysis_start", "props": {"job_id": "5540ec97", "audio_source": "preview"}}
+{"ts": 1774721426.569098, "event": "analysis_complete", "props": {"job_id": "5540ec97", "status": "partial", "elapsed": 71.3}}
+{"ts": 1774721948.16639, "event": "prefetch_start", "props": {"track": "Sister Golden Hair", "artist": "America"}}
+{"ts": 1774721948.1683671, "event": "download_start", "props": {"mode": "preview", "artist": "America", "track": "Sister Golden Hair"}}
+{"ts": 1774721972.212179, "event": "download_start", "props": {"mode": "full", "artist": "America", "track": "Sister Golden Hair"}}
+{"ts": 1774721973.724779, "event": "deep_analysis_start", "props": {"job_id": "a0c916e2", "audio_source": "preview"}}
+{"ts": 1774721996.483256, "event": "analysis_complete", "props": {"job_id": "a0c916e2", "status": "partial", "elapsed": 22.7}}
+{"ts": 1774722037.545275, "event": "prefetch_start", "props": {"track": "Tin Man", "artist": "America"}}
+{"ts": 1774722037.546444, "event": "download_start", "props": {"mode": "preview", "artist": "America", "track": "Tin Man"}}
+{"ts": 1774722275.8796859, "event": "prefetch_start", "props": {"track": "Lonely People", "artist": "America"}}
+{"ts": 1774722275.8811378, "event": "download_start", "props": {"mode": "preview", "artist": "America", "track": "Lonely People"}}
+{"ts": 1774722307.526446, "event": "download_start", "props": {"mode": "full", "artist": "America", "track": "Lonely People"}}
+{"ts": 1774722309.037739, "event": "deep_analysis_start", "props": {"job_id": "96a2aec9", "audio_source": "preview"}}
+{"ts": 1774722329.267072, "event": "analysis_complete", "props": {"job_id": "96a2aec9", "status": "partial", "elapsed": 20.2}}
+{"ts": 1774722572.333449, "event": "prefetch_start", "props": {"track": "Gravity", "artist": "John Mayer"}}
+{"ts": 1774722572.334476, "event": "download_start", "props": {"mode": "preview", "artist": "John Mayer", "track": "Gravity"}}
+{"ts": 1774722589.751859, "event": "download_start", "props": {"mode": "full", "artist": "John Mayer", "track": "Gravity"}}
+{"ts": 1774722591.264683, "event": "deep_analysis_start", "props": {"job_id": "9d82ae6a", "audio_source": "preview"}}
+{"ts": 1774722636.951495, "event": "analysis_complete", "props": {"job_id": "9d82ae6a", "status": "partial", "elapsed": 45.7}}
+{"ts": 1774723328.965947, "event": "prefetch_start", "props": {"track": "Lookin' Out My Back Door", "artist": "Creedence Clearwater Revival"}}
+{"ts": 1774723328.966614, "event": "download_start", "props": {"mode": "preview", "artist": "Creedence Clearwater Revival", "track": "Lookin' Out My Back Door"}}
+{"ts": 1774723342.425387, "event": "download_start", "props": {"mode": "full", "artist": "Creedence Clearwater Revival", "track": "Lookin' Out My Back Door"}}
+{"ts": 1774723343.9369721, "event": "deep_analysis_start", "props": {"job_id": "8348cfbd", "audio_source": "preview"}}
+{"ts": 1774723544.727329, "event": "prefetch_start", "props": {"track": "Cotton Fields", "artist": "Creedence Clearwater Revival"}}
+{"ts": 1774723544.7475898, "event": "download_start", "props": {"mode": "preview", "artist": "Creedence Clearwater Revival", "track": "Cotton Fields"}}
+{"ts": 1774723576.807721, "event": "download_start", "props": {"mode": "full", "artist": "Creedence Clearwater Revival", "track": "Cotton Fields"}}
+{"ts": 1774723578.323349, "event": "deep_analysis_start", "props": {"job_id": "644b8275", "audio_source": "preview"}}
+{"ts": 1774723819.6242938, "event": "prefetch_start", "props": {"track": "Cotton Fields", "artist": "Creedence Clearwater Revival"}}
+{"ts": 1774723819.6411011, "event": "download_start", "props": {"mode": "preview", "artist": "Creedence Clearwater Revival", "track": "Cotton Fields"}}
+{"ts": 1774723835.492851, "event": "download_start", "props": {"mode": "full", "artist": "Creedence Clearwater Revival", "track": "Cotton Fields"}}
+{"ts": 1774723855.089215, "event": "deep_analysis_start", "props": {"job_id": "364fbcdc", "audio_source": "youtube"}}
+{"ts": 1774724251.006924, "event": "prefetch_start", "props": {"track": "Hello Mary Lou", "artist": "Creedence Clearwater Revival"}}
+{"ts": 1774724251.0233212, "event": "download_start", "props": {"mode": "preview", "artist": "Creedence Clearwater Revival", "track": "Hello Mary Lou"}}
+{"ts": 1774724279.7857332, "event": "download_start", "props": {"mode": "full", "artist": "Creedence Clearwater Revival", "track": "Hello Mary Lou"}}
+{"ts": 1774724279.787391, "event": "prefetch_hit", "props": {"track_id": "01QwobyKNu7WRCVuTQbRDN"}}
+{"ts": 1774724281.29891, "event": "deep_analysis_start", "props": {"job_id": "219b2139", "audio_source": "youtube"}}
+{"ts": 1774725617.1856031, "event": "prefetch_start", "props": {"track": "Bad, Bad Leroy Brown", "artist": "Jim Croce"}}
+{"ts": 1774725617.201838, "event": "download_start", "props": {"mode": "preview", "artist": "Jim Croce", "track": "Bad, Bad Leroy Brown"}}
+{"ts": 1774725637.3214421, "event": "download_start", "props": {"mode": "full", "artist": "Jim Croce", "track": "Bad, Bad Leroy Brown"}}
+{"ts": 1774725667.5860329, "event": "prefetch_start", "props": {"track": "Eleanor Rigby - Remastered 2009", "artist": "The Beatles"}}
+{"ts": 1774725667.603843, "event": "download_start", "props": {"mode": "preview", "artist": "The Beatles", "track": "Eleanor Rigby - Remastered 2009"}}
+{"ts": 1774725686.844511, "event": "download_start", "props": {"mode": "full", "artist": "The Beatles", "track": "Eleanor Rigby - Remastered 2009"}}
+{"ts": 1774725716.904842, "event": "prefetch_hit", "props": {"track_id": "5GjPQ0eI7AgmOnADn1EO6Q"}}
+{"ts": 1774725717.59554, "event": "download_start", "props": {"mode": "full", "artist": "The Beatles", "track": "Eleanor Rigby - Remastered 2009"}}
+{"ts": 1774725717.595914, "event": "prefetch_hit", "props": {"track_id": "5GjPQ0eI7AgmOnADn1EO6Q"}}
+{"ts": 1774725719.603828, "event": "deep_analysis_start", "props": {"job_id": "eb78543f", "audio_source": "youtube"}}
+{"ts": 1774727490.9144142, "event": "prefetch_start", "props": {"track": "Mainstreet", "artist": "Bob Seger"}}
+{"ts": 1774727490.929454, "event": "download_start", "props": {"mode": "preview", "artist": "Bob Seger", "track": "Mainstreet"}}
+{"ts": 1774727516.419849, "event": "download_start", "props": {"mode": "full", "artist": "Bob Seger", "track": "Mainstreet"}}
+{"ts": 1774727516.4220648, "event": "prefetch_hit", "props": {"track_id": "0XVR94voJPToKX1XoOw0ot"}}
+{"ts": 1774727516.4257898, "event": "deep_analysis_start", "props": {"job_id": "3c2a9277", "audio_source": "youtube"}}
+{"ts": 1774727643.616886, "event": "download_start", "props": {"mode": "full", "artist": "Bob Seger", "track": "Mainstreet"}}
+{"ts": 1774727643.61842, "event": "prefetch_hit", "props": {"track_id": "0XVR94voJPToKX1XoOw0ot"}}
+{"ts": 1774727643.623022, "event": "deep_analysis_start", "props": {"job_id": "b2ad6970", "audio_source": "youtube"}}
+{"ts": 1774727739.595475, "event": "download_start", "props": {"mode": "full", "artist": "Bob Seger", "track": "Mainstreet"}}
+{"ts": 1774727739.5973382, "event": "prefetch_hit", "props": {"track_id": "0XVR94voJPToKX1XoOw0ot"}}
+{"ts": 1774727739.606682, "event": "deep_analysis_start", "props": {"job_id": "f079d1c1", "audio_source": "youtube"}}
+{"ts": 1774727906.515837, "event": "download_start", "props": {"mode": "full", "artist": "Bob Seger", "track": "Mainstreet"}}
+{"ts": 1774727906.517864, "event": "prefetch_hit", "props": {"track_id": "0XVR94voJPToKX1XoOw0ot"}}
+{"ts": 1774727906.523965, "event": "deep_analysis_start", "props": {"job_id": "3eafc369", "audio_source": "youtube"}}
+{"ts": 1774728074.233536, "event": "prefetch_start", "props": {"track": "The Best of My Love - 2013 Remaster", "artist": "Eagles"}}
+{"ts": 1774728074.253462, "event": "download_start", "props": {"mode": "preview", "artist": "Eagles", "track": "The Best of My Love - 2013 Remaster"}}
+{"ts": 1774728098.7294452, "event": "download_start", "props": {"mode": "full", "artist": "Eagles", "track": "The Best of My Love - 2013 Remaster"}}
+{"ts": 1774728098.731058, "event": "prefetch_hit", "props": {"track_id": "5MLLuLqPdUlx8bfKtdkLwO"}}
+{"ts": 1774728098.736518, "event": "deep_analysis_start", "props": {"job_id": "12dd1252", "audio_source": "youtube"}}
+{"ts": 1774728140.183705, "event": "analysis_complete", "props": {"job_id": "12dd1252", "status": "partial", "elapsed": 41.4}}

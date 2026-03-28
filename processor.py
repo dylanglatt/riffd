@@ -651,12 +651,35 @@ def separate_stems(audio_path: str, song_id: str, progress_callback=None) -> dic
 
     if use_hosted:
         print(f"[separation] path = replicate (hosted-only, no local fallback)")
-        try:
-            raw_stems, model = _separate_stems_replicate(audio_path, out_dir, progress_callback)
-        except Exception as e:
-            # NO fallback to local — hosted mode means hosted only
-            print(f"[separation] REPLICATE FAILED — aborting (no fallback): {e}")
-            raise RuntimeError(f"Cloud stem separation failed: {e}")
+        MAX_RETRIES = 3
+        last_error = None
+        for attempt in range(1, MAX_RETRIES + 1):
+            try:
+                if attempt > 1:
+                    import time as _retry_time
+                    wait = 5 * attempt  # 10s, 15s backoff
+                    print(f"[separation] retry {attempt}/{MAX_RETRIES} in {wait}s...")
+                    if progress_callback:
+                        progress_callback(f"Retrying stem separation (attempt {attempt})...")
+                    _retry_time.sleep(wait)
+                raw_stems, model = _separate_stems_replicate(audio_path, out_dir, progress_callback)
+                if attempt > 1:
+                    print(f"[separation] succeeded on attempt {attempt}")
+                last_error = None
+                break
+            except Exception as e:
+                last_error = e
+                err_str = str(e)
+                # Retry on GPU preemption (code: PA) or transient failures
+                is_retryable = "code: PA" in err_str or "interrupted" in err_str.lower() or "starting" in err_str.lower()
+                if is_retryable and attempt < MAX_RETRIES:
+                    print(f"[separation] attempt {attempt} failed (retryable): {e}")
+                    continue
+                else:
+                    print(f"[separation] REPLICATE FAILED — aborting (no fallback): {e}")
+                    raise RuntimeError(f"Cloud stem separation failed: {e}")
+        if last_error:
+            raise RuntimeError(f"Cloud stem separation failed after {MAX_RETRIES} attempts: {last_error}")
     else:
         print(f"[separation] path = local")
         raw_stems, model = _separate_stems_local(audio_path, out_dir, progress_callback)
