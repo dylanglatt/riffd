@@ -24,6 +24,7 @@ The preview path (resolve_preview) is the default for instant analysis.
 The full path (resolve_audio) is only used when user explicitly requests deep analysis.
 """
 
+import os
 import re
 import subprocess
 import shutil
@@ -75,11 +76,11 @@ def _run_ytdlp(source: str, job_id: str) -> Path:
         "--extractor-args", "youtube:player_client=web",
         "--retries", "3",
         "--socket-timeout", "30",
+        "--remote-components", "ejs:github",
     ]
 
     # Add proxy if configured
-    import os as _os
-    proxy_url = _os.environ.get("YT_PROXY_URL")
+    proxy_url = os.environ.get("YT_PROXY_URL")
     if proxy_url:
         cmd.extend(["--proxy", proxy_url])
         print(f"[downloader] using proxy: {proxy_url[:30]}...")
