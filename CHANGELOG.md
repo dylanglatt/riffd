@@ -2,6 +2,22 @@
 
 ---
 
+## Performance + Pipeline Hardening (2026-03-28)
+
+- **YouTube download hardened**: dual-binary retry (yt-dlp → yt-dlp-ejs), extractor args for bot detection bypass, cookies.txt support, 300s timeout
+- **Full-mode integrity**: `resolve_audio()` no longer silently falls back to 30s previews — raises `AudioUnavailableError` with upload prompt instead
+- **Prefetch safety**: background prefetch rejects preview.mp3 results, preventing Demucs from running on preview clips
+- **MP3 download format**: switched from WAV transcoding to MP3 — 10x smaller files, eliminates ffmpeg conversion step
+- **Replicate file upload API**: replaced base64 data URI encoding with direct file upload (`POST /v1/files`) — faster, less memory
+- **Upload fallback UX**: stem separation errors now show an upload button for audio-related failures instead of generic "Try Again"
+
+## UI Polish (2026-03-28)
+
+- **Key display fix**: minor keys now display correctly ("E Minor" instead of "Em minor") across the tonality map
+- **Same-artist filter**: recommendation categories (same progression, same key+tempo, similar harmony) now filter out songs by the current artist — those belong only in "More from [Artist]"
+- **Preview channel removed from mixer**: preview audio plays from the top-level player only, no longer appears as a channel strip alongside stems
+- **Preview audio cleanup**: preview buffer, gain node, and source fully disconnected when stems load — no audio bleed
+
 ## Preview-First Architecture (2026-03-26)
 
 - **Instant analysis mode**: select a song → key, BPM, lyrics in ~3-5 seconds (no Demucs, no stems)

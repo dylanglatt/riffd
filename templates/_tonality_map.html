@@ -362,7 +362,8 @@ function renderKeyDetail(containerId, keyName, opts) {
 
   // Header
   html += `<div style="margin-bottom:20px">`;
-  html += `<div style="font-size:1.25rem;font-weight:500;color:#F5F5F5;letter-spacing:-0.02em">${info.name}${info.isMinor?" minor":" major"}</div>`;
+  const displayName = info.isMinor ? info.name.replace(/m$/, '') : info.name;
+  html += `<div style="font-size:1.25rem;font-weight:500;color:#F5F5F5;letter-spacing:-0.02em">${displayName} ${info.isMinor?"Minor":"Major"}</div>`;
   html += `<div style="font-size:0.8125rem;color:rgba(245,245,245,0.4);margin-top:4px">${sigStr} \u00b7 ${relLabel}</div>`;
   html += `<div style="font-size:0.875rem;color:rgba(245,245,245,0.5);margin-top:8px;line-height:1.5">${info.char}</div>`;
   html += `</div>`;

@@ -493,7 +493,6 @@ def _separate_stems_replicate(audio_path: Path, out_dir: Path, progress_callback
     """
     import os
     import time as _time
-    import base64
     import requests as _requests
 
     token = os.getenv("REPLICATE_API_TOKEN", "").strip()
@@ -521,27 +520,37 @@ def _separate_stems_replicate(audio_path: Path, out_dir: Path, progress_callback
     print(f"[replicate] model = cjwbw/demucs")
     print(f"[replicate] version = {VERSION[:16]}...")
 
-    # ── Step 1: Prepare audio as base64 data URI ──
-    audio_bytes = audio_path.read_bytes()
+    # ── Step 1: Upload audio file to Replicate ──
+    file_size = audio_path.stat().st_size
     suffix = audio_path.suffix.lower().lstrip(".")
     mime = {"mp3": "audio/mpeg", "wav": "audio/wav", "m4a": "audio/mp4",
             "ogg": "audio/ogg", "flac": "audio/flac"}.get(suffix, "audio/mpeg")
-    audio_b64 = base64.b64encode(audio_bytes).decode("ascii")
-    audio_uri = f"data:{mime};base64,{audio_b64}"
-    print(f"[replicate] audio: {len(audio_bytes)} bytes, mime={mime}")
-    del audio_bytes, audio_b64  # free memory
+    print(f"[replicate] uploading audio: {audio_path.name} ({file_size} bytes, {mime})")
 
-    # ── Step 2: Create prediction ──
+    upload_resp = _requests.post(
+        f"{REPLICATE_API}/files",
+        headers={"Authorization": f"Bearer {token}"},
+        files={"content": (audio_path.name, open(audio_path, "rb"), mime)},
+        timeout=120,
+    )
+    if not upload_resp.ok:
+        raise RuntimeError(f"Replicate file upload failed (HTTP {upload_resp.status_code}): {upload_resp.text[:300]}")
+
+    file_url = upload_resp.json().get("urls", {}).get("get")
+    if not file_url:
+        raise RuntimeError(f"Replicate file upload returned no URL: {upload_resp.text[:200]}")
+    print(f"[replicate] file uploaded → {file_url[:80]}")
+
+    # ── Step 2: Create prediction using file URL ──
     payload = {
         "version": VERSION,
         "input": {
-            "audio": audio_uri,
+            "audio": file_url,
             "model_name": "htdemucs",
             "output_format": "wav",
             "shifts": 1,
         },
     }
-    del audio_uri  # free the large string
 
     print(f"[replicate] creating prediction...")
     resp = _requests.post(f"{REPLICATE_API}/predictions", headers=headers, json=payload, timeout=30)

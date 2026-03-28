@@ -465,10 +465,8 @@ def download_track():
                     print(f"[job {job_id}] AUDIO SOURCE SELECTED: youtube (direct URL)")
                 else:
                     _on_progress("Downloading full track...")
-                    audio_path = resolve_audio(track_data, job_id, on_progress=_on_progress)
+                    audio_path = resolve_audio(track_data, job_id, on_progress=_on_progress, allow_preview_fallback=False)
                     audio_source = "youtube"
-                    if str(audio_path).endswith("preview.mp3"):
-                        audio_source = "preview"
 
             print(f"[job {job_id}] download finished → {audio_path} (source={audio_source}, mode={mode})")
             jobs[job_id].update({
@@ -565,8 +563,11 @@ def prefetch_full_track():
                 "artist": artist,
                 "name": name,
             }
-            audio_path = resolve_audio(track_data, prefetch_id)
-            is_full = not str(audio_path).endswith("preview.mp3")
+            audio_path = resolve_audio(track_data, prefetch_id, allow_preview_fallback=False)
+            # Verify we actually got a full track, not a preview
+            if str(audio_path).endswith("preview.mp3"):
+                raise AudioUnavailableError("Only preview audio available — full track download failed")
+            is_full = True
             entry["status"] = "ready"
             entry["audio_path"] = str(audio_path)
             entry["is_full_track"] = is_full
