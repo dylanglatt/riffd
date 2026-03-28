@@ -115,9 +115,48 @@
     .proc-estimate { margin-top:12px; color:rgba(245,245,245,0.35); font-size:0.8125rem; opacity:0; transition:opacity .8s ease .6s; letter-spacing:-0.01em; }
     .proc-estimate.visible { opacity:1; }
 
+    /* ═══ Stem CTA Card ═══ */
+    .stem-cta-card { padding:40px 24px; text-align:center; }
+    .stem-cta-inner { max-width:320px; margin:0 auto; }
+    .stem-cta-title { font-size:1.125rem; font-weight:600; color:rgba(245,245,245,0.85); letter-spacing:-0.02em; margin-bottom:8px; }
+    .stem-cta-desc { font-size:0.8125rem; color:rgba(245,245,245,0.4); line-height:1.5; margin-bottom:20px; }
+    .stem-cta-btn { display:inline-flex; align-items:center; gap:8px; padding:10px 24px; border:1px solid rgba(212,105,31,0.3); background:rgba(212,105,31,0.08); color:rgba(245,245,245,0.8); font-size:0.875rem; font-weight:500; cursor:pointer; transition:all .2s ease; position:relative; font-family:inherit; }
+    .stem-cta-btn:hover { background:rgba(212,105,31,0.15); border-color:rgba(212,105,31,0.5); color:#F5F5F5; transform:none; }
+    .stem-btn-icon { display:flex; align-items:center; }
+    .stem-btn-ring { position:absolute; top:-2px; right:-2px; width:12px; height:12px; border:2px solid rgba(212,105,31,0.3); border-top-color:rgba(212,105,31,0.8); animation:stemRingSpin 1s linear infinite; }
+    .stem-btn-ready .stem-btn-ring { display:none; }
+    .stem-btn-ready { border-color:rgba(212,105,31,0.5); background:rgba(212,105,31,0.12); box-shadow:0 0 20px rgba(212,105,31,0.08); }
+    @keyframes stemRingSpin { to{transform:rotate(360deg)} }
+    .stem-progress { padding:32px 24px; text-align:center; transition:opacity .4s ease, max-height .4s ease; }
+    .stem-stages { display:flex; align-items:center; justify-content:center; gap:0; margin-bottom:16px; }
+    .stem-stage { display:flex; flex-direction:column; align-items:center; gap:8px; min-width:80px; }
+    .stage-indicator { width:28px; height:28px; border:2px solid rgba(255,255,255,0.1); display:flex; align-items:center; justify-content:center; position:relative; overflow:hidden; transition:all .3s ease; }
+    .stage-fill { position:absolute; inset:0; background:rgba(212,105,31,0.15); transform:scaleY(0); transform-origin:bottom; transition:transform .6s ease; }
+    .stage-check { opacity:0; color:#4ade80; transition:opacity .3s ease; position:relative; z-index:1; }
+    .stage-label { font-size:0.6875rem; color:rgba(245,245,245,0.3); text-transform:uppercase; letter-spacing:0.05em; transition:color .3s ease; }
+    .stage-connector { width:40px; height:2px; background:rgba(255,255,255,0.06); margin:0 4px; margin-bottom:24px; }
+    .stage-active .stage-indicator { border-color:rgba(212,105,31,0.5); }
+    .stage-active .stage-fill { transform:scaleY(1); animation:stagePulse 2s ease-in-out infinite; }
+    .stage-active .stage-label { color:rgba(245,245,245,0.6); }
+    .stage-complete .stage-indicator { border-color:rgba(74,222,128,0.4); background:rgba(74,222,128,0.08); }
+    .stage-complete .stage-check { opacity:1; }
+    .stage-complete .stage-fill { transform:scaleY(0); }
+    .stage-complete .stage-label { color:rgba(74,222,128,0.6); }
+    @keyframes stagePulse { 0%,100%{opacity:0.5} 50%{opacity:1} }
+    .stem-context-text { font-size:0.8125rem; color:rgba(245,245,245,0.35); transition:opacity .2s ease; min-height:1.2em; }
+    .stem-channel-enter { opacity:0; transform:translateY(8px); transition:opacity .4s ease, transform .4s ease; }
+    .stem-channel-enter.visible { opacity:1; transform:translateY(0); }
+    .stem-dot { width:6px; height:6px; background:#4ade80; display:inline-block; margin-left:6px; animation:stemDotPulse 1.5s ease-in-out infinite; }
+    @keyframes stemDotPulse { 0%,100%{opacity:0.4} 50%{opacity:1} }
+    .chip-updated { animation:chipFlash .6s ease; }
+    @keyframes chipFlash { 0%{background:rgba(212,105,31,0.15)} 100%{background:transparent} }
+    @keyframes mixerShimmer { 0%{background-position:-200% 0} 100%{background-position:200% 0} }
+    .channel.shimmer { background:linear-gradient(90deg,transparent 0%,rgba(212,105,31,0.04) 50%,transparent 100%); background-size:200% 100%; animation:mixerShimmer .8s ease forwards; }
+
     .view { display:none; }
     .view.active { display:block; animation:viewIn .3s cubic-bezier(.16,1,.3,1); }
     @keyframes viewIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+    @keyframes ftbFadeIn { from{opacity:0;transform:translateY(-4px)} to{opacity:1;transform:translateY(0)} }
 
     /* Results */
     .results-shell { padding:0; overflow:hidden; border:1px solid rgba(255,255,255,0.08); background:transparent; }
@@ -266,6 +305,7 @@
     .new-song-btn { background:transparent; color:rgba(245,245,245,0.5); border:1px solid rgba(255,255,255,0.1); padding:10px 28px; font-size:0.875rem; font-weight:400; cursor:pointer; transition:all .2s; letter-spacing:-0.01em; }
     .new-song-btn:hover { border-color:rgba(255,255,255,0.2); color:rgba(245,245,245,0.7); }
 
+    /* ═══ Tablet (768px) ═══ */
     @media(max-width:768px) {
       .app-head { padding-top:64px; margin-bottom:48px; }
       .hero-headline { font-size:2.5rem; }
@@ -289,7 +329,26 @@
       .meta-chip { padding:4px 10px; font-size:0.75rem; }
       .results-nav-btn { padding:12px 0; font-size:0.8125rem; }
       .try-card { width:140px; }
+      /* Stem CTA */
+      .stem-cta-card { padding:28px 16px; }
+      .stem-cta-title { font-size:1rem; }
+      /* Progress stepper */
+      .stem-progress { padding:24px 16px; }
+      .stage-connector { width:28px; }
+      .stem-stage { min-width:70px; }
+      /* Track banner */
+      .track-banner { gap:12px; padding:16px; }
+      .track-banner img, .track-banner .cover-placeholder { width:44px; height:44px; }
+      .track-banner-title { font-size:0.9375rem; }
+      .track-banner-sub { font-size:0.8125rem; }
+      /* Key panel flex → stack on tablet */
+      #panel-key > div:first-child { gap:20px; }
+      #decompose-key-detail { min-width:200px !important; }
+      /* Harmonic sections */
+      .hs-chords { font-size:0.8125rem; }
     }
+
+    /* ═══ Mobile (480px) ═══ */
     @media(max-width:480px) {
       .hero-headline { font-size:2rem; }
       .cap-grid { grid-template-columns:1fr; }
@@ -324,7 +383,39 @@
       .new-song-btn { min-height:44px; padding:10px 20px; }
       .smart-recs { padding:24px 16px; }
       .sr-song { padding:10px 12px; }
+      /* Stem CTA — tighter, full-width button */
+      .stem-cta-card { padding:24px 12px; }
+      .stem-cta-inner { max-width:100%; }
+      .stem-cta-title { font-size:0.9375rem; }
+      .stem-cta-desc { font-size:0.75rem; margin-bottom:16px; }
+      .stem-cta-btn { width:100%; justify-content:center; padding:12px 20px; font-size:0.8125rem; min-height:44px; }
+      /* Progress stepper — compact for phone */
+      .stem-progress { padding:20px 12px; }
+      .stem-stages { gap:0; }
+      .stem-stage { min-width:60px; }
+      .stage-indicator { width:24px; height:24px; }
+      .stage-label { font-size:0.5625rem; letter-spacing:0.03em; }
+      .stage-connector { width:24px; margin-bottom:20px; }
+      .stage-check svg { width:10px; height:10px; }
+      .stem-context-text { font-size:0.75rem; }
+      /* Track banner — compact */
+      .track-banner { gap:10px; padding:12px; }
+      .track-banner img, .track-banner .cover-placeholder { width:40px; height:40px; }
+      .track-banner-title { font-size:0.875rem; }
+      .track-banner-sub { font-size:0.75rem; }
+      /* Key panel — stack vertically */
+      #panel-key > div:first-child { flex-direction:column; gap:16px; }
+      #decompose-cof { width:100%; display:flex; justify-content:center; }
+      #decompose-key-detail { min-width:0 !important; width:100%; }
+      /* Footer buttons — stack on mobile */
+      .new-song-row { flex-wrap:wrap; gap:8px; padding:20px 12px; }
+      .new-song-row .new-song-btn { flex:1; min-width:0; text-align:center; }
+      /* Harmonic overflow */
+      .hs-chords { font-size:0.75rem; word-break:break-all; }
+      .hs-numerals { font-size:0.6875rem; }
     }
+
+    /* ═══ Small phone (360px) ═══ */
     @media(max-width:360px) {
       .app-head { padding-top:48px; margin-bottom:32px; }
       .hero-headline { font-size:1.75rem; }
@@ -359,6 +450,23 @@
       .results-meta { padding:12px; }
       .new-song-row { flex-direction:column; gap:8px; align-items:stretch; padding:24px 16px 20px; }
       .new-song-btn { text-align:center; }
+      /* Stem CTA — minimal padding */
+      .stem-cta-card { padding:20px 10px; }
+      .stem-cta-title { font-size:0.875rem; }
+      .stem-cta-desc { font-size:0.6875rem; line-height:1.4; }
+      .stem-cta-btn { padding:10px 16px; font-size:0.75rem; }
+      /* Progress stepper — even tighter */
+      .stem-progress { padding:16px 8px; }
+      .stem-stage { min-width:50px; }
+      .stage-indicator { width:22px; height:22px; }
+      .stage-label { font-size:0.5rem; }
+      .stage-connector { width:16px; margin-bottom:18px; }
+      .stem-context-text { font-size:0.6875rem; }
+      /* Track banner — minimal */
+      .track-banner { padding:10px 12px; gap:8px; }
+      .track-banner img, .track-banner .cover-placeholder { width:36px; height:36px; }
+      .track-banner-title { font-size:0.8125rem; }
+      .track-banner-sub { font-size:0.6875rem; }
     }
 {% endblock %}
 
@@ -534,6 +642,246 @@ let _smartRecs = {};
 let _keyContext = "";
 let _prefetchId = null;
 let _prefetchReady = false;
+let _prefetchPollTimer = null;
+let _stemJobId = null;
+let _stemPollTimer = null;
+let _loadedStems = {};
+let _stemSeparationActive = false;
+let _stemMixerReady = false;
+let _firstMixerInteraction = false;
+// ─── Stem separation (progressive v2) ────────────────────────────────────────
+
+function _pollPrefetch(pfId) {
+  if (_prefetchPollTimer) clearInterval(_prefetchPollTimer);
+  _prefetchPollTimer = setInterval(async () => {
+    try {
+      const r = await fetch(`/api/prefetch/${pfId}/status`);
+      const d = await r.json();
+      if (d.status === 'ready') {
+        _prefetchReady = true;
+        clearInterval(_prefetchPollTimer);
+        _prefetchPollTimer = null;
+        console.log('[prefetch] ready');
+        _updateStemButton();
+      } else if (d.status === 'failed') {
+        clearInterval(_prefetchPollTimer);
+        _prefetchPollTimer = null;
+        console.warn('[prefetch] failed:', d.error);
+      }
+    } catch (e) {
+      console.warn('[prefetch] poll error:', e);
+    }
+  }, 5000);
+}
+
+function _updateStemButton() {
+  const ring = document.getElementById('stem-btn-ring');
+  const icon = document.getElementById('stem-btn-icon');
+  const btn = document.getElementById('stem-cta-btn');
+  if (!btn) return;
+  if (_stemSeparationActive) return;
+  if (_prefetchReady) {
+    btn.classList.add('stem-btn-ready');
+    btn.classList.remove('stem-btn-loading');
+    if (ring) ring.style.display = 'none';
+    if (icon) icon.innerHTML = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12h4l3-9 4 18 3-9h4"/></svg>';
+  } else {
+    btn.classList.add('stem-btn-loading');
+    btn.classList.remove('stem-btn-ready');
+    if (ring) ring.style.display = '';
+  }
+}
+
+async function _startStemSeparation() {
+  if (_stemSeparationActive) return;
+  _stemSeparationActive = true;
+  console.log('[stems] user triggered stem separation');
+  _showStemProgress();
+  try {
+    _updateStemStage('download', 'active');
+    const dlResp = await fetch('/api/download', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        mode: 'full',
+        query: selectedTrack.yt_query,
+        track_id: selectedTrack.id || null,
+        preview_url: null,
+        artist: selectedTrack.artist || '',
+        name: selectedTrack.name || '',
+        image_url: selectedTrack.image_url || '',
+        duration_ms: selectedTrack.duration_ms || 0,
+        year: selectedTrack.year || '',
+        artist_id: selectedTrack.artist_id || '',
+      }),
+    });
+    const dlData = await dlResp.json();
+    if (!dlData.job_id) throw new Error('Download failed');
+    _stemJobId = dlData.job_id;
+    if (!_prefetchReady) {
+      await _waitForDownload(_stemJobId);
+    }
+    _updateStemStage('download', 'complete');
+    _updateStemStage('separate', 'active');
+    _updateStemContextText('Pulling apart the layers...');
+    const procResp = await fetch(`/api/process/${_stemJobId}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        track_id: selectedTrack?.id || null,
+        artist_id: selectedTrack?.artist_id || null,
+        track_meta: selectedTrack || {},
+        analysis_mode: 'deep',
+      }),
+    });
+    const procData = await procResp.json();
+    if (procData.error) throw new Error(procData.error);
+    _pollStemProgress(_stemJobId);
+  } catch (e) {
+    console.warn('[stems] separation failed:', e);
+    _stemSeparationActive = false;
+    _showStemError(e.message);
+  }
+}
+
+function _waitForDownload(jobId) {
+  return new Promise((resolve, reject) => {
+    const poll = setInterval(async () => {
+      try {
+        const r = await fetch(`/api/status/${jobId}`);
+        const d = await r.json();
+        if (d.status === 'ready') { clearInterval(poll); resolve(); }
+        else if (d.status === 'error' || d.status === 'upload_required' || d.status === 'preview_unavailable') {
+          clearInterval(poll); reject(new Error(d.error || 'Download failed'));
+        }
+      } catch (e) { /* keep trying */ }
+    }, 2000);
+    setTimeout(() => { clearInterval(poll); reject(new Error('Download timed out')); }, 180000);
+  });
+}
+
+function _showStemProgress() {
+  const card = document.getElementById('stem-cta-card');
+  if (!card) return;
+  card.innerHTML = `<div class="stem-progress" id="stem-progress"><div class="stem-stages"><div class="stem-stage" id="stage-download" data-stage="download"><div class="stage-indicator"><div class="stage-fill"></div><svg class="stage-check" viewBox="0 0 16 16" width="12" height="12"><polyline points="3,8 7,12 13,4" fill="none" stroke="currentColor" stroke-width="2"/></svg></div><span class="stage-label">Downloading</span></div><div class="stage-connector"></div><div class="stem-stage" id="stage-separate" data-stage="separate"><div class="stage-indicator"><div class="stage-fill"></div><svg class="stage-check" viewBox="0 0 16 16" width="12" height="12"><polyline points="3,8 7,12 13,4" fill="none" stroke="currentColor" stroke-width="2"/></svg></div><span class="stage-label">Separating</span></div><div class="stage-connector"></div><div class="stem-stage" id="stage-analyze" data-stage="analyze"><div class="stage-indicator"><div class="stage-fill"></div><svg class="stage-check" viewBox="0 0 16 16" width="12" height="12"><polyline points="3,8 7,12 13,4" fill="none" stroke="currentColor" stroke-width="2"/></svg></div><span class="stage-label">Analyzing</span></div></div><div class="stem-context-text" id="stem-context-text">Downloading full track...</div></div>`;
+}
+
+function _updateStemStage(stage, state) {
+  const el = document.getElementById(`stage-${stage}`);
+  if (!el) return;
+  el.classList.remove('stage-pending', 'stage-active', 'stage-complete');
+  el.classList.add(`stage-${state}`);
+}
+
+function _updateStemContextText(text) {
+  const el = document.getElementById('stem-context-text');
+  if (el) { el.style.opacity = '0'; setTimeout(() => { el.textContent = text; el.style.opacity = '1'; }, 200); }
+}
+
+function _pollStemProgress(jobId) {
+  _stemPollTimer = setInterval(async () => {
+    try {
+      const r = await fetch(`/api/status/${jobId}`);
+      const d = await r.json();
+      // Progressive stem loading
+      if (d.stems) {
+        const newStems = Object.keys(d.stems).filter(k => !_loadedStems[k]);
+        if (newStems.length > 0) {
+          for (const stemName of newStems) { _addStemChannel(stemName, d.stems[stemName], jobId); _loadedStems[stemName] = true; }
+          _notifyMixTab();
+          const count = Object.keys(_loadedStems).length;
+          _updateStemContextText(`${count} instrument${count > 1 ? 's' : ''} isolated...`);
+        }
+      }
+      // Detect stage transitions
+      if (d.progress) {
+        if (d.progress.includes('Separating') || d.progress.includes('stems') || d.progress.includes('Demucs')) { _updateStemStage('separate', 'active'); _updateStemContextText('Pulling apart the layers...'); }
+        if (d.progress.includes('tab') || d.progress.includes('Tab') || d.progress.includes('pitch')) { _updateStemStage('separate', 'complete'); _updateStemStage('analyze', 'active'); _updateStemContextText('Analyzing harmony and rhythm...'); }
+        if (d.progress.includes('harmonic') || d.progress.includes('Harmonic') || d.progress.includes('intel')) { _updateStemStage('analyze', 'active'); _updateStemContextText('Detecting chord progressions...'); }
+      }
+      // Update intelligence progressively
+      if (d.intelligence && d.intelligence.key && d.intelligence.key !== 'Unknown') { _silentlyUpdateMetaChips(d.intelligence); }
+      // Complete
+      if (d.status === 'complete' || d.status === 'partial') {
+        clearInterval(_stemPollTimer); _stemPollTimer = null; _stemSeparationActive = false; _stemMixerReady = true;
+        _updateStemStage('download', 'complete'); _updateStemStage('separate', 'complete'); _updateStemStage('analyze', 'complete');
+        _updateStemContextText('Complete');
+        if (d.stems) { Object.keys(d.stems).filter(k => !_loadedStems[k]).forEach(k => { _addStemChannel(k, d.stems[k], jobId); _loadedStems[k] = true; }); }
+        if (d.intelligence && d.intelligence.harmonic_sections) _renderHarmonicSections(d.intelligence.harmonic_sections);
+        if (d.lyrics) { const lyricsEl = document.getElementById('lyrics-content'); if (lyricsEl) lyricsEl.innerHTML = `<div class="lyrics-container">${_formatLyrics(d.lyrics)}</div>`; }
+        if (d.insight) { const llm = d.insight; _progressionNames = llm.progression_names || {}; _smartRecs = llm.smart_recs || {}; _keyContext = llm.key_context || ""; _renderSmartRecs(_smartRecs); const keyCtxEl = document.getElementById("key-context"); if (keyCtxEl) { keyCtxEl.textContent = _keyContext; keyCtxEl.style.display = _keyContext ? "block" : "none"; } }
+        jobData = d; currentJobId = jobId;
+        setTimeout(() => { const progress = document.getElementById('stem-progress'); if (progress) { progress.style.opacity = '0'; progress.style.maxHeight = '0'; progress.style.overflow = 'hidden'; setTimeout(() => progress.remove(), 400); } }, 1500);
+        const previewCh = document.querySelector('.preview-channel'); if (previewCh && Object.keys(_loadedStems).length > 0) { previewCh.style.transition = 'opacity .3s ease'; previewCh.style.opacity = '0'; setTimeout(() => previewCh.remove(), 300); }
+        _notifyMixTab();
+        console.log(`[stems] separation complete — ${Object.keys(_loadedStems).length} stems loaded`);
+      } else if (d.status === 'error') {
+        clearInterval(_stemPollTimer); _stemPollTimer = null; _stemSeparationActive = false;
+        _showStemError(d.error || 'Stem separation failed');
+      }
+    } catch (e) { console.warn('[stems] poll error:', e); }
+  }, 2500);
+  setTimeout(() => { if (_stemPollTimer) { clearInterval(_stemPollTimer); _stemPollTimer = null; _stemSeparationActive = false; _showStemError('Stem separation timed out. Try again.'); } }, 300000);
+}
+
+function _addStemChannel(stemName, stemData, jobId) {
+  const mixerEl = document.getElementById('mixer-channels');
+  if (!mixerEl) return;
+  const label = formatStemLabel(stemName, (stemData && stemData.label) || "");
+  const channel = document.createElement('div');
+  channel.className = 'channel stem-channel-enter';
+  channel.id = `ch-${stemName}`;
+  channel.innerHTML = `<div class="channel-name">${esc(label)}</div><div class="channel-volume"><input type="range" class="vol-slider" min="0" max="100" value="100" oninput="setVolume('${stemName}',this.value)" id="vol-${stemName}"/><span class="vol-label" id="vol-label-${stemName}">100</span></div><button class="ch-btn" id="mute-${stemName}" onclick="toggleMute('${stemName}')">M</button><button class="ch-btn" id="solo-${stemName}" onclick="toggleSolo('${stemName}')">S</button>`;
+  const progress = document.getElementById('stem-progress');
+  if (progress) { mixerEl.insertBefore(channel, progress.parentElement); } else { mixerEl.appendChild(channel); }
+  requestAnimationFrame(() => { channel.classList.add('visible'); });
+  stemVolumes[stemName] = 1; stemMuted[stemName] = false; stemSoloed[stemName] = false;
+  _loadSingleStemAudio(stemName, jobId);
+}
+
+async function _loadSingleStemAudio(stemName, jobId) {
+  try {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const r = await fetch(`/api/audio/${jobId}/${stemName}`);
+    if (!r.ok) return;
+    const ab = await r.arrayBuffer();
+    const buf = await audioCtx.decodeAudioData(ab);
+    stemBuffers[stemName] = buf;
+    const g = audioCtx.createGain(); g.connect(audioCtx.destination); stemGains[stemName] = g;
+    if (buf.duration > duration) { duration = buf.duration; document.getElementById("seek-bar").max = duration; updateTimeDisplay(); _buildPlayerWaveform(); }
+    console.log(`[audio] stem loaded: ${stemName} (${buf.duration.toFixed(1)}s)`);
+  } catch (e) { console.warn(`[audio] failed to load stem ${stemName}:`, e); }
+}
+
+function _notifyMixTab() {
+  const activePanel = document.querySelector('.results-nav-btn.active');
+  if (activePanel && activePanel.dataset.panel !== 'mix') {
+    const mixBtn = document.querySelector('.results-nav-btn[data-panel="mix"]');
+    if (mixBtn && !mixBtn.querySelector('.stem-dot')) { const dot = document.createElement('span'); dot.className = 'stem-dot'; mixBtn.appendChild(dot); }
+  }
+}
+
+function _silentlyUpdateMetaChips(intel) {
+  const metaEl = document.getElementById('results-meta');
+  if (!metaEl) return;
+  let chips = '';
+  const tags = jobData?.tags || [];
+  if (tags.length) { const genre = tags[0].charAt(0).toUpperCase() + tags[0].slice(1); chips += `<span class="meta-chip"><span class="mc-label">Genre</span><span class="mc-val">${esc(genre)}</span></span>`; }
+  const bpmVal = Math.round(intel.bpm || 0);
+  const bpmConf = intel.bpm_confidence || 0;
+  if (bpmVal > 0 && bpmConf >= 0.15) { const bpmLabel = bpmConf >= 0.4 ? "BPM" : "Est. BPM"; chips += `<span class="meta-chip chip-updated"><span class="mc-label">${bpmLabel}</span><span class="mc-val">${bpmVal}</span></span>`; }
+  if (intel.key && intel.key !== 'Unknown') { chips += `<span class="meta-chip chip-updated"><span class="mc-label">Key</span><span class="mc-val">${esc(intel.key)}</span></span>`; }
+  metaEl.innerHTML = chips;
+  songKey = (intel.key_num >= 0) ? { num: intel.key_num, mode: intel.mode_num, name: intel.key } : songKey;
+  _initDecomposeKeyTab(intel.key);
+}
+
+function _showStemError(message) {
+  const card = document.getElementById('stem-cta-card');
+  if (!card) return;
+  card.innerHTML = `<div class="stem-cta-inner"><div class="stem-cta-desc" style="color:rgba(245,245,245,0.4)">${esc(message)}</div><button class="stem-cta-btn" onclick="_startStemSeparation()" style="margin-top:12px"><span class="stem-btn-text">Try Again</span></button></div>`;
+  _stemSeparationActive = false;
+}
 
 function showView(n) { views.forEach(v => { const el=document.getElementById(`view-${v}`); if(el) el.classList.toggle("active",v===n); }); }
 
@@ -547,6 +895,11 @@ function switchPanel(name, btn) {
     document.querySelectorAll(".results-nav-btn").forEach(b => {
       if (b.textContent.trim().toLowerCase() === name || b.getAttribute("data-panel") === name) b.classList.add("active");
     });
+  }
+  // Remove stem notification dot when switching to Mix
+  if (name === 'mix') {
+    const dot = document.querySelector('.results-nav-btn[data-panel="mix"] .stem-dot');
+    if (dot) dot.remove();
   }
 }
 
@@ -632,35 +985,16 @@ function renderSearchResults() {
 
 function selectByIndex(i){const t=searchResults[i];if(t)selectTrack(t);}
 async function selectTrack(t){
-  selectedTrack=t; currentJobId=null; setError(""); _currentMode="preview"; _analysisMode="instant"; _previewJobData=null; _fullTrackInProgress=false; _instantAlreadyRendered=false; _prefetchId=null; _prefetchReady=false;
+  selectedTrack=t; currentJobId=null; setError(""); _currentMode="preview"; _analysisMode="instant"; _previewJobData=null; _fullTrackInProgress=false; _instantAlreadyRendered=false; _prefetchId=null; _prefetchReady=false; _stemJobId=null; _stemSeparationActive=false; _stemMixerReady=false; _loadedStems={}; _firstMixerInteraction=false;
+  if (_stemPollTimer) { clearInterval(_stemPollTimer); _stemPollTimer = null; }
+  if (_prefetchPollTimer) { clearInterval(_prefetchPollTimer); _prefetchPollTimer = null; }
   console.log(`[ui] selectTrack → ${t.name} by ${t.artist} (id=${t.id||'none'})`);
-  // Check DB/cache for existing analysis before starting a new one
-  if (t.id) {
-    try {
-      const r = await fetch(`/api/track/${encodeURIComponent(t.id)}`);
-      const d = await r.json();
-      if (d.analysis_status === 'available' && d.analysis) {
-        console.log(`[ui] cache hit → loading saved analysis (hasStems=${Object.keys(d.analysis.stems||{}).length > 0})`);
-        currentJobId = d.job_id;
-        jobData = { status:"complete", tabs:d.analysis.tabs||{}, stems:d.analysis.stems||{}, intelligence:d.analysis.intelligence||{}, lyrics:d.analysis.lyrics||null, tags:d.analysis.tags||[], insight:d.analysis.insight||null, audio_source:d.analysis.audio_source||null, audio_mode:d.analysis.audio_mode||null, analysis_mode:d.analysis.analysis_mode||null };
-        // Route to correct renderer: instant results have no stems, deep results have stems
-        const hasStems = Object.keys(jobData.stems||{}).length > 0;
-        if (hasStems) {
-          renderResults(jobData);
-        } else {
-          renderInstantResults(jobData);
-        }
-        return;
-      }
-      if (d.analysis_status === 'pending') {
-        // Track was left in pending state from a previous run — fall through to fresh analysis
-        console.log("[ui] track pending in DB — starting fresh instant analysis");
-        console.log("[selectTrack] track is pending — starting fresh instant analysis");
-      }
-    } catch(e) { console.warn("[track] lookup failed:", e); }
-  }
+
   // ── Background prefetch: start full YouTube download silently ──
+  // Fire BEFORE cache check so it always runs, even for previously analyzed tracks.
+  // This ensures the full track is available for deep analysis later.
   if (t.yt_query) {
+    console.log(`[prefetch] firing for: ${t.yt_query}`);
     fetch('/api/prefetch', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
@@ -679,10 +1013,37 @@ async function selectTrack(t){
         if (d.status === 'ready') {
           _prefetchReady = true;
           console.log('[prefetch] already ready (instant cache hit)');
+          _updateStemButton();
+        } else {
+          // Poll until ready, then show upgrade UI
+          _pollPrefetch(d.prefetch_id);
         }
       }
     })
     .catch(e => console.warn('[prefetch] failed to start:', e));
+  }
+
+  // Check DB/cache for existing analysis before starting a new one
+  if (t.id) {
+    try {
+      const r = await fetch(`/api/track/${encodeURIComponent(t.id)}`);
+      const d = await r.json();
+      if (d.analysis_status === 'available' && d.analysis) {
+        console.log(`[ui] cache hit → loading saved analysis (hasStems=${Object.keys(d.analysis.stems||{}).length > 0})`);
+        currentJobId = d.job_id;
+        jobData = { status:"complete", tabs:d.analysis.tabs||{}, stems:d.analysis.stems||{}, intelligence:d.analysis.intelligence||{}, lyrics:d.analysis.lyrics||null, tags:d.analysis.tags||[], insight:d.analysis.insight||null, audio_source:d.analysis.audio_source||null, audio_mode:d.analysis.audio_mode||null, analysis_mode:d.analysis.analysis_mode||null };
+        const hasStems = Object.keys(jobData.stems||{}).length > 0;
+        if (hasStems) {
+          renderResults(jobData);
+        } else {
+          renderInstantResults(jobData);
+        }
+        return;
+      }
+      if (d.analysis_status === 'pending') {
+        console.log("[selectTrack] track is pending — starting fresh instant analysis");
+      }
+    } catch(e) { console.warn("[track] lookup failed:", e); }
   }
 
   // Auto-start instant preview analysis
@@ -848,32 +1209,34 @@ function _showHeroPreProcess() {
 }
 
 function _showHeroLoading() {
+  // Kept as fallback for upload/manual deep paths
   _populateHero();
   document.getElementById("hero-actions").classList.add("hidden");
-  document.getElementById("hero-loading").classList.remove("hidden");
-  document.getElementById("wv-fg").style.width = "0%";
-  // Fade in estimate after a brief delay
+  const heroLoading = document.getElementById("hero-loading");
+  heroLoading.classList.remove("hidden");
+  const wvWrap = heroLoading.querySelector(".waveform-wrap");
+  if (wvWrap) wvWrap.style.display = "none";
   const est = document.getElementById("proc-estimate");
-  est.classList.remove("visible");
-  setTimeout(() => est.classList.add("visible"), 100);
-  _startElapsedTimer();
-  _showCancelBtnAfterDelay();
+  if (est) est.style.display = "none";
+  const progLabel = document.getElementById("progress-label");
+  if (progLabel) progLabel.style.display = "none";
+  showView("confirm");
 }
 
 function buildProcessingBanner() { _showHeroLoading(); }
 
 function _showInstantLoading() {
-  // Lightweight loading state for instant analysis — no heavy spinner
+  // Show ONLY the hero (album art + title) — no spinners, no text, no waveform
   _populateHero();
   document.getElementById("hero-actions").classList.add("hidden");
-  document.getElementById("hero-loading").classList.remove("hidden");
-  document.getElementById("wv-fg").style.width = "0%";
-  // Use simple status text, no timer or cancel button for instant
+  const heroLoading = document.getElementById("hero-loading");
+  heroLoading.classList.remove("hidden");
+  const wvWrap = heroLoading.querySelector(".waveform-wrap");
+  if (wvWrap) wvWrap.style.display = "none";
   const est = document.getElementById("proc-estimate");
-  est.textContent = "Just a moment";
-  est.classList.remove("visible");
-  setTimeout(() => est.classList.add("visible"), 100);
-  _setLT("Getting preview...");
+  if (est) est.style.display = "none";
+  const progLabel = document.getElementById("progress-label");
+  if (progLabel) progLabel.style.display = "none";
   showView("confirm");
 }
 
@@ -897,11 +1260,14 @@ let _pollStartTime = 0;
 
 function _resetLoadingUI() {
   stopLoadingMessages();
-  _stopElapsedTimer();
-  _hideCancelBtn();
   document.getElementById("process-btn").disabled = false;
   document.getElementById("process-btn").textContent = "Dive In";
-  document.getElementById("proc-estimate").classList.remove("visible");
+  const est = document.getElementById("proc-estimate");
+  if (est) { est.classList.remove("visible"); est.style.display = ""; }
+  const wvWrap = document.querySelector("#hero-loading .waveform-wrap");
+  if (wvWrap) wvWrap.style.display = "";
+  const progLabel = document.getElementById("progress-label");
+  if (progLabel) progLabel.style.display = "";
 }
 
 function _showUploadRequired() {
@@ -1047,62 +1413,7 @@ async function _uploadForTrack(file) {
   }
 }
 
-// ─── Elapsed timer ───────────────────────────────────────────────────────────
-let _elapsedInterval = null;
-let _elapsedStart = 0;
-
-function _startElapsedTimer() {
-  _stopElapsedTimer();
-  _elapsedStart = Date.now();
-  let timerEl = document.getElementById("proc-elapsed");
-  if (!timerEl) {
-    timerEl = document.createElement("div");
-    timerEl.id = "proc-elapsed";
-    timerEl.style.cssText = "margin-top:8px;color:rgba(245,245,245,0.25);font-size:0.8125rem;font-family:monospace;letter-spacing:0.02em;";
-    const statusEl = document.getElementById("progress-label");
-    if (statusEl && statusEl.parentElement) statusEl.parentElement.appendChild(timerEl);
-  }
-  timerEl.textContent = "0:00";
-  timerEl.style.display = "";
-  _elapsedInterval = setInterval(() => {
-    const sec = Math.floor((Date.now() - _elapsedStart) / 1000);
-    timerEl.textContent = `${Math.floor(sec/60)}:${String(sec%60).padStart(2,"0")}`;
-  }, 1000);
-}
-
-function _stopElapsedTimer() {
-  if (_elapsedInterval) { clearInterval(_elapsedInterval); _elapsedInterval = null; }
-  const el = document.getElementById("proc-elapsed");
-  if (el) el.style.display = "none";
-}
-
-// ─── Cancel / try different song button ──────────────────────────────────────
-let _cancelBtnTimeout = null;
-
-function _showCancelBtnAfterDelay() {
-  _hideCancelBtn();
-  _cancelBtnTimeout = setTimeout(() => {
-    let btn = document.getElementById("cancel-loading-btn");
-    if (!btn) {
-      btn = document.createElement("div");
-      btn.id = "cancel-loading-btn";
-      btn.textContent = "Taking too long? Try a different song";
-      btn.style.cssText = "color:rgba(245,245,245,0.35);cursor:pointer;font-size:0.8rem;margin-top:24px;transition:color 0.2s;";
-      btn.onmouseenter = () => { btn.style.color = "rgba(245,245,245,0.6)"; };
-      btn.onmouseleave = () => { btn.style.color = "rgba(245,245,245,0.35)"; };
-      btn.onclick = () => { _resetLoadingUI(); clearTimeout(pollInterval); resetApp(); };
-      const loading = document.getElementById("hero-loading");
-      if (loading) loading.appendChild(btn);
-    }
-    btn.style.display = "";
-  }, 30000);
-}
-
-function _hideCancelBtn() {
-  if (_cancelBtnTimeout) { clearTimeout(_cancelBtnTimeout); _cancelBtnTimeout = null; }
-  const btn = document.getElementById("cancel-loading-btn");
-  if (btn) btn.style.display = "none";
-}
+// (Elapsed timer and cancel button removed — progressive v2 has no blocking loading screen)
 
 let _analysisMode = "instant"; // "instant" or "deep"
 
@@ -1184,33 +1495,9 @@ async function startProcessing(){
       showView("confirm");
     }
   } else {
-    // ── Deep analysis: async with polling ──
-    buildProcessingBanner(); showView("confirm"); setProgress(null, 5);
-    startLoadingMessages("stems");
-    _setLT("Separating stems and analyzing...");
-
-    try {
-      const r = await fetch(`/api/process/${currentJobId}`, {
-        method:"POST", headers:{"Content-Type":"application/json"},
-        body: JSON.stringify({
-          track_id: selectedTrack?.id || null,
-          artist_id: selectedTrack?.artist_id || null,
-          track_meta: selectedTrack || {},
-          analysis_mode: "deep",
-        }),
-      });
-      const d = await r.json();
-      if (d.error) throw new Error(d.error);
-      pollStatus();
-    } catch(e) {
-      _resetLoadingUI();
-      if (_previewJobData) {
-        _showFullTrackFailed("Stem separation failed. Your preview results are still available.");
-      } else {
-        setError("Processing failed: " + e.message);
-        showView("confirm");
-      }
-    }
+    // Deep analysis is handled by _startStemSeparation() — not here
+    console.warn("[startProcessing] deep mode called directly — delegating to stem separation");
+    _startStemSeparation();
   }
 }
 
@@ -1226,10 +1513,9 @@ async function downloadTrack(mode){
     setProgress(null, 15);
     _setLT("Getting preview...");
   } else {
-    // Deep/full: show the full processing banner
-    buildProcessingBanner(); showView("confirm");
+    // Deep/full: no blocking loading screen — handled by progressive pipeline
     setProgress(null, 8);
-    startLoadingMessages("download");
+    _setLT("Downloading full track...");
   }
 
   // If background prefetch is running, poll it briefly before starting a fresh download
@@ -1565,9 +1851,10 @@ async function renderInstantResults(data) {
   // Smart recommendations
   _renderSmartRecs(_smartRecs);
 
-  // Mix panel: single audio player for the raw preview file
+  // Mix panel: preview player + stem separation CTA
   const mixerChannels = document.getElementById("mixer-channels");
-  mixerChannels.innerHTML = `<div class="channel"><div class="channel-name">Preview</div><div class="channel-volume"><input type="range" class="vol-slider" min="0" max="100" value="100" oninput="setVolume('preview',this.value)" id="vol-preview"/><span class="vol-label" id="vol-label-preview">100</span></div><button class="ch-btn" id="mute-preview" onclick="toggleMute('preview')">M</button><button class="ch-btn" id="solo-preview" onclick="toggleSolo('preview')">S</button></div>`;
+  mixerChannels.innerHTML = `<div class="preview-channel"><div class="channel" id="ch-preview"><div class="channel-name">Preview</div><div class="channel-volume"><input type="range" class="vol-slider" min="0" max="100" value="100" oninput="setVolume('preview',this.value)" id="vol-preview"/><span class="vol-label" id="vol-label-preview">100</span></div><button class="ch-btn" id="mute-preview" onclick="toggleMute('preview')">M</button><button class="ch-btn" id="solo-preview" onclick="toggleSolo('preview')">S</button></div></div><div class="stem-cta-card" id="stem-cta-card"><div class="stem-cta-inner"><div class="stem-cta-title">Isolate Instruments</div><div class="stem-cta-desc">Separate vocals, drums, bass, and more into individual tracks</div><button class="stem-cta-btn" id="stem-cta-btn" onclick="_startStemSeparation()"><span class="stem-btn-icon" id="stem-btn-icon"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v8M8 12h8"/></svg></span><span class="stem-btn-text">Separate Stems</span><span class="stem-btn-ring" id="stem-btn-ring"></span></button></div></div>`;
+  _updateStemButton();
   document.getElementById("loop-start").value = "0:00";
   document.getElementById("loop-end").value = "";
   loopActive = false;
@@ -1591,13 +1878,9 @@ async function renderInstantResults(data) {
   document.getElementById("process-btn").textContent = "Dive In";
   showView("results");
 
-  // Show full breakdown button
+  // Hide footer "Separate Stems" button — now in the CTA card
   const fullBtn = document.getElementById("full-track-btn");
-  if (fullBtn) {
-    fullBtn.textContent = "Separate Stems";
-    fullBtn.onclick = () => _startDeepAnalysis();
-    fullBtn.style.display = "";
-  }
+  if (fullBtn) fullBtn.style.display = "none";
 
   // Share button
   if (selectedTrack && selectedTrack.id) {
@@ -1625,6 +1908,8 @@ async function renderInstantResults(data) {
       console.log("[audio] preview audio loaded");
     }
   } catch(e) { console.warn("[audio] preview load failed:", e); }
+
+  _instantAlreadyRendered = true;
 }
 
 function _addShareButton() {
@@ -1649,20 +1934,7 @@ function _addShareButton() {
   if (newSongRow) newSongRow.appendChild(shareBtn);
 }
 
-function _startDeepAnalysis() {
-  console.log("[ui] _startDeepAnalysis → switching to full+deep mode");
-  _analysisMode = "deep";
-  _currentMode = "full";
-
-  // If background prefetch completed, log it — the /api/download endpoint
-  // will find the prefetched audio automatically via the track_id lookup
-  if (_prefetchId && _prefetchReady) {
-    console.log("[ui] prefetch already ready — skipping download step");
-  }
-
-  currentJobId = null;  // Force new download (which will find prefetch if ready)
-  startProcessing();
-}
+// _startDeepAnalysis removed — stem separation now handled by _startStemSeparation()
 
 
 
@@ -1855,7 +2127,7 @@ function setProgress(t,p){
 }
 function setError(m){const e=document.getElementById("error-msg");e.textContent=m;e.style.display=m?"block":"none";}
 function resetApp(){
-  cleanupAudio();stopLoadingMessages();_stopElapsedTimer();_hideCancelBtn();pauseOffset=0;duration=0;currentJobId=null;selectedTrack=null;jobData=null;_previewJobData=null;_fullTrackInProgress=false;_instantAlreadyRendered=false;_currentMode="preview";_analysisMode="instant";searchResults=[];lastQuery="";loopActive=false;transposeAmount=0;songKey=null;clearTimeout(pollInterval);
+  cleanupAudio();stopLoadingMessages();pauseOffset=0;duration=0;currentJobId=null;selectedTrack=null;jobData=null;_previewJobData=null;_fullTrackInProgress=false;_instantAlreadyRendered=false;_currentMode="preview";_analysisMode="instant";searchResults=[];lastQuery="";loopActive=false;transposeAmount=0;songKey=null;clearTimeout(pollInterval);_stemJobId=null;_stemSeparationActive=false;_stemMixerReady=false;_loadedStems={};_firstMixerInteraction=false;_prefetchId=null;_prefetchReady=false;if(_stemPollTimer){clearInterval(_stemPollTimer);_stemPollTimer=null;}if(_prefetchPollTimer){clearInterval(_prefetchPollTimer);_prefetchPollTimer=null;}
   const confirmUpload=document.getElementById("confirm-upload-area");if(confirmUpload)confirmUpload.style.display="none";
   const retryBtn=document.getElementById("upload-retry-btn");if(retryBtn)retryBtn.style.display="none";
   document.getElementById("process-btn").style.display="";
