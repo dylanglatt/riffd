@@ -776,6 +776,7 @@ function _waitForDownload(jobId) {
     const poll = setInterval(async () => {
       try {
         const r = await fetch(`/api/status/${jobId}`);
+        if (!r.ok) { clearInterval(poll); reject(new Error('Download lost — server may have restarted')); return; }
         const d = await r.json();
         if (d.status === 'ready') { clearInterval(poll); resolve(); }
         else if (d.status === 'error' || d.status === 'upload_required' || d.status === 'preview_unavailable') {
@@ -809,6 +810,12 @@ function _pollStemProgress(jobId) {
   _stemPollTimer = setInterval(async () => {
     try {
       const r = await fetch(`/api/status/${jobId}`);
+      if (!r.ok) {
+        // Job lost (e.g. server restart) — stop polling and let user retry
+        clearInterval(_stemPollTimer); _stemPollTimer = null; _stemSeparationActive = false;
+        _showStemError('Processing was interrupted. Please try again.');
+        return;
+      }
       const d = await r.json();
       // Progressive stem loading
       if (d.stems) {

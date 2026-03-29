@@ -58,34 +58,53 @@ def _simplify_query(query: str) -> str | None:
     return q if q and q.lower() != query.strip().lower() else None
 
 
-def _run_ytdlp(source: str, job_id: str) -> Path:
-    """Run yt-dlp with hardened flags. Tries yt-dlp first, falls back to yt-dlp-ejs."""
+def _is_proxy_error(err: Exception) -> bool:
+    """Return True if the error is clearly a proxy connectivity failure."""
+    msg = str(err).lower()
+    return any(k in msg for k in (
+        "tunnel connection failed",
+        "unable to connect to proxy",
+        "proxy error",
+        "502 bad gateway",
+        "proxyerror",
+    ))
+
+
+def _run_ytdlp(source: str, job_id: str, use_proxy: bool = True) -> Path:
+    """Run yt-dlp with hardened flags. Tries yt-dlp first, falls back to yt-dlp-ejs.
+    If use_proxy=True and every attempt fails with a proxy error, retries once without proxy."""
     out_dir = UPLOAD_DIR / job_id
     out_dir.mkdir(parents=True, exist_ok=True)
     out_template = str(out_dir / "%(title)s.%(ext)s")
 
-    # Determine which binary to try
     binaries = ["yt-dlp"]
     if shutil.which("yt-dlp-ejs"):
         binaries.append("yt-dlp-ejs")
 
     last_error = None
+    all_proxy_errors = True
     for binary in binaries:
         try:
-            result = _run_ytdlp_with_binary(binary, source, out_template, out_dir, job_id)
+            result = _run_ytdlp_with_binary(binary, source, out_template, out_dir, job_id, use_proxy=use_proxy)
             return result
         except Exception as e:
             last_error = e
+            if not _is_proxy_error(e):
+                all_proxy_errors = False
             print(f"[downloader] {binary} failed: {e}")
-            # Clean up partial downloads before retry with next binary
             for f in out_dir.glob("*.part"):
                 f.unlink(missing_ok=True)
             continue
 
+    # If every failure was a proxy error and we haven't already tried without proxy, retry direct
+    if use_proxy and all_proxy_errors and os.environ.get("YT_PROXY_URL"):
+        print(f"[downloader] proxy failed with 502 — retrying WITHOUT proxy")
+        return _run_ytdlp(source, job_id, use_proxy=False)
+
     raise last_error or RuntimeError("All yt-dlp binaries failed")
 
 
-def _run_ytdlp_with_binary(binary: str, source: str, out_template: str, out_dir: Path, job_id: str) -> Path:
+def _run_ytdlp_with_binary(binary: str, source: str, out_template: str, out_dir: Path, job_id: str, use_proxy: bool = True) -> Path:
     """Execute a specific yt-dlp binary with full hardened flags."""
     cmd = [
         binary,
@@ -110,11 +129,13 @@ def _run_ytdlp_with_binary(binary: str, source: str, out_template: str, out_dir:
         cmd.extend(["--cookies", str(cookies_path)])
         print(f"[downloader] using cookies.txt")
 
-    # Add proxy if configured
+    # Add proxy if configured and not bypassed
     proxy_url = os.environ.get("YT_PROXY_URL")
-    if proxy_url:
+    if proxy_url and use_proxy:
         cmd.extend(["--proxy", proxy_url])
         print(f"[downloader] using proxy: {proxy_url[:30]}...")
+    elif proxy_url and not use_proxy:
+        print(f"[downloader] proxy bypassed — trying direct connection")
 
     cmd.append(source)
 
