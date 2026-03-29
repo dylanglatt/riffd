@@ -89,3 +89,50 @@
 {"ts": 1774741610.224072, "event": "prefetch_hit", "props": {"track_id": "754kgU5rWscRTfvlsuEwFp"}}
 {"ts": 1774741612.2423282, "event": "deep_analysis_start", "props": {"job_id": "3f234c26", "audio_source": "youtube"}}
 {"ts": 1774741668.033172, "event": "analysis_complete", "props": {"job_id": "3f234c26", "status": "partial", "elapsed": 55.8}}
+{"ts": 1774742371.790228, "event": "prefetch_start", "props": {"track": "Escape (The Pina Colada Song)", "artist": "Rupert Holmes"}}
+{"ts": 1774742371.810804, "event": "download_start", "props": {"mode": "preview", "artist": "Rupert Holmes", "track": "Escape (The Pina Colada Song)"}}
+{"ts": 1774742393.601673, "event": "download_start", "props": {"mode": "full", "artist": "Rupert Holmes", "track": "Escape (The Pina Colada Song)"}}
+{"ts": 1774742393.602011, "event": "prefetch_hit", "props": {"track_id": "5IMtdHjJ1OtkxbGe4zfUxQ"}}
+{"ts": 1774742393.609298, "event": "deep_analysis_start", "props": {"job_id": "cfb269cb", "audio_source": "youtube"}}
+{"ts": 1774742641.537083, "event": "prefetch_start", "props": {"track": "Dead Flowers - 2009 Mix", "artist": "The Rolling Stones"}}
+{"ts": 1774742641.558221, "event": "download_start", "props": {"mode": "preview", "artist": "The Rolling Stones", "track": "Dead Flowers - 2009 Mix"}}
+{"ts": 1774742676.218913, "event": "download_start", "props": {"mode": "full", "artist": "The Rolling Stones", "track": "Dead Flowers - 2009 Mix"}}
+{"ts": 1774742676.219564, "event": "prefetch_hit", "props": {"track_id": "3oJtUnnt5uYPtzulIbLw3D"}}
+{"ts": 1774742676.22487, "event": "deep_analysis_start", "props": {"job_id": "e5378059", "audio_source": "youtube"}}
+{"ts": 1774742741.271723, "event": "analysis_complete", "props": {"job_id": "e5378059", "status": "partial", "elapsed": 65.0}}
+{"ts": 1774742893.963428, "event": "shared_view", "props": {"track_id": "3oJtUnnt5uYPtzulIbLw3D"}}
+{"ts": 1774742900.600503, "event": "shared_view", "props": {"track_id": "3oJtUnnt5uYPtzulIbLw3D"}}
+{"ts": 1774743209.991773, "event": "prefetch_start", "props": {"track": "Peaceful Easy Feeling - 2013 Remaster", "artist": "Eagles"}}
+{"ts": 1774743210.031551, "event": "download_start", "props": {"mode": "preview", "artist": "Eagles", "track": "Peaceful Easy Feeling - 2013 Remaster"}}
+{"ts": 1774743231.890132, "event": "download_start", "props": {"mode": "full", "artist": "Eagles", "track": "Peaceful Easy Feeling - 2013 Remaster"}}
+{"ts": 1774743231.89105, "event": "prefetch_hit", "props": {"track_id": "40h65HAR8COEoqkMwUUQHu"}}
+{"ts": 1774743231.8973281, "event": "deep_analysis_start", "props": {"job_id": "a62ab93a", "audio_source": "youtube"}}
+{"ts": 1774743287.144028, "event": "analysis_complete", "props": {"job_id": "a62ab93a", "status": "partial", "elapsed": 55.2}}
+{"ts": 1774743386.799137, "event": "prefetch_start", "props": {"track": "Take It Easy - 2013 Remaster", "artist": "Eagles"}}
+{"ts": 1774743409.246953, "event": "download_start", "props": {"mode": "full", "artist": "Eagles", "track": "Take It Easy - 2013 Remaster"}}
+{"ts": 1774743409.2475038, "event": "prefetch_hit", "props": {"track_id": "4yugZvBYaoREkJKtbG08Qr"}}
+{"ts": 1774743413.832872, "event": "download_start", "props": {"mode": "full", "artist": "Eagles", "track": "Take It Easy - 2013 Remaster"}}
+{"ts": 1774743413.834977, "event": "download_start", "props": {"mode": "full", "artist": "Eagles", "track": "Take It Easy - 2013 Remaster"}}
+{"ts": 1774743413.8356822, "event": "download_start", "props": {"mode": "full", "artist": "Eagles", "track": "Take It Easy - 2013 Remaster"}}
+{"ts": 1774743413.835812, "event": "prefetch_hit", "props": {"track_id": "4yugZvBYaoREkJKtbG08Qr"}}
+{"ts": 1774743413.8360791, "event": "prefetch_hit", "props": {"track_id": "4yugZvBYaoREkJKtbG08Qr"}}
+{"ts": 1774743413.8361979, "event": "prefetch_hit", "props": {"track_id": "4yugZvBYaoREkJKtbG08Qr"}}
+{"ts": 1774743426.555818, "event": "prefetch_start", "props": {"track": "Tequila", "artist": "Dan + Shay"}}
+{"ts": 1774743426.592267, "event": "download_start", "props": {"mode": "preview", "artist": "Dan + Shay", "track": "Tequila"}}
+{"ts": 1774743439.511828, "event": "download_start", "props": {"mode": "full", "artist": "Dan + Shay", "track": "Tequila"}}
+{"ts": 1774743439.512528, "event": "prefetch_hit", "props": {"track_id": "42fw0rxRO2xbesF6mJfd4Y"}}
+{"ts": 1774743441.528747, "event": "deep_analysis_start", "props": {"job_id": "6da651e8", "audio_source": "youtube"}}
+{"ts": 1774743555.702301, "event": "download_start", "props": {"mode": "preview", "artist": "Dan + Shay", "track": "Tequila"}}
+{"ts": 1774743564.718227, "event": "download_start", "props": {"mode": "full", "artist": "Dan + Shay", "track": "Tequila"}}
+{"ts": 1774743564.719104, "event": "prefetch_hit", "props": {"track_id": "42fw0rxRO2xbesF6mJfd4Y"}}
+{"ts": 1774743566.13211, "event": "download_start", "props": {"mode": "full", "artist": "Dan + Shay", "track": "Tequila"}}
+{"ts": 1774743566.13313, "event": "prefetch_hit", "props": {"track_id": "42fw0rxRO2xbesF6mJfd4Y"}}
+{"ts": 1774743566.688278, "event": "download_start", "props": {"mode": "full", "artist": "Dan + Shay", "track": "Tequila"}}
+{"ts": 1774743566.6890712, "event": "prefetch_hit", "props": {"track_id": "42fw0rxRO2xbesF6mJfd4Y"}}
+{"ts": 1774743585.1571462, "event": "analysis_complete", "props": {"job_id": "6da651e8", "status": "partial", "elapsed": 143.6}}
+{"ts": 1774743999.8493629, "event": "prefetch_start", "props": {"track": "Help! - Remastered 2009", "artist": "The Beatles"}}
+{"ts": 1774743999.863515, "event": "download_start", "props": {"mode": "preview", "artist": "The Beatles", "track": "Help! - Remastered 2009"}}
+{"ts": 1774744030.115028, "event": "download_start", "props": {"mode": "full", "artist": "The Beatles", "track": "Help! - Remastered 2009"}}
+{"ts": 1774744030.115797, "event": "prefetch_hit", "props": {"track_id": "7DD7eSuYSC5xk2ArU62esN"}}
+{"ts": 1774744030.121073, "event": "deep_analysis_start", "props": {"job_id": "00ab744b", "audio_source": "youtube"}}
+{"ts": 1774744072.367816, "event": "analysis_complete", "props": {"job_id": "00ab744b", "status": "partial", "elapsed": 42.2}}

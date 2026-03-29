@@ -217,7 +217,7 @@
 
     /* Channel strips */
     .mixer-channels { display:flex; flex-direction:column; gap:0; }
-    .channel { display:grid; grid-template-columns:120px 1fr auto auto; align-items:center; gap:16px; padding:12px 16px; border:none; transition:opacity .15s; }
+    .channel { display:grid; grid-template-columns:120px 1fr auto auto auto; align-items:center; gap:16px; padding:12px 16px; border:none; transition:opacity .15s; }
     .channel:nth-child(even) { background:rgba(245,245,245,0.02); }
     .channel:hover { background:rgba(245,245,245,0.03); border-color:transparent; }
     .channel.muted { opacity:0.4; }
@@ -239,6 +239,11 @@
     .ch-btn.mute-active { background:rgba(245,245,245,0.06); color:rgba(245,245,245,0.15); border-color:rgba(255,255,255,0.04); }
     .ch-btn.solo-active { background:rgba(212,105,31,0.15); color:#D4691F; border-color:rgba(212,105,31,0.3); }
     .ch-btn + .ch-btn { margin-left:4px; }
+    .stem-dl-btn { opacity:0.4; transition:opacity 0.15s; }
+    .stem-dl-btn:hover { opacity:0.8; }
+    .karaoke-btn { display:flex; align-items:center; gap:5px; padding:6px 14px; border-radius:20px; border:none; background:rgba(255,255,255,0.06); color:rgba(245,245,245,0.5); font-size:0.75rem; font-weight:500; letter-spacing:0.03em; cursor:pointer; transition:all 0.15s; flex-shrink:0; }
+    .karaoke-btn:hover { color:rgba(245,245,245,0.8); background:rgba(255,255,255,0.1); }
+    .karaoke-btn.karaoke-active { color:#D4691F; background:rgba(212,105,31,0.12); }
 
     /* Tools row */
     .mix-tools { display:flex; gap:32px; margin-top:20px; padding-top:20px; border-top:1px solid rgba(255,255,255,0.06); flex-wrap:wrap; align-items:center; }
@@ -289,6 +294,25 @@
     .smart-recs-empty { padding:48px 20px; text-align:center; color:rgba(245,245,245,0.3); font-size:0.875rem; }
     .sr-loading { display:flex; align-items:center; justify-content:center; padding:48px 20px; }
     .sr-spinner { width:20px; height:20px; border:2px solid rgba(255,255,255,0.06); border-top-color:rgba(212,105,31,0.5); animation:srSpin .6s linear infinite; }
+
+    /* ═══ Credits panel ═══ */
+    .credits-wrap { padding:32px 36px; max-width:700px; }
+    .credits-release { margin-bottom:28px; padding-bottom:20px; border-bottom:1px solid rgba(212,105,31,0.15); }
+    .credits-release-label { font-size:0.8125rem; color:rgba(245,245,245,0.4); margin-bottom:4px; }
+    .credits-release-title { font-size:1.125rem; font-weight:500; color:#F5F5F5; letter-spacing:-0.02em; }
+    .credits-release-meta { font-size:0.8125rem; color:rgba(245,245,245,0.4); margin-top:6px; }
+    .credits-section { margin-bottom:24px; }
+    .credits-section:last-child { margin-bottom:0; }
+    .credits-section-label { font-size:0.6875rem; font-weight:600; color:rgba(245,245,245,0.3); text-transform:uppercase; letter-spacing:0.06em; margin-bottom:10px; }
+    .credits-entry { display:flex; justify-content:space-between; align-items:baseline; padding:6px 16px; border:1px solid rgba(255,255,255,0.04); background:rgba(245,245,245,0.015); margin-bottom:4px; transition:border-color 0.15s; }
+    .credits-entry:hover { border-color:rgba(255,255,255,0.1); }
+    .credits-name { font-size:0.875rem; font-weight:500; color:rgba(245,245,245,0.75); }
+    .credits-role { font-size:0.75rem; color:rgba(245,245,245,0.3); margin-left:12px; white-space:nowrap; }
+    .credits-simple { font-size:0.875rem; color:rgba(245,245,245,0.75); padding:6px 16px; border:1px solid rgba(255,255,255,0.04); background:rgba(245,245,245,0.015); margin-bottom:4px; transition:border-color 0.15s; }
+    .credits-simple:hover { border-color:rgba(255,255,255,0.1); }
+    .credits-empty { padding:48px 20px; text-align:center; color:rgba(245,245,245,0.3); font-size:0.875rem; }
+    @media (max-width:768px) { .credits-wrap { padding:24px 16px; } .credits-entry { flex-direction:column; gap:2px; } .credits-role { margin-left:0; } }
+    @media (max-width:480px) { .credits-wrap { padding:20px 12px; } }
 
     /* ═══ Lyrics panel ═══ */
     .lyrics-container { padding:32px 36px; max-height:65vh; overflow-y:auto; background:transparent; }
@@ -557,7 +581,8 @@
         <button class="results-nav-btn active" data-panel="mix" onclick="switchPanel('mix',this)">Mix</button>
         <button class="results-nav-btn" data-panel="key" onclick="switchPanel('key',this)">Key</button>
         <button class="results-nav-btn" data-panel="lyrics" onclick="switchPanel('lyrics',this)">Lyrics</button>
-        <button class="results-nav-btn" data-panel="recommended" onclick="switchPanel('recommended',this)">Recommended <span class="ai-mark">AI</span></button>
+        <button class="results-nav-btn" data-panel="recommended" onclick="switchPanel('recommended',this)">Recommended</button>
+        <button class="results-nav-btn" data-panel="credits" onclick="switchPanel('credits',this)">Credits</button>
       </div>
       <div class="results-panel active" id="panel-mix">
         <div class="mix-wrapper">
@@ -576,6 +601,7 @@
               <input type="range" class="transport-seek" id="seek-bar" min="0" max="100" value="0" step="0.1" oninput="seekTo(this.value)" />
             </div>
             <div class="transport-time" id="time-display">0:00 / 0:00</div>
+            <button class="karaoke-btn" id="karaoke-btn" onclick="toggleKaraoke()" title="Karaoke mode — mute vocals"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg><span>Karaoke</span></button>
           </div>
           <div class="mixer-channels" id="mixer-channels"></div>
           <div class="mix-tools">
@@ -596,6 +622,9 @@
       </div>
       <div class="results-panel" id="panel-recommended">
         <div id="smart-recs-content"></div>
+      </div>
+      <div class="results-panel" id="panel-credits">
+        <div id="credits-content"></div>
       </div>
       <div class="new-song-row" id="results-footer">
         <button class="new-song-btn" id="full-track-btn" style="display:none;margin-right:12px;border-color:rgba(212,105,31,0.3);color:rgba(245,245,245,0.7)" onclick="_startFullTrackAnalysis()">Separate Stems</button>
@@ -649,6 +678,7 @@ let _loadedStems = {};
 let _stemSeparationActive = false;
 let _stemMixerReady = false;
 let _firstMixerInteraction = false;
+let _karaokeActive = false;
 // ─── Stem separation (progressive v2) ────────────────────────────────────────
 
 function _pollPrefetch(pfId) {
@@ -821,6 +851,7 @@ function _pollStemProgress(jobId) {
         if (d.intelligence && d.intelligence.harmonic_sections) _renderHarmonicSections(d.intelligence.harmonic_sections);
         if (d.lyrics) { const lyricsEl = document.getElementById('lyrics-content'); if (lyricsEl) lyricsEl.innerHTML = `<div class="lyrics-container">${_formatLyrics(d.lyrics)}</div>`; }
         if (d.insight) { const llm = d.insight; _progressionNames = llm.progression_names || {}; _smartRecs = llm.smart_recs || {}; _keyContext = llm.key_context || ""; _renderSmartRecs(_smartRecs); const keyCtxEl = document.getElementById("key-context"); if (keyCtxEl) { keyCtxEl.textContent = _keyContext; keyCtxEl.style.display = _keyContext ? "block" : "none"; } }
+        if (d.credits) _renderCredits(d.credits);
         jobData = d; currentJobId = jobId;
         setTimeout(() => { const progress = document.getElementById('stem-progress'); if (progress) { progress.style.opacity = '0'; progress.style.maxHeight = '0'; progress.style.overflow = 'hidden'; setTimeout(() => progress.remove(), 400); } }, 1500);
         // Clean up preview audio when stems are loaded
@@ -843,12 +874,22 @@ function _addStemChannel(stemName, stemData, jobId) {
   const channel = document.createElement('div');
   channel.className = 'channel stem-channel-enter';
   channel.id = `ch-${stemName}`;
-  channel.innerHTML = `<div class="channel-name">${esc(label)}</div><div class="channel-volume"><input type="range" class="vol-slider" min="0" max="100" value="100" oninput="setVolume('${stemName}',this.value)" id="vol-${stemName}"/><span class="vol-label" id="vol-label-${stemName}">100</span></div><button class="ch-btn" id="mute-${stemName}" onclick="toggleMute('${stemName}')">M</button><button class="ch-btn" id="solo-${stemName}" onclick="toggleSolo('${stemName}')">S</button>`;
+  channel.innerHTML = `<div class="channel-name">${esc(label)}</div><div class="channel-volume"><input type="range" class="vol-slider" min="0" max="100" value="100" oninput="setVolume('${stemName}',this.value)" id="vol-${stemName}"/><span class="vol-label" id="vol-label-${stemName}">100</span></div><button class="ch-btn" id="mute-${stemName}" onclick="toggleMute('${stemName}')">M</button><button class="ch-btn" id="solo-${stemName}" onclick="toggleSolo('${stemName}')">S</button><button class="ch-btn stem-dl-btn" onclick="_downloadStem('${stemName}')" title="Download stem"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button>`;
   const progress = document.getElementById('stem-progress');
   if (progress) { mixerEl.insertBefore(channel, progress.parentElement); } else { mixerEl.appendChild(channel); }
   requestAnimationFrame(() => { channel.classList.add('visible'); });
   stemVolumes[stemName] = 1; stemMuted[stemName] = false; stemSoloed[stemName] = false;
   _loadSingleStemAudio(stemName, jobId);
+}
+
+function _downloadStem(stemName) {
+  if (!currentJobId) return;
+  const a = document.createElement('a');
+  a.href = `/api/download_stem/${currentJobId}/${stemName}`;
+  a.download = '';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
 }
 
 async function _loadSingleStemAudio(stemName, jobId) {
@@ -858,6 +899,15 @@ async function _loadSingleStemAudio(stemName, jobId) {
     if (!r.ok) return;
     const ab = await r.arrayBuffer();
     const buf = await audioCtx.decodeAudioData(ab);
+    // Kill preview audio as soon as the first real stem arrives
+    if (stemBuffers['preview']) {
+      const wasPlaying = isPlaying; const pos = getCurrentTime();
+      if (stemSources['preview']) { try { stemSources['preview'].stop(); } catch(e){} delete stemSources['preview']; }
+      if (stemGains['preview']) { try { stemGains['preview'].disconnect(); } catch(e){} delete stemGains['preview']; }
+      delete stemBuffers['preview']; delete stemVolumes['preview']; delete stemMuted['preview']; delete stemSoloed['preview'];
+      if (wasPlaying) { isPlaying = false; pauseOffset = pos; }
+      console.log('[audio] preview killed — stem audio taking over');
+    }
     stemBuffers[stemName] = buf;
     const g = audioCtx.createGain(); g.connect(audioCtx.destination); stemGains[stemName] = g;
     if (buf.duration > duration) { duration = buf.duration; document.getElementById("seek-bar").max = duration; updateTimeDisplay(); _buildPlayerWaveform(); }
@@ -1059,7 +1109,7 @@ function renderSearchResults() {
 
 function selectByIndex(i){const t=searchResults[i];if(t)selectTrack(t);}
 async function selectTrack(t){
-  selectedTrack=t; currentJobId=null; setError(""); _currentMode="preview"; _analysisMode="instant"; _previewJobData=null; _fullTrackInProgress=false; _instantAlreadyRendered=false; _prefetchId=null; _prefetchReady=false; _stemJobId=null; _stemSeparationActive=false; _stemMixerReady=false; _loadedStems={}; _firstMixerInteraction=false;
+  selectedTrack=t; currentJobId=null; setError(""); _currentMode="preview"; _analysisMode="instant"; _previewJobData=null; _fullTrackInProgress=false; _instantAlreadyRendered=false; _prefetchId=null; _prefetchReady=false; _stemJobId=null; _stemSeparationActive=false; _stemMixerReady=false; _loadedStems={}; _firstMixerInteraction=false; _karaokeActive=false;
   if (_stemPollTimer) { clearInterval(_stemPollTimer); _stemPollTimer = null; }
   if (_prefetchPollTimer) { clearInterval(_prefetchPollTimer); _prefetchPollTimer = null; }
   console.log(`[ui] selectTrack → ${t.name} by ${t.artist} (id=${t.id||'none'})`);
@@ -1105,7 +1155,7 @@ async function selectTrack(t){
       if (d.analysis_status === 'available' && d.analysis) {
         console.log(`[ui] cache hit → loading saved analysis (hasStems=${Object.keys(d.analysis.stems||{}).length > 0})`);
         currentJobId = d.job_id;
-        jobData = { status:"complete", tabs:d.analysis.tabs||{}, stems:d.analysis.stems||{}, intelligence:d.analysis.intelligence||{}, lyrics:d.analysis.lyrics||null, tags:d.analysis.tags||[], insight:d.analysis.insight||null, audio_source:d.analysis.audio_source||null, audio_mode:d.analysis.audio_mode||null, analysis_mode:d.analysis.analysis_mode||null };
+        jobData = { status:"complete", tabs:d.analysis.tabs||{}, stems:d.analysis.stems||{}, intelligence:d.analysis.intelligence||{}, lyrics:d.analysis.lyrics||null, tags:d.analysis.tags||[], insight:d.analysis.insight||null, credits:d.analysis.credits||null, audio_source:d.analysis.audio_source||null, audio_mode:d.analysis.audio_mode||null, analysis_mode:d.analysis.analysis_mode||null };
         const hasStems = Object.keys(jobData.stems||{}).length > 0;
         if (hasStems) {
           renderResults(jobData);
@@ -1841,8 +1891,9 @@ async function renderResults(data) {
 
   // Smart recommendations
   _renderSmartRecs(_smartRecs);
+  _renderCredits(data.credits || null);
 
-  document.getElementById("mixer-channels").innerHTML=activeNames.map(n=>{const l=formatStemLabel(n,(stems[n]&&stems[n].label)||"");return`<div class="channel" id="ch-${n}"><div class="channel-name">${esc(l)}</div><div class="channel-volume"><input type="range" class="vol-slider" min="0" max="100" value="100" oninput="setVolume('${n}',this.value)" id="vol-${n}"/><span class="vol-label" id="vol-label-${n}">100</span></div><button class="ch-btn" id="mute-${n}" onclick="toggleMute('${n}')">M</button><button class="ch-btn" id="solo-${n}" onclick="toggleSolo('${n}')">S</button></div>`;}).join("");
+  document.getElementById("mixer-channels").innerHTML=activeNames.map(n=>{const l=formatStemLabel(n,(stems[n]&&stems[n].label)||"");return`<div class="channel" id="ch-${n}"><div class="channel-name">${esc(l)}</div><div class="channel-volume"><input type="range" class="vol-slider" min="0" max="100" value="100" oninput="setVolume('${n}',this.value)" id="vol-${n}"/><span class="vol-label" id="vol-label-${n}">100</span></div><button class="ch-btn" id="mute-${n}" onclick="toggleMute('${n}')">M</button><button class="ch-btn" id="solo-${n}" onclick="toggleSolo('${n}')">S</button><button class="ch-btn stem-dl-btn" onclick="_downloadStem('${n}')" title="Download stem"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button></div>`;}).join("");
   document.getElementById("loop-start").value="0:00";document.getElementById("loop-end").value="";loopActive=false;document.getElementById("loop-btn").classList.remove("active");
   transposeAmount=0;document.getElementById("transpose-display").textContent="0";document.getElementById("transposed-key").textContent="";
 
@@ -1924,6 +1975,7 @@ async function renderInstantResults(data) {
 
   // Smart recommendations
   _renderSmartRecs(_smartRecs);
+  _renderCredits(data.credits || null);
 
   // Mix panel: preview player + stem separation CTA
   const mixerChannels = document.getElementById("mixer-channels");
@@ -1961,8 +2013,10 @@ async function renderInstantResults(data) {
     _addShareButton();
   }
 
-  // Load the preview audio file for playback
-  try {
+  // Load the preview audio file for playback — skip if stems are already loaded
+  if (Object.keys(_loadedStems).length > 0) {
+    console.log('[audio] stems already loaded — skipping preview audio');
+  } else try {
     if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     cleanupAudio();
     stemBuffers = {}; stemGains = {}; stemVolumes = {}; stemMuted = {}; stemSoloed = {};
@@ -2066,9 +2120,38 @@ function _buildPlayerWaveform() {
   const wrap = document.getElementById('player-waveform-wrap');
   const w = (wrap && wrap.offsetWidth > 0) ? wrap.offsetWidth : 600;
   const barCount = Math.floor(w / 4); // 2px bar + 2px gap
+
+  // Get amplitude data from the first available audio buffer
+  let amplitudes = null;
+  const bufferKeys = Object.keys(stemBuffers);
+  if (bufferKeys.length > 0) {
+    const primaryKey = stemBuffers['preview'] ? 'preview' : bufferKeys[0];
+    const buf = stemBuffers[primaryKey];
+    if (buf && buf.getChannelData) {
+      const raw = buf.getChannelData(0);
+      const samplesPerBar = Math.floor(raw.length / barCount);
+      amplitudes = new Float32Array(barCount);
+      for (let i = 0; i < barCount; i++) {
+        const start = i * samplesPerBar;
+        const end = Math.min(start + samplesPerBar, raw.length);
+        let sum = 0;
+        for (let j = start; j < end; j++) { sum += Math.abs(raw[j]); }
+        amplitudes[i] = sum / (end - start);
+      }
+    }
+  }
+
+  let maxAmp = 0;
+  if (amplitudes) { for (let i = 0; i < amplitudes.length; i++) { if (amplitudes[i] > maxAmp) maxAmp = amplitudes[i]; } }
+
   let bgHtml = '', fgHtml = '';
   for (let i = 0; i < barCount; i++) {
-    const h = 6 + Math.random() * 36;
+    let h;
+    if (amplitudes && maxAmp > 0) {
+      h = 4 + (amplitudes[i] / maxAmp) * 38;
+    } else {
+      h = 6 + Math.random() * 36;
+    }
     const style = `height:${h}px`;
     bgHtml += `<div class="player-wv-bar" style="${style}"></div>`;
     fgHtml += `<div class="player-wv-bar" style="${style}"></div>`;
@@ -2191,6 +2274,20 @@ function updatePlayIcon(){document.getElementById("play-icon").style.display=isP
 function setVolume(n,v){stemVolumes[n]=parseInt(v)/100;document.getElementById(`vol-label-${n}`).textContent=v;updateGains();}
 function toggleMute(n){stemMuted[n]=!stemMuted[n];document.getElementById(`mute-${n}`).classList.toggle("mute-active",stemMuted[n]);document.getElementById(`ch-${n}`).classList.toggle("muted",stemMuted[n]);updateGains();}
 function toggleSolo(n){stemSoloed[n]=!stemSoloed[n];document.getElementById(`solo-${n}`).classList.toggle("solo-active",stemSoloed[n]);updateGains();}
+function toggleKaraoke() {
+  _karaokeActive = !_karaokeActive;
+  const btn = document.getElementById('karaoke-btn');
+  if (btn) btn.classList.toggle('karaoke-active', _karaokeActive);
+  const vocalKeys = Object.keys(stemGains).filter(k => k.toLowerCase().includes('vocal'));
+  for (const k of vocalKeys) {
+    stemMuted[k] = _karaokeActive;
+    const muteBtn = document.getElementById(`mute-${k}`);
+    const chEl = document.getElementById(`ch-${k}`);
+    if (muteBtn) muteBtn.classList.toggle('mute-active', _karaokeActive);
+    if (chEl) chEl.classList.toggle('muted', _karaokeActive);
+  }
+  updateGains();
+}
 function updateGains(){const any=Object.values(stemSoloed).some(v=>v);for(const n of Object.keys(stemGains)){let v=stemVolumes[n]||0;if(stemMuted[n])v=0;else if(any&&!stemSoloed[n])v=0;stemGains[n].gain.setTargetAtTime(v,audioCtx.currentTime,0.02);}}
 
 // ─── Utils ──────────────────────────────────────────────────────────────────
@@ -2201,7 +2298,7 @@ function setProgress(t,p){
 }
 function setError(m){const e=document.getElementById("error-msg");e.textContent=m;e.style.display=m?"block":"none";}
 function resetApp(){
-  cleanupAudio();stopLoadingMessages();pauseOffset=0;duration=0;currentJobId=null;selectedTrack=null;jobData=null;_previewJobData=null;_fullTrackInProgress=false;_instantAlreadyRendered=false;_currentMode="preview";_analysisMode="instant";searchResults=[];lastQuery="";loopActive=false;transposeAmount=0;songKey=null;clearTimeout(pollInterval);_stemJobId=null;_stemSeparationActive=false;_stemMixerReady=false;_loadedStems={};_firstMixerInteraction=false;_prefetchId=null;_prefetchReady=false;if(_stemPollTimer){clearInterval(_stemPollTimer);_stemPollTimer=null;}if(_prefetchPollTimer){clearInterval(_prefetchPollTimer);_prefetchPollTimer=null;}
+  cleanupAudio();stopLoadingMessages();pauseOffset=0;duration=0;currentJobId=null;selectedTrack=null;jobData=null;_previewJobData=null;_fullTrackInProgress=false;_instantAlreadyRendered=false;_currentMode="preview";_analysisMode="instant";searchResults=[];lastQuery="";loopActive=false;transposeAmount=0;songKey=null;clearTimeout(pollInterval);_stemJobId=null;_stemSeparationActive=false;_stemMixerReady=false;_loadedStems={};_firstMixerInteraction=false;_karaokeActive=false;_prefetchId=null;_prefetchReady=false;if(_stemPollTimer){clearInterval(_stemPollTimer);_stemPollTimer=null;}if(_prefetchPollTimer){clearInterval(_prefetchPollTimer);_prefetchPollTimer=null;}
   const confirmUpload=document.getElementById("confirm-upload-area");if(confirmUpload)confirmUpload.style.display="none";
   const retryBtn=document.getElementById("upload-retry-btn");if(retryBtn)retryBtn.style.display="none";
   document.getElementById("process-btn").style.display="";
@@ -2212,7 +2309,7 @@ function resetApp(){
   const wvFg=document.getElementById("wv-fg");if(wvFg)wvFg.style.width="0%";
   document.getElementById("progress-label").textContent="Analyzing the track...";document.getElementById("progress-label").classList.remove("fading");
   document.getElementById("seek-bar").value=0;document.getElementById("time-display").textContent="0:00 / 0:00";
-  document.getElementById("results-meta").innerHTML="";document.getElementById("harmonic-sections").innerHTML="";document.getElementById("lyrics-content").innerHTML="";document.getElementById("smart-recs-content").innerHTML="";_progressionNames={};_smartRecs={};_keyContext="";
+  document.getElementById("results-meta").innerHTML="";document.getElementById("harmonic-sections").innerHTML="";document.getElementById("lyrics-content").innerHTML="";document.getElementById("smart-recs-content").innerHTML="";document.getElementById("credits-content").innerHTML="";_progressionNames={};_smartRecs={};_keyContext="";
   document.getElementById("loop-btn").classList.remove("active");document.getElementById("transpose-display").textContent="0";document.getElementById("transposed-key").textContent="";
   document.getElementById("proc-estimate").classList.remove("visible");
   _hideResultWarning();setError("");showView("search");
@@ -2286,6 +2383,41 @@ function _renderHarmonicSections(sections) {
   }
 
   html += '</div></div>';
+  el.innerHTML = html;
+}
+
+function _renderCredits(credits) {
+  const el = document.getElementById('credits-content');
+  if (!el) return;
+  if (!credits) { el.innerHTML = '<div class="credits-empty">Credits not available for this track.</div>'; return; }
+  let html = '<div class="credits-wrap">';
+  if (credits.album || credits.release_date || credits.label) {
+    html += '<div class="credits-release">';
+    if (credits.album) { html += '<div class="credits-release-label">From the album</div>'; html += `<div class="credits-release-title">${esc(credits.album)}</div>`; }
+    const metaParts = [];
+    if (credits.release_date) metaParts.push(credits.release_date.substring(0, 4));
+    if (credits.label) metaParts.push(credits.label);
+    if (credits.release_country) metaParts.push(credits.release_country);
+    if (metaParts.length) html += `<div class="credits-release-meta">${esc(metaParts.join(' \u00b7 '))}</div>`;
+    html += '</div>';
+  }
+  function section(title, items) {
+    if (!items || !items.length) return '';
+    let s = '<div class="credits-section">';
+    s += `<div class="credits-section-label">${title}</div>`;
+    for (const item of items) {
+      if (typeof item === 'string') { s += `<div class="credits-simple">${esc(item)}</div>`; }
+      else if (item.name) { const detail = item.type || item.role || item.instrument || ''; s += '<div class="credits-entry">'; s += `<span class="credits-name">${esc(item.name)}</span>`; if (detail) s += `<span class="credits-role">${esc(detail)}</span>`; s += '</div>'; }
+    }
+    s += '</div>';
+    return s;
+  }
+  html += section('Produced by', credits.producers);
+  html += section('Engineering', credits.engineers);
+  html += section('Recorded at', credits.studios);
+  html += section('Written by', credits.writers);
+  html += section('Musicians', credits.performers);
+  html += '</div>';
   el.innerHTML = html;
 }
 

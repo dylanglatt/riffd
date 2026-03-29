@@ -54,6 +54,7 @@ from spotify_search import search_spotify, get_recommendations_for_track, RateLi
 from external_apis import get_lyrics, get_track_tags, enrich_recommendations_with_lastfm
 from downloader import download_audio_from_youtube, resolve_audio, resolve_preview, AudioUnavailableError
 from analytics import log_event
+from musicbrainz import get_credits
 from history import add_to_history, get_recent, get_cached_result, save_cached_result, touch_history
 from db import init_db, migrate_from_history_json, get_track, upsert_track, set_track_status, touch_track, get_recent_tracks, get_analysis_for_track
 
@@ -710,6 +711,15 @@ def _process_instant(job_id, audio_path, req_data):
         except Exception:
             pass
 
+    # MusicBrainz credits (2-3 API calls, ~3-4s due to rate limiting)
+    credits = None
+    if artist and track_name:
+        try:
+            credits = get_credits(artist, track_name)
+            print(f"[job {job_id}] instant: credits={'found' if credits else 'none'}")
+        except Exception as e:
+            print(f"[job {job_id}] instant: credits failed: {e}")
+
     # LLM Insight (non-blocking — failure is fine)
     insight_text = None
     if artist and track_name:
@@ -737,6 +747,7 @@ def _process_instant(job_id, audio_path, req_data):
         "intelligence": intelligence,
         "lyrics": lyrics,
         "tags": tags,
+        "credits": credits,
         "insight": insight_text,
         "audio_duration": round(audio_duration, 1),
         "stems": {},
@@ -754,6 +765,7 @@ def _process_instant(job_id, audio_path, req_data):
                 "intelligence": intelligence,
                 "lyrics": lyrics,
                 "tags": tags,
+                "credits": credits,
                 "insight": insight_text,
                 "audio_source": jobs[job_id].get("audio_source"),
                 "audio_mode": jobs[job_id].get("audio_mode"),
@@ -879,6 +891,7 @@ def process_audio(job_id):
         lyrics = None
         tags = []
         insight_text = None
+        credits_data = None
         recs = {"more_like_this": [], "same_style": [], "around_this_time": []}
         failed_steps = []
 
@@ -902,6 +915,7 @@ def process_audio(job_id):
                 "intelligence": intelligence,
                 "lyrics": lyrics,
                 "tags": tags,
+                "credits": credits_data,
                 "insight": insight_text,
                 "recommendations": recs,
                 "audio_source": jobs[job_id].get("audio_source"),
@@ -925,6 +939,7 @@ def process_audio(job_id):
                         "intelligence": intelligence,
                         "lyrics": lyrics,
                         "tags": tags,
+                        "credits": credits_data,
                         "insight": insight_text,
                         "recommendations": recs,
                         "audio_source": jobs[job_id].get("audio_source"),
@@ -1079,6 +1094,17 @@ def process_audio(job_id):
                 except Exception as e:
                     _fail("tags", e)
 
+            # ── Stage 6.1: MusicBrainz credits ──
+            if artist_name and track_name:
+                on_progress("Fetching credits...")
+                try:
+                    credits_data = get_credits(artist_name, track_name)
+                    if credits_data:
+                        print(f"[job {job_id}] [{_elapsed()}] credits found")
+                except Exception as e:
+                    _fail("credits", e)
+                    credits_data = None
+
             # ── Stage 6.5: LLM Insight (non-blocking) ──
             if artist_name and track_name:
                 try:
@@ -1182,6 +1208,28 @@ def serve_stem_audio(job_id, stem_name):
     elif mp3_path.exists():
         return send_from_directory(str(stems_dir), f"{stem_name}.mp3")
     return send_from_directory(str(stems_dir), f"{stem_name}.wav")  # 404 fallback
+
+
+@app.route("/api/credits/<job_id>")
+def get_job_credits(job_id):
+    """Return MusicBrainz credits for a job."""
+    job = jobs.get(job_id)
+    if job and job.get("credits"):
+        return jsonify(job["credits"])
+    return jsonify(None), 404
+
+
+@app.route("/api/download_stem/<job_id>/<stem_name>")
+def download_stem_audio(job_id, stem_name):
+    """Download a separated stem as an audio file (with Content-Disposition: attachment)."""
+    stems_dir = OUTPUT_DIR / job_id / "stems"
+    wav_path = stems_dir / f"{stem_name}.wav"
+    mp3_path = stems_dir / f"{stem_name}.mp3"
+    if wav_path.exists():
+        return send_from_directory(str(stems_dir), f"{stem_name}.wav", as_attachment=True)
+    elif mp3_path.exists():
+        return send_from_directory(str(stems_dir), f"{stem_name}.mp3", as_attachment=True)
+    return jsonify({"error": "Stem file not found"}), 404
 
 
 @app.route("/api/download_midi/<job_id>/<stem_name>")
