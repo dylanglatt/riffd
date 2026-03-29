@@ -368,16 +368,16 @@ def _itunes_art(artist: str, track: str) -> str | None:
     return None
 
 
-_art_cache = {}  # (artist_lower, track_lower) → url or None
+from functools import lru_cache
+
+@lru_cache(maxsize=256)
+def _art_cache_lookup(artist_lower: str, track_lower: str) -> str | None:
+    """Bounded LRU cache for iTunes art lookups."""
+    return _itunes_art(artist_lower, track_lower)
 
 def _get_art_for_track(artist: str, track: str) -> str | None:
-    """Get album art URL with caching. Tries iTunes if no image available."""
-    key = (artist.lower().strip(), track.lower().strip())
-    if key in _art_cache:
-        return _art_cache[key]
-    url = _itunes_art(artist, track)
-    _art_cache[key] = url
-    return url
+    """Get album art URL with bounded LRU cache. Tries iTunes if no image available."""
+    return _art_cache_lookup(artist.lower().strip(), track.lower().strip())
 
 
 def enrich_recommendations_with_lastfm(recs: dict, artist: str, track_name: str) -> dict:

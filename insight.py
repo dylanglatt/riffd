@@ -8,6 +8,26 @@ import json
 import os
 import time
 
+# Lazy singleton — avoids re-creating HTTP connection pool on every call
+_client = None
+
+
+def _get_client():
+    """Return a cached Anthropic client, or None if no API key is set."""
+    global _client
+    if _client is not None:
+        return _client
+    api_key = os.environ.get("ANTHROPIC_API_KEY")
+    if not api_key:
+        return None
+    try:
+        import anthropic
+        _client = anthropic.Anthropic(api_key=api_key, timeout=15.0)
+        return _client
+    except Exception as e:
+        print(f"[insight] failed to init client: {e}")
+        return None
+
 
 def generate_insight(song_name, artist, intelligence, lyrics=None, tags=None, exclude_songs=None):
     """
@@ -24,16 +44,9 @@ def generate_insight(song_name, artist, intelligence, lyrics=None, tags=None, ex
     Returns:
         dict | None: Structured insight data, or None on failure
     """
-    api_key = os.environ.get("ANTHROPIC_API_KEY")
-    if not api_key:
+    client = _get_client()
+    if not client:
         print("[insight] no ANTHROPIC_API_KEY set — skipping")
-        return None
-
-    try:
-        import anthropic
-        client = anthropic.Anthropic(api_key=api_key, timeout=15.0)
-    except Exception as e:
-        print(f"[insight] failed to init client: {e}")
         return None
 
     # Build context from analysis data
