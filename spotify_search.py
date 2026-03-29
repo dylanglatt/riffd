@@ -98,6 +98,31 @@ def _set_cooldown(retry_after: int):
     return clamped
 
 
+_COMPILATION_PATTERNS = [
+    "greatest hits", "best of", "the best", "essential", "collection",
+    "anthology", "platinum", "gold", "singles", "hits collection",
+    "very best", "ultimate", "complete", "definitive", "retrospective",
+    "number ones", "number 1s", "#1s", "chartbusters",
+]
+
+def _deprioritize_compilations(tracks: list[dict]) -> list[dict]:
+    """
+    Stable-sort tracks so original album versions appear before greatest-hits /
+    compilation versions. Spotify relevance order is preserved within each tier.
+    Tier 0 = original album  |  Tier 1 = compilation
+    """
+    def _is_compilation(track: dict) -> bool:
+        album = (track.get("album") or "").lower()
+        return any(p in album for p in _COMPILATION_PATTERNS)
+
+    originals    = [t for t in tracks if not _is_compilation(t)]
+    compilations = [t for t in tracks if     _is_compilation(t)]
+    if compilations:
+        names = [t.get("album", "") for t in compilations]
+        print(f"[spotify] deprioritized compilations: {names}")
+    return originals + compilations
+
+
 def search_spotify(query: str, limit: int = 8) -> list[dict]:
     """
     Search for tracks. Tries Spotify API first; on rate limit, falls back to
@@ -141,6 +166,7 @@ def search_spotify(query: str, limit: int = 8) -> list[dict]:
         _rate_limit_until = 0
 
     results = [_format_track(t) for t in resp.json().get("tracks", {}).get("items", [])]
+    results = _deprioritize_compilations(results)
     print(f"[spotify] live results: {len(results)}")
     return results
 

@@ -12,15 +12,15 @@ Pipeline (called by app.py process_audio deep path):
      - Execution time: 2-5 min on CPU, ~20s on GPU (Replicate)
      - Peak memory: ~500MB during Demucs
 
-  2. generate_tabs()   — Basic Pitch per stem → MIDI + CSV + ASCII tab
+  2. extract_note_events() — Basic Pitch inference per pitched stem → note events DataFrame
      - Per-instrument confidence thresholds and frequency ranges
-     - Output: MIDI file + CSV notes + ASCII tab text in outputs/<job_id>/tabs/
+     - Drums skipped entirely (no useful pitch data)
+     - No file output — inference only, result passed to analyze_song_from_notes()
      - Execution time: ~5-10s per stem
 
 Downstream contract (must not change):
   - separate_stems() returns {stem_key: {path: str, energy: float, active: bool, label: str}}
   - Stem WAV files at outputs/<job_id>/stems/<stem_key>.wav
-  - Tab files at outputs/<job_id>/tabs/<stem_key>.mid, <stem_key>_notes.csv, <stem_key>_tab.txt
   - Audio served via /api/audio/<job_id>/<stem_name> in app.py
 """
 
@@ -490,7 +490,7 @@ def _separate_stems_replicate(audio_path: Path, out_dir: Path, progress_callback
     _t0 = _time.time()
     REPLICATE_API = "https://api.replicate.com/v1"
     VERSION = "25a173108cff36ef9f80f854c162d01df9e6528be175794b81158fa03836d953"
-    POLL_INTERVAL = 5  # seconds between status checks
+    POLL_INTERVAL = 3  # seconds between status checks (reduced from 5)
     MAX_WAIT = 600     # 10 minutes max for separation
 
     # Expected stems from the model output
@@ -534,7 +534,7 @@ def _separate_stems_replicate(audio_path: Path, out_dir: Path, progress_callback
         "version": VERSION,
         "input": {
             "audio": file_url,
-            "model_name": "htdemucs",
+            "model_name": "htdemucs_6s",  # 6-stem: vocals/drums/bass/guitar/piano/other
             "output_format": "wav",
             "shifts": 1,
         },
@@ -594,20 +594,32 @@ def _separate_stems_replicate(audio_path: Path, out_dir: Path, progress_callback
     # htdemucs_6s returns 6 (adds guitar, piano) but some may be missing.
     _KNOWN_STEMS = {"vocals", "drums", "bass", "guitar", "piano", "other"}
 
-    raw_stems = {}
-    for stem_key, url in output.items():
+    # Download all stems in parallel — each is an independent HTTP request
+    from concurrent.futures import ThreadPoolExecutor, as_completed as _as_completed
+
+    def _dl_stem(stem_key, url):
         if not url or not isinstance(url, str):
-            print(f"[replicate] skipping stem '{stem_key}': no URL")
-            continue
+            return stem_key, None, "no URL"
         stem_name = stem_key if stem_key in _KNOWN_STEMS else stem_key
         dest = out_dir / f"_raw_{stem_name}.wav"
         print(f"[replicate] downloading: {stem_name} → {dest.name}")
-
         dl_resp = _requests.get(url, timeout=120)
         dl_resp.raise_for_status()
         dest.write_bytes(dl_resp.content)
-        print(f"[replicate] saved: {stem_name} ({len(dl_resp.content)} bytes)")
-        raw_stems[stem_name] = str(dest)
+        print(f"[replicate] saved: {stem_name} ({len(dl_resp.content):,} bytes)")
+        return stem_key, str(dest), None
+
+    raw_stems = {}
+    dl_items = [(k, v) for k, v in output.items()]
+    with ThreadPoolExecutor(max_workers=len(dl_items) or 1) as _pool:
+        futures = {_pool.submit(_dl_stem, k, v): k for k, v in dl_items}
+        for fut in _as_completed(futures):
+            stem_key, path, err = fut.result()
+            if err:
+                print(f"[replicate] skipping stem '{stem_key}': {err}")
+            elif path:
+                stem_name = stem_key if stem_key in _KNOWN_STEMS else stem_key
+                raw_stems[stem_name] = path
 
     if not raw_stems:
         raise RuntimeError("Replicate returned no downloadable stems")
@@ -893,6 +905,32 @@ def _save_sub_parts(parts, sr, out_dir, refined):
 # Stems that should NOT get guitar/bass tab — only note list or nothing
 _NO_TAB_STEMS = {"vocals", "lead_vocal", "backing_vocal", "harmony_vocal",
                   "vocal_double", "vocal_layer", "vocal_pad"}
+
+
+def extract_note_events(stem_path: str, stem_name: str, label: str = "", bpm: float = 120.0):
+    """
+    Run Basic Pitch inference on a stem and return the normalized note events DataFrame.
+    No MIDI, CSV, or ASCII tab files are written — inference output only.
+    Returns None on failure.
+    """
+    _ensure_imports()
+    renderer = _get_tab_renderer(label or stem_name)
+    config = _get_instrument_config(renderer)
+
+    model_output, midi_data, note_events = predict(
+        str(stem_path),
+        ICASSP_2022_MODEL_PATH,
+        onset_threshold=config["onset_threshold"],
+        frame_threshold=config["frame_threshold"],
+        minimum_note_length=config["min_note_length"],
+        minimum_frequency=config["min_freq"],
+        maximum_frequency=config["max_freq"],
+    )
+    del model_output, midi_data  # Large objects, not needed
+
+    note_events = _normalize_note_events(note_events)
+    _log_confidence_stats(stem_name, label, renderer, note_events, config["confidence_threshold"])
+    return note_events
 
 
 def generate_tabs(stem_path: str, song_id: str, stem_name: str, label: str = "", bpm: float = 120.0) -> dict:
