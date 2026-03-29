@@ -8,6 +8,26 @@ import json
 import os
 import time
 
+# Lazy singleton — avoids re-creating HTTP connection pool on every call
+_client = None
+
+
+def _get_client():
+    """Return a cached Anthropic client, or None if no API key is set."""
+    global _client
+    if _client is not None:
+        return _client
+    api_key = os.environ.get("ANTHROPIC_API_KEY")
+    if not api_key:
+        return None
+    try:
+        import anthropic
+        _client = anthropic.Anthropic(api_key=api_key, timeout=12.0)
+        return _client
+    except Exception as e:
+        print(f"[theory_search] failed to init client: {e}")
+        return None
+
 
 def ask_theory(question, section=None, theory_data=None):
     """
@@ -21,16 +41,9 @@ def ask_theory(question, section=None, theory_data=None):
     Returns:
         dict | None: { "answer": str, "results": [str], "section": str }
     """
-    api_key = os.environ.get("ANTHROPIC_API_KEY")
-    if not api_key:
+    client = _get_client()
+    if not client:
         print("[theory_search] no ANTHROPIC_API_KEY set — skipping")
-        return None
-
-    try:
-        import anthropic
-        client = anthropic.Anthropic(api_key=api_key, timeout=12.0)
-    except Exception as e:
-        print(f"[theory_search] failed to init client: {e}")
         return None
 
     # Build a compact index of available items per section

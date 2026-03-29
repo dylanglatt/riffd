@@ -50,7 +50,7 @@ def _lazy_music_intelligence():
     from music_intelligence import analyze_song_from_notes
     return analyze_song_from_notes
 
-from spotify_search import search_spotify, get_recommendations_for_track, RateLimitError
+from spotify_search import search_spotify, get_recommendations_for_track, RateLimitError, _DISCOVERY_TRACKS
 from external_apis import get_lyrics, get_track_tags, enrich_recommendations_with_lastfm
 from downloader import download_audio_from_youtube, resolve_audio, resolve_preview, AudioUnavailableError
 from analytics import log_event
@@ -154,6 +154,41 @@ def _prune_old_jobs():
         if stale_bg:
             print(f"[mem] pruned {len(stale_bg)} stale prefetch entries")
 
+    # Prune old job directories from disk (outputs/ and uploads/) — 7 day retention
+    _prune_old_disk_dirs()
+
+
+_last_disk_prune = 0
+
+def _prune_old_disk_dirs():
+    """Delete job directories from outputs/ and uploads/ older than 7 days.
+    Runs at most once per hour to avoid repeated filesystem scans."""
+    global _last_disk_prune
+    import time as _t
+    now = _t.time()
+    if now - _last_disk_prune < 3600:  # At most once per hour
+        return
+    _last_disk_prune = now
+
+    max_age = 7 * 86400  # 7 days
+    pruned = 0
+    for parent in (OUTPUT_DIR, UPLOAD_DIR):
+        if not parent.exists():
+            continue
+        for d in parent.iterdir():
+            if not d.is_dir():
+                continue
+            try:
+                mtime = d.stat().st_mtime
+                if (now - mtime) > max_age:
+                    import shutil
+                    shutil.rmtree(d, ignore_errors=True)
+                    pruned += 1
+            except Exception:
+                pass
+    if pruned:
+        print(f"[disk] pruned {pruned} old job directories (>7 days)")
+
 
 def _trim_job_result(job_id):
     """Strip heavy payload from a completed job after the frontend has polled it.
@@ -193,16 +228,13 @@ def require_login():
                  path.startswith("/static/") or path.startswith("/s/"))
     is_authed = session.get("authenticated") is True
 
-    # DEBUG: remove after confirming production auth works
-    print(f"[auth-v2] path={path} public={is_public} authed={is_authed} endpoint={request.endpoint}")
-
     if is_public:
         return  # Always allow login page and static assets
     if is_authed:
         return  # Session is authenticated — allow
 
     # Block everything else
-    print(f"[auth-v2] BLOCKED → redirecting to /login")
+    print(f"[auth] blocked unauthenticated request: {path}")
     return redirect("/login")
 
 
@@ -694,31 +726,41 @@ def _process_instant(job_id, audio_path, req_data):
     except Exception as e:
         print(f"[job {job_id}] instant: key/bpm detection failed: {e}")
 
-    # Lyrics (fast HTTP call, no ML)
-    if artist and track_name:
-        try:
-            jobs[job_id]["progress"] = "Fetching lyrics..."
-            lyrics = get_lyrics(artist, track_name)
-            print(f"[job {job_id}] instant: lyrics={'found' if lyrics else 'none'}")
-        except Exception as e:
-            print(f"[job {job_id}] instant: lyrics failed: {e}")
-
-    # Tags (fast HTTP call)
-    if artist and track_name:
-        try:
-            tags = get_track_tags(artist, track_name)
-            print(f"[job {job_id}] instant: tags={tags}")
-        except Exception:
-            pass
-
-    # MusicBrainz credits (2-3 API calls, ~3-4s due to rate limiting)
+    # Lyrics + Tags + Credits — independent HTTP calls, run in parallel to save ~3-4s
     credits = None
     if artist and track_name:
-        try:
-            credits = get_credits(artist, track_name)
-            print(f"[job {job_id}] instant: credits={'found' if credits else 'none'}")
-        except Exception as e:
-            print(f"[job {job_id}] instant: credits failed: {e}")
+        from concurrent.futures import ThreadPoolExecutor, as_completed
+        jobs[job_id]["progress"] = "Fetching lyrics & credits..."
+
+        def _fetch_lyrics():
+            try:
+                return get_lyrics(artist, track_name)
+            except Exception as e:
+                print(f"[job {job_id}] instant: lyrics failed: {e}")
+                return None
+
+        def _fetch_tags():
+            try:
+                return get_track_tags(artist, track_name)
+            except Exception:
+                return []
+
+        def _fetch_credits():
+            try:
+                return get_credits(artist, track_name)
+            except Exception as e:
+                print(f"[job {job_id}] instant: credits failed: {e}")
+                return None
+
+        with ThreadPoolExecutor(max_workers=3) as pool:
+            f_lyrics = pool.submit(_fetch_lyrics)
+            f_tags = pool.submit(_fetch_tags)
+            f_credits = pool.submit(_fetch_credits)
+
+        lyrics = f_lyrics.result()
+        tags = f_tags.result()
+        credits = f_credits.result()
+        print(f"[job {job_id}] instant: lyrics={'found' if lyrics else 'none'} tags={tags} credits={'found' if credits else 'none'}")
 
     # LLM Insight (non-blocking — failure is fine)
     insight_text = None
@@ -1035,8 +1077,8 @@ def process_audio(job_id):
                     csv_path = tab_result.get("notes_csv")
                     if csv_path:
                         try:
-                            from processor import _patch_lzma
-                            _patch_lzma()
+                            from compat import patch_lzma
+                            patch_lzma()
                             import pandas as pd
                             df = pd.read_csv(csv_path)
                             if len(df) > 0:
@@ -1181,7 +1223,10 @@ def job_status(job_id):
             print(f"[job {job_id}] WATCHDOG: job stuck for {elapsed:.0f}s, forcing error")
             job.update({"status": "error", "error": f"Processing timed out after {int(elapsed)}s", "error_step": "timeout"})
 
-    print(f"[job {job_id}] STATUS POLL → {job.get('status')} | {job.get('progress', '')} | error={job.get('error', 'none')}")
+    # Only log status polls for terminal states (avoid noise from repeated polling)
+    status = job.get("status", "")
+    if status not in ("processing", "downloading"):
+        print(f"[job {job_id}] STATUS POLL → {status} | {job.get('progress', '')}")
     resp = jsonify(job)
 
     # After delivering a completed result, trim the heavy payload from memory
@@ -1308,33 +1353,15 @@ def cache_check(track_id):
 
 # ─── Discovery endpoint ───────────────────────────────────────────────────────
 
-_discovery_cache = {"tracks": None, "fetched": False}
-
-# Pre-built discovery data — no Spotify API calls needed
-# These are static entries with enough data to select and process
-_STATIC_DISCOVERY = [
-    {"id":"40riOy7x9W7GXjyGp4pjAv","name":"Hotel California","artist":"Eagles","artist_id":"0ECwFtbIWEVNwjlrfc6xoL","year":"1977","image_url":"https://image-cdn-ak.spotifycdn.com/image/ab67616d00001e024637341b9f507521afa9a778","yt_query":"Eagles - Hotel California official audio","album":"Hotel California","preview_url":None,"duration_ms":391376},
-    {"id":"4u7EnebtmKWzUH433cf5Qv","name":"Bohemian Rhapsody","artist":"Queen","artist_id":"1dfeR4HaWDbWqFHLkxsg1d","year":"1975","image_url":"https://i.scdn.co/image/ab67616d00001e02ce4f1737bc8a646c8c4bd25a","yt_query":"Queen - Bohemian Rhapsody official audio","album":"A Night at the Opera","preview_url":None,"duration_ms":354947},
-    {"id":"5CQ30WqJwcep0pYcV4AMNc","name":"Stairway to Heaven","artist":"Led Zeppelin","artist_id":"36QJpDe2go2KgaRleHCDTp","year":"1971","image_url":"https://i.scdn.co/image/ab67616d00001e02c8a11e48c91a982d086afc69","yt_query":"Led Zeppelin - Stairway to Heaven official audio","album":"Led Zeppelin IV","preview_url":None,"duration_ms":482830},
-    {"id":"7J1uxwnxfQLu4APicE5Rnj","name":"Billie Jean","artist":"Michael Jackson","artist_id":"3fMbdgg4jU18AjLCKBhRSm","year":"1982","image_url":"https://i.scdn.co/image/ab67616d00001e024121faee8df82c526cbab2be","yt_query":"Michael Jackson - Billie Jean official audio","album":"Thriller","preview_url":None,"duration_ms":293827},
-    {"id":"1h2xVEoJORqrg71HocgqXd","name":"Superstition","artist":"Stevie Wonder","artist_id":"7guDJrEfX3qb6FEbdPA5qi","year":"1972","image_url":"https://image-cdn-ak.spotifycdn.com/image/ab67616d00001e029e447b59bd3e2cbefaa31d91","yt_query":"Stevie Wonder - Superstition official audio","album":"Talking Book","preview_url":None,"duration_ms":245493},
-    {"id":"3EYOJ1ST5O5ZQNBKuYh9VQ","name":"Wonderwall","artist":"Oasis","artist_id":"2DaxqgrOhkeH0fpeiQq2f4","year":"1995","image_url":"https://i.scdn.co/image/ab67616d00001e02ff5429125128b43572dbdccd","yt_query":"Oasis - Wonderwall official audio","album":"(What's the Story) Morning Glory?","preview_url":None,"duration_ms":258773},
-    {"id":"2RnPATK05MTl8pVGObsqm4","name":"Come As You Are","artist":"Nirvana","artist_id":"6olE6TJLqED3rqDCT0FyPh","year":"1991","image_url":"https://i.scdn.co/image/ab67616d00001e02e175a19e530c898d167d39bf","yt_query":"Nirvana - Come As You Are official audio","album":"Nevermind","preview_url":None,"duration_ms":219219},
-    {"id":"4yugZvBYaoREkJKtbG08Qr","name":"Take It Easy","artist":"Eagles","artist_id":"0ECwFtbIWEVNwjlrfc6xoL","year":"1972","image_url":"https://i.scdn.co/image/ab67616d00001e0284243a01af3c77b56fe01ab1","yt_query":"Eagles - Take It Easy official audio","album":"Eagles","preview_url":None,"duration_ms":211760},
-    {"id":"7snQQk1zcKl8gGSbzO08Cs","name":"Purple Rain","artist":"Prince","artist_id":"5a2EaR3hamoenG9rDuVn8j","year":"1984","image_url":"https://i.scdn.co/image/ab67616d00001e02d4daf28d55fe4197ede848be","yt_query":"Prince - Purple Rain official audio","album":"Purple Rain","preview_url":None,"duration_ms":520000},
-    {"id":"3AhXZa8sUQht0UEdBJgpGc","name":"Let It Be","artist":"The Beatles","artist_id":"3WrFJ7ztbogyGnTHbHJFl2","year":"1970","image_url":"https://image-cdn-fa.spotifycdn.com/image/ab67616d00001e020cb0884829c5503b2e242541","yt_query":"The Beatles - Let It Be official audio","album":"Let It Be","preview_url":None,"duration_ms":243027},
-    {"id":"0vFOzaXqZHahrZp6enQwQb","name":"Blinding Lights","artist":"The Weeknd","artist_id":"1Xyo4u8uXC1ZmMpatF05PJ","year":"2020","image_url":"https://i.scdn.co/image/ab67616d00001e028863bc11d2aa12b54f5aeb36","yt_query":"The Weeknd - Blinding Lights official audio","album":"After Hours","preview_url":None,"duration_ms":200040},
-]
-
-
 @app.route("/api/discovery")
 def discovery():
     """
     Return curated songs for the landing page.
-    Uses static pre-built data — NO Spotify API calls. Zero rate-limit risk.
+    Uses static pre-built data from spotify_search._DISCOVERY_TRACKS (single source of truth).
+    NO Spotify API calls. Zero rate-limit risk.
     Returns stable order to prevent browser image cache mismatches.
     """
-    return jsonify(_STATIC_DISCOVERY[:8])
+    return jsonify(_DISCOVERY_TRACKS[:8])
 
 
 # ─── Theory data endpoints ────────────────────────────────────────────────────

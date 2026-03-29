@@ -37,19 +37,7 @@ ICASSP_2022_MODEL_PATH = None
 predict = None
 
 
-def _patch_lzma():
-    """Stub out _lzma if missing — pandas imports it but we never use lzma compression."""
-    import importlib, sys
-    if importlib.util.find_spec("_lzma") is None:
-        import types
-        _fake = types.ModuleType("_lzma")
-        for attr, val in [("FORMAT_AUTO", 0), ("FORMAT_XZ", 1), ("FORMAT_ALONE", 2),
-                          ("FORMAT_RAW", 3), ("CHECK_NONE", 0), ("CHECK_CRC32", 1),
-                          ("CHECK_CRC64", 4), ("CHECK_SHA256", 10), ("MEM_ERROR", 5),
-                          ("LZMADecompressor", None), ("LZMACompressor", None)]:
-            setattr(_fake, attr, val)
-        sys.modules["_lzma"] = _fake
-        print("[processor] patched missing _lzma module")
+from compat import patch_lzma as _patch_lzma
 
 
 def _ensure_imports():

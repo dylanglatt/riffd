@@ -14,13 +14,24 @@ CACHE_DIR = Path("outputs")
 # Bump this when analysis logic changes to invalidate old caches
 ANALYSIS_VERSION = "v3"  # bumped: fixed BPM, stem labels, cache stems
 
+# In-memory cache for history.json — avoids re-reading the file 4-6 times per song flow
+_history_cache = None
+_history_cache_time = 0
+_HISTORY_CACHE_TTL = 5  # seconds
+
 
 def _load_history() -> dict:
-    """Load history from JSON file. Returns {track_id: entry}."""
+    """Load history from JSON file with short TTL cache. Returns {track_id: entry}."""
+    global _history_cache, _history_cache_time
+    now = time.time()
+    if _history_cache is not None and (now - _history_cache_time) < _HISTORY_CACHE_TTL:
+        return _history_cache
     if HISTORY_FILE.exists():
         try:
             data = json.loads(HISTORY_FILE.read_text())
             if isinstance(data, dict):
+                _history_cache = data
+                _history_cache_time = now
                 return data
         except (json.JSONDecodeError, IOError):
             pass
@@ -28,9 +39,12 @@ def _load_history() -> dict:
 
 
 def _save_history(history: dict):
-    """Save history to JSON file."""
+    """Save history to JSON file and update the in-memory cache."""
+    global _history_cache, _history_cache_time
     try:
         HISTORY_FILE.write_text(json.dumps(history, indent=2, default=str))
+        _history_cache = history
+        _history_cache_time = time.time()
     except IOError as e:
         print(f"[history] save error: {e}")
 
