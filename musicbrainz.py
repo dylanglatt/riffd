@@ -9,6 +9,7 @@ No API key needed — just a User-Agent header.
 Rate limited to 1 request/second (MusicBrainz requirement).
 """
 
+import re
 import time
 import requests
 
@@ -18,6 +19,25 @@ _HEADERS = {
     "Accept": "application/json",
 }
 _last_request_time = 0
+
+
+# Patterns commonly appended to Spotify/streaming track names that don't exist in MusicBrainz
+_TITLE_NOISE = re.compile(
+    r"\s*[-–]\s*(remaster(ed)?|re-?master(ed)?)\b.*$"   # " - Remastered 2009", " - Remaster"
+    r"|\s*\(remaster(ed)?[^)]*\)"                         # "(Remastered 2009)"
+    r"|\s*\(re-?master(ed)?[^)]*\)"
+    r"|\s*[-–]\s*(radio\s+edit|single\s+(version|edit)|album\s+version|original\s+mix)\s*$"
+    r"|\s*\((radio\s+edit|single\s+(version|edit)|album\s+version|mono\s+version)\)"
+    r"|\s*\(feat\.?[^)]*\)"                               # "(feat. Someone)"
+    r"|\s*\(ft\.?[^)]*\)"
+    r"|\s*[-–]\s*feat\.?\s+.+$",                          # " - feat. Someone"
+    re.IGNORECASE,
+)
+
+
+def _clean_title(title: str) -> str:
+    """Strip Spotify-style suffixes that won't match MusicBrainz titles."""
+    return _TITLE_NOISE.sub("", title).strip()
 
 
 def _rate_limit():
@@ -31,7 +51,8 @@ def _rate_limit():
 
 def _search_recording(artist: str, title: str) -> str | None:
     """Search MusicBrainz for a recording. Returns the recording MBID or None."""
-    query = f'artist:"{artist}" AND recording:"{title}"'
+    clean = _clean_title(title)
+    query = f'artist:"{artist}" AND recording:"{clean}"'
     _rate_limit()
     try:
         resp = requests.get(
@@ -46,18 +67,20 @@ def _search_recording(artist: str, title: str) -> str | None:
         resp.raise_for_status()
         recordings = resp.json().get("recordings", [])
         if not recordings:
-            print(f"[musicbrainz] no results for: {artist} - {title}")
+            print(f"[musicbrainz] no results for: {artist} - {clean}")
             return None
 
         artist_lower = artist.lower()
-        title_lower = title.lower()
+        clean_lower = clean.lower()
         for rec in recordings:
             rec_title = (rec.get("title") or "").lower()
             rec_artists = " ".join(
                 (ac.get("name") or ac.get("artist", {}).get("name", "")).lower()
                 for ac in rec.get("artist-credit", [])
             )
-            if title_lower in rec_title and artist_lower in rec_artists:
+            # Match if the cleaned title appears in the recording title (or vice versa)
+            title_match = clean_lower in rec_title or rec_title in clean_lower
+            if title_match and artist_lower in rec_artists:
                 print(f"[musicbrainz] matched: {rec.get('title')} (id={rec['id'][:8]})")
                 return rec["id"]
 
@@ -76,7 +99,7 @@ def _get_recording_relationships(recording_id: str) -> dict | None:
     try:
         resp = requests.get(
             f"{_BASE_URL}/recording/{recording_id}",
-            params={"inc": "artist-credits+artist-rels+work-rels+releases", "fmt": "json"},
+            params={"inc": "artist-credits+artist-rels+work-rels+releases+release-groups", "fmt": "json"},
             headers=_HEADERS,
             timeout=10,
         )
@@ -87,6 +110,32 @@ def _get_recording_relationships(recording_id: str) -> dict | None:
     except Exception as e:
         print(f"[musicbrainz] recording lookup failed: {e}")
         return None
+
+
+def _get_work_writers(work_id: str) -> list[str]:
+    """Fetch a work's artist relationships to extract composers/lyricists/writers."""
+    _rate_limit()
+    try:
+        resp = requests.get(
+            f"{_BASE_URL}/work/{work_id}",
+            params={"inc": "artist-rels", "fmt": "json"},
+            headers=_HEADERS,
+            timeout=10,
+        )
+        if resp.status_code == 503:
+            return []
+        resp.raise_for_status()
+        writers = []
+        for rel in resp.json().get("relations", []):
+            rel_type = (rel.get("type") or "").lower()
+            if rel_type in ("composer", "lyricist", "writer", "songwriter"):
+                name = rel.get("artist", {}).get("name")
+                if name and name not in writers:
+                    writers.append(name)
+        return writers
+    except Exception as e:
+        print(f"[musicbrainz] work lookup failed: {e}")
+        return []
 
 
 def _get_release_details(release_id: str) -> dict | None:
@@ -108,10 +157,13 @@ def _get_release_details(release_id: str) -> dict | None:
         return None
 
 
-def get_credits(artist: str, track_name: str) -> dict | None:
+def get_credits(artist: str, track_name: str, spotify_album: str = "", spotify_year: str = "") -> dict | None:
     """
     Main entry point. Search for a recording, fetch its relationships, and return
     structured credits data.
+
+    spotify_album / spotify_year: if provided, these are used directly instead of
+    deriving album/date from MusicBrainz releases (Spotify is authoritative for this).
 
     Returns dict with keys:
       - producers, engineers, studios, writers, performers
@@ -181,37 +233,91 @@ def get_credits(artist: str, track_name: str) -> dict | None:
             if target_artist not in credits["writers"]:
                 credits["writers"].append(target_artist)
 
-    # Release info
-    releases = data.get("releases", [])
-    if releases:
-        dated = [r for r in releases if r.get("date")]
-        if dated:
-            dated.sort(key=lambda r: r["date"])
-            earliest = dated[0]
-        else:
-            earliest = releases[0]
+    # Writers/composers live on the linked Work, not the recording — follow work-rels
+    if not credits["writers"]:
+        for rel in data.get("relations", []):
+            if rel.get("target-type") == "work" and rel.get("work"):
+                work_id = rel["work"].get("id")
+                if work_id:
+                    writers = _get_work_writers(work_id)
+                    for w in writers:
+                        if w not in credits["writers"]:
+                            credits["writers"].append(w)
+                    if credits["writers"]:
+                        break  # Stop after first work — typically one per recording
 
-        credits["album"] = earliest.get("title")
-        credits["release_date"] = earliest.get("date")
-        credits["release_country"] = earliest.get("country")
+    # Album + release date: Spotify is authoritative — use it when available.
+    # Only fall back to MusicBrainz releases if Spotify didn't provide album info.
+    if spotify_album:
+        credits["album"] = spotify_album
+        if spotify_year:
+            credits["release_date"] = spotify_year
 
-        release_id = earliest.get("id")
-        if release_id:
-            release_data = _get_release_details(release_id)
-            if release_data:
-                label_info = release_data.get("label-info", [])
-                if label_info:
-                    label_name = label_info[0].get("label", {}).get("name")
-                    if label_name:
-                        credits["label"] = label_name
+        # Still fetch label from MusicBrainz (Spotify doesn't expose it on track objects)
+        releases = data.get("releases", [])
+        if releases:
+            def _release_score(r):
+                rg = r.get("release-group") or {}
+                primary = (rg.get("primary-type") or "").lower()
+                secondary = [t.lower() for t in rg.get("secondary-types") or []]
+                status = (r.get("status") or "").lower()
+                score = 0
+                if primary == "album":                             score += 20
+                elif primary in ("single", "ep"):                  score += 5
+                if "live" in secondary or primary == "live":       score -= 30
+                if "compilation" in secondary or primary == "compilation": score -= 20
+                if "soundtrack" in secondary:                      score -= 10
+                if status == "official":                           score += 10
+                return score
 
+            best = sorted(releases, key=lambda r: (-_release_score(r), r.get("date") or "9999"))[0]
+            release_id = best.get("id")
+            if release_id:
+                release_data = _get_release_details(release_id)
+                if release_data:
+                    label_info = release_data.get("label-info", [])
+                    if label_info:
+                        label_name = label_info[0].get("label", {}).get("name")
+                        if label_name:
+                            credits["label"] = label_name
+    else:
+        # No Spotify data — derive everything from MusicBrainz releases
+        releases = data.get("releases", [])
+        if releases:
+            def _release_score(r):
+                rg = r.get("release-group") or {}
+                primary = (rg.get("primary-type") or "").lower()
+                secondary = [t.lower() for t in rg.get("secondary-types") or []]
+                status = (r.get("status") or "").lower()
+                score = 0
+                if primary == "album":                             score += 20
+                elif primary in ("single", "ep"):                  score += 5
+                if "live" in secondary or primary == "live":       score -= 30
+                if "compilation" in secondary or primary == "compilation": score -= 20
+                if "soundtrack" in secondary:                      score -= 10
+                if status == "official":                           score += 10
+                return score
+
+            best = sorted(releases, key=lambda r: (-_release_score(r), r.get("date") or "9999"))[0]
+            credits["album"] = best.get("title")
+            credits["release_date"] = best.get("date")
+            credits["release_country"] = best.get("country")
+
+            release_id = best.get("id")
+            if release_id:
+                release_data = _get_release_details(release_id)
+                if release_data:
+                    label_info = release_data.get("label-info", [])
+                    if label_info:
+                        label_name = label_info[0].get("label", {}).get("name")
+                        if label_name:
+                            credits["label"] = label_name
+
+    # Only the fields we actually display need to have data
     has_data = any([
-        credits["producers"],
-        credits["engineers"],
-        credits["studios"],
         credits["writers"],
-        credits["performers"],
         credits["label"],
+        credits["album"],
         credits["release_date"],
     ])
 

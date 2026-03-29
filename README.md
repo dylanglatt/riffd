@@ -16,11 +16,11 @@
 
 Riffd takes a song and breaks it into its core components — so you can hear, see, and understand it.
 
-- **Stem separation** — isolate vocals, bass, drums, guitar, keys, and more using neural source separation
+- **Stem separation** — isolate vocals, bass, drums, guitar, and keys using neural source separation
 - **Interactive mixer** — mute, solo, loop, transpose, and explore each part in the browser
 - **Harmonic analysis** — chords aligned to song sections with roman numeral notation relative to the detected key
 - **Key + tempo detection** — derived directly from audio, not metadata
-- **Lyrics** — full text with section structure, aligned to the analysis
+- **Lyrics** — full text with section structure
 - **Smart recommendations** — song discovery based on music theory — matching progressions, keys, and voice leading — not vibes or listening history
 - **Studio** — interactive theory reference with diatonic chords, common progressions, and key relationships for every key
 - **MIDI export** — per-stem note detection files, ready for any DAW
@@ -31,7 +31,7 @@ Riffd takes a song and breaks it into its core components — so you can hear, s
 
 Most tools do one thing. A stem splitter. A chord chart. A lyrics site. A tuner.
 
-Riffd connects the full pipeline — from raw audio to structured, playable musical information — in one place. Search a song, and within minutes you can hear the isolated bass line, see what key it's in, read the chord progression by section, and discover other songs with similar harmonic DNA.
+Riffd connects the full pipeline — from raw audio to structured, playable musical information — in one place. Search a song, and within seconds you can see what key it's in, read the chord progression by section, and discover other songs with similar harmonic DNA. Trigger a full analysis and you can hear the isolated bass line, mute the vocals, or export individual stems to a DAW.
 
 I built it because I wanted a single tool that could answer *"what's happening in this song"* without switching between five apps.
 
@@ -52,7 +52,7 @@ Stem separation (Demucs), pitch extraction (Basic Pitch), key and BPM detection 
 Claude generates structured musical analysis — progression names, key context, and theory-based song recommendations — from detected chords, key, tempo, and lyrics. Output is constrained to strict JSON for reliable downstream rendering. Recommendations are filtered to enforce artist separation between discovery categories.
 
 **Performance.**
-YouTube audio downloads as MP3 (not WAV) to skip transcoding and reduce file size 10x. Heavy imports are deferred to first use. Preview analysis returns in ~3 seconds while full tracks download in the background via prefetch.
+YouTube audio downloads as MP3 (not WAV) to skip transcoding and reduce file size 10x. Heavy imports are deferred to first use. Preview analysis runs in the background while the UI stays responsive, with a silent full-track prefetch fired immediately on track selection.
 
 **Resilience.**
 Every external dependency — YouTube, Spotify, Genius, Replicate — can and will fail. The app only became usable once every API call had a fallback path and every failure surfaced a clear next step instead of a broken state.
@@ -62,8 +62,6 @@ Every external dependency — YouTube, Spotify, Genius, Replicate — can and wi
 ## Status
 
 Riffd is in public beta. The full pipeline works end-to-end — search, acquire, separate, analyze, recommend, display.
-
-Current focus areas include stem export, karaoke mode, real-time chord timelines, and MusicBrainz credits integration.
 
 ---
 

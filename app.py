@@ -9,7 +9,7 @@ Request lifecycle:
      - full: resolve_audio() → YouTube first, then preview fallback (~30-120s)
   4. Frontend calls /api/process/<job_id> with analysis_mode=instant|deep
      - instant: synchronous, returns in ~3-5s (key, BPM, lyrics, no stems)
-     - deep: async background thread, returns via polling (~2-5min, full stems + tabs)
+     - deep: async background thread, returns via polling (~2-5min, full stems + harmonic analysis)
   5. Frontend polls /api/status/<job_id> for deep analysis progress
   6. Results served via /api/audio/<job_id>/<stem> for playback
 
@@ -43,22 +43,42 @@ from werkzeug.utils import secure_filename
 # processor.py pulls in numpy, pandas, basic_pitch (~200MB+)
 # music_intelligence.py pulls in numpy, pandas
 def _lazy_processor():
-    from processor import separate_stems, generate_tabs
-    return separate_stems, generate_tabs
+    from processor import separate_stems, extract_note_events
+    return separate_stems, extract_note_events
 
 def _lazy_music_intelligence():
     from music_intelligence import analyze_song_from_notes
     return analyze_song_from_notes
 
 from spotify_search import search_spotify, get_recommendations_for_track, RateLimitError, _DISCOVERY_TRACKS
-from external_apis import get_lyrics, get_track_tags, enrich_recommendations_with_lastfm
+from external_apis import get_lyrics, get_track_tags, enrich_recommendations_with_lastfm, _get_art_for_track
 from downloader import download_audio_from_youtube, resolve_audio, resolve_preview, AudioUnavailableError
 from analytics import log_event
-from musicbrainz import get_credits
 from history import add_to_history, get_recent, get_cached_result, save_cached_result, touch_history
 from db import init_db, migrate_from_history_json, get_track, upsert_track, set_track_status, touch_track, get_recent_tracks, get_analysis_for_track
 
 load_dotenv()
+
+
+def _enrich_smart_recs_art(insight: dict | None) -> None:
+    """Fill missing image_url on smart_recs entries using iTunes art lookup."""
+    if not insight:
+        return
+    smart_recs = insight.get("smart_recs") or {}
+    filled = 0
+    for category_songs in smart_recs.values():
+        if not isinstance(category_songs, list):
+            continue
+        for song in category_songs:
+            if song.get("image_url") or not song.get("title") or not song.get("artist"):
+                continue
+            art = _get_art_for_track(song["artist"], song["title"])
+            if art:
+                song["image_url"] = art
+                filled += 1
+    if filled:
+        print(f"[insight] filled {filled} smart_rec art entries via iTunes")
+
 
 # ─── Startup checks ──────────────────────────────────────────────────────────
 SITE_PASSWORD = os.getenv("SITE_PASSWORD")
@@ -472,6 +492,7 @@ def download_track():
                     "track_meta": {
                         "artist": data.get("artist", ""),
                         "name": data.get("name", ""),
+                        "album": data.get("album", ""),
                         "image_url": data.get("image_url"),
                         "duration_ms": data.get("duration_ms", 0),
                         "year": data.get("year", ""),
@@ -726,11 +747,10 @@ def _process_instant(job_id, audio_path, req_data):
     except Exception as e:
         print(f"[job {job_id}] instant: key/bpm detection failed: {e}")
 
-    # Lyrics + Tags + Credits — independent HTTP calls, run in parallel to save ~3-4s
-    credits = None
+    # Lyrics + Tags — independent HTTP calls, run in parallel
     if artist and track_name:
-        from concurrent.futures import ThreadPoolExecutor, as_completed
-        jobs[job_id]["progress"] = "Fetching lyrics & credits..."
+        from concurrent.futures import ThreadPoolExecutor
+        jobs[job_id]["progress"] = "Fetching lyrics..."
 
         def _fetch_lyrics():
             try:
@@ -745,22 +765,13 @@ def _process_instant(job_id, audio_path, req_data):
             except Exception:
                 return []
 
-        def _fetch_credits():
-            try:
-                return get_credits(artist, track_name)
-            except Exception as e:
-                print(f"[job {job_id}] instant: credits failed: {e}")
-                return None
-
-        with ThreadPoolExecutor(max_workers=3) as pool:
+        with ThreadPoolExecutor(max_workers=2) as pool:
             f_lyrics = pool.submit(_fetch_lyrics)
             f_tags = pool.submit(_fetch_tags)
-            f_credits = pool.submit(_fetch_credits)
 
         lyrics = f_lyrics.result()
         tags = f_tags.result()
-        credits = f_credits.result()
-        print(f"[job {job_id}] instant: lyrics={'found' if lyrics else 'none'} tags={tags} credits={'found' if credits else 'none'}")
+        print(f"[job {job_id}] instant: lyrics={'found' if lyrics else 'none'} tags={tags}")
 
     # LLM Insight (non-blocking — failure is fine)
     insight_text = None
@@ -775,6 +786,7 @@ def _process_instant(job_id, audio_path, req_data):
                 lyrics=lyrics,
                 tags=tags,
             )
+            _enrich_smart_recs_art(insight_text)
         except Exception as e:
             print(f"[job {job_id}] insight failed: {e}")
 
@@ -789,11 +801,9 @@ def _process_instant(job_id, audio_path, req_data):
         "intelligence": intelligence,
         "lyrics": lyrics,
         "tags": tags,
-        "credits": credits,
         "insight": insight_text,
         "audio_duration": round(audio_duration, 1),
         "stems": {},
-        "tabs": {},
         "recommendations": {"more_like_this": [], "same_style": [], "around_this_time": []},
         "progress": "Done!",
     }
@@ -807,13 +817,11 @@ def _process_instant(job_id, audio_path, req_data):
                 "intelligence": intelligence,
                 "lyrics": lyrics,
                 "tags": tags,
-                "credits": credits,
                 "insight": insight_text,
                 "audio_source": jobs[job_id].get("audio_source"),
                 "audio_mode": jobs[job_id].get("audio_mode"),
                 "analysis_mode": "instant",
                 "stems": {},
-                "tabs": {},
                 "recommendations": result["recommendations"],
                 "job_id": job_id,
                 "track_id": spotify_track_id,
@@ -922,18 +930,16 @@ def process_audio(job_id):
             return f"{_time.time()-_t0:.1f}s"
 
         # Load heavy processing modules on first job
-        separate_stems, generate_tabs = _lazy_processor()
+        separate_stems, extract_note_events = _lazy_processor()
         analyze_song_from_notes = _lazy_music_intelligence()
         _log_memory(f"[job {job_id}] PROCESS START (after imports)")
 
         # Partial results accumulate — returned even if a later stage fails
         stems = {}
-        tabs = {}
         intelligence = {"key": "Unknown", "key_num": -1, "mode_num": -1, "bpm": 0, "bpm_confidence": 0, "progression": None}
         lyrics = None
         tags = []
         insight_text = None
-        credits_data = None
         recs = {"more_like_this": [], "same_style": [], "around_this_time": []}
         failed_steps = []
 
@@ -952,12 +958,10 @@ def process_audio(job_id):
             partial = bool(failed_steps)
             result = {
                 "status": "complete" if not partial else "partial",
-                "tabs": tabs,
                 "stems": {k: {"label": v.get("label", k), "energy": v.get("energy", 0), "active": v.get("active", True)} for k, v in stems.items()},
                 "intelligence": intelligence,
                 "lyrics": lyrics,
                 "tags": tags,
-                "credits": credits_data,
                 "insight": insight_text,
                 "recommendations": recs,
                 "audio_source": jobs[job_id].get("audio_source"),
@@ -976,12 +980,10 @@ def process_audio(job_id):
             if spotify_track_id and (not partial or stems):
                 try:
                     save_cached_result(job_id, {
-                        "tabs": tabs,
                         "stems": result["stems"],
                         "intelligence": intelligence,
                         "lyrics": lyrics,
                         "tags": tags,
-                        "credits": credits_data,
                         "insight": insight_text,
                         "recommendations": recs,
                         "audio_source": jobs[job_id].get("audio_source"),
@@ -1012,33 +1014,65 @@ def process_audio(job_id):
                     print(f"[job {job_id}] [{_elapsed()}] save error: {e}")
 
         try:
-            # ── Stage 1: Stem separation (Demucs) ──
-            print(f"[job {job_id}] [{_elapsed()}] DEMUCS starting...")
-            try:
-                stems = separate_stems(audio_path, job_id, progress_callback=on_progress)
-                gc.collect()  # Release Demucs intermediates
-                print(f"[job {job_id}] [{_elapsed()}] DEMUCS finished → {len(stems)} stems: {list(stems.keys())}")
-                _log_memory(f"[job {job_id}] post-demucs")
-                jobs[job_id]["stems"] = {k: {"label": v.get("label", k), "energy": v.get("energy", 0), "active": v.get("active", True)} for k, v in stems.items()}
-                jobs[job_id]["progress"] = "Stems ready — analyzing..."
-            except Exception as e:
+            from concurrent.futures import ThreadPoolExecutor as _TPE, as_completed as _as_completed
+
+            # ── Stages 1 + 4 + 6 fired in parallel ──
+            # Lyrics and tags only need artist/track name — no audio required.
+            # Fire them concurrently with Demucs so they're ready by the time stems land.
+            print(f"[job {job_id}] [{_elapsed()}] DEMUCS + metadata fetch starting in parallel...")
+
+            def _fetch_lyrics():
+                if not (artist_name and track_name): return None
+                try: return get_lyrics(artist_name, track_name)
+                except Exception as e: _fail("lyrics", e); return None
+
+            def _fetch_tags():
+                if not (artist_name and track_name): return []
+                try: return get_track_tags(artist_name, track_name)
+                except Exception as e: _fail("tags", e); return []
+
+            def _run_demucs():
+                return separate_stems(audio_path, job_id, progress_callback=on_progress)
+
+            with _TPE(max_workers=3) as _pool:
+                fut_demucs   = _pool.submit(_run_demucs)
+                fut_lyrics   = _pool.submit(_fetch_lyrics)
+                fut_tags     = _pool.submit(_fetch_tags)
+
+                # Collect metadata results (fast — done well before Demucs)
+                lyrics       = fut_lyrics.result()
+                tags         = fut_tags.result()
+                print(f"[job {job_id}] [{_elapsed()}] metadata fetched: lyrics={'yes' if lyrics else 'no'} tags={len(tags)}")
+
+                # Wait for Demucs (the slow one)
+                try:
+                    stems = fut_demucs.result()
+                except Exception as _demucs_err:
+                    stems = None
+                    _demucs_exc = _demucs_err
+
+            if not stems:
                 # Demucs failure is fatal — nothing to work with
-                print(f"[job {job_id}] [{_elapsed()}] DEMUCS FATAL: {e}")
+                print(f"[job {job_id}] [{_elapsed()}] DEMUCS FATAL: {_demucs_exc}")
                 traceback.print_exc()
                 jobs[job_id].update({
                     "status": "error",
-                    "error": str(e),
+                    "error": str(_demucs_exc),
                     "error_step": "stem_separation",
                     "progress": "Stem separation failed",
                 })
                 return
 
+            gc.collect()
+            print(f"[job {job_id}] [{_elapsed()}] DEMUCS finished → {len(stems)} stems: {list(stems.keys())}")
+            _log_memory(f"[job {job_id}] post-demucs")
+            jobs[job_id]["stems"] = {k: {"label": v.get("label", k), "energy": v.get("energy", 0), "active": v.get("active", True)} for k, v in stems.items()}
+            jobs[job_id]["progress"] = "Stems ready — analyzing..."
+
             active_stems = {k: v for k, v in stems.items() if v.get("active", True)}
             detected_bpm = 120.0
-            artist_name = track_meta.get("artist", "")
-            track_name = track_meta.get("name", "")
 
-            # ── Stage 2: Key + BPM detection (Essentia — fast, direct on audio) ──
+            # ── Stage 2: Key + BPM detection (Essentia) ──
             on_progress("Detecting key and tempo...")
             essentia_key_num, essentia_mode_num, essentia_key_conf = -1, -1, 0.0
             try:
@@ -1051,63 +1085,56 @@ def process_audio(job_id):
                     intelligence["key_num"] = essentia_key_num
                     intelligence["mode_num"] = essentia_mode_num
                     intelligence["key_confidence"] = round(essentia_key_conf, 3)
-                    print(f"[job {job_id}] [{_elapsed()}] Essentia key → {intelligence['key']} (conf={essentia_key_conf:.3f})")
 
                 ess_bpm, ess_bpm_conf = detect_bpm_from_audio(audio_path)
                 if ess_bpm > 0 and ess_bpm_conf >= 0.1:
                     detected_bpm = ess_bpm
                     intelligence["bpm"] = round(ess_bpm, 1)
                     intelligence["bpm_confidence"] = round(ess_bpm_conf, 3)
-                    print(f"[job {job_id}] [{_elapsed()}] Essentia BPM → {ess_bpm} (conf={ess_bpm_conf:.3f})")
 
-                print(f"[job {job_id}] [{_elapsed()}] Essentia key/BPM finished")
+                print(f"[job {job_id}] [{_elapsed()}] Essentia → key={intelligence['key']} bpm={detected_bpm}")
             except Exception as e:
                 _fail("essentia_detection", e)
 
-            # ── Stage 3: Tab generation (Basic Pitch) ──
-            print(f"[job {job_id}] [{_elapsed()}] TAB GENERATION starting ({len(active_stems)} stems)...")
+            # ── Stage 3: Note extraction (Basic Pitch) — parallelized across pitched stems ──
+            # Drums produce no useful pitch data for harmonic analysis — skip them entirely.
+            # No MIDI/CSV/ASCII files written — inference output only.
+            _DRUM_KEYS = {"drums", "drum", "kick", "snare", "percussion"}
+            pitched_stems = {k: v for k, v in active_stems.items()
+                             if k.lower() not in _DRUM_KEYS and not k.lower().startswith("drum")}
+            print(f"[job {job_id}] [{_elapsed()}] NOTE EXTRACTION starting ({len(pitched_stems)} pitched stems, skipping drums)...")
             note_events_all = {}
             try:
-                for stem_key, stem_info in active_stems.items():
-                    label = stem_info.get("label", stem_key)
-                    on_progress(f"Tabbing {label}...")
-                    print(f"[job {job_id}] [{_elapsed()}] Basic Pitch → {stem_key}...")
-                    tab_result = generate_tabs(stem_info["path"], job_id, stem_key, label=label, bpm=detected_bpm)
-                    tabs[stem_key] = tab_result
-                    csv_path = tab_result.get("notes_csv")
-                    if csv_path:
-                        try:
-                            from compat import patch_lzma
-                            patch_lzma()
-                            import pandas as pd
-                            df = pd.read_csv(csv_path)
-                            if len(df) > 0:
-                                note_events_all[stem_key] = df
-                        except Exception:
-                            pass
-                    print(f"[job {job_id}] [{_elapsed()}] Basic Pitch → {stem_key} done")
-                print(f"[job {job_id}] [{_elapsed()}] TAB GENERATION finished")
-                jobs[job_id]["tabs"] = tabs  # Progressive: make tabs available immediately
-            except Exception as e:
-                _fail("tab_generation", e)
+                from compat import patch_lzma
+                patch_lzma()
 
-            # ── Stage 4: Lyrics (Genius) — moved before intelligence for section analysis ──
-            if artist_name and track_name:
-                on_progress("Fetching lyrics...")
-                print(f"[job {job_id}] [{_elapsed()}] LYRICS starting...")
-                try:
-                    lyrics = get_lyrics(artist_name, track_name)
-                    print(f"[job {job_id}] [{_elapsed()}] LYRICS finished → {'found' if lyrics else 'not found'} ({len(lyrics) if lyrics else 0} chars)")
-                except Exception as e:
-                    _fail("lyrics", e)
+                def _extract_one_stem(stem_key, stem_info):
+                    label = stem_info.get("label", stem_key)
+                    print(f"[job {job_id}] [{_elapsed()}] Basic Pitch → {stem_key}...")
+                    ne = extract_note_events(stem_info["path"], stem_key, label=label, bpm=detected_bpm)
+                    print(f"[job {job_id}] [{_elapsed()}] Basic Pitch → {stem_key} done ({len(ne) if ne is not None else 0} notes)")
+                    return stem_key, ne
+
+                TAB_WORKERS = min(3, len(pitched_stems))
+                with _TPE(max_workers=TAB_WORKERS) as _tab_pool:
+                    tab_futures = {
+                        _tab_pool.submit(_extract_one_stem, k, v): k
+                        for k, v in pitched_stems.items()
+                    }
+                    for fut in _as_completed(tab_futures):
+                        stem_key, note_df = fut.result()
+                        if note_df is not None and len(note_df) > 0:
+                            note_events_all[stem_key] = note_df
+
+                print(f"[job {job_id}] [{_elapsed()}] NOTE EXTRACTION finished → {len(note_events_all)} stems with notes")
+            except Exception as e:
+                _fail("note_extraction", e)
 
             # ── Stage 5: Song intelligence + harmonic analysis ──
             on_progress("Analyzing harmony and structure...")
             print(f"[job {job_id}] [{_elapsed()}] INTELLIGENCE starting...")
             try:
                 if note_events_all:
-                    # Pass Essentia key/BPM as overrides — analyze_song_from_notes uses them
-                    # instead of recalculating from note data
                     essentia_override = None
                     if essentia_key_num >= 0:
                         essentia_override = {
@@ -1122,52 +1149,39 @@ def process_audio(job_id):
                         lyrics_text=lyrics, audio_key_override=essentia_override,
                     )
                     print(f"[job {job_id}] [{_elapsed()}] INTELLIGENCE finished → key={intelligence['key']}, bpm={intelligence['bpm']}, sections={len(intelligence.get('harmonic_sections',[]))}")
-                    jobs[job_id]["intelligence"] = intelligence  # Progressive: make intelligence available immediately
+                    jobs[job_id]["intelligence"] = intelligence
                 else:
                     print(f"[job {job_id}] [{_elapsed()}] INTELLIGENCE skipped (no note events)")
             except Exception as e:
                 _fail("intelligence", e)
 
-            # ── Stage 6: Tags (Last.fm) ──
-            if artist_name and track_name:
-                try:
-                    tags = get_track_tags(artist_name, track_name)
-                    print(f"[job {job_id}] [{_elapsed()}] TAGS → {tags}")
-                except Exception as e:
-                    _fail("tags", e)
+            # ── Stages 6.5 + 7: LLM Insight and Recommendations in parallel ──
+            # Both only need intelligence output — they don't depend on each other.
+            on_progress("Generating insight...")
+            print(f"[job {job_id}] [{_elapsed()}] INSIGHT + RECS starting in parallel...")
 
-            # ── Stage 6.1: MusicBrainz credits ──
-            if artist_name and track_name:
-                on_progress("Fetching credits...")
-                try:
-                    credits_data = get_credits(artist_name, track_name)
-                    if credits_data:
-                        print(f"[job {job_id}] [{_elapsed()}] credits found")
-                except Exception as e:
-                    _fail("credits", e)
-                    credits_data = None
-
-            # ── Stage 6.5: LLM Insight (non-blocking) ──
-            if artist_name and track_name:
+            def _run_insight():
+                if not (artist_name and track_name): return None
                 try:
                     from insight import generate_insight
-                    on_progress("Generating insight...")
-                    insight_text = generate_insight(
+                    result = generate_insight(
                         song_name=track_name,
                         artist=artist_name,
                         intelligence=intelligence,
                         lyrics=lyrics,
                         tags=tags,
                     )
+                    _enrich_smart_recs_art(result)
+                    return result
                 except Exception as e:
                     _fail("insight", e)
+                    return None
 
-            # ── Stage 7: Recommendations ──
-            if spotify_track_id:
-                on_progress("Finding recommendations...")
-                print(f"[job {job_id}] [{_elapsed()}] RECS starting...")
+            def _run_recs():
+                if not spotify_track_id: return {}
+                _recs = {"more_like_this": [], "same_style": [], "around_this_time": []}
                 try:
-                    recs = get_recommendations_for_track(
+                    _recs = get_recommendations_for_track(
                         track_id=spotify_track_id,
                         artist_id=spotify_artist_id or track_meta.get("artist_id"),
                         track_name=track_name, artist_name=artist_name,
@@ -1179,11 +1193,18 @@ def process_audio(job_id):
                     _fail("recommendations_spotify", e)
                 if artist_name and track_name:
                     try:
-                        recs = enrich_recommendations_with_lastfm(recs, artist_name, track_name)
+                        _recs = enrich_recommendations_with_lastfm(_recs, artist_name, track_name)
                     except Exception as e:
                         _fail("recommendations_lastfm", e)
-                for k, v in recs.items():
-                    print(f"[job {job_id}] [{_elapsed()}] recs {k}: {len(v)} tracks")
+                return _recs
+
+            with _TPE(max_workers=2) as _final_pool:
+                fut_insight = _final_pool.submit(_run_insight)
+                fut_recs    = _final_pool.submit(_run_recs)
+                insight_text = fut_insight.result()
+                recs         = fut_recs.result() or recs
+
+            print(f"[job {job_id}] [{_elapsed()}] INSIGHT + RECS finished")
 
             # ── Finalize ──
             _finalize()
@@ -1255,14 +1276,6 @@ def serve_stem_audio(job_id, stem_name):
     return send_from_directory(str(stems_dir), f"{stem_name}.wav")  # 404 fallback
 
 
-@app.route("/api/credits/<job_id>")
-def get_job_credits(job_id):
-    """Return MusicBrainz credits for a job."""
-    job = jobs.get(job_id)
-    if job and job.get("credits"):
-        return jsonify(job["credits"])
-    return jsonify(None), 404
-
 
 @app.route("/api/download_stem/<job_id>/<stem_name>")
 def download_stem_audio(job_id, stem_name):
@@ -1276,10 +1289,6 @@ def download_stem_audio(job_id, stem_name):
         return send_from_directory(str(stems_dir), f"{stem_name}.mp3", as_attachment=True)
     return jsonify({"error": "Stem file not found"}), 404
 
-
-@app.route("/api/download_midi/<job_id>/<stem_name>")
-def download_midi(job_id, stem_name):
-    return send_from_directory(str(OUTPUT_DIR / job_id / "tabs"), f"{stem_name}.mid", as_attachment=True)
 
 
 @app.route("/api/refresh-recs/<job_id>", methods=["POST"])
