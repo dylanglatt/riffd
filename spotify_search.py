@@ -44,6 +44,23 @@ def _headers():
     return {"Authorization": f"Bearer {_get_token()}"}
 
 
+_EDITION_PATTERN = __import__("re").compile(
+    r"\s*[\(\[]"
+    r"(super\s+deluxe|deluxe\s+edition|deluxe\s+version|deluxe|"
+    r"remastered|remaster|\d{4}\s+remaster|\d{4}\s+remastered|"
+    r"expanded\s+edition|expanded|anniversary\s+edition|\d+th\s+anniversary|"
+    r"bonus\s+tracks?|special\s+edition|collector'?s\s+edition|"
+    r"platinum\s+edition|gold\s+edition|limited\s+edition)"
+    r"[\)\]]",
+    __import__("re").IGNORECASE,
+)
+
+
+def _clean_album_name(name: str) -> str:
+    """Strip edition/remaster suffixes from Spotify album names."""
+    return _EDITION_PATTERN.sub("", name).strip()
+
+
 def _format_track(t) -> dict:
     artists = t.get("artists") or []
     album = t.get("album") or {}
@@ -54,7 +71,7 @@ def _format_track(t) -> dict:
         "name": t.get("name", ""),
         "artist": ", ".join(a["name"] for a in artists),
         "artist_id": artists[0]["id"] if artists else None,
-        "album": album.get("name", ""),
+        "album": _clean_album_name(album.get("name", "")),
         "year": release[:4] if release else "",
         "duration_ms": t.get("duration_ms", 0),
         "image_url": images[0]["url"] if images else None,
