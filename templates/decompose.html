@@ -817,8 +817,9 @@ function _pollStemProgress(jobId) {
         return;
       }
       const d = await r.json();
-      // Progressive stem loading
-      if (d.stems) {
+      // Progressive stem UI (labels/channels) — but only load AUDIO once complete.
+      // Loading audio during "processing" races with WAV writes and returns empty files.
+      if (d.stems && (d.status === 'complete' || d.status === 'partial')) {
         const newStems = Object.keys(d.stems).filter(k => !_loadedStems[k]);
         if (newStems.length > 0) {
           for (const stemName of newStems) { _addStemChannel(stemName, d.stems[stemName], jobId); _loadedStems[stemName] = true; }
@@ -884,12 +885,30 @@ function _downloadStem(stemName) {
   document.body.removeChild(a);
 }
 
-async function _loadSingleStemAudio(stemName, jobId) {
+async function _loadSingleStemAudio(stemName, jobId, _attempt = 0) {
+  const MAX_RETRIES = 4;
+  const RETRY_DELAY_MS = 3000;
   try {
     if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     const r = await fetch(`/api/audio/${jobId}/${stemName}`);
-    if (!r.ok) return;
+    if (!r.ok) {
+      // File not ready yet — retry with backoff
+      if (_attempt < MAX_RETRIES) {
+        console.warn(`[audio] ${stemName} not ready (${r.status}), retry ${_attempt + 1}/${MAX_RETRIES} in ${RETRY_DELAY_MS}ms`);
+        setTimeout(() => _loadSingleStemAudio(stemName, jobId, _attempt + 1), RETRY_DELAY_MS);
+      } else {
+        console.warn(`[audio] ${stemName} failed after ${MAX_RETRIES} retries`);
+      }
+      return;
+    }
     const ab = await r.arrayBuffer();
+    if (ab.byteLength === 0) {
+      if (_attempt < MAX_RETRIES) {
+        console.warn(`[audio] ${stemName} returned empty buffer, retry ${_attempt + 1}/${MAX_RETRIES}`);
+        setTimeout(() => _loadSingleStemAudio(stemName, jobId, _attempt + 1), RETRY_DELAY_MS);
+      }
+      return;
+    }
     const buf = await audioCtx.decodeAudioData(ab);
     // Kill preview audio as soon as the first real stem arrives
     if (stemBuffers['preview']) {
