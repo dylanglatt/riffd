@@ -26,12 +26,36 @@ The full path (resolve_audio) is only used when user explicitly requests deep an
 
 import os
 import re
+import base64
 import subprocess
 import shutil
 import requests
 from pathlib import Path
 
 UPLOAD_DIR = Path("uploads")
+
+# ---------------------------------------------------------------------------
+# Cookie bootstrap
+# On Render (or any server), you can't scp files. Instead:
+#   1. Export your YouTube cookies as cookies.txt (Netscape format)
+#   2. base64-encode them:  base64 -i cookies.txt | tr -d '\n'
+#   3. Set the result as the YT_COOKIES_B64 environment variable in Render dashboard
+# The decoded cookies.txt is written here at startup and picked up by yt-dlp.
+# ---------------------------------------------------------------------------
+_COOKIES_PATH = Path("cookies.txt")
+
+def _bootstrap_cookies():
+    b64 = os.environ.get("YT_COOKIES_B64", "").strip()
+    if not b64:
+        return
+    try:
+        decoded = base64.b64decode(b64).decode("utf-8")
+        _COOKIES_PATH.write_text(decoded)
+        print(f"[downloader] cookies.txt written from YT_COOKIES_B64 ({len(decoded)} bytes)")
+    except Exception as e:
+        print(f"[downloader] WARNING: failed to decode YT_COOKIES_B64: {e}")
+
+_bootstrap_cookies()
 
 
 class AudioUnavailableError(Exception):
@@ -114,19 +138,17 @@ def _run_ytdlp_with_binary(binary: str, source: str, out_template: str, out_dir:
         "--no-playlist",
         "--output", out_template,
         "--no-progress",
-        "--user-agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
         "--retries", "3",
         "--socket-timeout", "30",
-        "--extractor-args", "youtube:player_client=web,default;lang=en",
+        "--extractor-args", "youtube:player_client=tv_embedded,ios,web;lang=en",
         "--no-check-certificates",
         "--prefer-free-formats",
         "--force-ipv4",
     ]
 
-    # Add cookies if available
-    cookies_path = Path("cookies.txt")
-    if cookies_path.exists():
-        cmd.extend(["--cookies", str(cookies_path)])
+    # Add cookies if available (written from YT_COOKIES_B64 env var at startup, or dropped manually)
+    if _COOKIES_PATH.exists():
+        cmd.extend(["--cookies", str(_COOKIES_PATH)])
         print(f"[downloader] using cookies.txt")
 
     # Add proxy if configured and not bypassed

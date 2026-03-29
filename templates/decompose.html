@@ -1495,9 +1495,11 @@ function _showNoPreview() {
 }
 
 function _showFullTrackFailed(msg) {
-  // Full-track failed but preview exists — restore preview results
+  // Full-track failed but preview exists — restore the already-rendered results view
+  // NOTE: do NOT call renderResults(_previewJobData) here — preview data has no stems,
+  // which triggers the "No stems detected" guard and blanks the screen.
   if (_previewJobData) {
-    renderResults(_previewJobData);
+    showView("results");
     _showResultWarning(msg);
   } else {
     _showHeroPreProcess();
