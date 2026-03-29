@@ -1276,15 +1276,17 @@ def job_status(job_id):
 
 @app.route("/api/audio/<job_id>/<stem_name>")
 def serve_stem_audio(job_id, stem_name):
-    stems_dir = OUTPUT_DIR / job_id / "stems"
-    # Try WAV first, then MP3 (preview files may be MP3)
+    stems_dir = (OUTPUT_DIR / job_id / "stems").resolve()
     wav_path = stems_dir / f"{stem_name}.wav"
     mp3_path = stems_dir / f"{stem_name}.mp3"
-    if wav_path.exists():
+    if wav_path.exists() and wav_path.stat().st_size > 0:
         return send_from_directory(str(stems_dir), f"{stem_name}.wav")
-    elif mp3_path.exists():
+    elif mp3_path.exists() and mp3_path.stat().st_size > 0:
         return send_from_directory(str(stems_dir), f"{stem_name}.mp3")
-    return send_from_directory(str(stems_dir), f"{stem_name}.wav")  # 404 fallback
+    # File missing or empty — log and return 404 so client can retry
+    wav_size = wav_path.stat().st_size if wav_path.exists() else -1
+    print(f"[audio] {job_id}/{stem_name} not ready — wav={wav_size}b path={wav_path}")
+    return jsonify({"error": "stem not ready"}), 404
 
 
 
