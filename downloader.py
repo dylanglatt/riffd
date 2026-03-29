@@ -36,24 +36,35 @@ UPLOAD_DIR = Path("uploads")
 
 # ---------------------------------------------------------------------------
 # Cookie bootstrap
-# On Render (or any server), you can't scp files. Instead:
-#   1. Export your YouTube cookies as cookies.txt (Netscape format)
-#   2. base64-encode them:  base64 -i cookies.txt | tr -d '\n'
-#   3. Set the result as the YT_COOKIES_B64 environment variable in Render dashboard
-# The decoded cookies.txt is written here at startup and picked up by yt-dlp.
+# Preferred: use Render Secret Files — upload cookies.txt and set path to
+#   /etc/secrets/cookies.txt in the Render dashboard (Secret Files section).
+# Fallback: set YT_COOKIES_B64 env var (base64-encoded cookies.txt).
+#   WARNING: large cookie files will cause "argument list too long" build errors.
+#   Use Secret Files instead whenever possible.
 # ---------------------------------------------------------------------------
 _COOKIES_PATH = Path("cookies.txt")
+_SECRET_COOKIES_PATH = Path("/etc/secrets/cookies.txt")
 
 def _bootstrap_cookies():
+    # Priority 1: Render Secret File (no env var size limits)
+    if _SECRET_COOKIES_PATH.exists():
+        try:
+            import shutil as _shutil
+            _shutil.copy(_SECRET_COOKIES_PATH, _COOKIES_PATH)
+            print(f"[downloader] cookies.txt loaded from secret file ({_SECRET_COOKIES_PATH})")
+            return
+        except Exception as e:
+            print(f"[downloader] WARNING: failed to copy secret cookies file: {e}")
+
+    # Priority 2: Base64 env var (legacy fallback — avoid for large cookie files)
     b64 = os.environ.get("YT_COOKIES_B64", "").strip()
-    if not b64:
-        return
-    try:
-        decoded = base64.b64decode(b64).decode("utf-8")
-        _COOKIES_PATH.write_text(decoded)
-        print(f"[downloader] cookies.txt written from YT_COOKIES_B64 ({len(decoded)} bytes)")
-    except Exception as e:
-        print(f"[downloader] WARNING: failed to decode YT_COOKIES_B64: {e}")
+    if b64:
+        try:
+            decoded = base64.b64decode(b64).decode("utf-8")
+            _COOKIES_PATH.write_text(decoded)
+            print(f"[downloader] cookies.txt written from YT_COOKIES_B64 ({len(decoded)} bytes)")
+        except Exception as e:
+            print(f"[downloader] WARNING: failed to decode YT_COOKIES_B64: {e}")
 
 _bootstrap_cookies()
 
