@@ -519,8 +519,9 @@ def download_track():
                     print(f"[job {job_id}] AUDIO SOURCE SELECTED: youtube (direct URL)")
                 else:
                     _on_progress("Downloading full track...")
-                    audio_path = resolve_audio(track_data, job_id, on_progress=_on_progress, allow_preview_fallback=False)
-                    audio_source = "youtube"
+                    audio_path = resolve_audio(track_data, job_id, on_progress=_on_progress, allow_preview_fallback=True)
+                    # Detect actual source — resolve_audio may have fallen back to preview if YouTube failed
+                    audio_source = "preview" if str(audio_path).endswith("preview.mp3") else "youtube"
 
             print(f"[job {job_id}] download finished → {audio_path} (source={audio_source}, mode={mode})")
             jobs[job_id].update({
@@ -934,6 +935,10 @@ def process_audio(job_id):
         analyze_song_from_notes = _lazy_music_intelligence()
         _log_memory(f"[job {job_id}] PROCESS START (after imports)")
 
+        # Extract track metadata for use throughout the pipeline
+        artist_name = track_meta.get("artist", "")
+        track_name  = track_meta.get("name", "")
+
         # Partial results accumulate — returned even if a later stage fails
         stems = {}
         intelligence = {"key": "Unknown", "key_num": -1, "mode_num": -1, "bpm": 0, "bpm_confidence": 0, "progression": None}
@@ -1022,14 +1027,20 @@ def process_audio(job_id):
             print(f"[job {job_id}] [{_elapsed()}] DEMUCS + metadata fetch starting in parallel...")
 
             def _fetch_lyrics():
-                if not (artist_name and track_name): return None
-                try: return get_lyrics(artist_name, track_name)
-                except Exception as e: _fail("lyrics", e); return None
+                try:
+                    if not (artist_name and track_name): return None
+                    return get_lyrics(artist_name, track_name)
+                except Exception as e:
+                    _fail("lyrics", e)
+                    return None
 
             def _fetch_tags():
-                if not (artist_name and track_name): return []
-                try: return get_track_tags(artist_name, track_name)
-                except Exception as e: _fail("tags", e); return []
+                try:
+                    if not (artist_name and track_name): return []
+                    return get_track_tags(artist_name, track_name)
+                except Exception as e:
+                    _fail("tags", e)
+                    return []
 
             def _run_demucs():
                 return separate_stems(audio_path, job_id, progress_callback=on_progress)
