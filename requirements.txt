@@ -3,7 +3,7 @@ python-dotenv>=1.0
 requests>=2.31
 demucs>=4.0
 basic-pitch>=0.3
-yt-dlp>=2025.1
+yt-dlp>=2026.3.17
 yt-dlp-ejs
 bgutil-ytdlp-pot-provider
 numpy>=1.24

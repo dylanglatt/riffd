@@ -136,3 +136,147 @@
 {"ts": 1774744030.115797, "event": "prefetch_hit", "props": {"track_id": "7DD7eSuYSC5xk2ArU62esN"}}
 {"ts": 1774744030.121073, "event": "deep_analysis_start", "props": {"job_id": "00ab744b", "audio_source": "youtube"}}
 {"ts": 1774744072.367816, "event": "analysis_complete", "props": {"job_id": "00ab744b", "status": "partial", "elapsed": 42.2}}
+{"ts": 1774744279.893995, "event": "prefetch_start", "props": {"track": "Whiskey Glasses", "artist": "Morgan Wallen"}}
+{"ts": 1774744279.9138281, "event": "download_start", "props": {"mode": "preview", "artist": "Morgan Wallen", "track": "Whiskey Glasses"}}
+{"ts": 1774744371.514944, "event": "download_start", "props": {"mode": "full", "artist": "Morgan Wallen", "track": "Whiskey Glasses"}}
+{"ts": 1774744371.515599, "event": "prefetch_hit", "props": {"track_id": "57TEkZN3f84tFJFHFrD4pO"}}
+{"ts": 1774744371.5198662, "event": "deep_analysis_start", "props": {"job_id": "7a8f3fe1", "audio_source": "youtube"}}
+{"ts": 1774744561.468439, "event": "analysis_complete", "props": {"job_id": "7a8f3fe1", "status": "partial", "elapsed": 189.9}}
+{"ts": 1774744611.7116969, "event": "prefetch_start", "props": {"track": "20 Min", "artist": "Lil Uzi Vert"}}
+{"ts": 1774744611.7642019, "event": "download_start", "props": {"mode": "preview", "artist": "Lil Uzi Vert", "track": "20 Min"}}
+{"ts": 1774744652.471373, "event": "download_start", "props": {"mode": "full", "artist": "Lil Uzi Vert", "track": "20 Min"}}
+{"ts": 1774744723.253418, "event": "youtube_failed", "props": {"job_id": "6f02ebd1", "error": "YouTube download failed and preview fallback is disabled. Please upload your own audio file. (Error:"}}
+{"ts": 1774758366.011509, "event": "prefetch_start", "props": {"track": "Strawberry Fields Forever - Remastered 2", "artist": "The Beatles"}}
+{"ts": 1774758366.0260181, "event": "download_start", "props": {"mode": "preview", "artist": "The Beatles", "track": "Strawberry Fields Forever - Remastered 2"}}
+{"ts": 1774758384.153846, "event": "download_start", "props": {"mode": "full", "artist": "The Beatles", "track": "Strawberry Fields Forever - Remastered 2"}}
+{"ts": 1774758384.154198, "event": "prefetch_hit", "props": {"track_id": "3Am0IbOxmvlSXro7N5iSfZ"}}
+{"ts": 1774758384.1586099, "event": "deep_analysis_start", "props": {"job_id": "e564179b", "audio_source": "youtube"}}
+{"ts": 1774758440.785526, "event": "analysis_complete", "props": {"job_id": "e564179b", "status": "partial", "elapsed": 56.6}}
+{"ts": 1774758618.31875, "event": "prefetch_start", "props": {"track": "Take It Easy - 2013 Remaster", "artist": "Eagles"}}
+{"ts": 1774758641.3079062, "event": "download_start", "props": {"mode": "full", "artist": "Eagles", "track": "Take It Easy - 2013 Remaster"}}
+{"ts": 1774758641.308274, "event": "prefetch_hit", "props": {"track_id": "4yugZvBYaoREkJKtbG08Qr"}}
+{"ts": 1774758641.311641, "event": "deep_analysis_start", "props": {"job_id": "ef94614e", "audio_source": "youtube"}}
+{"ts": 1774758754.260352, "event": "prefetch_start", "props": {"track": "More Than My Hometown", "artist": "Morgan Wallen"}}
+{"ts": 1774758754.298408, "event": "download_start", "props": {"mode": "preview", "artist": "Morgan Wallen", "track": "More Than My Hometown"}}
+{"ts": 1774758816.0809531, "event": "analysis_complete", "props": {"job_id": "ef94614e", "status": "partial", "elapsed": 174.8}}
+{"ts": 1774758821.548636, "event": "download_start", "props": {"mode": "full", "artist": "Morgan Wallen", "track": "More Than My Hometown"}}
+{"ts": 1774758821.5576088, "event": "prefetch_hit", "props": {"track_id": "0IRZwSCWFdT5D8hNCXHzZX"}}
+{"ts": 1774758821.5639832, "event": "deep_analysis_start", "props": {"job_id": "3a84aa4b", "audio_source": "youtube"}}
+{"ts": 1774759006.71435, "event": "prefetch_start", "props": {"track": "When It Rains It Pours", "artist": "Luke Combs"}}
+{"ts": 1774759006.726263, "event": "download_start", "props": {"mode": "preview", "artist": "Luke Combs", "track": "When It Rains It Pours"}}
+{"ts": 1774759043.297455, "event": "download_start", "props": {"mode": "full", "artist": "Luke Combs", "track": "When It Rains It Pours"}}
+{"ts": 1774759043.2981498, "event": "prefetch_hit", "props": {"track_id": "1mMLMZYXkMueg65jRRWG1l"}}
+{"ts": 1774759043.3058612, "event": "deep_analysis_start", "props": {"job_id": "00b06542", "audio_source": "youtube"}}
+{"ts": 1774759116.869699, "event": "analysis_complete", "props": {"job_id": "00b06542", "status": "partial", "elapsed": 73.6}}
+{"ts": 1774760015.7492201, "event": "prefetch_start", "props": {"track": "American Girl", "artist": "Tom Petty and the Heartbreaker"}}
+{"ts": 1774760015.763319, "event": "download_start", "props": {"mode": "preview", "artist": "Tom Petty and the Heartbreaker", "track": "American Girl"}}
+{"ts": 1774760043.014747, "event": "download_start", "props": {"mode": "full", "artist": "Tom Petty and the Heartbreaker", "track": "American Girl"}}
+{"ts": 1774760043.015108, "event": "prefetch_hit", "props": {"track_id": "6SIV02mskzzc3KXK7t4NHj"}}
+{"ts": 1774760043.020385, "event": "deep_analysis_start", "props": {"job_id": "e03e8b34", "audio_source": "youtube"}}
+{"ts": 1774760108.047766, "event": "analysis_complete", "props": {"job_id": "e03e8b34", "status": "partial", "elapsed": 65.0}}
+{"ts": 1774760440.572953, "event": "prefetch_start", "props": {"track": "Free Fallin'", "artist": "Tom Petty"}}
+{"ts": 1774760440.619748, "event": "download_start", "props": {"mode": "preview", "artist": "Tom Petty", "track": "Free Fallin'"}}
+{"ts": 1774760649.630549, "event": "prefetch_start", "props": {"track": "Rikki Don't Lose That Number", "artist": "Steely Dan"}}
+{"ts": 1774760649.665641, "event": "download_start", "props": {"mode": "preview", "artist": "Steely Dan", "track": "Rikki Don't Lose That Number"}}
+{"ts": 1774760785.092157, "event": "download_start", "props": {"mode": "full", "artist": "Steely Dan", "track": "Rikki Don't Lose That Number"}}
+{"ts": 1774760785.092963, "event": "prefetch_hit", "props": {"track_id": "0xLrMI4R2xTwRHWV3UQCAZ"}}
+{"ts": 1774760785.102166, "event": "deep_analysis_start", "props": {"job_id": "eaf86ddc", "audio_source": "youtube"}}
+{"ts": 1774760846.701714, "event": "prefetch_start", "props": {"track": "Take It Easy - 2013 Remaster", "artist": "Eagles"}}
+{"ts": 1774760917.30372, "event": "analysis_complete", "props": {"job_id": "eaf86ddc", "status": "partial", "elapsed": 132.2}}
+{"ts": 1774760961.189075, "event": "prefetch_start", "props": {"track": "Tequila", "artist": "Dan + Shay"}}
+{"ts": 1774760973.644442, "event": "prefetch_start", "props": {"track": "Tequila", "artist": "The Champs"}}
+{"ts": 1774760973.68288, "event": "download_start", "props": {"mode": "preview", "artist": "The Champs", "track": "Tequila"}}
+{"ts": 1774761297.582346, "event": "prefetch_start", "props": {"track": "Deacon Blues", "artist": "Steely Dan"}}
+{"ts": 1774761297.6119812, "event": "download_start", "props": {"mode": "preview", "artist": "Steely Dan", "track": "Deacon Blues"}}
+{"ts": 1774761657.8773172, "event": "prefetch_start", "props": {"track": "Hurricane", "artist": "Luke Combs"}}
+{"ts": 1774761657.893642, "event": "download_start", "props": {"mode": "preview", "artist": "Luke Combs", "track": "Hurricane"}}
+{"ts": 1774761680.037125, "event": "download_start", "props": {"mode": "preview", "artist": "Luke Combs", "track": "Fast Car"}}
+{"ts": 1774762007.5548239, "event": "prefetch_start", "props": {"track": "Tequila", "artist": "Dan + Shay"}}
+{"ts": 1774762011.97456, "event": "download_start", "props": {"mode": "preview", "artist": "Lord Huron", "track": "The Night We Met"}}
+{"ts": 1774762326.931076, "event": "prefetch_start", "props": {"track": "Till There Was You - Remastered 2009", "artist": "The Beatles"}}
+{"ts": 1774762326.959518, "event": "download_start", "props": {"mode": "preview", "artist": "The Beatles", "track": "Till There Was You - Remastered 2009"}}
+{"ts": 1774762352.2757719, "event": "download_start", "props": {"mode": "preview", "artist": "Erroll Garner", "track": "Misty"}}
+{"ts": 1774762598.21832, "event": "prefetch_start", "props": {"track": "Johnny B. Goode", "artist": "Chuck Berry"}}
+{"ts": 1774762598.236951, "event": "download_start", "props": {"mode": "preview", "artist": "Chuck Berry", "track": "Johnny B. Goode"}}
+{"ts": 1774762618.8469398, "event": "prefetch_start", "props": {"track": "Tutti Frutti", "artist": "Little Richard"}}
+{"ts": 1774762618.878384, "event": "download_start", "props": {"mode": "preview", "artist": "Little Richard", "track": "Tutti Frutti"}}
+{"ts": 1774763173.168782, "event": "prefetch_start", "props": {"track": "Hotel California - 2013 Remaster", "artist": "Eagles"}}
+{"ts": 1774763173.2157938, "event": "download_start", "props": {"mode": "preview", "artist": "Eagles", "track": "Hotel California - 2013 Remaster"}}
+{"ts": 1774763233.0412512, "event": "download_start", "props": {"mode": "full", "artist": "Eagles", "track": "Hotel California - 2013 Remaster"}}
+{"ts": 1774763263.105896, "event": "prefetch_hit", "props": {"track_id": "40riOy7x9W7GXjyGp4pjAv"}}
+{"ts": 1774763265.124724, "event": "deep_analysis_start", "props": {"job_id": "966aedbe", "audio_source": "youtube"}}
+{"ts": 1774763395.025737, "event": "analysis_complete", "props": {"job_id": "966aedbe", "status": "partial", "elapsed": 129.9}}
+{"ts": 1774764043.1104891, "event": "prefetch_start", "props": {"track": "Something - Remastered 2009", "artist": "The Beatles"}}
+{"ts": 1774764043.126092, "event": "download_start", "props": {"mode": "preview", "artist": "The Beatles", "track": "Something - Remastered 2009"}}
+{"ts": 1774764067.1210701, "event": "download_start", "props": {"mode": "full", "artist": "The Beatles", "track": "Something - Remastered 2009"}}
+{"ts": 1774764067.121506, "event": "prefetch_hit", "props": {"track_id": "0pNeVovbiZHkulpGeOx1Gj"}}
+{"ts": 1774764067.1335738, "event": "deep_analysis_start", "props": {"job_id": "fa28e9d6", "audio_source": "youtube"}}
+{"ts": 1774764841.916724, "event": "prefetch_start", "props": {"track": "Desperado - 2013 Remaster", "artist": "Eagles"}}
+{"ts": 1774764841.947436, "event": "download_start", "props": {"mode": "preview", "artist": "Eagles", "track": "Desperado - 2013 Remaster"}}
+{"ts": 1774764877.3249578, "event": "download_start", "props": {"mode": "full", "artist": "Eagles", "track": "Desperado - 2013 Remaster"}}
+{"ts": 1774764877.325863, "event": "prefetch_hit", "props": {"track_id": "2TjnCxxQRYn56Ye8gkUKiW"}}
+{"ts": 1774764877.334517, "event": "deep_analysis_start", "props": {"job_id": "f0eb00a5", "audio_source": "youtube"}}
+{"ts": 1774764926.2337039, "event": "prefetch_start", "props": {"track": "Africa", "artist": "TOTO"}}
+{"ts": 1774764926.275147, "event": "download_start", "props": {"mode": "preview", "artist": "TOTO", "track": "Africa"}}
+{"ts": 1774765188.917443, "event": "prefetch_start", "props": {"track": "The Long Run - 2013 Remaster", "artist": "Eagles"}}
+{"ts": 1774765188.93565, "event": "download_start", "props": {"mode": "preview", "artist": "Eagles", "track": "The Long Run - 2013 Remaster"}}
+{"ts": 1774765197.063594, "event": "download_start", "props": {"mode": "preview", "artist": "Eagles", "track": "The Long Run - 2013 Remaster"}}
+{"ts": 1774765335.892868, "event": "prefetch_start", "props": {"track": "Seven Nation Army", "artist": "The White Stripes"}}
+{"ts": 1774765335.924614, "event": "download_start", "props": {"mode": "preview", "artist": "The White Stripes", "track": "Seven Nation Army"}}
+{"ts": 1774765415.7326798, "event": "download_start", "props": {"mode": "full", "artist": "The White Stripes", "track": "Seven Nation Army"}}
+{"ts": 1774765415.7330859, "event": "prefetch_hit", "props": {"track_id": "3dPQuX8Gs42Y7b454ybpMR"}}
+{"ts": 1774765415.742696, "event": "deep_analysis_start", "props": {"job_id": "dd5fd16c", "audio_source": "youtube"}}
+{"ts": 1774765467.367312, "event": "analysis_complete", "props": {"job_id": "dd5fd16c", "status": "partial", "elapsed": 51.6}}
+{"ts": 1774765566.55709, "event": "prefetch_start", "props": {"track": "Creep", "artist": "Radiohead"}}
+{"ts": 1774765566.603282, "event": "download_start", "props": {"mode": "preview", "artist": "Radiohead", "track": "Creep"}}
+{"ts": 1774765604.878891, "event": "download_start", "props": {"mode": "full", "artist": "Radiohead", "track": "Creep"}}
+{"ts": 1774765604.8798962, "event": "prefetch_hit", "props": {"track_id": "70LcF31zb1H0PyJoS1Sx1r"}}
+{"ts": 1774765604.8930728, "event": "deep_analysis_start", "props": {"job_id": "39b6343f", "audio_source": "youtube"}}
+{"ts": 1774765712.675009, "event": "analysis_complete", "props": {"job_id": "39b6343f", "status": "partial", "elapsed": 107.8}}
+{"ts": 1774765790.734408, "event": "prefetch_start", "props": {"track": "Creep - Acoustic", "artist": "Radiohead"}}
+{"ts": 1774765790.775567, "event": "download_start", "props": {"mode": "preview", "artist": "Radiohead", "track": "Creep - Acoustic"}}
+{"ts": 1774765814.21742, "event": "download_start", "props": {"mode": "full", "artist": "Radiohead", "track": "Creep - Acoustic"}}
+{"ts": 1774765814.218289, "event": "prefetch_hit", "props": {"track_id": "6JpjIy1M7oxvPJ3uVdUKTe"}}
+{"ts": 1774765814.226696, "event": "deep_analysis_start", "props": {"job_id": "02748b8b", "audio_source": "youtube"}}
+{"ts": 1774765867.5511072, "event": "analysis_complete", "props": {"job_id": "02748b8b", "status": "partial", "elapsed": 53.3}}
+{"ts": 1774765892.654908, "event": "prefetch_start", "props": {"track": "I Feel Fine - Remastered 2015", "artist": "The Beatles"}}
+{"ts": 1774765892.708152, "event": "download_start", "props": {"mode": "preview", "artist": "The Beatles", "track": "I Feel Fine - Remastered 2015"}}
+{"ts": 1774765977.352295, "event": "download_start", "props": {"mode": "full", "artist": "The Beatles", "track": "I Feel Fine - Remastered 2015"}}
+{"ts": 1774765977.352721, "event": "prefetch_hit", "props": {"track_id": "5hhF25sWnZvXhimOHLjTRE"}}
+{"ts": 1774765977.357504, "event": "deep_analysis_start", "props": {"job_id": "0cdb2c4d", "audio_source": "youtube"}}
+{"ts": 1774766005.7286642, "event": "analysis_complete", "props": {"job_id": "0cdb2c4d", "status": "partial", "elapsed": 28.4}}
+{"ts": 1774766494.832531, "event": "prefetch_start", "props": {"track": "Don't Cross the River", "artist": "America, George Martin"}}
+{"ts": 1774766494.847527, "event": "download_start", "props": {"mode": "preview", "artist": "America, George Martin", "track": "Don't Cross the River"}}
+{"ts": 1774766518.93552, "event": "download_start", "props": {"mode": "full", "artist": "America, George Martin", "track": "Don't Cross the River"}}
+{"ts": 1774766518.936437, "event": "prefetch_hit", "props": {"track_id": "35CMSp8RLVTSXmuv6czRpE"}}
+{"ts": 1774766520.970944, "event": "deep_analysis_start", "props": {"job_id": "08ffe94b", "audio_source": "youtube"}}
+{"ts": 1774766587.352801, "event": "analysis_complete", "props": {"job_id": "08ffe94b", "status": "partial", "elapsed": 66.4}}
+{"ts": 1774796355.574743, "event": "prefetch_start", "props": {"track": "Dreams - 2004 Remaster", "artist": "Fleetwood Mac"}}
+{"ts": 1774796355.587282, "event": "download_start", "props": {"mode": "preview", "artist": "Fleetwood Mac", "track": "Dreams - 2004 Remaster"}}
+{"ts": 1774796388.812896, "event": "download_start", "props": {"mode": "full", "artist": "Fleetwood Mac", "track": "Dreams - 2004 Remaster"}}
+{"ts": 1774796388.813761, "event": "prefetch_hit", "props": {"track_id": "0ofHAoxe9vBkTCp2UQIavz"}}
+{"ts": 1774796388.823086, "event": "deep_analysis_start", "props": {"job_id": "03704d2b", "audio_source": "youtube"}}
+{"ts": 1774796748.07729, "event": "prefetch_start", "props": {"track": "Go Your Own Way - 2004 Remaster", "artist": "Fleetwood Mac"}}
+{"ts": 1774796748.0890281, "event": "download_start", "props": {"mode": "preview", "artist": "Fleetwood Mac", "track": "Go Your Own Way - 2004 Remaster"}}
+{"ts": 1774796773.085061, "event": "download_start", "props": {"mode": "full", "artist": "Fleetwood Mac", "track": "Go Your Own Way - 2004 Remaster"}}
+{"ts": 1774796777.241133, "event": "youtube_failed", "props": {"job_id": "8eba5915", "error": "YouTube download failed and preview fallback is disabled. Please upload your own audio file. (Error:"}}
+{"ts": 1774797499.9735308, "event": "prefetch_start", "props": {"track": "Dreams - 2004 Remaster", "artist": "Fleetwood Mac"}}
+{"ts": 1774797499.987788, "event": "download_start", "props": {"mode": "preview", "artist": "Fleetwood Mac", "track": "Dreams - 2004 Remaster"}}
+{"ts": 1774797568.907844, "event": "download_start", "props": {"mode": "full", "artist": "Fleetwood Mac", "track": "Dreams - 2004 Remaster"}}
+{"ts": 1774797568.9084868, "event": "prefetch_hit", "props": {"track_id": "0ofHAoxe9vBkTCp2UQIavz"}}
+{"ts": 1774797568.917397, "event": "deep_analysis_start", "props": {"job_id": "e3925f56", "audio_source": "youtube"}}
+{"ts": 1774797665.4542131, "event": "analysis_complete", "props": {"job_id": "e3925f56", "status": "partial", "elapsed": 96.5}}
+{"ts": 1774797772.822977, "event": "prefetch_start", "props": {"track": "I Want To Hold Your Hand - Remastered 20", "artist": "The Beatles"}}
+{"ts": 1774797772.837999, "event": "download_start", "props": {"mode": "preview", "artist": "The Beatles", "track": "I Want To Hold Your Hand - Remastered 20"}}
+{"ts": 1774797796.819125, "event": "download_start", "props": {"mode": "full", "artist": "The Beatles", "track": "I Want To Hold Your Hand - Remastered 20"}}
+{"ts": 1774797796.819843, "event": "prefetch_hit", "props": {"track_id": "4pbG9SUmWIvsROVLF0zF9s"}}
+{"ts": 1774797798.844151, "event": "deep_analysis_start", "props": {"job_id": "e033b5e7", "audio_source": "youtube"}}
+{"ts": 1774822077.25575, "event": "prefetch_start", "props": {"track": "Sympathy For The Devil", "artist": "The Rolling Stones"}}
+{"ts": 1774822077.267318, "event": "download_start", "props": {"mode": "preview", "artist": "The Rolling Stones", "track": "Sympathy For The Devil"}}
+{"ts": 1774822125.632097, "event": "download_start", "props": {"mode": "full", "artist": "The Rolling Stones", "track": "Sympathy For The Devil"}}
+{"ts": 1774822136.198046, "event": "youtube_failed", "props": {"job_id": "46712e5b", "error": "YouTube download failed and preview fallback is disabled. Please upload your own audio file. (Error:"}}
+{"ts": 1774822461.8534951, "event": "prefetch_start", "props": {"track": "Teach Your Children", "artist": "Crosby, Stills, Nash & Young"}}
+{"ts": 1774822461.8747678, "event": "download_start", "props": {"mode": "preview", "artist": "Crosby, Stills, Nash & Young", "track": "Teach Your Children"}}
+{"ts": 1774822477.230685, "event": "download_start", "props": {"mode": "full", "artist": "Crosby, Stills, Nash & Young", "track": "Teach Your Children"}}
+{"ts": 1774822489.253879, "event": "deep_analysis_start", "props": {"job_id": "3b47c9c3", "audio_source": "preview"}}
+{"ts": 1774822508.4606678, "event": "analysis_complete", "props": {"job_id": "3b47c9c3", "status": "partial", "elapsed": 19.2}}
