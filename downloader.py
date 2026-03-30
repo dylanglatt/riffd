@@ -90,6 +90,16 @@ try:
 except Exception as _e:
     print(f"[downloader] WARNING: could not get yt-dlp version: {_e}")
 
+# Check for JavaScript runtime — yt-dlp needs it to solve YouTube signature challenges
+for _js_bin in ("node", "nodejs", "deno", "phantomjs"):
+    if shutil.which(_js_bin):
+        _js_ver = subprocess.run([_js_bin, "--version"], capture_output=True, text=True, timeout=5)
+        print(f"[downloader] JS runtime: {_js_bin} {_js_ver.stdout.strip()}")
+        break
+else:
+    print(f"[downloader] ⚠️  NO JS RUNTIME FOUND — yt-dlp signature solving WILL FAIL")
+    print(f"[downloader] Install Node.js: add 'nodejs' to Render build or use Docker")
+
 
 class AudioUnavailableError(Exception):
     """No audio source could provide audio for this track."""
@@ -173,12 +183,20 @@ def _run_ytdlp_with_binary(binary: str, source: str, out_template: str, out_dir:
         "--no-progress",
         "--retries", "3",
         "--socket-timeout", "30",
-        "--extractor-args", "youtube:player_client=ios,mweb,web;lang=en",
         "--no-check-certificates",
         "--prefer-free-formats",
         "--force-ipv4",
         "--user-agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
     ]
+
+    # Build extractor args — player_client + optional PO token
+    # android client typically doesn't require PO tokens; web/mweb do
+    extractor_parts = ["youtube:player_client=android,ios,web", "lang=en"]
+    po_token = os.environ.get("YT_PO_TOKEN", "").strip()
+    if po_token:
+        extractor_parts[0] += f";po_token={po_token}"
+        print(f"[downloader] using PO token ({len(po_token)} chars)")
+    cmd.extend(["--extractor-args", ";".join(extractor_parts)])
 
     # Add cookies FIRST — yt-dlp uses them for auth + bot bypass
     if _COOKIES_PATH.exists():
@@ -261,18 +279,40 @@ def download_audio_from_youtube(query_or_url: str, job_id: str) -> Path:
             raise first_err
 
 
+def _get_piped_instances() -> list[str]:
+    """Fetch live Piped API instances dynamically. Falls back to hardcoded list."""
+    FALLBACK = [
+        "https://pipedapi.kavin.rocks",
+        "https://pipedapi.leptons.xyz",
+        "https://piped-api.privacy.com.de",
+        "https://pipedapi.nosebs.ru",
+        "https://pipedapi-libre.kavin.rocks",
+    ]
+    try:
+        r = requests.get("https://piped-instances.kavin.rocks/", timeout=8,
+                         headers={"User-Agent": "Mozilla/5.0"})
+        if r.ok:
+            instances = r.json()
+            # Each entry has "api_url" and "name" — filter to ones with an API URL
+            api_urls = [inst["api_url"].rstrip("/") for inst in instances
+                        if inst.get("api_url") and "kavin" not in inst.get("name", "").lower()]
+            # Put official instance first
+            urls = ["https://pipedapi.kavin.rocks"] + api_urls[:9]
+            print(f"[piped] fetched {len(urls)} instances from registry")
+            return urls
+    except Exception as e:
+        print(f"[piped] instance registry failed: {e} — using fallback list")
+    return FALLBACK
+
+
 def _download_via_piped(query: str, job_id: str) -> Path:
     """
     Fallback YouTube download via Piped API.
     Piped proxies YouTube through its own servers, bypassing datacenter IP blocks.
     Tries multiple public instances for reliability.
     """
-    PIPED_INSTANCES = [
-        "https://pipedapi.kavin.rocks",
-        "https://pipedapi.adminforge.de",
-        "https://pipedapi.moomoo.me",
-        "https://pipedapi.syncpundit.io",
-    ]
+    # Dynamically fetch working Piped API instances, fall back to hardcoded list
+    PIPED_INSTANCES = _get_piped_instances()
 
     out_dir = UPLOAD_DIR / job_id
     out_dir.mkdir(parents=True, exist_ok=True)
