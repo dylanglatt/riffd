@@ -1142,6 +1142,17 @@ def process_audio(job_id):
 
                 gc.collect()
                 _log_memory(f"[job {job_id}] post-basic-pitch")
+                # Release TF model weights from memory so next job starts clean.
+                # gc.collect() alone doesn't free TF memory — it stays resident in
+                # the process and compounds across sequential jobs, causing OOM.
+                try:
+                    import tensorflow as _tf
+                    _tf.keras.backend.clear_session()
+                    del _tf
+                    gc.collect()
+                    _log_memory(f"[job {job_id}] post-tf-clear")
+                except Exception as _tf_e:
+                    print(f"[job {job_id}] TF clear_session warning: {_tf_e}")
                 print(f"[job {job_id}] [{_elapsed()}] NOTE EXTRACTION finished → {len(note_events_all)} stems with notes")
             except Exception as e:
                 _fail("note_extraction", e)
