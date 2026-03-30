@@ -4,35 +4,32 @@ app.py — Riffd Flask web server.
 Request lifecycle:
   1. User searches via /api/spotify/search → Spotify API (with local fallback)
   2. User selects a track → frontend checks /api/track/<id> for cached analysis
-  3. If no cache: frontend calls /api/download with mode=preview|full
-     - preview: resolve_preview() → iTunes/Spotify preview (~2s, 30s audio)
-     - full: resolve_audio() → YouTube first, then preview fallback (~30-120s)
-  4. Frontend calls /api/process/<job_id> with analysis_mode=instant|deep
-     - instant: synchronous, returns in ~3-5s (key, BPM, lyrics, no stems)
+  3. If no cache: frontend calls /api/download with mode=full
+     - Full: resolve_audio() → YouTube (yt-dlp → cobalt → piped) (~30-120s)
+     - If YouTube fails: upload_required → user uploads their own file
+  4. Frontend calls /api/process/<job_id> with analysis_mode=deep
      - deep: async background thread, returns via polling (~2-5min, full stems + harmonic analysis)
-  5. Frontend polls /api/status/<job_id> for deep analysis progress
+     - key/BPM/intelligence published progressively before stems complete
+  5. Frontend polls /api/status/<job_id> for progressive results
   6. Results served via /api/audio/<job_id>/<stem> for playback
 
 Job status lifecycle:
   downloading → ready → processing → complete|partial|error
-  downloading → preview_unavailable  (preview mode, no source)
-  downloading → upload_required      (full mode, all sources failed)
+  downloading → ready → queued → processing → complete|partial|error  (when slots full)
+  downloading → upload_required      (all sources failed)
   downloading → error                (unexpected failure)
-
-Two analysis modes:
-  - instant: _process_instant() — synchronous, no Demucs, no threading
-  - deep:    process_audio() run() thread — full 7-stage pipeline
 
 Memory management:
   - Heavy imports (numpy, pandas, basic_pitch) deferred to first job
   - Jobs pruned from memory after 10 minutes
   - Job payloads trimmed after frontend polls the result
-  - MAX_CONCURRENT_JOBS=1 prevents stacking deep analysis
+  - MAX_CONCURRENT_JOBS (default 3) limits concurrent deep analysis; extras are queued
 """
 
 import os
 import re
 import uuid
+import collections
 import threading
 import traceback
 from pathlib import Path
@@ -53,7 +50,7 @@ def _lazy_music_intelligence():
 
 from spotify_search import search_spotify, get_recommendations_for_track, RateLimitError, _DISCOVERY_TRACKS
 from external_apis import get_lyrics, get_track_tags, enrich_recommendations_with_lastfm, _get_art_for_track
-from downloader import download_audio_from_youtube, resolve_audio, resolve_preview, AudioUnavailableError
+from downloader import download_audio_from_youtube, resolve_audio, AudioUnavailableError
 from analytics import log_event
 from history import add_to_history, get_recent, get_cached_result, save_cached_result, touch_history
 from db import init_db, migrate_from_history_json, get_track, upsert_track, set_track_status, touch_track, get_recent_tracks, get_analysis_for_track
@@ -126,7 +123,10 @@ ALLOWED_EXTENSIONS = {".mp3", ".wav", ".flac", ".m4a", ".ogg", ".aac"}
 jobs = {}
 _processing_lock = threading.Lock()
 _active_processing = 0
-MAX_CONCURRENT_JOBS = 1  # Only one deep analysis at a time (Demucs uses ~500MB RAM)
+# Stem separation runs on Replicate (cloud GPU), so local RAM is not the bottleneck.
+# Allow multiple concurrent jobs; tune via MAX_CONCURRENT_JOBS env var if needed.
+MAX_CONCURRENT_JOBS = int(os.getenv("MAX_CONCURRENT_JOBS", "2"))
+_job_queue: collections.deque = collections.deque()  # jobs waiting for a processing slot
 
 # ─── Background prefetch ─────────────────────────────────────────────────────
 # In-memory dict tracking background downloads. Keyed by spotify_track_id.
@@ -147,6 +147,18 @@ def _log_memory(label=""):
         print(f"[mem] {label} RSS={rss_mb:.0f}MB")
     except Exception:
         pass
+
+
+def _dequeue_next():
+    """Called when a processing slot opens — start the next queued job if one exists."""
+    global _active_processing
+    with _processing_lock:
+        if _job_queue and _active_processing < MAX_CONCURRENT_JOBS:
+            job_id, run_fn = _job_queue.popleft()
+            if job_id in jobs:
+                jobs[job_id]["status"] = "processing"
+                jobs[job_id]["progress"] = "Separating stems..."
+            threading.Thread(target=run_fn, daemon=True).start()
 
 
 def _prune_old_jobs():
@@ -246,11 +258,12 @@ AUTH_PUBLIC_PATHS = ("/login", "/static/", "/", "/favicon.ico", "/s/")
 def require_login():
     path = request.path
     is_public = (path == "/login" or path == "/" or path == "/favicon.ico" or
-                 path.startswith("/static/") or path.startswith("/s/"))
+                 path.startswith("/static/") or path.startswith("/s/") or
+                 path == "/about" or path.startswith("/shared/"))
     is_authed = session.get("authenticated") is True
 
     if is_public:
-        return  # Always allow login page and static assets
+        return  # Always allow public pages and static assets
     if is_authed:
         return  # Session is authenticated — allow
 
@@ -391,9 +404,15 @@ def track_lookup(track_id):
     if track["analysis_status"] == "available":
         analysis = get_analysis_for_track(track_id)
         if analysis:
-            touch_track(track_id)
-            result["analysis"] = analysis
-            result["job_id"] = track.get("job_id")
+            # Invalidate preview-mode cache — force re-analysis with full track
+            if analysis.get("audio_mode") == "preview" or analysis.get("analysis_mode") == "instant":
+                print(f"[track] invalidating preview-mode cache for {track_id}")
+                set_track_status(track_id, "pending")
+                result["analysis_status"] = "unavailable"
+            else:
+                touch_track(track_id)
+                result["analysis"] = analysis
+                result["job_id"] = track.get("job_id")
         else:
             # Cache disappeared — downgrade status
             result["analysis_status"] = "unavailable"
@@ -404,26 +423,25 @@ def track_lookup(track_id):
 @app.route("/api/download", methods=["POST"])
 def download_track():
     """
-    Audio acquisition endpoint. Accepts mode="preview" or mode="full".
-    - preview: resolve_preview() — Spotify/iTunes only, no YouTube. ~2s.
-    - full: resolve_audio() — YouTube first, then preview fallback. ~30-120s.
+    Audio acquisition endpoint. Always downloads full track via YouTube.
+    If YouTube fails, returns upload_required so user can upload their own file.
     Downloads run in a background thread. Frontend polls /api/status/<job_id>.
-    Returns immediately with {job_id, mode}.
+    Returns immediately with {job_id}.
     """
     data = request.json
-    query = data.get("query")       # YouTube search query (null in preview mode)
+    query = data.get("query")       # YouTube search query
     url = data.get("url")           # Direct URL (rare, for YouTube links)
     track_id = data.get("track_id") # Spotify track ID for cache lookup
-    mode = data.get("mode", "preview")  # "preview" (default) or "full"
+    mode = "full"                   # Always full — preview mode removed
 
-    print(f"[download] triggered mode={mode} query={bool(query)} url={bool(url)} preview_url={bool(data.get('preview_url'))} artist={data.get('artist','')[:20]}")
+    print(f"[download] triggered query={bool(query)} url={bool(url)} artist={data.get('artist','')[:20]}")
     log_event("download_start", {"mode": mode, "artist": data.get("artist", "")[:30], "track": data.get("name", "")[:40]})
 
-    if not query and not url and mode != "preview":
+    if not query and not url:
         return jsonify({"error": "Provide 'query' or 'url'"}), 400
 
     # Check if background prefetch has (or will soon have) the full track
-    if mode == "full" and track_id:
+    if track_id:
         with _bg_lock:
             bg = _bg_downloads.get(track_id)
 
@@ -439,7 +457,6 @@ def download_track():
                         bg = _bg_downloads.get(track_id)
                     if not bg or bg["status"] != "downloading":
                         break
-                    print(f"[download] still waiting for prefetch... ({bg['status']})")
 
             # Re-check after potential wait
             if bg and bg["status"] == "ready" and bg.get("audio_path"):
@@ -449,14 +466,14 @@ def download_track():
                     "status": "ready",
                     "audio_path": audio_path,
                     "audio_source": "youtube",
-                    "audio_mode": mode,
+                    "audio_mode": "full",
                     "progress": "Download complete",
                 }
                 print(f"[job {job_id}] DOWNLOAD REUSED from prefetch → {audio_path}")
                 log_event("prefetch_hit", {"track_id": track_id})
                 return jsonify({"job_id": job_id, "mode": mode})
 
-    # Check if we already have audio from a previous job for this track
+    # Check if we already have full-track audio from a previous job
     if track_id:
         from history import _load_history
         hist = _load_history()
@@ -466,24 +483,18 @@ def download_track():
             old_upload = UPLOAD_DIR / old_job
             if old_upload.exists():
                 audio_files = [f for f in old_upload.iterdir()
-                               if f.suffix.lower() in {".wav", ".mp3", ".m4a", ".webm", ".ogg", ".flac"}]
+                               if f.suffix.lower() in {".wav", ".mp3", ".m4a", ".webm", ".ogg", ".flac"}
+                               and f.name != "preview.mp3"]  # Skip cached previews
                 if audio_files:
-                    # In full mode, skip cached previews — we want the full track
-                    if mode == "full" and audio_files[0].name == "preview.mp3":
-                        print(f"[download] skipping cached preview for mode=full (track_id={track_id})")
-                    else:
-                        job_id = str(uuid.uuid4())[:8]
-                        audio_path = str(audio_files[0])
-                        cached_source = "cache"
-                        if audio_files[0].name == "preview.mp3":
-                            cached_source = "preview"
-                        jobs[job_id] = {"status": "ready", "audio_path": audio_path, "audio_source": cached_source, "audio_mode": mode, "progress": "Download complete"}
-                        print(f"[job {job_id}] DOWNLOAD REUSED from job {old_job} → {audio_path} (mode={mode})")
-                        return jsonify({"job_id": job_id})
+                    job_id = str(uuid.uuid4())[:8]
+                    audio_path = str(audio_files[0])
+                    jobs[job_id] = {"status": "ready", "audio_path": audio_path, "audio_source": "cache", "audio_mode": "full", "progress": "Download complete"}
+                    print(f"[job {job_id}] DOWNLOAD REUSED from job {old_job} → {audio_path}")
+                    return jsonify({"job_id": job_id, "mode": mode})
 
     job_id = str(uuid.uuid4())[:8]
-    jobs[job_id] = {"status": "downloading", "audio_mode": mode, "progress": "Getting audio..."}
-    print(f"[job {job_id}] DOWNLOAD START mode={mode} query='{(query or url or '')[:60]}'")
+    jobs[job_id] = {"status": "downloading", "audio_mode": "full", "progress": "Getting audio..."}
+    print(f"[job {job_id}] DOWNLOAD START query='{(query or url or '')[:60]}'")
 
     def run():
         def _on_progress(msg):
@@ -493,93 +504,45 @@ def download_track():
         try:
             track_data = {
                 "query": query or url,
-                "preview_url": data.get("preview_url"),
+                "preview_url": None,  # No preview fallback
                 "artist": data.get("artist", ""),
                 "name": data.get("name", ""),
             }
 
-            if mode == "preview":
-                # Preview-first: only try preview sources, no YouTube
-                print(f"[job {job_id}] mode=preview — skipping YouTube")
-                _on_progress("Getting preview audio...")
-                audio_path = resolve_preview(track_data, job_id, on_progress=_on_progress)
-                audio_source = "preview"
+            print(f"[job {job_id}] downloading full track...")
+            is_direct_yt = (url and url.startswith("http") and
+                            ("youtube.com" in url or "youtu.be" in url))
 
-                # Auto-trigger instant analysis immediately after preview download
-                # This avoids a second round-trip from the frontend.
-                # Must run inside app context since _process_instant uses jsonify().
-                print(f"[process] [job {job_id}] auto-trigger instant after preview")
-                jobs[job_id].update({
-                    "status": "ready",
-                    "audio_path": str(audio_path),
-                    "audio_source": audio_source,
-                    "audio_mode": mode,
-                })
-                req_data = {
-                    "track_id": data.get("track_id"),
-                    "track_meta": {
-                        "artist": data.get("artist", ""),
-                        "name": _clean_track_name(data.get("name", "")),
-                        "album": data.get("album", ""),
-                        "image_url": data.get("image_url"),
-                        "duration_ms": data.get("duration_ms", 0),
-                        "year": data.get("year", ""),
-                        "artist_id": data.get("artist_id"),
-                        "yt_query": data.get("query", ""),
-                    },
-                    "analysis_mode": "instant",
-                }
-                with app.app_context():
-                    _process_instant(job_id, str(audio_path), req_data)
-                print(f"[process] [job {job_id}] instant analysis auto-completed")
-                return  # Skip the normal "ready" status — job is already "complete"
-
+            if is_direct_yt:
+                _on_progress("Downloading full track...")
+                audio_path = download_audio_from_youtube(url, job_id)
+                audio_source = "youtube"
+                print(f"[job {job_id}] AUDIO SOURCE SELECTED: youtube (direct URL)")
             else:
-                # Full-track: try YouTube first, then previews as fallback
-                print(f"[job {job_id}] mode=full — trying YouTube first")
-                is_direct_yt = (url and url.startswith("http") and
-                                ("youtube.com" in url or "youtu.be" in url))
+                _on_progress("Downloading full track...")
+                audio_path = resolve_audio(track_data, job_id, on_progress=_on_progress, allow_preview_fallback=False)
+                audio_source = "youtube"
 
-                if is_direct_yt:
-                    _on_progress("Downloading full track...")
-                    audio_path = download_audio_from_youtube(url, job_id)
-                    audio_source = "youtube"
-                    print(f"[job {job_id}] AUDIO SOURCE SELECTED: youtube (direct URL)")
-                else:
-                    _on_progress("Downloading full track...")
-                    audio_path = resolve_audio(track_data, job_id, on_progress=_on_progress, allow_preview_fallback=False)
-                    audio_source = "youtube"
-
-            print(f"[job {job_id}] download finished → {audio_path} (source={audio_source}, mode={mode})")
+            print(f"[job {job_id}] download finished → {audio_path} (source={audio_source})")
             jobs[job_id].update({
                 "status": "ready",
                 "audio_path": str(audio_path),
                 "audio_source": audio_source,
-                "audio_mode": mode,
+                "audio_mode": "full",
                 "progress": "Download complete",
             })
             print(f"[job {job_id}] STATUS → ready")
 
         except AudioUnavailableError as e:
-            print(f"[job {job_id}] SOURCES FAILED (mode={mode}): {e}")
+            print(f"[job {job_id}] SOURCES FAILED: {e}")
             log_event("youtube_failed", {"job_id": job_id, "error": str(e)[:100]})
-            if mode == "preview":
-                # Preview unavailable — tell frontend, don't try YouTube automatically
-                jobs[job_id].update({
-                    "status": "preview_unavailable",
-                    "audio_source": None,
-                    "audio_mode": mode,
-                    "error": "No preview available for this track.",
-                })
-                print(f"[job {job_id}] STATUS → preview_unavailable")
-            else:
-                jobs[job_id].update({
-                    "status": "upload_required",
-                    "audio_source": None,
-                    "audio_mode": mode,
-                    "error": str(e),
-                })
-                print(f"[job {job_id}] STATUS → upload_required")
+            jobs[job_id].update({
+                "status": "upload_required",
+                "audio_source": None,
+                "audio_mode": "full",
+                "error": "Full track unavailable. Please upload the audio file directly.",
+            })
+            print(f"[job {job_id}] STATUS → upload_required")
 
         except Exception as e:
             print(f"[job {job_id}] DOWNLOAD ERROR: {e}")
@@ -825,7 +788,7 @@ def _process_instant(job_id, audio_path, req_data):
         "status": "complete",
         "analysis_mode": "instant",
         "audio_source": jobs[job_id].get("audio_source"),
-        "audio_mode": jobs[job_id].get("audio_mode", "preview"),
+        "audio_mode": jobs[job_id].get("audio_mode", "full"),
         "intelligence": intelligence,
         "lyrics": lyrics,
         "tags": tags,
@@ -880,19 +843,9 @@ def _process_instant(job_id, audio_path, req_data):
 @app.route("/api/process/<job_id>", methods=["POST"])
 def process_audio(job_id):
     """
-    Processing endpoint. Routes to instant or deep analysis based on analysis_mode.
-
-    analysis_mode="instant" → _process_instant() — synchronous, ~3-5s
-    analysis_mode="deep"   → background thread with 7-stage pipeline, ~2-5min
-
-    Deep analysis stages (all non-fatal except stage 1):
-      1. Stem separation (Demucs)       — FATAL if fails, ~2-5min
-      2. BPM detection (Basic Pitch)    — ~10s
-      3. Tab generation (Basic Pitch)   — ~30s per stem
-      4. Lyrics (Genius API)            — ~1s
-      5. Harmonic analysis              — ~5s
-      6. Tags (Last.fm API)             — ~1s
-      7. Recommendations (Last.fm)      — ~1s
+    Processing endpoint. Runs deep analysis pipeline in background thread.
+    Key/BPM, lyrics, and tags are published progressively before stems complete.
+    Frontend polls /api/status/<job_id> for progressive results.
     """
     global _active_processing
     if job_id not in jobs:
@@ -905,17 +858,8 @@ def process_audio(job_id):
         return jsonify({"error": "No audio file"}), 400
 
     req_data = request.json or {}
-    analysis_mode = req_data.get("analysis_mode", "deep")  # "instant" or "deep"
 
-    # ── Instant analysis: lightweight, synchronous, no heavy models ──
-    if analysis_mode == "instant":
-        return _process_instant(job_id, audio_path, req_data)
-
-    # Guard against stacking heavy jobs (deep only)
-    with _processing_lock:
-        if _active_processing >= MAX_CONCURRENT_JOBS:
-            print(f"[job {job_id}] REJECTED: {_active_processing} jobs already processing")
-            return jsonify({"error": "Server is busy processing another song. Please try again in a moment."}), 503
+    # Guard against stacking heavy jobs — queue instead of reject
 
     # Prune stale jobs before starting a new one
     _prune_old_jobs()
@@ -997,7 +941,7 @@ def process_audio(job_id):
                 "insight": insight_text,
                 "recommendations": recs,
                 "audio_source": jobs[job_id].get("audio_source"),
-                "audio_mode": jobs[job_id].get("audio_mode", "preview"),
+                "audio_mode": jobs[job_id].get("audio_mode", "full"),
                 "progress": "Done!" if not partial else "Completed with errors",
             }
             if partial:
@@ -1019,7 +963,7 @@ def process_audio(job_id):
                         "insight": insight_text,
                         "recommendations": recs,
                         "audio_source": jobs[job_id].get("audio_source"),
-                        "audio_mode": jobs[job_id].get("audio_mode", "preview"),
+                        "audio_mode": jobs[job_id].get("audio_mode", "full"),
                         "job_id": job_id,
                         "track_id": spotify_track_id,
                     })
@@ -1081,6 +1025,9 @@ def process_audio(job_id):
                 lyrics       = fut_lyrics.result()
                 tags         = fut_tags.result()
                 print(f"[job {job_id}] [{_elapsed()}] metadata fetched: lyrics={'yes' if lyrics else 'no'} tags={len(tags)}")
+                # Publish lyrics/tags progressively so frontend can show them before stems
+                if lyrics: jobs[job_id]["lyrics"] = lyrics
+                if tags: jobs[job_id]["tags"] = tags
 
                 # Wait for Demucs (the slow one)
                 try:
@@ -1134,6 +1081,8 @@ def process_audio(job_id):
                     intelligence["bpm_confidence"] = round(ess_bpm_conf, 3)
 
                 print(f"[job {job_id}] [{_elapsed()}] Essentia → key={intelligence['key']} bpm={detected_bpm}")
+                # Publish key/BPM immediately so frontend can show chips before stems finish
+                jobs[job_id]["intelligence"] = dict(intelligence)
             except Exception as e:
                 _fail("essentia_detection", e)
 
@@ -1339,12 +1288,22 @@ def process_audio(job_id):
             failed_steps.append({"step": "unknown", "message": str(e)})
             _finalize()
         finally:
-            # Release processing slot and force garbage collection
+            # Release processing slot, kick off any queued jobs, then GC
             with _processing_lock:
                 _active_processing -= 1
+            _dequeue_next()
             gc.collect()
             _log_memory(f"[job {job_id}] PROCESS END")
             print(f"[mem] active processing jobs: {_active_processing}")
+
+    # Either start immediately or queue if all slots are busy
+    with _processing_lock:
+        if _active_processing >= MAX_CONCURRENT_JOBS:
+            _job_queue.append((job_id, run))
+            jobs[job_id]["status"] = "queued"
+            jobs[job_id]["progress"] = f"Waiting for a processing slot ({len(_job_queue)} in queue)..."
+            print(f"[job {job_id}] QUEUED: {_active_processing} jobs active, {len(_job_queue)} in queue")
+            return jsonify({"status": "queued", "job_id": job_id})
 
     threading.Thread(target=run, daemon=True).start()
     return jsonify({"status": "processing", "job_id": job_id})
@@ -1369,7 +1328,7 @@ def job_status(job_id):
 
     # Only log status polls for terminal states (avoid noise from repeated polling)
     status = job.get("status", "")
-    if status not in ("processing", "downloading"):
+    if status not in ("processing", "downloading", "queued"):
         print(f"[job {job_id}] STATUS POLL → {status} | {job.get('progress', '')}")
     resp = jsonify(job)
 
