@@ -126,35 +126,16 @@
     .proc-estimate { margin-top:12px; color:rgba(245,245,245,0.35); font-size:0.8125rem; opacity:0; transition:opacity .8s ease .6s; letter-spacing:-0.01em; }
     .proc-estimate.visible { opacity:1; }
 
-    /* ═══ Stem CTA Card ═══ */
-    .stem-cta-card { padding:40px 24px; text-align:center; }
-    .stem-cta-inner { max-width:320px; margin:0 auto; }
-    .stem-cta-title { font-size:1.125rem; font-weight:600; color:rgba(245,245,245,0.85); letter-spacing:-0.02em; margin-bottom:8px; }
-    .stem-cta-desc { font-size:0.8125rem; color:rgba(245,245,245,0.4); line-height:1.5; margin-bottom:20px; }
-    .stem-cta-btn { display:inline-flex; align-items:center; gap:8px; padding:10px 24px; border:1px solid rgba(212,105,31,0.3); background:rgba(212,105,31,0.08); color:rgba(245,245,245,0.8); font-size:0.875rem; font-weight:500; cursor:pointer; transition:all .2s ease; position:relative; font-family:inherit; }
-    .stem-cta-btn:hover { background:rgba(212,105,31,0.15); border-color:rgba(212,105,31,0.5); color:#F5F5F5; transform:none; }
-    .stem-btn-icon { display:flex; align-items:center; }
-    .stem-btn-ring { position:absolute; top:-2px; right:-2px; width:12px; height:12px; border:2px solid rgba(212,105,31,0.3); border-top-color:rgba(212,105,31,0.8); animation:stemRingSpin 1s linear infinite; }
-    .stem-btn-ready .stem-btn-ring { display:none; }
-    .stem-btn-ready { border-color:rgba(212,105,31,0.5); background:rgba(212,105,31,0.12); box-shadow:0 0 20px rgba(212,105,31,0.08); }
-    @keyframes stemRingSpin { to{transform:rotate(360deg)} }
-    .stem-progress { padding:32px 24px; text-align:center; transition:opacity .4s ease, max-height .4s ease; }
-    .stem-stages { display:flex; align-items:center; justify-content:center; gap:0; margin-bottom:16px; }
-    .stem-stage { display:flex; flex-direction:column; align-items:center; gap:8px; min-width:80px; }
-    .stage-indicator { width:28px; height:28px; border:2px solid rgba(255,255,255,0.1); display:flex; align-items:center; justify-content:center; position:relative; overflow:hidden; transition:all .3s ease; }
-    .stage-fill { position:absolute; inset:0; background:rgba(212,105,31,0.15); transform:scaleY(0); transform-origin:bottom; transition:transform .6s ease; }
-    .stage-check { opacity:0; color:#4ade80; transition:opacity .3s ease; position:relative; z-index:1; }
-    .stage-label { font-size:0.6875rem; color:rgba(245,245,245,0.3); text-transform:uppercase; letter-spacing:0.05em; transition:color .3s ease; }
-    .stage-connector { width:40px; height:2px; background:rgba(255,255,255,0.06); margin:0 4px; margin-bottom:24px; }
-    .stage-active .stage-indicator { border-color:rgba(212,105,31,0.5); }
-    .stage-active .stage-fill { transform:scaleY(1); animation:stagePulse 2s ease-in-out infinite; }
-    .stage-active .stage-label { color:rgba(245,245,245,0.6); }
-    .stage-complete .stage-indicator { border-color:rgba(74,222,128,0.4); background:rgba(74,222,128,0.08); }
-    .stage-complete .stage-check { opacity:1; }
-    .stage-complete .stage-fill { transform:scaleY(0); }
-    .stage-complete .stage-label { color:rgba(74,222,128,0.6); }
-    @keyframes stagePulse { 0%,100%{opacity:0.5} 50%{opacity:1} }
-    .stem-context-text { font-size:0.8125rem; color:rgba(245,245,245,0.35); transition:opacity .2s ease; min-height:1.2em; }
+    /* ═══ Mix Loading State ═══ */
+    .skeleton-channel { pointer-events:none; opacity:0.6; }
+    .skeleton-bar { background:rgba(245,245,245,0.03); animation:skeletonShimmer 1.5s ease-in-out infinite; }
+    .skeleton-bar.skeleton-name { width:80px; height:12px; }
+    .skeleton-bar.skeleton-slider { flex:1; height:4px; }
+    .skeleton-bar.skeleton-btn { width:28px; height:28px; }
+    @keyframes skeletonShimmer { 0%,100%{opacity:0.3} 50%{opacity:0.7} }
+    .skeleton-waveform .player-wv-bar { background:rgba(245,245,245,0.06) !important; animation:skeletonShimmer 2s ease-in-out infinite; }
+    .transport-disabled { opacity:0.3 !important; pointer-events:none; }
+    .mix-loading-status { text-align:center; font-size:0.8125rem; color:rgba(245,245,245,0.35); padding:16px 0; transition:opacity 0.3s ease; min-height:1.4em; }
     .stem-channel-enter { opacity:0; transform:translateY(8px); transition:opacity .4s ease, transform .4s ease; }
     .stem-channel-enter.visible { opacity:1; transform:translateY(0); }
     .stem-dot { width:6px; height:6px; background:#4ade80; display:inline-block; margin-left:6px; animation:stemDotPulse 1.5s ease-in-out infinite; }
@@ -205,8 +186,10 @@
 
     /* Transport bar */
     .mixer-transport { display:flex; align-items:center; gap:12px; padding:0 0 20px; border-bottom:1px solid rgba(255,255,255,0.06); margin-bottom:20px; }
-    .transport-btn { width:40px; height:40px; display:flex; align-items:center; justify-content:center; background:transparent; border:1px solid rgba(255,255,255,0.15); padding:0; flex-shrink:0; transition:all .15s; }
+    .transport-btn { width:40px; height:40px; display:flex; align-items:center; justify-content:center; background:transparent; border:1px solid rgba(255,255,255,0.15); padding:0; flex-shrink:0; transition:all .15s; outline:none; }
     .transport-btn:hover { border-color:#D4691F; transform:none; }
+    .transport-btn:focus { outline:none; }
+    .transport-btn:focus-visible { outline:none; }
     .transport-btn:active { transform:none; }
     .transport-btn svg { width:16px; height:16px; fill:rgba(245,245,245,0.7); }
     .transport-btn:hover svg { fill:#D4691F; }
@@ -226,32 +209,69 @@
     .player-cursor { position:absolute; top:0; width:1px; height:100%; background:rgba(245,245,245,0.4); pointer-events:none; z-index:1; left:0%; transition:left 0.1s linear; }
     .transport-time { font-size:0.8125rem; color:rgba(245,245,245,0.5); font-family:monospace; min-width:80px; text-align:right; }
 
-    /* Channel strips */
-    .mixer-channels { display:flex; flex-direction:column; gap:0; }
-    .channel { display:grid; grid-template-columns:120px 1fr auto auto auto; align-items:center; gap:16px; padding:12px 16px; border:none; transition:opacity .15s; }
-    .channel:nth-child(even) { background:rgba(245,245,245,0.02); }
-    .channel:hover { background:rgba(245,245,245,0.03); border-color:transparent; }
-    .channel.muted { opacity:0.4; }
-    .channel-name { font-size:0.8125rem; font-weight:500; color:rgba(245,245,245,0.7); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; letter-spacing:-0.01em; min-width:120px; }
-    .channel.muted .channel-name { color:rgba(245,245,245,0.35); }
-    .channel-volume { display:flex; align-items:center; gap:10px; }
-    .vol-slider { flex:1; -webkit-appearance:none; appearance:none; background:transparent; outline:none; cursor:pointer; height:2px; }
-    .vol-slider::-webkit-slider-runnable-track { height:2px; background:rgba(245,245,245,0.1); }
-    .vol-slider::-webkit-slider-thumb { -webkit-appearance:none; width:10px; height:10px; border-radius:50%; background:#D4691F; cursor:pointer; margin-top:-4px; transition:transform .15s; border:none; }
-    .vol-slider::-webkit-slider-thumb:hover { transform:scale(1.3); }
-    .vol-slider::-moz-range-track { height:2px; background:rgba(245,245,245,0.1); border:none; }
-    .vol-slider::-moz-range-thumb { width:10px; height:10px; background:#D4691F; border:none; border-radius:50%; }
-    .vol-slider::-moz-range-progress { background:#D4691F; height:2px; }
-    .channel.muted .vol-slider::-webkit-slider-thumb { background:rgba(245,245,245,0.25); }
-    .channel.muted .vol-slider::-moz-range-thumb { background:rgba(245,245,245,0.25); }
-    .vol-label { font-size:0.75rem; color:rgba(245,245,245,0.35); min-width:32px; text-align:right; font-family:monospace; font-variant-numeric:tabular-nums; }
-    .ch-btn { width:28px; height:28px; font-size:0.6875rem; font-weight:600; display:flex; align-items:center; justify-content:center; cursor:pointer; border:1px solid rgba(255,255,255,0.08); background:transparent; color:rgba(245,245,245,0.35); transition:all .15s; padding:0; font-family:inherit; line-height:28px; }
-    .ch-btn:hover { border-color:rgba(255,255,255,0.15); color:rgba(245,245,245,0.55); transform:none; }
-    .ch-btn.mute-active { background:rgba(245,245,245,0.06); color:rgba(245,245,245,0.15); border-color:rgba(255,255,255,0.04); }
-    .ch-btn.solo-active { background:rgba(212,105,31,0.15); color:#D4691F; border-color:rgba(212,105,31,0.3); }
-    .ch-btn + .ch-btn { margin-left:4px; }
-    .stem-dl-btn { opacity:0.4; transition:opacity 0.15s; }
-    .stem-dl-btn:hover { opacity:0.8; }
+    /* ─── Mixer channel strips ─────────────────────────────────────────────── */
+    .mixer-channels { display:flex; flex-direction:column; }
+
+    /* Base channel row */
+    .channel { display:grid; grid-template-columns:148px 1fr 36px auto; align-items:center; gap:12px; padding:9px 16px; border-bottom:1px solid rgba(255,255,255,0.04); transition:background .12s, opacity .15s; }
+    .channel:last-child { border-bottom:none; }
+    .channel:hover { background:rgba(245,245,245,0.025); }
+    .channel.muted { opacity:0.38; }
+
+    /* Channel name */
+    .channel-name { font-size:0.8125rem; font-weight:400; color:rgba(245,245,245,0.72); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; letter-spacing:-0.01em; }
+    .channel.muted .channel-name { color:rgba(245,245,245,0.3); }
+
+    /* Fader */
+    .channel-volume { display:flex; align-items:center; gap:8px; min-width:0; }
+    .vol-slider { flex:1; min-width:60px; -webkit-appearance:none; appearance:none; background:transparent; outline:none; cursor:pointer; height:2px; }
+    .vol-slider::-webkit-slider-runnable-track { height:2px; background:rgba(245,245,245,0.1); border-radius:1px; }
+    .vol-slider::-webkit-slider-thumb { -webkit-appearance:none; width:12px; height:12px; border-radius:50%; background:#D4691F; cursor:pointer; margin-top:-5px; transition:transform .12s; border:none; box-shadow:0 1px 4px rgba(0,0,0,0.4); }
+    .vol-slider::-webkit-slider-thumb:hover { transform:scale(1.25); }
+    .vol-slider::-moz-range-track { height:2px; background:rgba(245,245,245,0.1); border:none; border-radius:1px; }
+    .vol-slider::-moz-range-thumb { width:12px; height:12px; background:#D4691F; border:none; border-radius:50%; box-shadow:0 1px 4px rgba(0,0,0,0.4); }
+    .vol-slider::-moz-range-progress { background:rgba(212,105,31,0.5); height:2px; }
+    .channel.muted .vol-slider::-webkit-slider-thumb { background:rgba(245,245,245,0.2); }
+    .channel.muted .vol-slider::-moz-range-thumb { background:rgba(245,245,245,0.2); }
+    .vol-label { font-size:0.6875rem; color:rgba(245,245,245,0.28); min-width:26px; text-align:right; font-family:monospace; font-variant-numeric:tabular-nums; flex-shrink:0; }
+
+    /* Action buttons */
+    .ch-btns { display:flex; align-items:center; gap:4px; }
+    .ch-btn { width:26px; height:26px; font-size:0.625rem; font-weight:600; letter-spacing:0.02em; display:flex; align-items:center; justify-content:center; cursor:pointer; border:1px solid rgba(255,255,255,0.07); background:transparent; color:rgba(245,245,245,0.3); transition:all .12s; padding:0; font-family:inherit; }
+    .ch-btn:hover { border-color:rgba(255,255,255,0.14); color:rgba(245,245,245,0.6); }
+    .ch-btn.mute-active { background:rgba(245,245,245,0.05); color:rgba(245,245,245,0.12); border-color:rgba(255,255,255,0.04); }
+    .ch-btn.solo-active { background:rgba(212,105,31,0.14); color:#D4691F; border-color:rgba(212,105,31,0.28); }
+    .stem-dl-btn { opacity:0.35; }
+    .stem-dl-btn:hover { opacity:0.75; }
+
+    /* ─── Group headers ────────────────────────────────────────────────────── */
+    .stem-group-header {
+      display:flex; align-items:center; gap:10px;
+      padding:7px 16px 7px 12px;
+      background:rgba(245,245,245,0.03);
+      border-top:1px solid rgba(255,255,255,0.06);
+      border-bottom:1px solid rgba(255,255,255,0.04);
+      border-left:2px solid rgba(212,105,31,0.45);
+      cursor:pointer; user-select:none; margin-top:4px;
+    }
+    .stem-group-header:first-child { margin-top:0; border-top:none; }
+    .stem-group-header:hover { background:rgba(245,245,245,0.045); }
+    .stem-group-header:hover .stem-group-label { color:rgba(245,245,245,0.75); }
+    .stem-group-chevron { background:none; border:none; color:rgba(212,105,31,0.7); cursor:pointer; padding:0; flex-shrink:0; display:flex; align-items:center; outline:none; transition:color .12s; }
+    .stem-group-chevron:focus { outline:none; }
+    .stem-group-chevron svg { width:14px; height:14px; stroke:currentColor; stroke-width:2.5; fill:none; stroke-linecap:round; stroke-linejoin:round; display:block; transition:transform .2s ease; }
+    .stem-group-header.collapsed .stem-group-chevron svg { transform:rotate(-90deg); }
+    .stem-group-label { font-size:0.6875rem; text-transform:uppercase; letter-spacing:0.08em; color:rgba(245,245,245,0.5); flex:1; font-weight:500; }
+    .stem-group-header .vol-slider { width:100px; flex:none; min-width:60px; }
+    .stem-group-header .vol-label { min-width:24px; font-size:0.6875rem; }
+    .stem-group-header .ch-btn { width:26px; height:26px; }
+
+    /* Grouped child channels — indent + slightly softer name */
+    .grouped-channel { border-bottom:1px solid rgba(255,255,255,0.03); }
+    .grouped-channel:last-of-type { border-bottom:1px solid rgba(255,255,255,0.04); }
+    .grouped-channel .channel-name { padding-left:14px; color:rgba(245,245,245,0.58); font-size:0.8125rem; }
+    .full-mix-btn { display:flex; align-items:center; gap:5px; padding:6px 14px; border-radius:20px; border:none; background:rgba(255,255,255,0.06); color:rgba(245,245,245,0.5); font-size:0.75rem; font-weight:500; letter-spacing:0.03em; cursor:pointer; transition:all 0.15s; flex-shrink:0; }
+    .full-mix-btn:hover { color:rgba(245,245,245,0.8); background:rgba(255,255,255,0.1); }
     .karaoke-btn { display:flex; align-items:center; gap:5px; padding:6px 14px; border-radius:20px; border:none; background:rgba(255,255,255,0.06); color:rgba(245,245,245,0.5); font-size:0.75rem; font-weight:500; letter-spacing:0.03em; cursor:pointer; transition:all 0.15s; flex-shrink:0; }
     .karaoke-btn:hover { color:rgba(245,245,245,0.8); background:rgba(255,255,255,0.1); }
     .karaoke-btn.karaoke-active { color:#D4691F; background:rgba(212,105,31,0.12); }
@@ -342,19 +362,12 @@
       .transport-btn.stop-btn { width:32px; height:32px; }
       .transport-seek-wrap { min-width:0; flex:1 1 100%; order:3; height:56px; padding:8px 0; }
       .transport-time { font-size:0.75rem; min-width:70px; }
-      .channel { grid-template-columns:90px 1fr 28px 28px; gap:8px; padding:10px 12px; }
+      .channel { grid-template-columns:90px 1fr 36px auto; gap:8px; padding:10px 12px; }
       .channel-name { font-size:0.8125rem; min-width:90px; }
       .mix-tools { gap:16px; }
       .meta-chip { padding:4px 10px; font-size:0.75rem; }
       .results-nav-btn { padding:12px 0; font-size:0.8125rem; }
       .try-card { width:140px; }
-      /* Stem CTA */
-      .stem-cta-card { padding:28px 16px; }
-      .stem-cta-title { font-size:1rem; }
-      /* Progress stepper */
-      .stem-progress { padding:24px 16px; }
-      .stage-connector { width:28px; }
-      .stem-stage { min-width:70px; }
       /* Track banner */
       .track-banner { gap:16px; padding:28px 20px 22px; }
       .track-banner img, .track-banner .cover-placeholder { width:96px; height:96px; }
@@ -402,21 +415,6 @@
       .new-song-btn { min-height:44px; padding:10px 20px; }
       .smart-recs { padding:24px 16px; }
       .sr-song { padding:10px 12px; }
-      /* Stem CTA — tighter, full-width button */
-      .stem-cta-card { padding:24px 12px; }
-      .stem-cta-inner { max-width:100%; }
-      .stem-cta-title { font-size:0.9375rem; }
-      .stem-cta-desc { font-size:0.75rem; margin-bottom:16px; }
-      .stem-cta-btn { width:100%; justify-content:center; padding:12px 20px; font-size:0.8125rem; min-height:44px; }
-      /* Progress stepper — compact for phone */
-      .stem-progress { padding:20px 12px; }
-      .stem-stages { gap:0; }
-      .stem-stage { min-width:60px; }
-      .stage-indicator { width:24px; height:24px; }
-      .stage-label { font-size:0.5625rem; letter-spacing:0.03em; }
-      .stage-connector { width:24px; margin-bottom:20px; }
-      .stage-check svg { width:10px; height:10px; }
-      .stem-context-text { font-size:0.75rem; }
       /* Track banner — compact */
       .track-banner { gap:14px; padding:24px 16px 18px; }
       .track-banner img, .track-banner .cover-placeholder { width:80px; height:80px; }
@@ -469,18 +467,6 @@
       .results-meta { padding:12px; }
       .new-song-row { flex-direction:column; gap:8px; align-items:stretch; padding:24px 16px 20px; }
       .new-song-btn { text-align:center; }
-      /* Stem CTA — minimal padding */
-      .stem-cta-card { padding:20px 10px; }
-      .stem-cta-title { font-size:0.875rem; }
-      .stem-cta-desc { font-size:0.6875rem; line-height:1.4; }
-      .stem-cta-btn { padding:10px 16px; font-size:0.75rem; }
-      /* Progress stepper — even tighter */
-      .stem-progress { padding:16px 8px; }
-      .stem-stage { min-width:50px; }
-      .stage-indicator { width:22px; height:22px; }
-      .stage-label { font-size:0.5rem; }
-      .stage-connector { width:16px; margin-bottom:18px; }
-      .stem-context-text { font-size:0.6875rem; }
       /* Track banner — minimal */
       .track-banner { padding:20px 14px 16px; gap:12px; }
       .track-banner img, .track-banner .cover-placeholder { width:72px; height:72px; }
@@ -590,6 +576,7 @@
             </div>
             <div class="transport-time" id="time-display">0:00 / 0:00</div>
             <button class="karaoke-btn" id="karaoke-btn" onclick="toggleKaraoke()" title="Karaoke mode — mute vocals"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg><span>Karaoke</span></button>
+            <button class="full-mix-btn" id="full-mix-btn" onclick="resetFullMix()" title="Reset to full mix"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 4v6h6"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg><span>Full Mix</span></button>
           </div>
           <div class="mixer-channels" id="mixer-channels"></div>
           <div class="mix-tools">
@@ -612,7 +599,6 @@
         <div id="smart-recs-content"></div>
       </div>
       <div class="new-song-row" id="results-footer">
-        <button class="new-song-btn" id="full-track-btn" style="display:none;margin-right:12px;border-color:rgba(212,105,31,0.3);color:rgba(245,245,245,0.7)" onclick="_startFullTrackAnalysis()">Separate Stems</button>
         <button class="new-song-btn" onclick="resetApp()">New Song</button>
       </div>
     </div>
@@ -624,26 +610,7 @@
 {% include '_tonality_map.html' %}
 <script>
 // ─── State ──────────────────────────────────────────────────────────────────
-// Two dimensions of mode:
-//   _currentMode:   "preview" | "full"    — audio source (preview clip vs full track)
-//   _analysisMode:  "instant" | "deep"    — analysis depth (key/BPM only vs stems+tabs)
-//
-// Default flow: preview + instant (fast). User can upgrade to full + deep.
-//
-// Frontend flow:
-//   selectTrack() → _showInstantLoading() → startProcessing()
-//     → downloadTrack("preview") → /api/download mode=preview
-//     → /api/process analysis_mode=instant (synchronous, no polling)
-//     → renderInstantResults() — shows key, BPM, lyrics, audio player
-//   User clicks "Separate Stems":
-//     → _startDeepAnalysis() → downloadTrack("full") → /api/process analysis_mode=deep
-//     → pollStatus() → renderResults() — shows stems, tabs, mixer
-//
 let currentJobId = null, selectedTrack = null, pollInterval = null, jobData = null;
-let _currentMode = "preview"; // "preview" | "full" — audio source mode
-let _previewJobData = null;   // preserved instant results for non-destructive deep upgrade
-let _fullTrackInProgress = false;
-let _instantAlreadyRendered = false; // set when downloadTrack auto-rendered instant results
 let audioCtx = null, stemBuffers = {}, stemSources = {}, stemGains = {};
 let stemVolumes = {}, stemMuted = {}, stemSoloed = {};
 let isPlaying = false, startedAt = 0, pauseOffset = 0, duration = 0, animFrame = null;
@@ -657,14 +624,9 @@ let _keyContext = "";
 let _prefetchId = null;
 let _prefetchReady = false;
 let _prefetchPollTimer = null;
-let _stemJobId = null;
-let _stemPollTimer = null;
 let _loadedStems = {};
-let _stemSeparationActive = false;
-let _stemMixerReady = false;
-let _firstMixerInteraction = false;
 let _karaokeActive = false;
-// ─── Stem separation (progressive v2) ────────────────────────────────────────
+let _stemGroupBaselines = {};
 
 function _pollPrefetch(pfId) {
   if (_prefetchPollTimer) clearInterval(_prefetchPollTimer);
@@ -677,22 +639,11 @@ function _pollPrefetch(pfId) {
         clearInterval(_prefetchPollTimer);
         _prefetchPollTimer = null;
         console.log('[prefetch] ready');
-        _updateStemButton();
       } else if (d.status === 'failed') {
         clearInterval(_prefetchPollTimer);
         _prefetchPollTimer = null;
         _prefetchReady = false;
         console.warn('[prefetch] failed:', d.error);
-        // Update button to show ready state (clicking will trigger download attempt → upload prompt)
-        const btn = document.getElementById('stem-cta-btn');
-        const ring = document.getElementById('stem-btn-ring');
-        const icon = document.getElementById('stem-btn-icon');
-        if (btn) {
-          btn.classList.add('stem-btn-ready');
-          btn.classList.remove('stem-btn-loading');
-          if (ring) ring.style.display = 'none';
-          if (icon) icon.innerHTML = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12h4l3-9 4 18 3-9h4"/></svg>';
-        }
       }
     } catch (e) {
       console.warn('[prefetch] poll error:', e);
@@ -700,182 +651,43 @@ function _pollPrefetch(pfId) {
   }, 5000);
 }
 
-function _updateStemButton() {
-  const ring = document.getElementById('stem-btn-ring');
-  const icon = document.getElementById('stem-btn-icon');
-  const btn = document.getElementById('stem-cta-btn');
-  if (!btn) return;
-  if (_stemSeparationActive) return;
-  if (_prefetchReady) {
-    btn.classList.add('stem-btn-ready');
-    btn.classList.remove('stem-btn-loading');
-    if (ring) ring.style.display = 'none';
-    if (icon) icon.innerHTML = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12h4l3-9 4 18 3-9h4"/></svg>';
-  } else {
-    btn.classList.add('stem-btn-loading');
-    btn.classList.remove('stem-btn-ready');
-    if (ring) ring.style.display = '';
-  }
+function _energyToVolume(energy) {
+  if (energy == null || energy === 0) return 85;
+  if (energy >= 0.15) return 100;
+  if (energy >= 0.05) return Math.round(60 + ((energy - 0.05) / 0.10) * 40);
+  return 40;
 }
 
-async function _startStemSeparation() {
-  if (_stemSeparationActive) return;
-  _stemSeparationActive = true;
-  console.log('[stems] user triggered stem separation');
-  _showStemProgress();
-  try {
-    _updateStemStage('download', 'active');
-    const dlResp = await fetch('/api/download', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        mode: 'full',
-        query: selectedTrack.yt_query,
-        track_id: selectedTrack.id || null,
-        preview_url: null,
-        artist: selectedTrack.artist || '',
-        name: selectedTrack.name || '',
-        image_url: selectedTrack.image_url || '',
-        duration_ms: selectedTrack.duration_ms || 0,
-        year: selectedTrack.year || '',
-        album: selectedTrack.album || '',
-        artist_id: selectedTrack.artist_id || '',
-      }),
-    });
-    const dlData = await dlResp.json();
-    if (!dlData.job_id) throw new Error('Download failed');
-    _stemJobId = dlData.job_id;
-    if (!_prefetchReady) {
-      await _waitForDownload(_stemJobId);
-    }
-    _updateStemStage('download', 'complete');
-    _updateStemStage('separate', 'active');
-    _updateStemContextText('Pulling apart the layers...');
-    const procResp = await fetch(`/api/process/${_stemJobId}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        track_id: selectedTrack?.id || null,
-        artist_id: selectedTrack?.artist_id || null,
-        track_meta: selectedTrack || {},
-        analysis_mode: 'deep',
-      }),
-    });
-    const procData = await procResp.json();
-    if (procData.error) throw new Error(procData.error);
-    _pollStemProgress(_stemJobId);
-  } catch (e) {
-    console.warn('[stems] separation failed:', e);
-    _stemSeparationActive = false;
-    _showStemError(e.message);
-  }
-}
-
-function _waitForDownload(jobId) {
-  return new Promise((resolve, reject) => {
-    const poll = setInterval(async () => {
-      try {
-        const r = await fetch(`/api/status/${jobId}`);
-        if (!r.ok) { clearInterval(poll); reject(new Error('Download lost — server may have restarted')); return; }
-        const d = await r.json();
-        if (d.status === 'ready') { clearInterval(poll); resolve(); }
-        else if (d.status === 'error' || d.status === 'upload_required' || d.status === 'preview_unavailable') {
-          clearInterval(poll); reject(new Error(d.error || 'Download failed'));
-        }
-      } catch (e) { /* keep trying */ }
-    }, 2000);
-    setTimeout(() => { clearInterval(poll); reject(new Error('Download timed out')); }, 180000);
-  });
-}
-
-function _showStemProgress() {
-  const card = document.getElementById('stem-cta-card');
-  if (!card) return;
-  card.innerHTML = `<div class="stem-progress" id="stem-progress"><div class="stem-stages"><div class="stem-stage" id="stage-download" data-stage="download"><div class="stage-indicator"><div class="stage-fill"></div><svg class="stage-check" viewBox="0 0 16 16" width="12" height="12"><polyline points="3,8 7,12 13,4" fill="none" stroke="currentColor" stroke-width="2"/></svg></div><span class="stage-label">Downloading</span></div><div class="stage-connector"></div><div class="stem-stage" id="stage-separate" data-stage="separate"><div class="stage-indicator"><div class="stage-fill"></div><svg class="stage-check" viewBox="0 0 16 16" width="12" height="12"><polyline points="3,8 7,12 13,4" fill="none" stroke="currentColor" stroke-width="2"/></svg></div><span class="stage-label">Separating</span></div><div class="stage-connector"></div><div class="stem-stage" id="stage-analyze" data-stage="analyze"><div class="stage-indicator"><div class="stage-fill"></div><svg class="stage-check" viewBox="0 0 16 16" width="12" height="12"><polyline points="3,8 7,12 13,4" fill="none" stroke="currentColor" stroke-width="2"/></svg></div><span class="stage-label">Analyzing</span></div></div><div class="stem-context-text" id="stem-context-text">Downloading full track...</div></div>`;
-}
-
-function _updateStemStage(stage, state) {
-  const el = document.getElementById(`stage-${stage}`);
-  if (!el) return;
-  el.classList.remove('stage-pending', 'stage-active', 'stage-complete');
-  el.classList.add(`stage-${state}`);
-}
-
-function _updateStemContextText(text) {
-  const el = document.getElementById('stem-context-text');
-  if (el) { el.style.opacity = '0'; setTimeout(() => { el.textContent = text; el.style.opacity = '1'; }, 200); }
-}
-
-function _pollStemProgress(jobId) {
-  _stemPollTimer = setInterval(async () => {
-    try {
-      const r = await fetch(`/api/status/${jobId}`);
-      if (!r.ok) {
-        // Job lost (e.g. server restart) — stop polling and let user retry
-        clearInterval(_stemPollTimer); _stemPollTimer = null; _stemSeparationActive = false;
-        _showStemError('Processing was interrupted. Please try again.');
-        return;
-      }
-      const d = await r.json();
-      // Progressive stem UI (labels/channels) — but only load AUDIO once complete.
-      // Loading audio during "processing" races with WAV writes and returns empty files.
-      if (d.stems && (d.status === 'complete' || d.status === 'partial')) {
-        const newStems = Object.keys(d.stems).filter(k => !_loadedStems[k]);
-        if (newStems.length > 0) {
-          for (const stemName of newStems) { _addStemChannel(stemName, d.stems[stemName], jobId); _loadedStems[stemName] = true; }
-          _notifyMixTab();
-          const count = Object.keys(_loadedStems).length;
-          _updateStemContextText(`${count} instrument${count > 1 ? 's' : ''} isolated...`);
-        }
-      }
-      // Detect stage transitions
-      if (d.progress) {
-        if (d.progress.includes('Separating') || d.progress.includes('stems') || d.progress.includes('Demucs')) { _updateStemStage('separate', 'active'); _updateStemContextText('Pulling apart the layers...'); }
-        if (d.progress.includes('tab') || d.progress.includes('Tab') || d.progress.includes('pitch')) { _updateStemStage('separate', 'complete'); _updateStemStage('analyze', 'active'); _updateStemContextText('Analyzing harmony and rhythm...'); }
-        if (d.progress.includes('harmonic') || d.progress.includes('Harmonic') || d.progress.includes('intel')) { _updateStemStage('analyze', 'active'); _updateStemContextText('Detecting chord progressions...'); }
-      }
-      // Update intelligence progressively
-      if (d.intelligence && d.intelligence.key && d.intelligence.key !== 'Unknown') { _silentlyUpdateMetaChips(d.intelligence); }
-      // Complete
-      if (d.status === 'complete' || d.status === 'partial') {
-        clearInterval(_stemPollTimer); _stemPollTimer = null; _stemSeparationActive = false; _stemMixerReady = true;
-        _updateStemStage('download', 'complete'); _updateStemStage('separate', 'complete'); _updateStemStage('analyze', 'complete');
-        _updateStemContextText('Complete');
-        if (d.stems) { Object.keys(d.stems).filter(k => !_loadedStems[k]).forEach(k => { _addStemChannel(k, d.stems[k], jobId); _loadedStems[k] = true; }); }
-        if (d.intelligence && d.intelligence.harmonic_sections) _renderHarmonicSections(d.intelligence.harmonic_sections);
-        if (d.lyrics) { const lyricsEl = document.getElementById('lyrics-content'); if (lyricsEl) lyricsEl.innerHTML = _formatLyrics(d.lyrics); }
-        if (d.insight) { const llm = d.insight; _progressionNames = llm.progression_names || {}; _smartRecs = llm.smart_recs || {}; _keyContext = llm.key_context || ""; _renderSmartRecs(_smartRecs); const keyCtxEl = document.getElementById("key-context"); if (keyCtxEl) { keyCtxEl.textContent = _keyContext; keyCtxEl.style.display = _keyContext ? "block" : "none"; } }
-        jobData = d; currentJobId = jobId;
-        setTimeout(() => { const progress = document.getElementById('stem-progress'); if (progress) { progress.style.opacity = '0'; progress.style.maxHeight = '0'; progress.style.overflow = 'hidden'; setTimeout(() => progress.remove(), 400); } }, 1500);
-        // Clean up preview audio when stems are loaded
-        if (Object.keys(_loadedStems).length > 0) { delete stemBuffers['preview']; if (stemGains['preview']) { try { stemGains['preview'].disconnect(); } catch(e){} delete stemGains['preview']; } delete stemVolumes['preview']; delete stemMuted['preview']; delete stemSoloed['preview']; if (stemSources['preview']) { try { stemSources['preview'].stop(); } catch(e){} delete stemSources['preview']; } }
-        _notifyMixTab();
-        // Warn if stems are from preview (YouTube failed)
-        if (d.audio_source === 'preview' || d.audio_mode === 'preview') {
-          _showResultWarning('These stems are from a ~30s preview clip. Full-track download was unavailable. Upload your own audio file for full-length stems.');
-        }
-        console.log(`[stems] separation complete — ${Object.keys(_loadedStems).length} stems loaded (source=${d.audio_source||'unknown'})`);
-      } else if (d.status === 'error') {
-        clearInterval(_stemPollTimer); _stemPollTimer = null; _stemSeparationActive = false;
-        _showStemError(d.error || 'Stem separation failed');
-      }
-    } catch (e) { console.warn('[stems] poll error:', e); }
-  }, 2500);
-  setTimeout(() => { if (_stemPollTimer) { clearInterval(_stemPollTimer); _stemPollTimer = null; _stemSeparationActive = false; _showStemError('Stem separation timed out. Try again.'); } }, 300000);
+function _getStemRoot(stemKey) {
+  let s = stemKey.toLowerCase();
+  // Strip known variant suffixes so e.g. "piano_2" → "piano", "lead_guitar" → "guitar"
+  const suffixes = [
+    '_layer_2','_layer_3','_layer_4','_layer_5','_layer',
+    '_overdub','_double','_part','_pad','_comping',
+    '_fingerpicking','_electric','_acoustic',
+    '_2','_3','_4','_5',  // numbered duplicates (piano_2 → piano, etc.)
+  ];
+  for (const sfx of suffixes) { if (s.endsWith(sfx)) { s = s.slice(0, -sfx.length); break; } }
+  if (s.includes('vocal')) return 'vocal';
+  if (s.includes('bass')) return 'bass_guitar';
+  if (s.includes('guitar')) return 'guitar';
+  if (s.includes('drum')) return 'drums';
+  if (s === 'piano' || s === 'keys' || s === 'synth') return 'piano';
+  return s;
 }
 
 function _addStemChannel(stemName, stemData, jobId) {
   const mixerEl = document.getElementById('mixer-channels');
   if (!mixerEl) return;
   const label = formatStemLabel(stemName, (stemData && stemData.label) || "");
+  const initVol = _energyToVolume(stemData && stemData.energy);
   const channel = document.createElement('div');
   channel.className = 'channel stem-channel-enter';
   channel.id = `ch-${stemName}`;
-  channel.innerHTML = `<div class="channel-name">${esc(label)}</div><div class="channel-volume"><input type="range" class="vol-slider" min="0" max="100" value="100" oninput="setVolume('${stemName}',this.value)" id="vol-${stemName}"/><span class="vol-label" id="vol-label-${stemName}">100</span></div><button class="ch-btn" id="mute-${stemName}" onclick="toggleMute('${stemName}')">M</button><button class="ch-btn" id="solo-${stemName}" onclick="toggleSolo('${stemName}')">S</button><button class="ch-btn stem-dl-btn" onclick="_downloadStem('${stemName}')" title="Download stem"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button>`;
-  const progress = document.getElementById('stem-progress');
-  if (progress) { mixerEl.insertBefore(channel, progress.parentElement); } else { mixerEl.appendChild(channel); }
+  channel.innerHTML = `<div class="channel-name">${esc(label)}</div><div class="channel-volume"><input type="range" class="vol-slider" min="0" max="100" value="${initVol}" oninput="setVolume('${stemName}',this.value)" id="vol-${stemName}"/><span class="vol-label" id="vol-label-${stemName}">${initVol}</span></div><div class="ch-btns"><button class="ch-btn" id="mute-${stemName}" onclick="toggleMute('${stemName}')">M</button><button class="ch-btn" id="solo-${stemName}" onclick="toggleSolo('${stemName}')">S</button><button class="ch-btn stem-dl-btn" onclick="_downloadStem('${stemName}')" title="Download stem"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button></div>`;
+  mixerEl.appendChild(channel);
   requestAnimationFrame(() => { channel.classList.add('visible'); });
-  stemVolumes[stemName] = 1; stemMuted[stemName] = false; stemSoloed[stemName] = false;
+  stemVolumes[stemName] = initVol / 100; stemMuted[stemName] = false; stemSoloed[stemName] = false;
   _loadSingleStemAudio(stemName, jobId);
 }
 
@@ -887,6 +699,163 @@ function _downloadStem(stemName) {
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
+}
+
+function _reorganizeStemGroups() {
+  const mixerEl = document.getElementById('mixer-channels');
+  if (!mixerEl) return;
+  const channels = Array.from(mixerEl.querySelectorAll('.channel'));
+  if (!channels.length) return;
+  // Remove old group headers
+  mixerEl.querySelectorAll('.stem-group-header').forEach(h => h.remove());
+  channels.forEach(ch => ch.classList.remove('grouped-channel'));
+
+  // Group by root
+  const groups = {};
+  for (const ch of channels) {
+    const stemName = ch.id.replace('ch-', '');
+    const root = _getStemRoot(stemName);
+    if (!groups[root]) groups[root] = [];
+    groups[root].push({ stemName, el: ch });
+  }
+
+  // Store baselines
+  _stemGroupBaselines = {};
+  for (const ch of channels) {
+    const stemName = ch.id.replace('ch-', '');
+    _stemGroupBaselines[stemName] = Math.round((stemVolumes[stemName] || 1) * 100);
+  }
+
+  // Build sorted order
+  const roots = Object.keys(groups).sort();
+  mixerEl.innerHTML = '';
+
+  const chevronSvg = `<svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>`;
+
+  for (const root of roots) {
+    const members = groups[root];
+    const rootLabel = formatStemLabel(root, root);
+
+    if (members.length === 1) {
+      // Singleton — render channel directly, no header (avoids clutter)
+      mixerEl.appendChild(members[0].el);
+    } else {
+      // Multi-member group — render collapsible header + indented children
+      const hdr = document.createElement('div');
+      hdr.className = 'stem-group-header';
+      hdr.dataset.group = root;
+      hdr.onclick = (e) => {
+        if (e.target.classList.contains('vol-slider') || e.target.classList.contains('ch-btn')) return;
+        _toggleStemGroup(root);
+      };
+      hdr.innerHTML = `<button class="stem-group-chevron" tabindex="-1">${chevronSvg}</button><span class="stem-group-label">${esc(rootLabel)}</span><input type="range" class="vol-slider" min="0" max="100" value="100" oninput="_setGroupVolume('${root}',this.value)" id="gvol-${root}"/><span class="vol-label" id="gvol-label-${root}">100</span><button class="ch-btn" id="gmute-${root}" onclick="event.stopPropagation();_toggleGroupMute('${root}')">M</button>`;
+      mixerEl.appendChild(hdr);
+      for (const m of members) {
+        m.el.classList.add('grouped-channel');
+        m.el.dataset.group = root;
+        mixerEl.appendChild(m.el);
+      }
+    }
+  }
+}
+
+function _toggleStemGroup(root) {
+  const hdr = document.querySelector(`.stem-group-header[data-group="${root}"]`);
+  if (!hdr) return;
+  const collapsed = !hdr.classList.contains('collapsed');
+  hdr.classList.toggle('collapsed', collapsed);
+  let el = hdr.nextElementSibling;
+  while (el && !el.classList.contains('stem-group-header')) {
+    if (el.classList.contains('channel') && el.dataset.group === root) {
+      el.style.display = collapsed ? 'none' : '';
+    }
+    el = el.nextElementSibling;
+  }
+}
+
+function _setGroupVolume(root, val) {
+  const g = parseInt(val);
+  const lbl = document.getElementById(`gvol-label-${root}`);
+  if (lbl) lbl.textContent = g;
+  document.querySelectorAll(`.channel[data-group="${root}"]`).forEach(ch => {
+    const n = ch.id.replace('ch-', '');
+    const base = _stemGroupBaselines[n] || 100;
+    stemVolumes[n] = (base / 100) * (g / 100);
+    const v = Math.round(stemVolumes[n] * 100);
+    const sl = document.getElementById(`vol-${n}`);
+    const lb = document.getElementById(`vol-label-${n}`);
+    if (sl) sl.value = v;
+    if (lb) lb.textContent = v;
+  });
+  updateGains();
+}
+
+function _toggleGroupMute(root) {
+  const children = [];
+  document.querySelectorAll(`.channel[data-group="${root}"]`).forEach(ch => {
+    children.push(ch.id.replace('ch-', ''));
+  });
+  const anyUnmuted = children.some(n => !stemMuted[n]);
+  for (const n of children) {
+    stemMuted[n] = anyUnmuted;
+    const mb = document.getElementById(`mute-${n}`);
+    const ch = document.getElementById(`ch-${n}`);
+    if (mb) mb.classList.toggle('mute-active', anyUnmuted);
+    if (ch) ch.classList.toggle('muted', anyUnmuted);
+  }
+  const gb = document.getElementById(`gmute-${root}`);
+  if (gb) gb.classList.toggle('mute-active', anyUnmuted);
+  updateGains();
+}
+
+function _syncGroupMuteState(stemName) {
+  const ch = document.getElementById(`ch-${stemName}`);
+  if (!ch || !ch.dataset.group) return;
+  const root = ch.dataset.group;
+  const children = [];
+  document.querySelectorAll(`.channel[data-group="${root}"]`).forEach(c => {
+    children.push(c.id.replace('ch-', ''));
+  });
+  const allMuted = children.every(n => stemMuted[n]);
+  const gb = document.getElementById(`gmute-${root}`);
+  if (gb) gb.classList.toggle('mute-active', allMuted);
+}
+
+function resetFullMix() {
+  for (const n of Object.keys(stemVolumes)) {
+    stemSoloed[n] = false;
+    stemMuted[n] = false;
+    const soloBtn = document.getElementById(`solo-${n}`);
+    const muteBtn = document.getElementById(`mute-${n}`);
+    const chEl = document.getElementById(`ch-${n}`);
+    if (soloBtn) soloBtn.classList.remove('solo-active');
+    if (muteBtn) muteBtn.classList.remove('mute-active');
+    if (chEl) chEl.classList.remove('muted');
+    const energy = jobData && jobData.stems && jobData.stems[n] ? jobData.stems[n].energy : null;
+    const vol = _energyToVolume(energy);
+    stemVolumes[n] = vol / 100;
+    const sl = document.getElementById(`vol-${n}`);
+    const lb = document.getElementById(`vol-label-${n}`);
+    if (sl) sl.value = vol;
+    if (lb) lb.textContent = vol;
+  }
+  // Reset group state
+  document.querySelectorAll('.stem-group-header').forEach(hdr => {
+    const root = hdr.dataset.group;
+    const gs = document.getElementById(`gvol-${root}`);
+    const gl = document.getElementById(`gvol-label-${root}`);
+    const gm = document.getElementById(`gmute-${root}`);
+    if (gs) gs.value = 100;
+    if (gl) gl.textContent = '100';
+    if (gm) gm.classList.remove('mute-active');
+  });
+  _karaokeActive = false;
+  const kb = document.getElementById('karaoke-btn');
+  if (kb) kb.classList.remove('karaoke-active');
+  updateGains();
+  // Flash feedback
+  const btn = document.getElementById('full-mix-btn');
+  if (btn) { btn.style.color = '#D4691F'; btn.style.background = 'rgba(212,105,31,0.12)'; setTimeout(() => { btn.style.color = ''; btn.style.background = ''; }, 300); }
 }
 
 async function _loadSingleStemAudio(stemName, jobId, _attempt = 0) {
@@ -914,15 +883,6 @@ async function _loadSingleStemAudio(stemName, jobId, _attempt = 0) {
       return;
     }
     const buf = await audioCtx.decodeAudioData(ab);
-    // Kill preview audio as soon as the first real stem arrives
-    if (stemBuffers['preview']) {
-      const wasPlaying = isPlaying; const pos = getCurrentTime();
-      if (stemSources['preview']) { try { stemSources['preview'].stop(); } catch(e){} delete stemSources['preview']; }
-      if (stemGains['preview']) { try { stemGains['preview'].disconnect(); } catch(e){} delete stemGains['preview']; }
-      delete stemBuffers['preview']; delete stemVolumes['preview']; delete stemMuted['preview']; delete stemSoloed['preview'];
-      if (wasPlaying) { isPlaying = false; pauseOffset = pos; }
-      console.log('[audio] preview killed — stem audio taking over');
-    }
     stemBuffers[stemName] = buf;
     const g = audioCtx.createGain(); g.connect(audioCtx.destination); stemGains[stemName] = g;
     if (buf.duration > duration) { duration = buf.duration; document.getElementById("seek-bar").max = duration; updateTimeDisplay(); _buildPlayerWaveform(); }
@@ -949,75 +909,6 @@ function _silentlyUpdateMetaChips(intel) {
   metaEl.innerHTML = chips;
   songKey = (intel.key_num >= 0) ? { num: intel.key_num, mode: intel.mode_num, name: intel.key } : songKey;
   _initDecomposeKeyTab(intel.key);
-}
-
-function _showStemError(message) {
-  const card = document.getElementById('stem-cta-card');
-  if (!card) return;
-
-  const isAudioError = message.toLowerCase().includes('upload') ||
-                       message.toLowerCase().includes('unavailable') ||
-                       message.toLowerCase().includes('youtube') ||
-                       message.toLowerCase().includes('download failed');
-
-  let html = '<div class="stem-cta-inner">';
-  html += `<div class="stem-cta-desc" style="color:rgba(245,245,245,0.5)">${esc(message)}</div>`;
-
-  if (isAudioError) {
-    html += `<div style="margin-top:16px;text-align:center">`;
-    html += `<label class="stem-cta-btn" style="cursor:pointer;display:inline-flex;align-items:center;gap:8px">`;
-    html += `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>`;
-    html += `<span>Upload Audio File</span>`;
-    html += `<input type="file" accept=".mp3,.wav,.flac,.m4a,.ogg,.aac" style="display:none" onchange="_uploadForStemSeparation(this.files[0])">`;
-    html += `</label>`;
-    html += `<div style="margin-top:8px;font-size:12px;color:rgba(245,245,245,0.3)">MP3, WAV, FLAC, M4A, OGG, or AAC</div>`;
-    html += `</div>`;
-  } else {
-    html += `<button class="stem-cta-btn" onclick="_startStemSeparation()" style="margin-top:12px"><span class="stem-btn-text">Try Again</span></button>`;
-  }
-
-  html += '</div>';
-  card.innerHTML = html;
-  _stemSeparationActive = false;
-}
-
-async function _uploadForStemSeparation(file) {
-  if (!file) return;
-  _stemSeparationActive = true;
-  _showStemProgress();
-  _updateStemStage('download', 'active');
-  _updateStemContextText('Uploading your file...');
-
-  try {
-    const fd = new FormData();
-    fd.append('file', file);
-    const uploadResp = await fetch('/api/upload', { method: 'POST', body: fd });
-    const uploadData = await uploadResp.json();
-    if (uploadData.error) throw new Error(uploadData.error);
-
-    _stemJobId = uploadData.job_id;
-    _updateStemStage('download', 'complete');
-    _updateStemStage('separate', 'active');
-    _updateStemContextText('Pulling apart the layers...');
-
-    const procResp = await fetch(`/api/process/${_stemJobId}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        track_id: selectedTrack?.id || null,
-        artist_id: selectedTrack?.artist_id || null,
-        track_meta: selectedTrack || {},
-        analysis_mode: 'deep',
-      }),
-    });
-    const procData = await procResp.json();
-    if (procData.error) throw new Error(procData.error);
-    _pollStemProgress(_stemJobId);
-  } catch (e) {
-    console.warn('[stems] upload+separation failed:', e);
-    _stemSeparationActive = false;
-    _showStemError(e.message);
-  }
 }
 
 function showView(n) { views.forEach(v => { const el=document.getElementById(`view-${v}`); if(el) el.classList.toggle("active",v===n); }); }
@@ -1122,75 +1013,50 @@ function renderSearchResults() {
 
 function selectByIndex(i){const t=searchResults[i];if(t)selectTrack(t);}
 async function selectTrack(t){
-  selectedTrack=t; currentJobId=null; setError(""); _currentMode="preview"; _analysisMode="instant"; _previewJobData=null; _fullTrackInProgress=false; _instantAlreadyRendered=false; _prefetchId=null; _prefetchReady=false; _stemJobId=null; _stemSeparationActive=false; _stemMixerReady=false; _loadedStems={}; _firstMixerInteraction=false; _karaokeActive=false;
-  if (_stemPollTimer) { clearInterval(_stemPollTimer); _stemPollTimer = null; }
+  selectedTrack=t; currentJobId=null; setError(""); _loadedStems={}; _karaokeActive=false; _stemGroupBaselines={};
   if (_prefetchPollTimer) { clearInterval(_prefetchPollTimer); _prefetchPollTimer = null; }
+  _prefetchId=null; _prefetchReady=false;
   console.log(`[ui] selectTrack → ${t.name} by ${t.artist} (id=${t.id||'none'})`);
 
-  // ── Background prefetch: start full YouTube download silently ──
-  // Fire BEFORE cache check so it always runs, even for previously analyzed tracks.
-  // This ensures the full track is available for deep analysis later.
+  // Background prefetch: start full YouTube download silently
   if (t.yt_query) {
     console.log(`[prefetch] firing for: ${t.yt_query}`);
     fetch('/api/prefetch', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({
-        track_id: t.id || null,
-        yt_query: t.yt_query,
-        artist: t.artist || '',
-        name: t.name || '',
-      }),
+      body: JSON.stringify({ track_id: t.id || null, yt_query: t.yt_query, artist: t.artist || '', name: t.name || '' }),
     })
     .then(r => r.json())
     .then(d => {
       if (d.prefetch_id) {
         _prefetchId = d.prefetch_id;
         console.log(`[prefetch] started: ${d.prefetch_id} (status=${d.status})`);
-        if (d.status === 'ready') {
-          _prefetchReady = true;
-          console.log('[prefetch] already ready (instant cache hit)');
-          _updateStemButton();
-        } else {
-          // Poll until ready, then show upgrade UI
-          _pollPrefetch(d.prefetch_id);
-        }
+        if (d.status === 'ready') { _prefetchReady = true; }
+        else { _pollPrefetch(d.prefetch_id); }
       }
     })
     .catch(e => console.warn('[prefetch] failed to start:', e));
   }
 
-  // Check DB/cache for existing analysis before starting a new one
+  // Check DB/cache for existing analysis
   if (t.id) {
     try {
       const r = await fetch(`/api/track/${encodeURIComponent(t.id)}`);
       const d = await r.json();
       if (d.analysis_status === 'available' && d.analysis) {
-        console.log(`[ui] cache hit → loading saved analysis (hasStems=${Object.keys(d.analysis.stems||{}).length > 0})`);
+        console.log(`[ui] cache hit → loading saved analysis`);
         currentJobId = d.job_id;
-        jobData = { status:"complete", stems:d.analysis.stems||{}, intelligence:d.analysis.intelligence||{}, lyrics:d.analysis.lyrics||null, tags:d.analysis.tags||[], insight:d.analysis.insight||null, audio_source:d.analysis.audio_source||null, audio_mode:d.analysis.audio_mode||null, analysis_mode:d.analysis.analysis_mode||null };
-        const hasStems = Object.keys(jobData.stems||{}).length > 0;
-        if (hasStems) {
-          renderResults(jobData);
-        } else {
-          renderInstantResults(jobData);
-        }
+        jobData = { status:"complete", stems:d.analysis.stems||{}, intelligence:d.analysis.intelligence||{}, lyrics:d.analysis.lyrics||null, tags:d.analysis.tags||[], insight:d.analysis.insight||null, audio_source:d.analysis.audio_source||null, audio_mode:d.analysis.audio_mode||null };
+        renderResults(jobData);
         return;
-      }
-      if (d.analysis_status === 'pending') {
-        console.log("[selectTrack] track is pending — starting fresh instant analysis");
       }
     } catch(e) { console.warn("[track] lookup failed:", e); }
   }
 
-  // Auto-start instant preview analysis
-  _currentMode = "preview";
-  _analysisMode = "instant";
-  console.log("[selectTrack] starting instant preview flow");
-  _showInstantLoading();
+  // Start unified full analysis
+  _showHeroLoading();
   startProcessing();
 }
-function selectAndProcess(t){selectedTrack=t;currentJobId=null;setError("");_currentMode="preview";_analysisMode="instant";_showInstantLoading();startProcessing();}
 // Strip remaster/reissue noise from display titles — purely cosmetic, never touches underlying data
 function cleanTitle(name) {
   if (!name) return name;
@@ -1223,9 +1089,24 @@ function handleDrop(e){e.preventDefault();handleDragLeave();const f=e.dataTransf
 function handleFileSelect(e){const f=e.target.files[0];if(f)uploadFile(f);}
 async function uploadFile(file){
   selectedTrack={name:file.name,artist:"Uploaded file",year:"",image_url:null};
-  _showHeroPreProcess();showView("confirm");setError("");
-  const btn=document.getElementById("process-btn");btn.disabled=true;btn.textContent="Uploading...";
-  try{const fd=new FormData();fd.append("file",file);const r=await fetch("/api/upload",{method:"POST",body:fd});const d=await r.json();if(d.error)throw new Error(d.error);currentJobId=d.job_id;}catch(e){setError("Upload failed: "+e.message);}finally{btn.disabled=false;btn.textContent="Dive In";}
+  _loadedStems={}; _karaokeActive=false;
+  _showHeroLoading();
+  setError("");
+  try{
+    const fd=new FormData();fd.append("file",file);
+    const r=await fetch("/api/upload",{method:"POST",body:fd});
+    const d=await r.json();
+    if(d.error)throw new Error(d.error);
+    currentJobId=d.job_id;
+    _showMixLoading();
+    const procR=await fetch(`/api/process/${currentJobId}`,{
+      method:"POST",headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({track_id:null,artist_id:null,track_meta:selectedTrack||{},analysis_mode:"deep"}),
+    });
+    const procD=await procR.json();
+    if(procD.error)throw new Error(procD.error);
+    pollStatus();
+  }catch(e){setError("Upload failed: "+e.message);showView("confirm");}
 }
 
 // ─── Loading messages ───────────────────────────────────────────────────────
@@ -1361,7 +1242,6 @@ function _showHeroPreProcess() {
 }
 
 function _showHeroLoading() {
-  // Kept as fallback for upload/manual deep paths
   _populateHero();
   document.getElementById("proc-art-wrap").classList.add("loading");
   document.getElementById("hero-actions").classList.add("hidden");
@@ -1372,27 +1252,12 @@ function _showHeroLoading() {
   const est = document.getElementById("proc-estimate");
   if (est) est.style.display = "none";
   const progLabel = document.getElementById("progress-label");
-  if (progLabel) progLabel.style.display = "none";
+  if (progLabel) { progLabel.style.display = ""; progLabel.textContent = "Preparing\u2026"; }
   showView("confirm");
 }
 
 function buildProcessingBanner() { _showHeroLoading(); }
 
-function _showInstantLoading() {
-  _populateHero();
-  document.getElementById("proc-art-wrap").classList.add("loading");
-  document.getElementById("hero-actions").classList.add("hidden");
-  const heroLoading = document.getElementById("hero-loading");
-  heroLoading.classList.remove("hidden");
-  const wvWrap = heroLoading.querySelector(".waveform-wrap");
-  if (wvWrap) wvWrap.style.display = "none";
-  const est = document.getElementById("proc-estimate");
-  if (est) est.style.display = "none";
-  // Keep progress label visible so status text ("Getting preview...", "Analyzing...") shows
-  const progLabel = document.getElementById("progress-label");
-  if (progLabel) { progLabel.style.display = ""; progLabel.textContent = "Analyzing…"; }
-  showView("confirm");
-}
 
 function _buildWaveform() {
   const N = 50;
@@ -1425,7 +1290,6 @@ function _resetLoadingUI() {
 }
 
 function _showUploadRequired() {
-  // Show friendly upload prompt — not an error
   _showHeroPreProcess();
   showView("confirm");
   setError("");
@@ -1433,27 +1297,8 @@ function _showUploadRequired() {
   const errEl = document.getElementById("error-msg");
   errEl.style.display = "block";
   errEl.style.color = "rgba(245,245,245,0.55)";
-  errEl.innerHTML = "Couldn\u2019t fetch audio automatically. You can try again, or drop an audio file below to analyze this song.";
+  errEl.innerHTML = "Full track unavailable for this song. Upload the audio file directly.";
 
-  // Try again button
-  let retryBtn = document.getElementById("upload-retry-btn");
-  if (!retryBtn) {
-    retryBtn = document.createElement("div");
-    retryBtn.id = "upload-retry-btn";
-    retryBtn.textContent = "Try again";
-    retryBtn.style.cssText = "color:rgba(245,245,245,0.35);cursor:pointer;font-size:0.8rem;margin-top:16px;transition:color 0.2s;";
-    retryBtn.onmouseenter = () => { retryBtn.style.color = "rgba(245,245,245,0.6)"; };
-    retryBtn.onmouseleave = () => { retryBtn.style.color = "rgba(245,245,245,0.35)"; };
-    retryBtn.onclick = () => {
-      _hideUploadRequiredUI();
-      currentJobId = null;
-      downloadTrack();
-    };
-    errEl.parentElement.insertBefore(retryBtn, errEl.nextSibling);
-  }
-  retryBtn.style.display = "";
-
-  // Show upload area in the confirm view
   let uploadArea = document.getElementById("confirm-upload-area");
   if (!uploadArea) {
     uploadArea = document.createElement("div");
@@ -1463,104 +1308,37 @@ function _showUploadRequired() {
     uploadArea.onclick = () => document.getElementById("confirm-file-input").click();
     uploadArea.ondragover = (e) => { e.preventDefault(); uploadArea.classList.add("drag-over"); };
     uploadArea.ondragleave = () => uploadArea.classList.remove("drag-over");
-    uploadArea.ondrop = (e) => { e.preventDefault(); uploadArea.classList.remove("drag-over"); const f=e.dataTransfer.files[0]; if(f) _uploadForTrack(f); };
+    uploadArea.ondrop = (e) => { e.preventDefault(); uploadArea.classList.remove("drag-over"); const f=e.dataTransfer.files[0]; if(f) _uploadFromConfirm(f); };
     uploadArea.innerHTML = '<input type="file" id="confirm-file-input" accept=".mp3,.wav,.flac,.m4a,.ogg,.aac" style="display:none" />\nDrop an audio file here or click to browse';
     const actionsEl = document.getElementById("hero-actions");
     actionsEl.parentElement.appendChild(uploadArea);
-    document.getElementById("confirm-file-input").addEventListener("change", (e) => { const f=e.target.files[0]; if(f) _uploadForTrack(f); });
+    document.getElementById("confirm-file-input").addEventListener("change", (e) => { const f=e.target.files[0]; if(f) _uploadFromConfirm(f); });
   }
   uploadArea.style.display = "";
 }
 
-function _hideUploadRequiredUI() {
-  const errEl = document.getElementById("error-msg");
-  errEl.style.display = "none";
-  errEl.style.color = "";
-  const retryBtn = document.getElementById("upload-retry-btn");
-  if (retryBtn) retryBtn.style.display = "none";
-  const uploadArea = document.getElementById("confirm-upload-area");
-  if (uploadArea) uploadArea.style.display = "none";
-  document.getElementById("process-btn").style.display = "";
-}
-
-function _showNoPreview() {
-  // No preview available — offer full-track analysis or upload
-  _showHeroPreProcess();
-  showView("confirm");
-  setError("");
-  const btn = document.getElementById("process-btn");
-  btn.textContent = "Separate Stems";
-  btn.disabled = false;
-  btn.style.display = "";
-  btn.onclick = () => { _currentMode = "full"; startProcessing(); };
-  const errEl = document.getElementById("error-msg");
-  errEl.style.display = "block";
-  errEl.style.color = "rgba(245,245,245,0.55)";
-  errEl.innerHTML = "No preview available for this track. You can separate stems from the full track (may take longer) or upload your own audio file.";
-
-  // Show upload area
-  let uploadArea = document.getElementById("confirm-upload-area");
-  if (!uploadArea) {
-    uploadArea = document.createElement("div");
-    uploadArea.id = "confirm-upload-area";
-    uploadArea.className = "upload-area";
-    uploadArea.style.cssText = "margin-top:24px;max-width:460px;width:100%;";
-    uploadArea.onclick = () => document.getElementById("confirm-file-input").click();
-    uploadArea.ondragover = (e) => { e.preventDefault(); uploadArea.classList.add("drag-over"); };
-    uploadArea.ondragleave = () => uploadArea.classList.remove("drag-over");
-    uploadArea.ondrop = (e) => { e.preventDefault(); uploadArea.classList.remove("drag-over"); const f=e.dataTransfer.files[0]; if(f) _uploadForTrack(f); };
-    uploadArea.innerHTML = '<input type="file" id="confirm-file-input" accept=".mp3,.wav,.flac,.m4a,.ogg,.aac" style="display:none" />\nDrop an audio file here or click to browse';
-    const actionsEl = document.getElementById("hero-actions");
-    actionsEl.parentElement.appendChild(uploadArea);
-    document.getElementById("confirm-file-input").addEventListener("change", (e) => { const f=e.target.files[0]; if(f) _uploadForTrack(f); });
-  }
-  uploadArea.style.display = "";
-}
-
-function _showFullTrackFailed(msg) {
-  // Full-track failed but preview exists — restore the already-rendered results view
-  // NOTE: do NOT call renderResults(_previewJobData) here — preview data has no stems,
-  // which triggers the "No stems detected" guard and blanks the screen.
-  if (_previewJobData) {
-    showView("results");
-    _showResultWarning(msg);
-  } else {
-    _showHeroPreProcess();
-    showView("confirm");
-    setError(msg);
-  }
-  _fullTrackInProgress = false;
-}
-
-function _startFullTrackAnalysis() {
-  // Triggered from results view — runs full-track without destroying preview
-  if (!selectedTrack || !selectedTrack.yt_query) return;
-  _currentMode = "full";
-  _fullTrackInProgress = true;
-  currentJobId = null;
-  // Keep preview results visible — switch to confirm view for loading
-  startProcessing();
-}
-
-async function _uploadForTrack(file) {
-  // Hide the upload required UI and process the uploaded file
+async function _uploadFromConfirm(file) {
   const uploadArea = document.getElementById("confirm-upload-area");
   if (uploadArea) uploadArea.style.display = "none";
   const errEl = document.getElementById("error-msg");
-  errEl.style.display = "none";
-  errEl.style.color = "";
+  errEl.style.display = "none"; errEl.style.color = "";
   document.getElementById("process-btn").style.display = "";
   document.getElementById("process-btn").disabled = true;
   document.getElementById("process-btn").textContent = "Uploading...";
   try {
     const fd = new FormData(); fd.append("file", file);
-    const r = await fetch("/api/upload", { method:"POST", body:fd });
+    const r = await fetch("/api/upload", {method:"POST", body:fd});
     const d = await r.json();
     if (d.error) throw new Error(d.error);
     currentJobId = d.job_id;
-    document.getElementById("process-btn").disabled = false;
-    document.getElementById("process-btn").textContent = "Dive In";
-    startProcessing();
+    _showMixLoading();
+    const procR = await fetch(`/api/process/${currentJobId}`, {
+      method:"POST", headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({track_id:selectedTrack?.id||null, artist_id:selectedTrack?.artist_id||null, track_meta:selectedTrack||{}, analysis_mode:"deep"}),
+    });
+    const procD = await procR.json();
+    if (procD.error) throw new Error(procD.error);
+    pollStatus();
   } catch(e) {
     setError("Upload failed: " + e.message);
     document.getElementById("process-btn").disabled = false;
@@ -1569,131 +1347,51 @@ async function _uploadForTrack(file) {
   }
 }
 
-// (Elapsed timer and cancel button removed — progressive v2 has no blocking loading screen)
-
-let _analysisMode = "instant"; // "instant" or "deep"
-
 async function startProcessing(){
   setError("");
-  const audioMode = _currentMode || "preview";
-  const analysisMode = _analysisMode || "instant";
-
-  console.log(`[startProcessing] audioMode=${audioMode} analysisMode=${analysisMode} hasJobId=${!!currentJobId}`);
 
   if(selectedTrack && !currentJobId) {
-    // Need to acquire audio first
-    const hasPreviewSource = selectedTrack.preview_url || (selectedTrack.artist && selectedTrack.name);
-    const hasFullSource = selectedTrack.yt_query;
-
-    if (audioMode === "preview" && hasPreviewSource) {
-      await downloadTrack("preview");
-    } else if (audioMode === "full" && hasFullSource) {
-      await downloadTrack("full");
-    } else if (hasPreviewSource) {
-      await downloadTrack("preview");
-    } else if (hasFullSource) {
-      await downloadTrack("full");
-    }
+    await downloadTrack();
     if(!currentJobId) return;
-  }
-  // If downloadTrack already rendered instant results (auto-processed by backend), stop here
-  if (_instantAlreadyRendered) {
-    _instantAlreadyRendered = false;
-    console.log("[startProcessing] instant results already rendered by downloadTrack — done");
-    return;
   }
   if(!currentJobId){ setError("No audio loaded."); return; }
 
-  document.getElementById("process-btn").disabled=true;
+  _showMixLoading();
 
-  if (analysisMode === "instant") {
-    // ── Instant analysis ──
-    // Check if backend already completed instant analysis during download (preview auto-trigger).
-    // If so, just poll status and render — don't call /api/process again.
-    try {
-      const statusR = await fetch(`/api/status/${currentJobId}`);
-      const statusD = await statusR.json();
-      if (statusD.status === "complete" && statusD.analysis_mode === "instant") {
-        console.log("[ui] skipping process call — backend already handled instant");
-        _resetLoadingUI();
-        jobData = statusD;
-        renderInstantResults(statusD);
-        return;
-      }
-    } catch(e) { console.warn("[startProcessing] status pre-check failed:", e); }
-
-    // Job is still "ready" — need to trigger instant analysis explicitly
-    console.log("[startProcessing] instant path — calling /api/process with analysis_mode=instant");
-    setProgress(null, 50);
-    _setLT("Analyzing key and tempo...");
-
-    try {
-      const r = await fetch(`/api/process/${currentJobId}`, {
-        method:"POST", headers:{"Content-Type":"application/json"},
-        body: JSON.stringify({
-          track_id: selectedTrack?.id || null,
-          artist_id: selectedTrack?.artist_id || null,
-          track_meta: selectedTrack || {},
-          analysis_mode: "instant",
-        }),
-      });
-      const d = await r.json();
-      console.log("[startProcessing] instant response:", d.status, d.analysis_mode);
-      if (d.error) throw new Error(d.error);
-      setProgress(null, 100);
-      _resetLoadingUI();
-      jobData = d;
-      console.log("[startProcessing] calling renderInstantResults");
-      renderInstantResults(d);
-    } catch(e) {
-      _resetLoadingUI();
-      setError("Analysis failed: " + e.message);
-      showView("confirm");
-    }
-  } else {
-    // Deep analysis is handled by _startStemSeparation() — not here
-    console.warn("[startProcessing] deep mode called directly — delegating to stem separation");
-    _startStemSeparation();
+  try {
+    const r = await fetch(`/api/process/${currentJobId}`, {
+      method:"POST", headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({
+        track_id: selectedTrack?.id || null,
+        artist_id: selectedTrack?.artist_id || null,
+        track_meta: selectedTrack || {},
+        analysis_mode: "deep",
+      }),
+    });
+    const d = await r.json();
+    if (d.error) throw new Error(d.error);
+    pollStatus();
+  } catch(e) {
+    _resetLoadingUI();
+    setError("Analysis failed: " + e.message);
+    showView("confirm");
   }
 }
 
-async function downloadTrack(mode){
-  mode = mode || _currentMode || "preview";
-  _currentMode = mode;
-  const isPreview = mode === "preview";
+async function downloadTrack(){
+  console.log(`[downloadTrack] full mode, query=${selectedTrack?.yt_query || 'null'}`);
 
-  console.log(`[downloadTrack] mode=${mode} preview_url=${selectedTrack?.preview_url || 'null'} artist=${selectedTrack?.artist || ''} name=${selectedTrack?.name || ''}`);
-
-  if (isPreview && _analysisMode === "instant") {
-    // Instant preview: keep the lightweight loading state, just update text
-    setProgress(null, 15);
-    _setLT("Getting preview...");
-  } else {
-    // Deep/full: no blocking loading screen — handled by progressive pipeline
-    setProgress(null, 8);
-    _setLT("Downloading full track...");
-  }
-
-  // If background prefetch is running, poll it briefly before starting a fresh download
-  if (mode === "full" && _prefetchId && !_prefetchReady) {
+  // Check if prefetch is ready
+  if (_prefetchId && !_prefetchReady) {
     try {
       const pfResp = await fetch(`/api/prefetch/${_prefetchId}/status`);
       const pfData = await pfResp.json();
-      console.log(`[downloadTrack] prefetch status: ${pfData.status}`);
-      if (pfData.status === 'ready') {
-        _prefetchReady = true;
-      } else if (pfData.status === 'downloading') {
-        if (_analysisMode === "deep") {
-          _setLT("Preparing full track audio...");
-        }
-      }
-    } catch (e) {
-      console.warn('[downloadTrack] prefetch status check failed:', e);
-    }
+      if (pfData.status === 'ready') _prefetchReady = true;
+    } catch(e) {}
   }
 
   const postBody = {
-    query: isPreview ? null : selectedTrack.yt_query,
+    query: selectedTrack.yt_query,
     track_id: selectedTrack?.id || null,
     preview_url: selectedTrack?.preview_url || null,
     artist: selectedTrack?.artist || "",
@@ -1703,9 +1401,8 @@ async function downloadTrack(mode){
     image_url: selectedTrack?.image_url || "",
     duration_ms: selectedTrack?.duration_ms || 0,
     artist_id: selectedTrack?.artist_id || "",
-    mode: mode,
+    mode: "full",
   };
-  console.log(`[downloadTrack] POST body:`, JSON.stringify(postBody));
 
   try {
     const r = await fetch("/api/download", {
@@ -1714,35 +1411,12 @@ async function downloadTrack(mode){
     });
     const d = await r.json();
     if(d.error) throw new Error(d.error);
-    const readyResult = await waitForReady(d.job_id, isPreview ? 120 : 180);
+    await waitForReady(d.job_id, 180);
     currentJobId = d.job_id;
-
-    // Preview mode: backend auto-triggers instant analysis during download.
-    // If the job is already complete, render results directly — skip startProcessing.
-    if (isPreview && readyResult && (readyResult.status === "complete" || readyResult.analysis_mode === "instant")) {
-      console.log("[ui] auto-trigger instant processing — rendering results directly");
-      _resetLoadingUI();
-      jobData = readyResult;
-      renderInstantResults(readyResult);
-      _instantAlreadyRendered = true;
-      return;
-    }
   } catch(e) {
     _resetLoadingUI();
     if (e.message === "upload_required") {
       _showUploadRequired();
-    } else if (e.message === "preview_unavailable") {
-      // No preview — offer full-track or upload instead
-      _showNoPreview();
-    } else if (e.message && e.message.includes("timed out")) {
-      setError("Analysis is taking longer than expected. Try again in a moment.");
-      showView("confirm");
-    } else if (isPreview) {
-      // Preview download failed — offer alternatives
-      _showNoPreview();
-    } else if (_currentMode === "full" && _previewJobData) {
-      // Full-track download failed but preview exists
-      _showFullTrackFailed("Couldn\u2019t retrieve the full track. Your preview analysis is still ready.");
     } else {
       setError("Download failed: " + e.message);
       showView("confirm");
@@ -1750,23 +1424,16 @@ async function downloadTrack(mode){
   }
 }
 
-async function waitForReady(jid, mw=120){
+async function waitForReady(jid, mw=180){
   const t0 = Date.now();
   while(Date.now() - t0 < mw * 1000){
     await sleep(1500);
     const r = await fetch(`/api/status/${jid}`);
     const d = await r.json();
     if(d.status === "ready") return d;
-    // Preview mode: backend auto-triggers instant analysis, so job may already be complete
-    if(d.status === "complete" || d.status === "partial") {
-      console.log("[ui] waitForReady → job already complete (auto-processed)");
-      return d;
-    }
-    if(d.status === "preview_unavailable") throw new Error("preview_unavailable");
+    if(d.status === "complete" || d.status === "partial") return d;
     if(d.status === "upload_required") throw new Error("upload_required");
     if(d.status === "error") throw new Error(d.error || "Download error");
-    if(d.progress) { const det = _detectStage(d.progress); if(det) setLoadingStage(det); }
-    setProgress(null, 18);
   }
   throw new Error("Download timed out. Try uploading the file directly.");
 }
@@ -1775,9 +1442,9 @@ function pollStatus(){
   let pct = 20;
   _pollStartTime = Date.now();
   clearTimeout(pollInterval);
+  let _renderedLyrics = false, _renderedRecs = false, _renderedHarmonic = false, _renderedKey = false;
 
   function _pollInterval() {
-    // Adaptive: 1s for first 10s, 1.5s for next 20s, 2.5s after
     const elapsed = Date.now() - _pollStartTime;
     if (elapsed < 10000) return 1000;
     if (elapsed < 30000) return 1500;
@@ -1785,10 +1452,9 @@ function pollStatus(){
   }
 
   async function _poll() {
-    // Hard timeout
     if(Date.now() - _pollStartTime > POLL_TIMEOUT_MS) {
       _resetLoadingUI();
-      setError("Processing timed out. The server may still be working — try refreshing in a minute.");
+      setError("Processing timed out. The server may still be working \u2014 try refreshing in a minute.");
       showView("confirm");
       return;
     }
@@ -1797,7 +1463,6 @@ function pollStatus(){
       const r = await fetch(`/api/status/${currentJobId}`);
       const d = await r.json();
 
-      // Unknown job (server restarted, or bad job_id) — stop immediately
       if(r.status === 404 || d.error === "Unknown job ID" || !d.status) {
         _resetLoadingUI();
         setError("Job was lost (server may have restarted). Please try again.");
@@ -1805,49 +1470,111 @@ function pollStatus(){
         return;
       }
 
-      if(d.status === "complete") {
-        setLoadingStage("finalize");
-        _fadeLT(_pickMsg("finalize")); setProgress(null, 98);
-        jobData = d;
-        setTimeout(() => {
-          _fadeLT("Ready."); setProgress(null, 100);
-          setTimeout(() => { _resetLoadingUI(); renderResults(d); }, 400);
-        }, 600);
-        return; // stop polling
+      // Progressive rendering
+      if (d.intelligence && d.intelligence.key && d.intelligence.key !== 'Unknown' && !_renderedKey) {
+        _renderedKey = true;
+        _silentlyUpdateMetaChips(d.intelligence);
+      }
+      if (d.intelligence && d.intelligence.harmonic_sections && !_renderedHarmonic) {
+        _renderedHarmonic = true;
+        _renderHarmonicSections(d.intelligence.harmonic_sections);
+      }
+      if (d.lyrics && !_renderedLyrics) {
+        _renderedLyrics = true;
+        const lyricsEl = document.getElementById('lyrics-content');
+        if (lyricsEl) lyricsEl.innerHTML = _formatLyrics(d.lyrics);
+      }
+      if (d.insight && !_renderedRecs) {
+        _renderedRecs = true;
+        const llm = d.insight;
+        _progressionNames = llm.progression_names || {};
+        _smartRecs = llm.smart_recs || {};
+        _keyContext = llm.key_context || "";
+        _renderSmartRecs(_smartRecs);
+        const keyCtxEl = document.getElementById("key-context");
+        if (keyCtxEl) { keyCtxEl.textContent = _keyContext; keyCtxEl.style.display = _keyContext ? "block" : "none"; }
+      }
+      if (d.tags && d.tags.length) { jobData = jobData || {}; jobData.tags = d.tags; }
 
-      } else if(d.status === "partial") {
-        setLoadingStage("finalize");
-        _fadeLT(_pickMsg("finalize")); setProgress(null, 98);
-        jobData = d;
-        setTimeout(() => {
-          setProgress(null, 100);
-          _resetLoadingUI();
-          renderResults(d);
-          console.warn("[partial] errors:", (d.errors || []).map(e => e.step + ": " + e.message));
-          _showResultWarning("Some analysis features are limited for this track.");
-        }, 600);
-        return; // stop polling
-
-      } else if(d.status === "error") {
-        _resetLoadingUI();
-        if (_currentMode === "full" && _previewJobData) {
-          _showFullTrackFailed("Full-track analysis wasn\u2019t available this time. Your preview analysis is still ready.");
-        } else {
-          const step = d.error_step ? ` (at: ${d.error_step})` : "";
-          setError((d.error || "Unknown error") + step);
-          showView("confirm");
+      // Progressive stem loading
+      if (d.stems && (d.status === 'complete' || d.status === 'partial' || d.status === 'processing')) {
+        const newStems = Object.keys(d.stems).filter(k => !_loadedStems[k]);
+        if (newStems.length > 0) {
+          if (Object.keys(_loadedStems).length === 0) { _removeSkeletonChannels(); _enableTransport(); }
+          for (const stemName of newStems) { _addStemChannel(stemName, d.stems[stemName], currentJobId); _loadedStems[stemName] = true; }
+          const count = Object.keys(_loadedStems).length;
+          _updateMixLoadingStatus(`${count} instrument${count > 1 ? 's' : ''} isolated...`);
         }
-        return; // stop polling
+      }
+
+      // Update loading status
+      if (d.progress) {
+        _updateMixLoadingStatus(d.progress);
+        const detected = _detectStage(d.progress);
+        if (detected) setLoadingStage(detected);
+      }
+
+      if (d.status === 'queued') {
+        _updateMixLoadingStatus("You\u2019re in queue \u2014 almost there\u2026");
+        pollInterval = setTimeout(_poll, 2500);
+
+      } else if (d.status === 'complete' || d.status === 'partial') {
+        jobData = d;
+        // Final stem loading
+        if (d.stems) {
+          Object.keys(d.stems).filter(k => !_loadedStems[k]).forEach(k => {
+            if (Object.keys(_loadedStems).length === 0) { _removeSkeletonChannels(); _enableTransport(); }
+            _addStemChannel(k, d.stems[k], currentJobId); _loadedStems[k] = true;
+          });
+        }
+        if (d.intelligence) {
+          if (!_renderedKey) { _renderedKey = true; _silentlyUpdateMetaChips(d.intelligence); }
+          else if (d.intelligence.key && d.intelligence.key !== 'Unknown') { _silentlyUpdateMetaChips(d.intelligence); }
+        }
+        if (d.intelligence && d.intelligence.harmonic_sections) _renderHarmonicSections(d.intelligence.harmonic_sections);
+        if (d.lyrics) { const lyricsEl = document.getElementById('lyrics-content'); if (lyricsEl) lyricsEl.innerHTML = _formatLyrics(d.lyrics); }
+        if (d.insight) {
+          const llm = d.insight;
+          _progressionNames = llm.progression_names || {};
+          _smartRecs = llm.smart_recs || {};
+          _keyContext = llm.key_context || "";
+          _renderSmartRecs(_smartRecs);
+          const keyCtxEl = document.getElementById("key-context");
+          if (keyCtxEl) { keyCtxEl.textContent = _keyContext; keyCtxEl.style.display = _keyContext ? "block" : "none"; }
+        }
+
+        _reorganizeStemGroups();
+        _removeSkeletonChannels();
+        _enableTransport();
+        const statusEl = document.getElementById('mix-loading-status');
+        if (statusEl) { statusEl.style.opacity = '0'; setTimeout(() => statusEl.remove(), 300); }
+        _buildPlayerWaveform();
+        updateTimeDisplay();
+        if (selectedTrack && selectedTrack.id) _addShareButton();
+
+        if (d.status === 'partial') {
+          _showResultWarning("Some analysis features are limited for this track.");
+        }
+        if (d.audio_source === 'preview' || d.audio_mode === 'preview') {
+          _showResultWarning('These stems are from a ~30s preview clip. Full-track download was unavailable. Upload your own audio file for full-length stems.');
+        }
+        console.log(`[poll] complete \u2014 ${Object.keys(_loadedStems).length} stems loaded`);
+        return;
+
+      } else if (d.status === 'error') {
+        _resetLoadingUI();
+        const step = d.error_step ? ` (at: ${d.error_step})` : "";
+        setError((d.error || "Unknown error") + step);
+        showView("confirm");
+        return;
+
+      } else if (d.status === 'upload_required') {
+        _resetLoadingUI();
+        _showUploadRequired();
+        return;
 
       } else {
-        // Still processing
         pct = Math.min(pct + 2, 92);
-        setProgress(null, pct);
-        if (d.progress) {
-          const detected = _detectStage(d.progress);
-          if (detected) setLoadingStage(detected);
-        }
-        // Schedule next poll with adaptive interval
         pollInterval = setTimeout(_poll, _pollInterval());
       }
     } catch(e) {
@@ -1857,7 +1584,6 @@ function pollStatus(){
     }
   }
 
-  // Start first poll quickly
   pollInterval = setTimeout(_poll, 800);
 }
 
@@ -1876,14 +1602,8 @@ function _hideResultWarning() {
 // ─── Results ────────────────────────────────────────────────────────────────
 async function renderResults(data) {
   _hideResultWarning();
-  _fullTrackInProgress = false;
-  const mode = data.audio_mode || (data.audio_source === "preview" ? "preview" : null);
-  buildBanner("results-banner", selectedTrack||{name:"Result",artist:""}, data.audio_source, mode);
+  buildBanner("results-banner", selectedTrack||{name:"Result",artist:""}, data.audio_source, data.audio_mode);
 
-  // Preserve preview results for non-destructive full-track upgrade
-  if (mode === "preview" || data.audio_source === "preview") {
-    _previewJobData = data;
-  }
   const stems=data.stems||{}, intel=data.intelligence||{}, recs=data.recommendations||{}, lyrics=data.lyrics||null, tags=data.tags||[];
   const activeNames = Object.keys(stems).filter(n => {const i=stems[n]; return !i||i.active!==false;});
   if(!activeNames.length){setError("No stems detected.");showView("confirm");return;}
@@ -1916,7 +1636,7 @@ async function renderResults(data) {
   // Smart recommendations
   _renderSmartRecs(_smartRecs);
 
-  document.getElementById("mixer-channels").innerHTML=activeNames.map(n=>{const l=formatStemLabel(n,(stems[n]&&stems[n].label)||"");return`<div class="channel" id="ch-${n}"><div class="channel-name">${esc(l)}</div><div class="channel-volume"><input type="range" class="vol-slider" min="0" max="100" value="100" oninput="setVolume('${n}',this.value)" id="vol-${n}"/><span class="vol-label" id="vol-label-${n}">100</span></div><button class="ch-btn" id="mute-${n}" onclick="toggleMute('${n}')">M</button><button class="ch-btn" id="solo-${n}" onclick="toggleSolo('${n}')">S</button><button class="ch-btn stem-dl-btn" onclick="_downloadStem('${n}')" title="Download stem"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button></div>`;}).join("");
+  document.getElementById("mixer-channels").innerHTML=activeNames.map(n=>{const l=formatStemLabel(n,(stems[n]&&stems[n].label)||"");const iv=_energyToVolume(stems[n]&&stems[n].energy);return`<div class="channel" id="ch-${n}"><div class="channel-name">${esc(l)}</div><div class="channel-volume"><input type="range" class="vol-slider" min="0" max="100" value="${iv}" oninput="setVolume('${n}',this.value)" id="vol-${n}"/><span class="vol-label" id="vol-label-${n}">${iv}</span></div><button class="ch-btn" id="mute-${n}" onclick="toggleMute('${n}')">M</button><button class="ch-btn" id="solo-${n}" onclick="toggleSolo('${n}')">S</button><button class="ch-btn stem-dl-btn" onclick="_downloadStem('${n}')" title="Download stem"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button></div>`;}).join("");
   document.getElementById("loop-start").value="0:00";document.getElementById("loop-end").value="";loopActive=false;document.getElementById("loop-btn").classList.remove("active");
   transposeAmount=0;document.getElementById("transpose-display").textContent="0";document.getElementById("transposed-key").textContent="";
 
@@ -1932,73 +1652,38 @@ async function renderResults(data) {
   document.getElementById("proc-art-wrap").classList.remove("loading");
   showView("results");
 
-  // Warn if deep analysis used preview audio (YouTube failed)
-  if (data.analysis_mode === "deep" && (data.audio_source === "preview" || mode === "preview")) {
-    _showResultWarning('These stems are from a ~30s preview clip. Full-track download was unavailable. Upload your own audio file for full-length stems.');
-  }
-
-  // Show "Analyze full track" button if this is a preview result and full-track is possible
-  const fullBtn = document.getElementById("full-track-btn");
-  if (fullBtn) {
-    const isPreview = mode === "preview" || data.audio_source === "preview";
-    const canFull = selectedTrack && selectedTrack.yt_query;
-    fullBtn.style.display = (isPreview && canFull) ? "" : "none";
-  }
-
   // Share button
   if (selectedTrack && selectedTrack.id) {
     _addShareButton();
   }
 
   // Load audio in background (parallel decode, non-blocking)
+  _reorganizeStemGroups();
   loadStemAudio(activeNames).then(() => {
-    console.log("[audio] all stems decoded and ready");
+    _buildPlayerWaveform();
   }).catch(e => console.warn("[audio] decode error:", e));
 
 }
 
-async function renderInstantResults(data) {
-  console.log("[renderInstantResults] called with:", data.status, data.analysis_mode, data.audio_source);
-  _hideResultWarning();
-  _previewJobData = data;
-  const intel = data.intelligence || {};
-  const lyrics = data.lyrics || null;
-  const tags = data.tags || [];
-
-  buildBanner("results-banner", selectedTrack||{name:"Result",artist:""}, data.audio_source, "preview");
-
-  // Meta chips: genre, key, year
-  const metaEl = document.getElementById("results-meta");
-  let chips = '';
-  if (tags && tags.length) { const genre = tags[0].charAt(0).toUpperCase() + tags[0].slice(1); chips += `<span class="meta-chip"><span class="mc-label">Genre</span><span class="mc-val">${esc(genre)}</span></span>`; }
-  if (intel.key && intel.key !== "Unknown") { chips += `<span class="meta-chip"><span class="mc-label">Key</span><span class="mc-val">${esc(intel.key)}</span></span>`; }
-  if (selectedTrack && selectedTrack.year) { chips += `<span class="meta-chip"><span class="mc-label">Year</span><span class="mc-val">${esc(String(selectedTrack.year))}</span></span>`; }
-  metaEl.innerHTML = chips;
-  songKey = (intel.key_num >= 0) ? {num: intel.key_num, mode: intel.mode_num, name: intel.key} : null;
-
-  // LLM-derived intelligence
-  const llmData2 = data.insight || {};
-  _progressionNames = llmData2.progression_names || {};
-  _smartRecs = llmData2.smart_recs || {};
-  _keyContext = llmData2.key_context || "";
-
-  // No harmonic sections for instant
+// ─── Mix Loading State ─────────────────────────────────────────────────────
+function _showMixLoading() {
+  buildBanner("results-banner", selectedTrack || {name:"Result",artist:""}, null, null);
+  document.getElementById("results-meta").innerHTML = '';
   document.getElementById("harmonic-sections").innerHTML = '';
-
-  // Initialize Tonality Map in the Key tab
-  _initDecomposeKeyTab(intel.key);
-
-  // Key context from LLM
-  const keyCtxEl2 = document.getElementById("key-context");
-  if (keyCtxEl2) { keyCtxEl2.textContent = _keyContext || ""; keyCtxEl2.style.display = _keyContext ? "block" : "none"; }
-
-  // Smart recommendations
-  _renderSmartRecs(_smartRecs);
-
-  // Mix panel: preview player + stem separation CTA
-  const mixerChannels = document.getElementById("mixer-channels");
-  mixerChannels.innerHTML = `<div class="stem-cta-card" id="stem-cta-card"><div class="stem-cta-inner"><div class="stem-cta-title">Isolate Instruments</div><div class="stem-cta-desc">Separate vocals, drums, bass, and more into individual tracks</div><button class="stem-cta-btn" id="stem-cta-btn" onclick="_startStemSeparation()"><span class="stem-btn-icon" id="stem-btn-icon"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v8M8 12h8"/></svg></span><span class="stem-btn-text">Separate Stems</span><span class="stem-btn-ring" id="stem-btn-ring"></span></button></div></div>`;
-  _updateStemButton();
+  _buildSkeletonWaveform();
+  document.getElementById("time-display").textContent = "--:-- / --:--";
+  document.querySelectorAll(".transport-btn").forEach(b => { b.classList.add('transport-disabled'); });
+  const mixerEl = document.getElementById("mixer-channels");
+  let html = '';
+  for (let i = 0; i < 5; i++) {
+    html += '<div class="channel skeleton-channel"><div class="skeleton-bar skeleton-name"></div><div class="channel-volume"><div class="skeleton-bar skeleton-slider"></div></div><div class="skeleton-bar skeleton-btn"></div><div class="skeleton-bar skeleton-btn"></div></div>';
+  }
+  html += '<div class="mix-loading-status" id="mix-loading-status">Preparing analysis...</div>';
+  mixerEl.innerHTML = html;
+  document.getElementById("lyrics-content").innerHTML = '';
+  document.getElementById("smart-recs-content").innerHTML = '<div class="smart-recs-empty">Theory-based recommendations will appear here once analysis completes.</div>';
+  const keyCtxEl = document.getElementById("key-context");
+  if (keyCtxEl) { keyCtxEl.textContent = ''; keyCtxEl.style.display = 'none'; }
   document.getElementById("loop-start").value = "0:00";
   document.getElementById("loop-end").value = "";
   loopActive = false;
@@ -2006,56 +1691,46 @@ async function renderInstantResults(data) {
   transposeAmount = 0;
   document.getElementById("transpose-display").textContent = "0";
   document.getElementById("transposed-key").textContent = "";
-
-  // Lyrics
-  const lyricsEl = document.getElementById("lyrics-content");
-  if (lyrics && lyrics.trim()) {
-    lyricsEl.innerHTML = _formatLyrics(lyrics);
-  } else {
-    lyricsEl.innerHTML = '<div class="lyrics-empty">Lyrics not available for this track.</div>';
-  }
-
   switchPanel("mix");
   _defaultTab = "mix";
-
-  document.getElementById("process-btn").disabled = false;
-  document.getElementById("process-btn").textContent = "Dive In";
   showView("results");
+}
 
-  // Hide footer "Separate Stems" button — now in the CTA card
-  const fullBtn = document.getElementById("full-track-btn");
-  if (fullBtn) fullBtn.style.display = "none";
-
-  // Share button
-  if (selectedTrack && selectedTrack.id) {
-    _addShareButton();
+function _buildSkeletonWaveform() {
+  const bg = document.getElementById('player-waveform-bg');
+  const fg = document.getElementById('player-waveform-fg-inner');
+  if (!bg) return;
+  const wrap = document.getElementById('player-waveform-wrap');
+  const w = (wrap && wrap.offsetWidth > 0) ? wrap.offsetWidth : 600;
+  const barCount = Math.floor(w / 4);
+  let html = '';
+  for (let i = 0; i < barCount; i++) {
+    const h = 4 + Math.random() * 16;
+    html += `<div class="player-wv-bar" style="height:${h}px"></div>`;
   }
+  bg.innerHTML = html;
+  if (fg) fg.innerHTML = '';
+  bg.classList.add('skeleton-waveform');
+}
 
-  // Load the preview audio file for playback — skip if stems are already loaded
-  if (Object.keys(_loadedStems).length > 0) {
-    console.log('[audio] stems already loaded — skipping preview audio');
-  } else try {
-    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    cleanupAudio();
-    stemBuffers = {}; stemGains = {}; stemVolumes = {}; stemMuted = {}; stemSoloed = {};
-    duration = 0;
-    stemVolumes["preview"] = 1; stemMuted["preview"] = false; stemSoloed["preview"] = false;
-    const g = audioCtx.createGain(); g.connect(audioCtx.destination); stemGains["preview"] = g;
+function _updateMixLoadingStatus(text) {
+  const el = document.getElementById('mix-loading-status');
+  if (!el) return;
+  el.style.opacity = '0';
+  setTimeout(() => { el.textContent = text; el.style.opacity = '1'; }, 200);
+}
 
-    const r = await fetch(`/api/audio/${currentJobId}/preview`);
-    if (r.ok) {
-      const ab = await r.arrayBuffer();
-      const buf = await audioCtx.decodeAudioData(ab);
-      stemBuffers["preview"] = buf;
-      duration = buf.duration;
-      document.getElementById("seek-bar").max = duration;
-      updateTimeDisplay();
-      _buildPlayerWaveform();
-      console.log("[audio] preview audio loaded");
-    }
-  } catch(e) { console.warn("[audio] preview load failed:", e); }
+function _enableTransport() {
+  document.querySelectorAll(".transport-btn").forEach(b => { b.classList.remove('transport-disabled'); });
+}
 
-  _instantAlreadyRendered = true;
+function _removeSkeletonChannels() {
+  const mixerEl = document.getElementById('mixer-channels');
+  if (!mixerEl) return;
+  mixerEl.querySelectorAll('.skeleton-channel').forEach(el => {
+    el.style.opacity = '0';
+    setTimeout(() => el.remove(), 300);
+  });
 }
 
 function _addShareButton() {
@@ -2079,9 +1754,6 @@ function _addShareButton() {
   const newSongRow = document.getElementById('results-footer');
   if (newSongRow) newSongRow.appendChild(shareBtn);
 }
-
-// _startDeepAnalysis removed — stem separation now handled by _startStemSeparation()
-
 
 
 // ─── Loop / Transpose ───────────────────────────────────────────────────────
@@ -2107,10 +1779,12 @@ async function loadStemAudio(names){
   if(!audioCtx) audioCtx=new(window.AudioContext||window.webkitAudioContext)();
   cleanupAudio();stemBuffers={};stemGains={};stemVolumes={};stemMuted={};stemSoloed={};duration=0;
 
-  // Set up gain nodes first (instant)
+  // Set up gain nodes with energy-based volumes
   for(const n of names){
-    stemVolumes[n]=1;stemMuted[n]=false;stemSoloed[n]=false;
-    const g=audioCtx.createGain();g.connect(audioCtx.destination);stemGains[n]=g;
+    const energy = jobData && jobData.stems && jobData.stems[n] ? jobData.stems[n].energy : null;
+    const vol = _energyToVolume(energy);
+    stemVolumes[n]=vol/100;stemMuted[n]=false;stemSoloed[n]=false;
+    const g=audioCtx.createGain();g.gain.value=vol/100;g.connect(audioCtx.destination);stemGains[n]=g;
   }
 
   // Fetch + decode all stems in parallel
@@ -2133,40 +1807,58 @@ function _buildPlayerWaveform() {
   const bg = document.getElementById('player-waveform-bg');
   const fg = document.getElementById('player-waveform-fg-inner');
   if (!bg) return;
+  bg.classList.remove('skeleton-waveform');
   // Measure container width to determine bar count
   // Fallback to 600 if panel is hidden (offsetWidth=0 when mix tab isn't active)
   const wrap = document.getElementById('player-waveform-wrap');
   const w = (wrap && wrap.offsetWidth > 0) ? wrap.offsetWidth : 600;
   const barCount = Math.floor(w / 4); // 2px bar + 2px gap
 
-  // Get amplitude data from the first available audio buffer
+  // Build amplitude data by summing all loaded stem buffers for a full-song waveform
   let amplitudes = null;
   const bufferKeys = Object.keys(stemBuffers);
   if (bufferKeys.length > 0) {
-    const primaryKey = stemBuffers['preview'] ? 'preview' : bufferKeys[0];
-    const buf = stemBuffers[primaryKey];
-    if (buf && buf.getChannelData) {
-      const raw = buf.getChannelData(0);
-      const samplesPerBar = Math.floor(raw.length / barCount);
-      amplitudes = new Float32Array(barCount);
-      for (let i = 0; i < barCount; i++) {
-        const start = i * samplesPerBar;
-        const end = Math.min(start + samplesPerBar, raw.length);
-        let sum = 0;
-        for (let j = start; j < end; j++) { sum += Math.abs(raw[j]); }
-        amplitudes[i] = sum / (end - start);
+    amplitudes = new Float32Array(barCount);
+    let stemCount = 0;
+    // Use the longest buffer to determine samplesPerBar
+    let maxLength = 0;
+    for (const k of bufferKeys) {
+      const b = stemBuffers[k];
+      if (b && b.getChannelData && b.length > maxLength) maxLength = b.length;
+    }
+    if (maxLength > 0) {
+      const samplesPerBar = Math.floor(maxLength / barCount) || 1;
+      for (const k of bufferKeys) {
+        const buf = stemBuffers[k];
+        if (!buf || !buf.getChannelData) continue;
+        const raw = buf.getChannelData(0);
+        stemCount++;
+        for (let i = 0; i < barCount; i++) {
+          const start = i * samplesPerBar;
+          const end = Math.min(start + samplesPerBar, raw.length);
+          if (end <= start) continue;
+          let sum = 0;
+          for (let j = start; j < end; j++) sum += Math.abs(raw[j]);
+          amplitudes[i] += sum / (end - start);
+        }
       }
     }
+    if (stemCount === 0) amplitudes = null;
   }
 
-  let maxAmp = 0;
-  if (amplitudes) { for (let i = 0; i < amplitudes.length; i++) { if (amplitudes[i] > maxAmp) maxAmp = amplitudes[i]; } }
+  // Normalize to 95th percentile for better visual range
+  let normVal = 0;
+  if (amplitudes) {
+    const sorted = Array.from(amplitudes).sort((a, b) => a - b);
+    normVal = sorted[Math.floor(sorted.length * 0.95)] || 0;
+  }
 
   let bgHtml = '', fgHtml = '';
   for (let i = 0; i < barCount; i++) {
     let h;
-    if (amplitudes && maxAmp > 0) {
-      h = 4 + (amplitudes[i] / maxAmp) * 38;
+    if (amplitudes && normVal > 0) {
+      const ratio = Math.min(amplitudes[i] / normVal, 1);
+      h = Math.max(2, ratio * 42);
     } else {
       h = 6 + Math.random() * 36;
     }
@@ -2284,14 +1976,14 @@ async function playAll(){
   isPlaying=true;updatePlayIcon();updateGains();tickTime();
 }
 function pausePlayback(){if(!isPlaying)return;pauseOffset=getCurrentTime();Object.values(stemSources).forEach(s=>{try{s.stop();}catch{}});stemSources={};isPlaying=false;updatePlayIcon();if(animFrame)cancelAnimationFrame(animFrame);}
-function stopPlayback(){pausePlayback();pauseOffset=0;updateTimeDisplay();document.getElementById("seek-bar").value=0;_updatePlayerProgress();}
+function stopPlayback(){pausePlayback();pauseOffset=0;updateTimeDisplay();document.getElementById("seek-bar").value=0;_updatePlayerProgress();if(document.activeElement)document.activeElement.blur();}
 function seekTo(v){const w=isPlaying;if(isPlaying){Object.values(stemSources).forEach(s=>{try{s.stop();}catch{}});stemSources={};isPlaying=false;}pauseOffset=parseFloat(v);updateTimeDisplay();_updatePlayerProgress();if(w)playAll();}
 function getCurrentTime(){if(!audioCtx)return 0;return isPlaying?audioCtx.currentTime-startedAt:pauseOffset;}
 function tickTime(){if(!isPlaying)return;const t=getCurrentTime();const lp=getLoopBounds();if(lp&&t>=lp.end){pauseOffset=lp.start;Object.values(stemSources).forEach(s=>{try{s.stop();}catch{}});stemSources={};isPlaying=false;playAll();return;}if(t>=duration){stopPlayback();return;}document.getElementById("seek-bar").value=t;updateTimeDisplay();_updatePlayerProgress();animFrame=requestAnimationFrame(tickTime);}
 function updateTimeDisplay(){document.getElementById("time-display").textContent=`${fmtSec(getCurrentTime())} / ${fmtSec(duration)}`;}
 function updatePlayIcon(){document.getElementById("play-icon").style.display=isPlaying?"none":"block";document.getElementById("pause-icon").style.display=isPlaying?"block":"none";}
 function setVolume(n,v){stemVolumes[n]=parseInt(v)/100;document.getElementById(`vol-label-${n}`).textContent=v;updateGains();}
-function toggleMute(n){stemMuted[n]=!stemMuted[n];document.getElementById(`mute-${n}`).classList.toggle("mute-active",stemMuted[n]);document.getElementById(`ch-${n}`).classList.toggle("muted",stemMuted[n]);updateGains();}
+function toggleMute(n){stemMuted[n]=!stemMuted[n];document.getElementById(`mute-${n}`).classList.toggle("mute-active",stemMuted[n]);document.getElementById(`ch-${n}`).classList.toggle("muted",stemMuted[n]);updateGains();_syncGroupMuteState(n);}
 function toggleSolo(n){stemSoloed[n]=!stemSoloed[n];document.getElementById(`solo-${n}`).classList.toggle("solo-active",stemSoloed[n]);updateGains();}
 function toggleKaraoke() {
   _karaokeActive = !_karaokeActive;
@@ -2317,14 +2009,16 @@ function setProgress(t,p){
 }
 function setError(m){const e=document.getElementById("error-msg");e.textContent=m;e.style.display=m?"block":"none";}
 function resetApp(){
-  cleanupAudio();stopLoadingMessages();pauseOffset=0;duration=0;currentJobId=null;selectedTrack=null;jobData=null;_previewJobData=null;_fullTrackInProgress=false;_instantAlreadyRendered=false;_currentMode="preview";_analysisMode="instant";searchResults=[];lastQuery="";loopActive=false;transposeAmount=0;songKey=null;clearTimeout(pollInterval);_stemJobId=null;_stemSeparationActive=false;_stemMixerReady=false;_loadedStems={};_firstMixerInteraction=false;_karaokeActive=false;_prefetchId=null;_prefetchReady=false;if(_stemPollTimer){clearInterval(_stemPollTimer);_stemPollTimer=null;}if(_prefetchPollTimer){clearInterval(_prefetchPollTimer);_prefetchPollTimer=null;}
+  cleanupAudio();stopLoadingMessages();pauseOffset=0;duration=0;currentJobId=null;selectedTrack=null;jobData=null;
+  searchResults=[];lastQuery="";loopActive=false;transposeAmount=0;songKey=null;clearTimeout(pollInterval);
+  _loadedStems={};_karaokeActive=false;_stemGroupBaselines={};
+  _prefetchId=null;_prefetchReady=false;
+  if(_prefetchPollTimer){clearInterval(_prefetchPollTimer);_prefetchPollTimer=null;}
   const confirmUpload=document.getElementById("confirm-upload-area");if(confirmUpload)confirmUpload.style.display="none";
-  const retryBtn=document.getElementById("upload-retry-btn");if(retryBtn)retryBtn.style.display="none";
   document.getElementById("process-btn").style.display="";
   document.getElementById("search-input").value="";document.getElementById("search-results").innerHTML="";document.getElementById("file-input").value="";
   document.getElementById("process-btn").disabled=false;document.getElementById("process-btn").textContent="Dive In";document.getElementById("process-btn").onclick=()=>startProcessing();
   document.getElementById("hero-actions").classList.remove("hidden");document.getElementById("hero-loading").classList.add("hidden");
-  const ftBtn=document.getElementById("full-track-btn");if(ftBtn)ftBtn.style.display="none";
   const wvFg=document.getElementById("wv-fg");if(wvFg)wvFg.style.width="0%";
   document.getElementById("progress-label").textContent="Analyzing the track...";document.getElementById("progress-label").classList.remove("fading");
   document.getElementById("seek-bar").value=0;document.getElementById("time-display").textContent="0:00 / 0:00";
@@ -2656,7 +2350,7 @@ function _initDecomposeKeyTab(detectedKey) {
     size: 300,
     interactive: false,
     compact: true,
-    initialKey: detectedKey || null,
+    initialKey: (detectedKey && detectedKey !== "Unknown") ? detectedKey : null,
   });
 
   // Render detail panel for detected key (static — no clicking)

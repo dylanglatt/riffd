@@ -145,10 +145,10 @@
 <!-- Global Navigation -->
 <nav class="global-nav">
   <div class="global-nav-inner">
-    <a href="/" class="nav-logo">riffd <span class="nav-logo-beta">Beta</span></a>
+    <a href="/" class="nav-logo">riffd</a>
     <div class="nav-links">
-      <a href="/decompose" class="nav-link {% if active_page == 'decompose' %}active{% endif %}">Decompose <span class="nav-badge">Beta</span></a>
-      <a href="/learn" class="nav-link {% if active_page == 'learn' %}active{% endif %}">Studio <span class="nav-badge">Beta</span></a>
+      <a href="/decompose" class="nav-link {% if active_page == 'decompose' %}active{% endif %}">Analyze</a>
+      <a href="/learn" class="nav-link {% if active_page == 'learn' %}active{% endif %}">Theory</a>
       <a href="/about" class="nav-link {% if active_page == 'about' %}active{% endif %}">About</a>
     </div>
   </div>
@@ -160,7 +160,5 @@
 
 {% block extra_js %}{% endblock %}
 
-<!-- TEMP: deploy marker -->
-<div style="position:fixed;bottom:6px;right:8px;font-size:.5rem;color:rgba(255,255,255,.1);font-family:monospace;pointer-events:none;z-index:9999">auth-v2</div>
 </body>
 </html>

@@ -112,7 +112,7 @@
 
   <div class="about-hero">
     <div class="hero-title">Pull apart any song.</div>
-    <div class="hero-sub">Isolate the vocals, guitar, bass — hear what's underneath.</div>
+    <div class="hero-sub">Isolate the vocals, guitar, bass — hear what's underneath. Understand what makes it work.</div>
   </div>
 
   <div style="height:128px"></div>
@@ -123,28 +123,28 @@
     <div class="flow-steps">
       <div class="flow-step">
         <div class="fs-num">1</div>
-        <div class="fs-title">Start</div>
-        <div class="fs-desc">Search for a song or upload audio.</div>
+        <div class="fs-title">Find</div>
+        <div class="fs-desc">Search Spotify or upload your own audio file.</div>
       </div>
       <div class="flow-step">
         <div class="fs-num">2</div>
         <div class="fs-title">Isolate</div>
-        <div class="fs-desc">Separate vocals, instruments, and parts.</div>
+        <div class="fs-desc">Separate every instrument and vocal into individual stems.</div>
       </div>
       <div class="flow-step">
         <div class="fs-num">3</div>
         <div class="fs-title">Understand</div>
-        <div class="fs-desc">See key, chords, and structure.</div>
+        <div class="fs-desc">See key, tempo, chords, and harmonic structure by section.</div>
       </div>
       <div class="flow-step">
         <div class="fs-num">4</div>
         <div class="fs-title">Interact</div>
-        <div class="fs-desc">Loop, focus, and explore sections.</div>
+        <div class="fs-desc">Mix, loop, solo, mute, and transpose directly in the browser.</div>
       </div>
       <div class="flow-step">
         <div class="fs-num">5</div>
         <div class="fs-title">Discover</div>
-        <div class="fs-desc">Find songs with similar musical structure.</div>
+        <div class="fs-desc">Find songs with the same harmonic DNA — not just similar vibes.</div>
       </div>
     </div>
   </div>
@@ -156,42 +156,47 @@
       <div class="tech-card">
         <div class="tech-name">Demucs</div>
         <div class="tech-role">Stem Separation</div>
-        <div class="tech-desc">Meta's state-of-the-art transformer model for source separation, running on cloud GPU via Replicate. Isolates vocals, drums, bass, and other instruments with high fidelity.</div>
+        <div class="tech-desc">Meta's state-of-the-art transformer model for audio source separation, running on cloud GPU via Replicate. Isolates up to 6 stems — vocals, drums, bass, guitar, piano, and other instruments — with high fidelity. Stereo field analysis further refines each stem by panning position, producing detailed sub-stem components.</div>
       </div>
       <div class="tech-card">
         <div class="tech-name">Basic Pitch</div>
-        <div class="tech-role">Note Detection</div>
-        <div class="tech-desc">Spotify's neural network for pitch detection. Converts audio to MIDI with accurate note onset and duration.</div>
+        <div class="tech-role">Note & Pitch Detection</div>
+        <div class="tech-desc">Spotify's neural network for polyphonic pitch detection. Converts each isolated stem to MIDI-grade note events with accurate onset and duration. Per-instrument frequency ranges and confidence thresholds are applied to filter noise and improve accuracy.</div>
       </div>
       <div class="tech-card">
         <div class="tech-name">Essentia</div>
         <div class="tech-role">Key + Tempo Detection</div>
-        <div class="tech-desc">Music analysis library for key estimation and BPM detection, applied directly to audio signal for accurate tonal and rhythmic analysis.</div>
+        <div class="tech-desc">Music analysis library for key estimation and BPM detection, applied directly to the audio signal. Results feed into the harmonic analysis pipeline and are displayed in real time during instant analysis — before stems have finished separating.</div>
       </div>
       <div class="tech-card">
         <div class="tech-name">Web Audio API</div>
-        <div class="tech-role">Playback Engine</div>
-        <div class="tech-desc">Browser-native audio processing. Enables real-time mixing, looping, and transposition without server roundtrips.</div>
+        <div class="tech-role">Browser Mixing Engine</div>
+        <div class="tech-desc">Browser-native audio processing powers the full mixer — mute, solo, per-stem volume, loop, and real-time pitch transposition — with no server roundtrips. Stems load in parallel and join the mix progressively. Initial fader levels are set proportionally to each stem's RMS energy, so the mix is balanced from the first play.</div>
       </div>
       <div class="tech-card">
         <div class="tech-name">Diatonic Template Matching</div>
-        <div class="tech-role">Chord Analysis</div>
-        <div class="tech-desc">Windowed pitch-class histogram analysis matched against diatonic chord templates.</div>
+        <div class="tech-role">Chord & Harmonic Analysis</div>
+        <div class="tech-desc">Windowed pitch-class histogram analysis matched against diatonic chord templates, segmented by song section. Produces roman numeral chord progressions relative to the detected key and powers the section-aligned harmonic timeline.</div>
       </div>
       <div class="tech-card">
         <div class="tech-name">Claude API</div>
         <div class="tech-role">Musical Insight</div>
-        <div class="tech-desc">Anthropic's language model generates plain-language musical analysis from detected chords, key, tempo, and structure.</div>
+        <div class="tech-desc">Anthropic's language model generates structured musical analysis — progression names, key context, and theory-based song recommendations — from detected chords, key, tempo, and lyrics. Output is constrained to strict JSON for reliable downstream rendering.</div>
       </div>
       <div class="tech-card">
-        <div class="tech-name">Smart Recommendations</div>
-        <div class="tech-role">Song Discovery</div>
-        <div class="tech-desc">AI-driven recommendations that match songs by harmonic DNA — same progressions, key relationships, and voice leading patterns.</div>
+        <div class="tech-name">Multi-source Audio Acquisition</div>
+        <div class="tech-role">Audio Pipeline</div>
+        <div class="tech-desc">A hardened acquisition pipeline sources audio through YouTube (via proxied yt-dlp with bot detection bypass), Spotify preview, and iTunes preview — with automatic fallback at each stage. User file upload is always available as a direct path. Every failure surfaces a clear next step instead of a broken state.</div>
+      </div>
+      <div class="tech-card">
+        <div class="tech-name">Concurrent Job Queue</div>
+        <div class="tech-role">Multi-user Processing</div>
+        <div class="tech-desc">Multiple users can run full analyses simultaneously. A FIFO job queue handles overflow gracefully — users waiting for a slot see live queue status and are automatically promoted when processing capacity opens, with no manual retry required.</div>
       </div>
       <div class="tech-card">
         <div class="tech-name">Flask + Vanilla JS</div>
         <div class="tech-role">Application Stack</div>
-        <div class="tech-desc">Lightweight Python backend with zero-dependency frontend. Fast, simple, and maintainable.</div>
+        <div class="tech-desc">Lightweight Python backend with a zero-dependency frontend. SQLite for track caching, filesystem-backed job state, and an in-memory job registry with automatic pruning. Deployed on Render with Gunicorn.</div>
       </div>
     </div>
   </div>
@@ -210,7 +215,7 @@
       </div>
       <div class="principle">
         <div class="pr-title">Get better, faster</div>
-        <div class="pr-desc">Riffd helps you learn faster, practice smarter, and improve.</div>
+        <div class="pr-desc">Riffd helps you learn faster, practice smarter, and hear what's actually happening in the music.</div>
       </div>
       <div class="principle">
         <div class="pr-title">Discover through theory</div>
