@@ -52,6 +52,7 @@ def _bootstrap_cookies():
             import shutil as _shutil
             _shutil.copy(_SECRET_COOKIES_PATH, _COOKIES_PATH)
             print(f"[downloader] cookies.txt loaded from secret file ({_SECRET_COOKIES_PATH})")
+            _validate_cookies_file(_COOKIES_PATH)
             return
         except Exception as e:
             print(f"[downloader] WARNING: failed to copy secret cookies file: {e}")
@@ -63,8 +64,22 @@ def _bootstrap_cookies():
             decoded = base64.b64decode(b64).decode("utf-8")
             _COOKIES_PATH.write_text(decoded)
             print(f"[downloader] cookies.txt written from YT_COOKIES_B64 ({len(decoded)} bytes)")
+            _validate_cookies_file(_COOKIES_PATH)
         except Exception as e:
             print(f"[downloader] WARNING: failed to decode YT_COOKIES_B64: {e}")
+
+
+def _validate_cookies_file(path: Path) -> None:
+    """Log the first line of the cookies file so we can verify Netscape format in logs."""
+    try:
+        lines = path.read_text(errors="replace").splitlines()
+        first = lines[0].strip() if lines else "(empty)"
+        size = path.stat().st_size
+        is_valid = first.startswith("# Netscape HTTP Cookie File") or first.startswith("# HTTP Cookie File")
+        status = "✓ valid" if is_valid else "✗ INVALID — missing Netscape header"
+        print(f"[downloader] cookies.txt: {size:,} bytes, {len(lines)} lines, first line: {first[:60]!r} → {status}")
+    except Exception as e:
+        print(f"[downloader] WARNING: could not validate cookies file: {e}")
 
 _bootstrap_cookies()
 
@@ -176,7 +191,8 @@ def _run_ytdlp_with_binary(binary: str, source: str, out_template: str, out_dir:
     result = subprocess.run(cmd, capture_output=True, text=True, timeout=300)
 
     if result.returncode != 0:
-        raise RuntimeError(f"{binary} failed:\n{result.stderr[:500]}")
+        stderr_tail = result.stderr[-1200:] if len(result.stderr) > 1200 else result.stderr
+        raise RuntimeError(f"{binary} failed:\n{stderr_tail}")
 
     # Find the downloaded audio file — look for MP3 first (default), then WAV (fallback)
     audio_files = list(out_dir.glob("*.mp3"))
