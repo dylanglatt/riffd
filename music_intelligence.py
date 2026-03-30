@@ -140,8 +140,11 @@ def detect_bpm_from_audio(audio_path):
         rhythm = es.RhythmExtractor2013(method="multifeature")
         bpm, beats, beats_confidence, _, beats_intervals = rhythm(audio)
 
-        # Confidence: average of per-beat confidences
-        conf = float(beats_confidence.mean()) if len(beats_confidence) > 0 else 0.0
+        # beats_confidence can be a scalar float or array depending on Essentia version —
+        # atleast_1d handles both so len() doesn't fail on a plain float
+        import numpy as _np
+        beats_conf_arr = _np.atleast_1d(beats_confidence)
+        conf = float(beats_conf_arr.mean()) if len(beats_conf_arr) > 0 else 0.0
         # Clamp to plausible range
         if bpm < 40 or bpm > 250:
             return 0, 0.0

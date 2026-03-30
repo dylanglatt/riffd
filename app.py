@@ -31,6 +31,7 @@ Memory management:
 """
 
 import os
+import re
 import uuid
 import threading
 import traceback
@@ -258,9 +259,36 @@ def require_login():
     return redirect("/login")
 
 
+def _clean_track_name(name: str) -> str:
+    """Strip Spotify edition/remaster suffixes from track titles for display.
+    Preserves original casing — this is for UI display, not search matching.
+    Examples:
+      "Song - Remastered 2009"       → "Song"
+      "Song - 2009 Remaster"         → "Song"
+      "Song (Remastered)"            → "Song"
+      "Song - Live at Wembley"       → "Song"
+      "Song - Radio Edit"            → "Song"
+    """
+    t = name.strip()
+    # "- 2009 Remaster(ed)" and "- Remastered 2009" and "- Remaster"
+    t = re.sub(r"\s*[-–]\s*\d{4}\s*remaster(ed)?.*$", "", t, flags=re.I)
+    t = re.sub(r"\s*[-–]\s*remaster(ed)?(\s*\d{4})?.*$", "", t, flags=re.I)
+    # Other common suffixes
+    t = re.sub(r"\s*[-–]\s*(live|mono|stereo|radio edit|single version|album version|"
+               r"deluxe|bonus track|anniversary edition|original mix|extended mix).*$",
+               "", t, flags=re.I)
+    # Parenthetical editions: (Remastered), (Live at ...), (2009), etc.
+    t = re.sub(r"\s*\((remaster(ed)?|live[^)]*|\d{4}\s*remaster[^)]*)\)", "", t, flags=re.I)
+    return t.strip()
+
+
 @app.route("/favicon.ico")
 def favicon():
     return send_from_directory("static", "favicon.ico", mimetype="image/x-icon")
+
+@app.route("/favicon.svg")
+def favicon_svg():
+    return send_from_directory("static", "favicon.svg", mimetype="image/svg+xml")
 
 
 @app.route("/login", methods=["GET", "POST"])
@@ -491,7 +519,7 @@ def download_track():
                     "track_id": data.get("track_id"),
                     "track_meta": {
                         "artist": data.get("artist", ""),
-                        "name": data.get("name", ""),
+                        "name": _clean_track_name(data.get("name", "")),
                         "album": data.get("album", ""),
                         "image_url": data.get("image_url"),
                         "duration_ms": data.get("duration_ms", 0),
