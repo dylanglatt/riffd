@@ -37,7 +37,7 @@ import threading
 import traceback
 from pathlib import Path
 from dotenv import load_dotenv
-from flask import Flask, render_template, request, jsonify, send_from_directory, session, redirect, url_for, make_response
+from flask import Flask, render_template, request, jsonify, send_from_directory, session, redirect, url_for, make_response, send_file
 from werkzeug.utils import secure_filename
 
 # Heavy processing modules deferred — loaded on first job, not at boot
@@ -1228,6 +1228,31 @@ def process_audio(job_id):
             except Exception as e:
                 _fail("note_extraction", e)
 
+            # ── WAV → MP3 conversion (post-analysis) ──
+            # Analysis is done; WAV files are no longer needed for processing.
+            # Convert to 192kbps MP3 to free disk space and reduce memory when serving.
+            # WAV stems are ~107MB each; MP3 reduces this to ~5MB — a 20x improvement.
+            # The audio endpoint already prefers MP3 when present, so no other changes needed.
+            try:
+                import subprocess as _sp_mp3
+                stems_dir_mp3 = OUTPUT_DIR / job_id / "stems"
+                converted = 0
+                for wav_file in list(stems_dir_mp3.glob("*.wav")):
+                    mp3_file = wav_file.with_suffix(".mp3")
+                    result = _sp_mp3.run(
+                        ["ffmpeg", "-y", "-i", str(wav_file), "-b:a", "192k", "-ac", "2", str(mp3_file)],
+                        capture_output=True, timeout=120,
+                    )
+                    if result.returncode == 0 and mp3_file.exists() and mp3_file.stat().st_size > 1000:
+                        wav_file.unlink()
+                        converted += 1
+                    else:
+                        print(f"[job {job_id}] MP3 convert failed for {wav_file.name}, keeping WAV")
+                _log_memory(f"[job {job_id}] post-mp3-convert")
+                print(f"[job {job_id}] [{_elapsed()}] WAV→MP3: converted {converted} stems")
+            except Exception as _mp3_e:
+                print(f"[job {job_id}] WAV→MP3 warning: {_mp3_e}")
+
             # ── Stage 5: Song intelligence + harmonic analysis ──
             on_progress("Analyzing harmony and structure...")
             print(f"[job {job_id}] [{_elapsed()}] INTELLIGENCE starting...")
@@ -1379,16 +1404,16 @@ def serve_stem_audio(job_id, stem_name):
         print(f"[audio] MISSING {job_id}/{stem_name} — wav={wav_size}b cwd={Path('.').resolve()} path={wav_path}")
         return jsonify({"error": "stem not ready"}), 404
 
-    # Read and return directly — bypasses send_from_directory quirks on Render
+    # Stream from disk — avoids loading 100MB+ WAV files into process memory per request.
+    # send_file with conditional=True also enables proper Range request support for seeking.
     try:
-        data = serve_path.read_bytes()
-        print(f"[audio] SERVING {job_id}/{stem_name} — {len(data):,}b from {serve_path}")
-        resp = make_response(data)
-        resp.headers["Content-Type"] = mime
-        resp.headers["Content-Length"] = len(data)
-        resp.headers["Accept-Ranges"] = "bytes"
-        resp.headers["Cache-Control"] = "no-cache"
-        return resp
+        file_size = serve_path.stat().st_size
+        print(f"[audio] SERVING {job_id}/{stem_name} — {file_size:,}b from {serve_path}")
+        return send_file(
+            str(serve_path),
+            mimetype=mime,
+            conditional=True,  # Enables range requests (audio seek without re-downloading)
+        )
     except Exception as e:
         print(f"[audio] READ ERROR {job_id}/{stem_name}: {e}")
         return jsonify({"error": "read failed"}), 500
