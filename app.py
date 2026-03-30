@@ -1076,6 +1076,9 @@ def process_audio(job_id):
             gc.collect()
             print(f"[job {job_id}] [{_elapsed()}] DEMUCS finished → {len(stems)} stems: {list(stems.keys())}")
             _log_memory(f"[job {job_id}] post-demucs")
+            # Free any large in-memory objects from demucs before Basic Pitch
+            gc.collect()
+            _log_memory(f"[job {job_id}] pre-basic-pitch")
             jobs[job_id]["stems"] = {k: {"label": v.get("label", k), "energy": v.get("energy", 0), "active": v.get("active", True)} for k, v in stems.items()}
             jobs[job_id]["progress"] = "Stems ready — analyzing..."
 
@@ -1122,10 +1125,11 @@ def process_audio(job_id):
                     label = stem_info.get("label", stem_key)
                     print(f"[job {job_id}] [{_elapsed()}] Basic Pitch → {stem_key}...")
                     ne = extract_note_events(stem_info["path"], stem_key, label=label, bpm=detected_bpm)
+                    gc.collect()  # release numpy arrays before next stem
                     print(f"[job {job_id}] [{_elapsed()}] Basic Pitch → {stem_key} done ({len(ne) if ne is not None else 0} notes)")
                     return stem_key, ne
 
-                TAB_WORKERS = min(3, len(pitched_stems))
+                TAB_WORKERS = 1  # Sequential to avoid OOM — TF retains memory across parallel workers
                 with _TPE(max_workers=TAB_WORKERS) as _tab_pool:
                     tab_futures = {
                         _tab_pool.submit(_extract_one_stem, k, v): k
@@ -1136,6 +1140,8 @@ def process_audio(job_id):
                         if note_df is not None and len(note_df) > 0:
                             note_events_all[stem_key] = note_df
 
+                gc.collect()
+                _log_memory(f"[job {job_id}] post-basic-pitch")
                 print(f"[job {job_id}] [{_elapsed()}] NOTE EXTRACTION finished → {len(note_events_all)} stems with notes")
             except Exception as e:
                 _fail("note_extraction", e)
@@ -1237,7 +1243,7 @@ def process_audio(job_id):
     return jsonify({"status": "processing", "job_id": job_id})
 
 
-JOB_TIMEOUT = 300  # 5 minutes — if a job is still "processing" after this, force error
+JOB_TIMEOUT = 900  # 15 minutes — sequential Basic Pitch on full-length stems takes 5-10 min
 
 @app.route("/api/status/<job_id>")
 def job_status(job_id):

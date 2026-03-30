@@ -603,10 +603,14 @@ def _separate_stems_replicate(audio_path: Path, out_dir: Path, progress_callback
         stem_name = stem_key if stem_key in _KNOWN_STEMS else stem_key
         dest = out_dir / f"_raw_{stem_name}.wav"
         print(f"[replicate] downloading: {stem_name} → {dest.name}")
-        dl_resp = _requests.get(url, timeout=120)
-        dl_resp.raise_for_status()
-        dest.write_bytes(dl_resp.content)
-        print(f"[replicate] saved: {stem_name} ({len(dl_resp.content):,} bytes)")
+        with _requests.get(url, stream=True, timeout=120) as dl_resp:
+            dl_resp.raise_for_status()
+            byte_count = 0
+            with open(dest, "wb") as f:
+                for chunk in dl_resp.iter_content(chunk_size=1024 * 1024):  # 1MB chunks
+                    f.write(chunk)
+                    byte_count += len(chunk)
+        print(f"[replicate] saved: {stem_name} ({byte_count:,} bytes)")
         return stem_key, str(dest), None
 
     raw_stems = {}
