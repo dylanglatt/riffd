@@ -110,19 +110,67 @@
   .feature-title { font-size:1.25rem; font-weight:500; letter-spacing:-0.02em; margin-bottom:8px; color:#F5F5F5; }
   .feature-desc { font-size:0.9375rem; color:rgba(245,245,245,0.5); line-height:1.7; letter-spacing:-0.01em; max-width:680px; }
 
+  /* Screenshots section */
+  .shots-section { padding:160px 0; border-top:1px solid rgba(255,255,255,0.08); }
+  .shots-label {
+    font-size:0.8125rem; font-weight:500; letter-spacing:0.1em; text-transform:uppercase;
+    color:rgba(245,245,245,0.4); margin-bottom:16px;
+  }
+  .shots-headline {
+    font-size:2rem; font-weight:500; letter-spacing:-0.03em; color:#F5F5F5;
+    margin-bottom:48px; line-height:1.15;
+  }
+  /* Replace this placeholder block with real screenshots once you have them */
+  .shots-placeholder {
+    display:grid; grid-template-columns:1fr 1fr; gap:24px;
+  }
+  .shot-frame {
+    border:1px solid rgba(255,255,255,0.08); background:#0D0D0D;
+    padding:0; overflow:hidden; position:relative;
+  }
+  .shot-frame img { width:100%; display:block; }
+  .shot-frame-empty {
+    height:320px; display:flex; flex-direction:column;
+    align-items:center; justify-content:center; gap:12px;
+  }
+  .shot-frame-empty-label {
+    font-size:0.75rem; font-weight:500; letter-spacing:0.08em; text-transform:uppercase;
+    color:rgba(245,245,245,0.15);
+  }
+  .shot-frame-empty-sub {
+    font-size:0.8125rem; color:rgba(245,245,245,0.1); letter-spacing:-0.01em;
+  }
+  .shot-caption {
+    padding:12px 16px; border-top:1px solid rgba(255,255,255,0.06);
+    font-size:0.8125rem; color:rgba(245,245,245,0.4); letter-spacing:-0.01em;
+  }
+  @media(max-width:768px) { .shots-placeholder { grid-template-columns:1fr; } }
+
   /* Bottom CTA */
   .bottom-cta { text-align:center; padding:96px 0 80px; border-top:1px solid rgba(255,255,255,0.08); }
   .bottom-headline { font-size:2.5rem; font-weight:500; letter-spacing:-0.03em; line-height:1.15; margin-bottom:24px; color:rgba(245,245,245,0.85); }
 
   /* Footer */
   .home-footer {
-    border-top:1px solid rgba(255,255,255,0.08); padding:64px 0;
+    border-top:1px solid rgba(255,255,255,0.08); padding:48px 0;
     display:flex; justify-content:space-between; align-items:center;
   }
   .home-footer-links { display:flex; gap:32px; }
   .home-footer-links a { color:rgba(245,245,245,0.35); text-decoration:none; font-size:0.875rem; font-weight:400; letter-spacing:-0.01em; transition:color .2s; }
   .home-footer-links a:hover { color:#F5F5F5; }
   .home-footer-note { color:rgba(245,245,245,0.35); font-size:0.875rem; font-weight:400; letter-spacing:-0.01em; }
+  .home-footer-builder {
+    display:flex; align-items:center; gap:16px;
+    font-size:0.8125rem; color:rgba(245,245,245,0.35); letter-spacing:-0.01em;
+  }
+  .home-footer-builder a {
+    color:rgba(245,245,245,0.4); text-decoration:none; transition:color .2s;
+  }
+  .home-footer-builder a:hover { color:#F5F5F5; }
+  @media(max-width:640px) {
+    .home-footer { flex-direction:column; gap:20px; text-align:center; }
+    .home-footer-builder { justify-content:center; }
+  }
 
   @media(max-width:960px) {
     .home-hero { grid-template-columns:1fr; gap:48px; padding:120px 0 100px; }
@@ -176,9 +224,10 @@
   <div class="home-hero">
     <div class="hero-text">
       <div class="hero-headline">Break down real songs.</div>
-      <div class="hero-sub">Separate stems, see the chords, and understand the harmony behind the music you play.</div>
+      <div class="hero-sub">Search any song. Separate the stems, see the key and chord progression, then mix, loop, and practice each part — all in your browser.</div>
       <div class="hero-ctas">
-        <a href="/decompose" class="cta-primary">Get Started</a>
+        <a href="/decompose" class="cta-primary">Try It</a>
+        <a href="/about" class="cta-secondary">How It Works</a>
       </div>
     </div>
 
@@ -280,7 +329,7 @@
           <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
         </div>
         <div class="feature-title">Play</div>
-        <div class="feature-desc">Loop sections, adjust tempo, and practice any part of the song at your own pace.</div>
+        <div class="feature-desc">Loop any section, solo a single instrument, or mute the vocals — with an interactive browser mixer, no plugins required.</div>
       </div>
       <div>
         <div class="feature-icon">
@@ -292,15 +341,44 @@
     </div>
   </div>
 
+  <!-- Screenshots: swap the shot-frame-empty divs for <img> tags once you have real screenshots -->
+  <div class="shots-section">
+    <div class="shots-label">In Action</div>
+    <div class="shots-headline">From search to stems in minutes.</div>
+    <div class="shots-placeholder">
+      <div class="shot-frame">
+        <div class="shot-frame-empty">
+          <div class="shot-frame-empty-label">Stem Mixer</div>
+          <div class="shot-frame-empty-sub">Replace with screenshot</div>
+        </div>
+        <div class="shot-caption">Isolated stems — vocals, bass, guitar, drums — with per-stem volume, mute, solo, and download.</div>
+      </div>
+      <div class="shot-frame">
+        <div class="shot-frame-empty">
+          <div class="shot-frame-empty-label">Chord Analysis</div>
+          <div class="shot-frame-empty-sub">Replace with screenshot</div>
+        </div>
+        <div class="shot-caption">Key, BPM, Roman numeral chord progressions, and AI-identified harmonic patterns — by song section.</div>
+      </div>
+    </div>
+  </div>
+
   <!-- Bottom CTA -->
   <div class="bottom-cta">
-    <div class="bottom-headline">See how it works.</div>
-    <a href="/about" class="cta-secondary">Learn More</a>
+    <div class="bottom-headline">See how it's built.</div>
+    <a href="/about" class="cta-secondary">About the Project</a>
   </div>
 
   <!-- Footer -->
   <div class="home-footer">
     <div class="home-footer-note">&copy; 2026 Riffd</div>
+    <div class="home-footer-builder">
+      Built by <a href="https://linkedin.com/in/dylanjglatt" target="_blank" rel="noopener">Dylan Glatt</a>
+      <span style="color:rgba(245,245,245,0.15)">·</span>
+      <a href="https://github.com/djglatt" target="_blank" rel="noopener">GitHub</a>
+      <span style="color:rgba(245,245,245,0.15)">·</span>
+      <a href="https://linkedin.com/in/dylanjglatt" target="_blank" rel="noopener">LinkedIn</a>
+    </div>
   </div>
 </div>
 

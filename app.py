@@ -1016,10 +1016,23 @@ def process_audio(job_id):
             def _run_demucs():
                 return separate_stems(audio_path, job_id, progress_callback=on_progress)
 
-            with _TPE(max_workers=3) as _pool:
-                fut_demucs   = _pool.submit(_run_demucs)
-                fut_lyrics   = _pool.submit(_fetch_lyrics)
-                fut_tags     = _pool.submit(_fetch_tags)
+            def _run_early_key():
+                """Key + BPM on the original audio — runs concurrently with Demucs.
+                Publishes intelligence within ~10s so Key tab populates early."""
+                try:
+                    from music_intelligence import detect_key_from_audio, detect_bpm_from_audio, format_key
+                    key_num, mode_num, key_conf = detect_key_from_audio(audio_path)
+                    bpm, bpm_conf = detect_bpm_from_audio(audio_path)
+                    return key_num, mode_num, key_conf, bpm, bpm_conf
+                except Exception as e:
+                    print(f"[job {job_id}] early key/BPM failed: {e}")
+                    return -1, -1, 0.0, 0, 0.0
+
+            with _TPE(max_workers=4) as _pool:
+                fut_demucs    = _pool.submit(_run_demucs)
+                fut_lyrics    = _pool.submit(_fetch_lyrics)
+                fut_tags      = _pool.submit(_fetch_tags)
+                fut_early_key = _pool.submit(_run_early_key)
 
                 # Collect metadata results (fast — done well before Demucs)
                 lyrics       = fut_lyrics.result()
@@ -1028,6 +1041,24 @@ def process_audio(job_id):
                 # Publish lyrics/tags progressively so frontend can show them before stems
                 if lyrics: jobs[job_id]["lyrics"] = lyrics
                 if tags: jobs[job_id]["tags"] = tags
+
+                # Early key/BPM — should finish well before Demucs (runs on original audio)
+                try:
+                    from music_intelligence import format_key as _fmt_key
+                    _ek_num, _ek_mode, _ek_conf, _ebpm, _ebpm_conf = fut_early_key.result()
+                    if _ek_num >= 0:
+                        intelligence["key"]            = _fmt_key(_ek_num, _ek_mode)
+                        intelligence["key_num"]        = _ek_num
+                        intelligence["mode_num"]       = _ek_mode
+                        intelligence["key_confidence"] = round(_ek_conf, 3)
+                    if _ebpm > 0 and _ebpm_conf >= 0.1:
+                        intelligence["bpm"]            = round(_ebpm, 1)
+                        intelligence["bpm_confidence"] = round(_ebpm_conf, 3)
+                    print(f"[job {job_id}] [{_elapsed()}] early key={intelligence['key']} bpm={intelligence.get('bpm', 0)}")
+                    # Publish now — Key tab populates before Demucs finishes
+                    jobs[job_id]["intelligence"] = dict(intelligence)
+                except Exception as _ek_e:
+                    print(f"[job {job_id}] [{_elapsed()}] early key publish error: {_ek_e}")
 
                 # Wait for Demucs (the slow one)
                 try:
@@ -1060,31 +1091,14 @@ def process_audio(job_id):
             active_stems = {k: v for k, v in stems.items() if v.get("active", True)}
             detected_bpm = 120.0
 
-            # ── Stage 2: Key + BPM detection (Essentia) ──
-            on_progress("Detecting key and tempo...")
-            essentia_key_num, essentia_mode_num, essentia_key_conf = -1, -1, 0.0
-            try:
-                from music_intelligence import detect_key_from_audio, detect_bpm_from_audio, format_key
-                print(f"[job {job_id}] [{_elapsed()}] Essentia key/BPM starting...")
-
-                essentia_key_num, essentia_mode_num, essentia_key_conf = detect_key_from_audio(audio_path)
-                if essentia_key_num >= 0:
-                    intelligence["key"] = format_key(essentia_key_num, essentia_mode_num)
-                    intelligence["key_num"] = essentia_key_num
-                    intelligence["mode_num"] = essentia_mode_num
-                    intelligence["key_confidence"] = round(essentia_key_conf, 3)
-
-                ess_bpm, ess_bpm_conf = detect_bpm_from_audio(audio_path)
-                if ess_bpm > 0 and ess_bpm_conf >= 0.1:
-                    detected_bpm = ess_bpm
-                    intelligence["bpm"] = round(ess_bpm, 1)
-                    intelligence["bpm_confidence"] = round(ess_bpm_conf, 3)
-
-                print(f"[job {job_id}] [{_elapsed()}] Essentia → key={intelligence['key']} bpm={detected_bpm}")
-                # Publish key/BPM immediately so frontend can show chips before stems finish
-                jobs[job_id]["intelligence"] = dict(intelligence)
-            except Exception as e:
-                _fail("essentia_detection", e)
+            # ── Stage 2: Key + BPM — already detected early (concurrent with Demucs) ──
+            # Reuse the result from _run_early_key; no need to re-run on the same audio.
+            essentia_key_num  = intelligence.get("key_num",  -1)
+            essentia_mode_num = intelligence.get("mode_num", -1)
+            essentia_key_conf = intelligence.get("key_confidence", 0.0)
+            if intelligence.get("bpm", 0) > 0:
+                detected_bpm = intelligence["bpm"]
+            print(f"[job {job_id}] [{_elapsed()}] key/BPM (from early detect): key={intelligence['key']} bpm={detected_bpm}")
 
             # ── Stage 3: Note extraction (Basic Pitch) — sequential across priority stems ──
             # Drums produce no useful pitch data — skip entirely.

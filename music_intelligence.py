@@ -101,59 +101,80 @@ _ESSENTIA_KEY_MAP = {
 
 def detect_key_from_audio(audio_path):
     """
-    Detect key directly from audio file using Essentia.
-    Works on any audio format (mp3, wav, etc).
-    Returns (key_num, mode_num, confidence) — same format as detect_key_from_notes.
-    mode_num: 1=major, 0=minor
+    Detect key from audio. Tries Essentia (most accurate), falls back to librosa.
+    Returns (key_num, mode_num, confidence). mode_num: 1=major, 0=minor.
     """
+    # ── Essentia (primary) ────────────────────────────────────────────────────
     try:
         import essentia.standard as es
-
-        # Load audio at 44100Hz mono (Essentia's default)
         audio = es.MonoLoader(filename=str(audio_path), sampleRate=44100)()
-
-        # KeyExtractor runs HPCP + key profile correlation internally
-        # It's the same Krumhansl-Schmuckler idea but on raw audio chromagram
-        # which is far more accurate than routing through Basic Pitch first
         key, scale, confidence = es.KeyExtractor()(audio)
-
         key_num = _ESSENTIA_KEY_MAP.get(key, -1)
         mode_num = 1 if scale == "major" else 0
-
         print(f"[essentia] key={key} {scale} confidence={confidence:.3f}")
         return key_num, mode_num, float(confidence)
-
+    except ImportError:
+        pass  # Essentia not installed — fall through to librosa
     except Exception as e:
         print(f"[essentia] key detection failed: {e}")
+
+    # ── Librosa fallback (chromagram + Krumhansl-Schmuckler) ─────────────────
+    try:
+        import librosa
+        _ensure_profiles()
+        # Load only 90s (enough for reliable key estimate, much faster than full track)
+        y, sr = librosa.load(str(audio_path), sr=22050, duration=90, mono=True)
+        chroma = librosa.feature.chroma_cqt(y=y, sr=sr).mean(axis=1)
+        best_key, best_mode, best_corr = 0, 1, -1.0
+        for root in range(12):
+            for mode, profile in [(1, MAJOR_PROFILE), (0, MINOR_PROFILE)]:
+                rotated = np.roll(profile, root)
+                corr = float(np.corrcoef(chroma, rotated)[0, 1])
+                if corr > best_corr:
+                    best_corr, best_key, best_mode = corr, root, mode
+        conf = round(max(0.0, min(1.0, (best_corr + 1) / 2)), 3)
+        print(f"[librosa] key={best_key} {'major' if best_mode==1 else 'minor'} conf={conf:.3f}")
+        return best_key, best_mode, conf
+    except Exception as e:
+        print(f"[librosa] key detection failed: {e}")
         return -1, -1, 0.0
 
 
 def detect_bpm_from_audio(audio_path):
     """
-    Detect BPM directly from audio file using Essentia's RhythmExtractor.
+    Detect BPM from audio. Tries Essentia (most accurate), falls back to librosa.
     Returns (bpm, confidence).
     """
+    # ── Essentia (primary) ────────────────────────────────────────────────────
     try:
         import essentia.standard as es
-
         audio = es.MonoLoader(filename=str(audio_path), sampleRate=44100)()
         rhythm = es.RhythmExtractor2013(method="multifeature")
         bpm, beats, beats_confidence, _, beats_intervals = rhythm(audio)
-
-        # beats_confidence can be a scalar float or array depending on Essentia version —
-        # atleast_1d handles both so len() doesn't fail on a plain float
         import numpy as _np
         beats_conf_arr = _np.atleast_1d(beats_confidence)
         conf = float(beats_conf_arr.mean()) if len(beats_conf_arr) > 0 else 0.0
-        # Clamp to plausible range
         if bpm < 40 or bpm > 250:
             return 0, 0.0
-
         print(f"[essentia] bpm={bpm:.1f} confidence={conf:.3f} ({len(beats)} beats)")
         return round(float(bpm), 1), round(min(1.0, conf), 3)
-
+    except ImportError:
+        pass  # Essentia not installed — fall through to librosa
     except Exception as e:
         print(f"[essentia] bpm detection failed: {e}")
+
+    # ── Librosa fallback ──────────────────────────────────────────────────────
+    try:
+        import librosa
+        y, sr = librosa.load(str(audio_path), sr=22050, duration=90, mono=True)
+        tempo, _ = librosa.beat.beat_track(y=y, sr=sr)
+        bpm = float(np.atleast_1d(tempo)[0])
+        if 40 <= bpm <= 250:
+            print(f"[librosa] bpm={bpm:.1f}")
+            return round(bpm, 1), 0.5  # librosa doesn't expose confidence directly
+        return 0, 0.0
+    except Exception as e:
+        print(f"[librosa] bpm detection failed: {e}")
         return 0, 0.0
 
 
