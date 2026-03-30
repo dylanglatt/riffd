@@ -1133,15 +1133,41 @@ def process_audio(job_id):
                 patch_lzma()
 
                 def _extract_one_stem(stem_key, stem_info):
+                    import tempfile as _tempfile, subprocess as _sp, os as _os
                     label = stem_info.get("label", stem_key)
+                    full_path = stem_info["path"]
                     print(f"[job {job_id}] [{_elapsed()}] Basic Pitch → {stem_key}...")
-                    ne = extract_note_events(stem_info["path"], stem_key, label=label, bpm=detected_bpm)
-                    # Delete WAV after inference — no longer needed, frees ~74MB per stem
+
+                    # Truncate to first 90s for inference only — full WAV stays for playback.
+                    # Basic Pitch scales linearly with duration; 90s captures the full
+                    # harmonic content of any song structure while cutting inference ~70%.
+                    INFER_SECS = 90
+                    tmp_path = None
+                    infer_path = full_path
                     try:
-                        import os as _os
-                        _os.remove(stem_info["path"])
-                    except Exception:
-                        pass
+                        tmp_fd, tmp_path = _tempfile.mkstemp(suffix=f"_{stem_key}_90s.wav")
+                        _os.close(tmp_fd)
+                        _sp.run(
+                            ["ffmpeg", "-y", "-i", full_path, "-t", str(INFER_SECS),
+                             "-c", "copy", tmp_path],
+                            capture_output=True, timeout=30,
+                        )
+                        if _os.path.getsize(tmp_path) > 1000:
+                            infer_path = tmp_path
+                            print(f"[job {job_id}] truncated {stem_key} to {INFER_SECS}s for inference")
+                    except Exception as _trunc_e:
+                        print(f"[job {job_id}] truncation warning ({stem_key}): {_trunc_e} — using full file")
+
+                    try:
+                        ne = extract_note_events(infer_path, stem_key, label=label, bpm=detected_bpm)
+                    finally:
+                        # Always clean up temp file — full WAV untouched for playback
+                        if tmp_path and _os.path.exists(tmp_path):
+                            try:
+                                _os.remove(tmp_path)
+                            except Exception:
+                                pass
+
                     gc.collect()
                     print(f"[job {job_id}] [{_elapsed()}] Basic Pitch → {stem_key} done ({len(ne) if ne is not None else 0} notes)")
                     return stem_key, ne
