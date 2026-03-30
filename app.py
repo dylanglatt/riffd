@@ -1109,13 +1109,24 @@ def process_audio(job_id):
             except Exception as e:
                 _fail("essentia_detection", e)
 
-            # ── Stage 3: Note extraction (Basic Pitch) — parallelized across pitched stems ──
-            # Drums produce no useful pitch data for harmonic analysis — skip them entirely.
-            # No MIDI/CSV/ASCII files written — inference output only.
+            # ── Stage 3: Note extraction (Basic Pitch) — sequential across priority stems ──
+            # Drums produce no useful pitch data — skip entirely.
+            # Secondary stems (harmony/backing vocals, synth, keys, other) are skipped for
+            # Basic Pitch — they add ~3-4 min processing time with marginal harmonic value.
+            # Their WAV files are preserved for playback; only inference is skipped.
             _DRUM_KEYS = {"drums", "drum", "kick", "snare", "percussion"}
-            pitched_stems = {k: v for k, v in active_stems.items()
-                             if k.lower() not in _DRUM_KEYS and not k.lower().startswith("drum")}
-            print(f"[job {job_id}] [{_elapsed()}] NOTE EXTRACTION starting ({len(pitched_stems)} pitched stems, skipping drums)...")
+            # Stems where Basic Pitch adds little harmonic value vs. processing cost
+            _SKIP_INFERENCE_KEYS = {
+                "harmony_vocal", "backing_vocal", "synth", "other",
+                "keys", "guitar_layer", "strumming_guitar",
+            }
+            all_pitched = {k: v for k, v in active_stems.items()
+                          if k.lower() not in _DRUM_KEYS and not k.lower().startswith("drum")}
+            pitched_stems = {k: v for k, v in all_pitched.items()
+                             if k.lower() not in _SKIP_INFERENCE_KEYS}
+            skipped = set(all_pitched.keys()) - set(pitched_stems.keys())
+            print(f"[job {job_id}] [{_elapsed()}] NOTE EXTRACTION starting ({len(pitched_stems)} stems, "
+                  f"skipping drums + {len(skipped)} low-priority: {sorted(skipped)})...")
             note_events_all = {}
             try:
                 from compat import patch_lzma
@@ -1125,7 +1136,13 @@ def process_audio(job_id):
                     label = stem_info.get("label", stem_key)
                     print(f"[job {job_id}] [{_elapsed()}] Basic Pitch → {stem_key}...")
                     ne = extract_note_events(stem_info["path"], stem_key, label=label, bpm=detected_bpm)
-                    gc.collect()  # release numpy arrays before next stem
+                    # Delete WAV after inference — no longer needed, frees ~74MB per stem
+                    try:
+                        import os as _os
+                        _os.remove(stem_info["path"])
+                    except Exception:
+                        pass
+                    gc.collect()
                     print(f"[job {job_id}] [{_elapsed()}] Basic Pitch → {stem_key} done ({len(ne) if ne is not None else 0} notes)")
                     return stem_key, ne
 
