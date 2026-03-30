@@ -90,7 +90,7 @@ print(f"[env] CWD = {os.getcwd()}")
 print(f"[env] YT_PROXY_URL set: {bool(os.getenv('YT_PROXY_URL'))}")
 
 if not SITE_PASSWORD:
-    raise RuntimeError("SITE_PASSWORD environment variable is required. Set it in .env or your hosting platform.")
+    print("[auth] SITE_PASSWORD not set — running in open-access mode")
 if not FLASK_SECRET:
     raise RuntimeError("FLASK_SECRET_KEY environment variable is required. Set it in .env or your hosting platform.")
 
@@ -256,6 +256,9 @@ AUTH_PUBLIC_PATHS = ("/login", "/static/", "/", "/favicon.ico", "/s/")
 
 @app.before_request
 def require_login():
+    # Open-access mode: no password required
+    if not SITE_PASSWORD:
+        return
     path = request.path
     is_public = (path == "/login" or path == "/" or path == "/favicon.ico" or
                  path.startswith("/static/") or path.startswith("/s/") or
@@ -1027,6 +1030,14 @@ def process_audio(job_id):
                 except Exception as e:
                     print(f"[job {job_id}] early key/BPM failed: {e}")
                     return -1, -1, 0.0, 0, 0.0
+
+            # Pre-warm numpy in the main thread before the pool starts.
+            # Two threads racing to initialize numpy's C extension simultaneously
+            # causes a circular import crash on some local Python environments.
+            try:
+                import numpy as _np_preload  # noqa: F401
+            except Exception:
+                pass
 
             with _TPE(max_workers=4) as _pool:
                 fut_demucs    = _pool.submit(_run_demucs)

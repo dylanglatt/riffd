@@ -244,7 +244,7 @@
     .stem-dl-btn { opacity:0.35; }
     .stem-dl-btn:hover { opacity:0.75; }
 
-    /* ─── Group headers ────────────────────────────────────────────────────── */
+    /* ─── (group headers removed — flat stem list) ─────────────────────────── */
     .stem-group-header {
       display:flex; align-items:center; gap:10px;
       padding:7px 16px 7px 12px;
@@ -626,7 +626,6 @@ let _prefetchReady = false;
 let _prefetchPollTimer = null;
 let _loadedStems = {};
 let _karaokeActive = false;
-let _stemGroupBaselines = {};
 
 function _pollPrefetch(pfId) {
   if (_prefetchPollTimer) clearInterval(_prefetchPollTimer);
@@ -660,19 +659,26 @@ function _energyToVolume(energy) {
 
 function _getStemRoot(stemKey) {
   let s = stemKey.toLowerCase();
-  // Strip known variant suffixes so e.g. "piano_2" → "piano", "lead_guitar" → "guitar"
+
+  // Strip only unnamed variant suffixes — these add no musical identity.
+  // Named qualifiers like "lead_", "acoustic_", "rhythm_" are preserved
+  // so lead_guitar and rhythm_guitar remain distinct rows.
   const suffixes = [
     '_layer_2','_layer_3','_layer_4','_layer_5','_layer',
     '_overdub','_double','_part','_pad','_comping',
-    '_fingerpicking','_electric','_acoustic',
-    '_2','_3','_4','_5',  // numbered duplicates (piano_2 → piano, etc.)
+    '_2','_3','_4','_5',
   ];
   for (const sfx of suffixes) { if (s.endsWith(sfx)) { s = s.slice(0, -sfx.length); break; } }
-  if (s.includes('vocal')) return 'vocal';
-  if (s.includes('bass')) return 'bass_guitar';
-  if (s.includes('guitar')) return 'guitar';
-  if (s.includes('drum')) return 'drums';
-  if (s === 'piano' || s === 'keys' || s === 'synth') return 'piano';
+
+  // Normalize alternative spellings → canonical roots
+  if (s === 'fingerpicking_guitar') s = 'acoustic_guitar';
+  if (s === 'bass' || s === 'electric_bass' || s === 'upright_bass' || s === 'synth_bass') return 'bass_guitar';
+  if (s === 'drum' || s === 'percussion' || s === 'beat') return 'drums';
+  if (s === 'keys' || s === 'keyboard' || s === 'synth') return 'piano';
+
+  // Return the stripped name — named variants (lead_guitar, rhythm_guitar,
+  // acoustic_guitar, electric_guitar, lead_vocal, backing_vocal …) stay distinct.
+  // Unnamed duplicates (guitar_2 → guitar, lead_guitar_2 → lead_guitar) collapse.
   return s;
 }
 
@@ -706,119 +712,26 @@ function _reorganizeStemGroups() {
   if (!mixerEl) return;
   const channels = Array.from(mixerEl.querySelectorAll('.channel'));
   if (!channels.length) return;
-  // Remove old group headers
-  mixerEl.querySelectorAll('.stem-group-header').forEach(h => h.remove());
-  channels.forEach(ch => ch.classList.remove('grouped-channel'));
 
-  // Group by root
-  const groups = {};
-  for (const ch of channels) {
-    const stemName = ch.id.replace('ch-', '');
-    const root = _getStemRoot(stemName);
-    if (!groups[root]) groups[root] = [];
-    groups[root].push({ stemName, el: ch });
+  // Sort stems in musical order: Vocals → Guitar family → Bass → Piano/Keys → Drums → other
+  function _stemFamily(stemName) {
+    const r = _getStemRoot(stemName);
+    if (r.includes('vocal') || r.includes('voice') || r.includes('choir')) return '0';
+    if (r.includes('guitar')) return '1';
+    if (r.includes('bass'))   return '2';
+    if (r === 'piano' || r.includes('key') || r.includes('organ') || r.includes('synth')) return '3';
+    if (r.includes('drum') || r.includes('perc')) return '4';
+    return '5';
   }
 
-  // Store baselines
-  _stemGroupBaselines = {};
-  for (const ch of channels) {
-    const stemName = ch.id.replace('ch-', '');
-    _stemGroupBaselines[stemName] = Math.round((stemVolumes[stemName] || 1) * 100);
-  }
-
-  // Build sorted order
-  const roots = Object.keys(groups).sort();
-  mixerEl.innerHTML = '';
-
-  const chevronSvg = `<svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>`;
-
-  for (const root of roots) {
-    const members = groups[root];
-    const rootLabel = formatStemLabel(root, root);
-
-    if (members.length === 1) {
-      // Singleton — render channel directly, no header (avoids clutter)
-      mixerEl.appendChild(members[0].el);
-    } else {
-      // Multi-member group — render collapsible header + indented children
-      const hdr = document.createElement('div');
-      hdr.className = 'stem-group-header';
-      hdr.dataset.group = root;
-      hdr.onclick = (e) => {
-        if (e.target.classList.contains('vol-slider') || e.target.classList.contains('ch-btn')) return;
-        _toggleStemGroup(root);
-      };
-      hdr.innerHTML = `<button class="stem-group-chevron" tabindex="-1">${chevronSvg}</button><span class="stem-group-label">${esc(rootLabel)}</span><input type="range" class="vol-slider" min="0" max="100" value="100" oninput="_setGroupVolume('${root}',this.value)" id="gvol-${root}"/><span class="vol-label" id="gvol-label-${root}">100</span><button class="ch-btn" id="gmute-${root}" onclick="event.stopPropagation();_toggleGroupMute('${root}')">M</button>`;
-      mixerEl.appendChild(hdr);
-      for (const m of members) {
-        m.el.classList.add('grouped-channel');
-        m.el.dataset.group = root;
-        mixerEl.appendChild(m.el);
-      }
-    }
-  }
-}
-
-function _toggleStemGroup(root) {
-  const hdr = document.querySelector(`.stem-group-header[data-group="${root}"]`);
-  if (!hdr) return;
-  const collapsed = !hdr.classList.contains('collapsed');
-  hdr.classList.toggle('collapsed', collapsed);
-  let el = hdr.nextElementSibling;
-  while (el && !el.classList.contains('stem-group-header')) {
-    if (el.classList.contains('channel') && el.dataset.group === root) {
-      el.style.display = collapsed ? 'none' : '';
-    }
-    el = el.nextElementSibling;
-  }
-}
-
-function _setGroupVolume(root, val) {
-  const g = parseInt(val);
-  const lbl = document.getElementById(`gvol-label-${root}`);
-  if (lbl) lbl.textContent = g;
-  document.querySelectorAll(`.channel[data-group="${root}"]`).forEach(ch => {
-    const n = ch.id.replace('ch-', '');
-    const base = _stemGroupBaselines[n] || 100;
-    stemVolumes[n] = (base / 100) * (g / 100);
-    const v = Math.round(stemVolumes[n] * 100);
-    const sl = document.getElementById(`vol-${n}`);
-    const lb = document.getElementById(`vol-label-${n}`);
-    if (sl) sl.value = v;
-    if (lb) lb.textContent = v;
+  channels.sort((a, b) => {
+    const na = a.id.replace('ch-', ''), nb = b.id.replace('ch-', '');
+    const fa = _stemFamily(na), fb = _stemFamily(nb);
+    return fa !== fb ? fa.localeCompare(fb) : na.localeCompare(nb);
   });
-  updateGains();
-}
 
-function _toggleGroupMute(root) {
-  const children = [];
-  document.querySelectorAll(`.channel[data-group="${root}"]`).forEach(ch => {
-    children.push(ch.id.replace('ch-', ''));
-  });
-  const anyUnmuted = children.some(n => !stemMuted[n]);
-  for (const n of children) {
-    stemMuted[n] = anyUnmuted;
-    const mb = document.getElementById(`mute-${n}`);
-    const ch = document.getElementById(`ch-${n}`);
-    if (mb) mb.classList.toggle('mute-active', anyUnmuted);
-    if (ch) ch.classList.toggle('muted', anyUnmuted);
-  }
-  const gb = document.getElementById(`gmute-${root}`);
-  if (gb) gb.classList.toggle('mute-active', anyUnmuted);
-  updateGains();
-}
-
-function _syncGroupMuteState(stemName) {
-  const ch = document.getElementById(`ch-${stemName}`);
-  if (!ch || !ch.dataset.group) return;
-  const root = ch.dataset.group;
-  const children = [];
-  document.querySelectorAll(`.channel[data-group="${root}"]`).forEach(c => {
-    children.push(c.id.replace('ch-', ''));
-  });
-  const allMuted = children.every(n => stemMuted[n]);
-  const gb = document.getElementById(`gmute-${root}`);
-  if (gb) gb.classList.toggle('mute-active', allMuted);
+  // Re-append in sorted order — flat list, no headers
+  channels.forEach(ch => mixerEl.appendChild(ch));
 }
 
 function resetFullMix() {
@@ -839,16 +752,6 @@ function resetFullMix() {
     if (sl) sl.value = vol;
     if (lb) lb.textContent = vol;
   }
-  // Reset group state
-  document.querySelectorAll('.stem-group-header').forEach(hdr => {
-    const root = hdr.dataset.group;
-    const gs = document.getElementById(`gvol-${root}`);
-    const gl = document.getElementById(`gvol-label-${root}`);
-    const gm = document.getElementById(`gmute-${root}`);
-    if (gs) gs.value = 100;
-    if (gl) gl.textContent = '100';
-    if (gm) gm.classList.remove('mute-active');
-  });
   _karaokeActive = false;
   const kb = document.getElementById('karaoke-btn');
   if (kb) kb.classList.remove('karaoke-active');
@@ -1013,8 +916,7 @@ function renderSearchResults() {
 
 function selectByIndex(i){const t=searchResults[i];if(t)selectTrack(t);}
 async function selectTrack(t){
-  selectedTrack=t; currentJobId=null; setError(""); _loadedStems={}; _karaokeActive=false; _stemGroupBaselines={};
-  if (_prefetchPollTimer) { clearInterval(_prefetchPollTimer); _prefetchPollTimer = null; }
+  selectedTrack=t; currentJobId=null; setError(""); _loadedStems={}; _karaokeActive=false;  if (_prefetchPollTimer) { clearInterval(_prefetchPollTimer); _prefetchPollTimer = null; }
   _prefetchId=null; _prefetchReady=false;
   console.log(`[ui] selectTrack → ${t.name} by ${t.artist} (id=${t.id||'none'})`);
 
