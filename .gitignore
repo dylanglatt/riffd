@@ -31,3 +31,4 @@ static/
 test_*.py
 *.xlsx
 *.log
+*.mp3
