@@ -261,6 +261,122 @@ def download_audio_from_youtube(query_or_url: str, job_id: str) -> Path:
             raise first_err
 
 
+def _download_via_piped(query: str, job_id: str) -> Path:
+    """
+    Fallback YouTube download via Piped API.
+    Piped proxies YouTube through its own servers, bypassing datacenter IP blocks.
+    Tries multiple public instances for reliability.
+    """
+    PIPED_INSTANCES = [
+        "https://pipedapi.kavin.rocks",
+        "https://pipedapi.adminforge.de",
+        "https://pipedapi.moomoo.me",
+        "https://pipedapi.syncpundit.io",
+    ]
+
+    out_dir = UPLOAD_DIR / job_id
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    for base_url in PIPED_INSTANCES:
+        try:
+            # 1. Search for the video
+            print(f"[piped] trying {base_url} — query: {query[:60]}")
+            search_resp = requests.get(
+                f"{base_url}/search",
+                params={"q": query, "filter": "music_songs"},
+                timeout=15,
+                headers={"User-Agent": "Mozilla/5.0"},
+            )
+            if not search_resp.ok:
+                print(f"[piped] {base_url} search failed: {search_resp.status_code}")
+                continue
+
+            items = search_resp.json().get("items", [])
+            if not items:
+                # Try without music filter
+                search_resp = requests.get(
+                    f"{base_url}/search",
+                    params={"q": query, "filter": "videos"},
+                    timeout=15,
+                    headers={"User-Agent": "Mozilla/5.0"},
+                )
+                items = search_resp.json().get("items", []) if search_resp.ok else []
+
+            if not items:
+                print(f"[piped] {base_url}: no results")
+                continue
+
+            # Extract video ID from /watch?v=xxxxx URL
+            video_url = items[0].get("url", "")
+            video_id = video_url.replace("/watch?v=", "") if "/watch?v=" in video_url else ""
+            if not video_id:
+                print(f"[piped] {base_url}: could not extract video ID from {video_url}")
+                continue
+
+            title = items[0].get("title", "audio")
+            duration = items[0].get("duration", 0)
+            print(f"[piped] found: {title} ({duration}s) — id={video_id}")
+
+            # Skip results shorter than 60s (likely not a full song)
+            if 0 < duration < 60:
+                print(f"[piped] skipping short result ({duration}s)")
+                continue
+
+            # 2. Get audio streams
+            streams_resp = requests.get(
+                f"{base_url}/streams/{video_id}",
+                timeout=15,
+                headers={"User-Agent": "Mozilla/5.0"},
+            )
+            if not streams_resp.ok:
+                print(f"[piped] {base_url} streams failed: {streams_resp.status_code}")
+                continue
+
+            data = streams_resp.json()
+            audio_streams = data.get("audioStreams", [])
+            if not audio_streams:
+                print(f"[piped] {base_url}: no audio streams for {video_id}")
+                continue
+
+            # Pick best quality audio stream (prefer m4a/mp4 for compatibility)
+            # Filter to audio-only streams, sort by bitrate descending
+            audio_streams.sort(key=lambda s: s.get("bitrate", 0), reverse=True)
+            best = audio_streams[0]
+            audio_url = best.get("url")
+            if not audio_url:
+                continue
+
+            mime = best.get("mimeType", "audio/mp4")
+            bitrate = best.get("bitrate", 0)
+            print(f"[piped] downloading stream: {bitrate}bps {mime}")
+
+            # 3. Download the audio file
+            ext = "m4a" if "mp4" in mime or "m4a" in mime else "webm" if "webm" in mime else "mp3"
+            safe_title = re.sub(r'[^\w\s-]', '', title)[:80].strip()
+            out_path = out_dir / f"{safe_title}.{ext}"
+
+            dl_resp = requests.get(audio_url, stream=True, timeout=180, headers={"User-Agent": "Mozilla/5.0"})
+            dl_resp.raise_for_status()
+            with open(out_path, "wb") as f:
+                for chunk in dl_resp.iter_content(chunk_size=65536):
+                    f.write(chunk)
+
+            size = out_path.stat().st_size
+            if size < 100_000:  # Less than 100KB is probably an error page
+                print(f"[piped] file too small ({size}b) — skipping")
+                out_path.unlink(missing_ok=True)
+                continue
+
+            print(f"[piped] ✅ SUCCESS → {out_path.name} ({size:,} bytes, ~{size // 1024 // 128}s)")
+            return out_path
+
+        except Exception as e:
+            print(f"[piped] {base_url} error: {e}")
+            continue
+
+    raise RuntimeError("All Piped instances failed — YouTube audio unavailable")
+
+
 def download_preview(url: str, job_id: str) -> Path:
     """
     Download an audio preview (Spotify or iTunes MP3 URL).
@@ -368,10 +484,11 @@ def resolve_preview(track_data: dict, job_id: str, on_progress=None) -> Path:
 def resolve_audio(track_data: dict, job_id: str, on_progress=None, allow_preview_fallback: bool = True) -> Path:
     """
     Main entry point. Tries audio sources in waterfall order:
-    1. YouTube (full song)
-    2. Spotify preview URL (only if allow_preview_fallback=True)
-    3. iTunes preview URL (only if allow_preview_fallback=True)
-    4. Raises AudioUnavailableError
+    1. YouTube via yt-dlp (full song)
+    2. YouTube via Piped API (full song — bypasses IP blocks)
+    3. Spotify preview URL (only if allow_preview_fallback=True)
+    4. iTunes preview URL (only if allow_preview_fallback=True)
+    5. Raises AudioUnavailableError
 
     track_data keys: query, preview_url, artist, name
     """
@@ -380,24 +497,39 @@ def resolve_audio(track_data: dict, job_id: str, on_progress=None, allow_preview
     artist = track_data.get("artist", "")
     name = track_data.get("name", "")
 
-    # 1. YouTube first (full audio)
+    # 1. YouTube via yt-dlp (full audio)
     if query:
         if on_progress:
             on_progress("Downloading from YouTube...")
         try:
             path = download_audio_from_youtube(query, job_id)
-            print(f"[job {job_id}] AUDIO SOURCE SELECTED: youtube")
+            print(f"[job {job_id}] AUDIO SOURCE SELECTED: youtube (yt-dlp)")
             return path
         except Exception as e:
-            print(f"[job {job_id}] ⚠️  YOUTUBE FAILED — full track unavailable: {str(e)[:500]}")
-            if not allow_preview_fallback:
-                print(f"[job {job_id}] preview fallback DISABLED — raising upload_required")
-                raise AudioUnavailableError(
-                    f"Full-track download unavailable. Upload your own audio file to get full-length stems."
-                )
-            print(f"[job {job_id}] ⚠️  FALLING BACK TO PREVIEW — stems will be ~30s, not full song")
-            if on_progress:
-                on_progress("YouTube unavailable, trying preview...")
+            print(f"[job {job_id}] ⚠️  yt-dlp FAILED: {str(e)[:300]}")
+
+    # 2. YouTube via Piped API (bypasses datacenter IP blocks)
+    if query:
+        if on_progress:
+            on_progress("Trying alternative download...")
+        try:
+            path = _download_via_piped(query, job_id)
+            print(f"[job {job_id}] AUDIO SOURCE SELECTED: youtube (piped)")
+            return path
+        except Exception as e:
+            print(f"[job {job_id}] ⚠️  Piped FAILED: {str(e)[:300]}")
+
+    # Both YouTube methods failed
+    if query and not allow_preview_fallback:
+        print(f"[job {job_id}] all full-track sources failed — raising upload_required")
+        raise AudioUnavailableError(
+            f"Full-track download unavailable. Upload your own audio file to get full-length stems."
+        )
+
+    if query:
+        print(f"[job {job_id}] ⚠️  FALLING BACK TO PREVIEW — stems will be ~30s, not full song")
+        if on_progress:
+            on_progress("Full track unavailable, trying preview...")
 
     # 2. Spotify preview URL
     if preview_url:
