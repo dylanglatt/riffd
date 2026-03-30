@@ -2267,8 +2267,9 @@ function _updatePlayerProgress() {
 }
 function cleanupAudio(){if(animFrame)cancelAnimationFrame(animFrame);animFrame=null;Object.values(stemSources).forEach(s=>{try{s.stop();}catch{}});stemSources={};isPlaying=false;updatePlayIcon();}
 function togglePlayback(){if(isPlaying)pausePlayback();else playAll();}
-function playAll(){
-  if(!audioCtx||!Object.keys(stemBuffers).length)return;if(audioCtx.state==="suspended")audioCtx.resume();
+async function playAll(){
+  if(!audioCtx||!Object.keys(stemBuffers).length)return;
+  if(audioCtx.state==="suspended"){try{await audioCtx.resume();}catch(e){console.warn('[audio] context resume failed:',e);}}
   Object.values(stemSources).forEach(s=>{try{s.stop();}catch{}});stemSources={};startedAt=audioCtx.currentTime-pauseOffset;const cents=transposeAmount*100;
   for(const[n,buf]of Object.entries(stemBuffers)){const src=audioCtx.createBufferSource();src.buffer=buf;if(src.detune&&cents!==0)src.detune.value=cents;src.connect(stemGains[n]);src.start(0,pauseOffset);stemSources[n]=src;src.onended=()=>{if(isPlaying&&getCurrentTime()>=duration-0.1){const lp=getLoopBounds();if(lp){pauseOffset=lp.start;playAll();}else stopPlayback();}};}
   isPlaying=true;updatePlayIcon();updateGains();tickTime();
