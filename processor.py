@@ -69,8 +69,9 @@ STEM_NAMES_4 = ["vocals", "drums", "bass", "other"]
 SILENCE_THRESHOLD = 0.003
 
 # Minimum component energy relative to the stem's total energy
-# to be included (avoids showing ghost components)
-MIN_RELATIVE_ENERGY = 0.08
+# to be included (avoids showing ghost components).
+# 0.15 = component must be at least 15% as loud as the stem — filters bleed artifacts.
+MIN_RELATIVE_ENERGY = 0.15
 
 
 # ─── Note Detection Configuration ────────────────────────────────────────────
@@ -346,9 +347,7 @@ def _classify_component(features, stem_category, position):
                 return "Acoustic Guitar"
             return "Acoustic Guitar"
         if c > 1800 and c_std > 400:
-            if position == "center":
-                return "Lead Guitar"
-            return "Guitar Layer"
+            return "Lead Guitar"  # same spectral profile regardless of pan position
         if c > 1000:
             return "Rhythm Guitar"
         return "Guitar"
@@ -869,60 +868,41 @@ def _label_to_key(label):
     return label.lower().replace(" ", "_")
 
 
-# Variation names for duplicates within an instrument family
-_FAMILY_VARIATIONS = {
-    "Lead Guitar": ["Lead Guitar", "Guitar Overdub", "Guitar Layer"],
-    "Rhythm Guitar": ["Rhythm Guitar", "Strumming Guitar", "Guitar Comping"],
-    "Acoustic Guitar": ["Acoustic Guitar", "Acoustic Layer", "Fingerpicking Guitar"],
-    "Guitar": ["Guitar", "Guitar Layer", "Guitar Part"],
-    "Guitar Layer": ["Guitar Layer", "Guitar Overdub", "Guitar Part"],
-    "Lead Vocal": ["Lead Vocal", "Vocal Double", "Vocal Layer"],
-    "Backing Vocal": ["Backing Vocal", "Harmony Vocal", "Vocal Pad"],
-    "Harmony Vocal": ["Harmony Vocal", "Backing Vocal", "Vocal Layer"],
-    "Keys": ["Keys", "Synth", "Pad"],
-    "Instrument": ["Instrument", "Texture", "Layer"],
-}
-
-
 def _save_sub_parts(parts, sr, out_dir, refined):
-    """Save multiple sub-parts with musically meaningful variation labels."""
-    # Count label occurrences
-    label_counts = {}
-    for part in parts:
-        base = part["label"]
-        label_counts[base] = label_counts.get(base, 0) + 1
+    """Save sub-parts with simple numbered labels, capped at 2 per label."""
+    # Sort by energy descending — keep the loudest instances of each label
+    parts_sorted = sorted(parts, key=lambda p: p["energy"], reverse=True)
+
+    # Cap at 2 per label — 3 nearly-identical Piano components should be Piano + Piano 2,
+    # not Piano + Piano 2 + Piano 3. Keeps the mixer clean without hiding real distinct parts.
+    MAX_PER_LABEL = 2
+    label_seen = {}
+    filtered = []
+    for part in parts_sorted:
+        lbl = part["label"]
+        if label_seen.get(lbl, 0) < MAX_PER_LABEL:
+            label_seen[lbl] = label_seen.get(lbl, 0) + 1
+            filtered.append(part)
 
     label_index = {}
-
-    for part in parts:
+    for part in filtered:
         base_label = part["label"]
-        count = label_counts[base_label]
+        idx = label_index.get(base_label, 0)
+        label_index[base_label] = idx + 1
 
-        if count > 1:
-            idx = label_index.get(base_label, 0)
-            label_index[base_label] = idx + 1
-            # Use variation names instead of numbered duplicates
-            variations = _FAMILY_VARIATIONS.get(base_label, [base_label])
-            if idx < len(variations):
-                label = variations[idx]
-            else:
-                label = f"{base_label} {idx + 1}"
-        else:
-            label = base_label
-
+        # First occurrence keeps the base name; extras get a number suffix
+        label = base_label if idx == 0 else f"{base_label} {idx + 1}"
         key = _label_to_key(label)
 
-        # Avoid key collisions
+        # Avoid key collisions with already-saved stems
         orig_key = key
         n = 2
         while key in refined:
             key = f"{orig_key}_{n}"
-            label = f"{label} {n}" if not label[-1].isdigit() else label
             n += 1
 
         dest = out_dir / f"{key}.wav"
         _write_wav(dest, part["left"], part["right"], sr)
-
         refined[key] = {
             "path": str(dest),
             "energy": round(part["energy"], 6),
