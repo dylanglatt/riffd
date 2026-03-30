@@ -850,7 +850,11 @@ function _pollStemProgress(jobId) {
         // Clean up preview audio when stems are loaded
         if (Object.keys(_loadedStems).length > 0) { delete stemBuffers['preview']; if (stemGains['preview']) { try { stemGains['preview'].disconnect(); } catch(e){} delete stemGains['preview']; } delete stemVolumes['preview']; delete stemMuted['preview']; delete stemSoloed['preview']; if (stemSources['preview']) { try { stemSources['preview'].stop(); } catch(e){} delete stemSources['preview']; } }
         _notifyMixTab();
-        console.log(`[stems] separation complete — ${Object.keys(_loadedStems).length} stems loaded`);
+        // Warn if stems are from preview (YouTube failed)
+        if (d.audio_source === 'preview' || d.audio_mode === 'preview') {
+          _showResultWarning('These stems are from a ~30s preview clip. Full-track download was unavailable. Upload your own audio file for full-length stems.');
+        }
+        console.log(`[stems] separation complete — ${Object.keys(_loadedStems).length} stems loaded (source=${d.audio_source||'unknown'})`);
       } else if (d.status === 'error') {
         clearInterval(_stemPollTimer); _stemPollTimer = null; _stemSeparationActive = false;
         _showStemError(d.error || 'Stem separation failed');
@@ -1927,6 +1931,11 @@ async function renderResults(data) {
   document.getElementById("process-btn").onclick = () => startProcessing();
   document.getElementById("proc-art-wrap").classList.remove("loading");
   showView("results");
+
+  // Warn if deep analysis used preview audio (YouTube failed)
+  if (data.analysis_mode === "deep" && (data.audio_source === "preview" || mode === "preview")) {
+    _showResultWarning('These stems are from a ~30s preview clip. Full-track download was unavailable. Upload your own audio file for full-length stems.');
+  }
 
   // Show "Analyze full track" button if this is a preview result and full-track is possible
   const fullBtn = document.getElementById("full-track-btn");

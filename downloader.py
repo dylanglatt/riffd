@@ -83,6 +83,13 @@ def _validate_cookies_file(path: Path) -> None:
 
 _bootstrap_cookies()
 
+# Log yt-dlp version at startup — critical for diagnosing YouTube extraction failures
+try:
+    _ytdlp_version = subprocess.run(["yt-dlp", "--version"], capture_output=True, text=True, timeout=10)
+    print(f"[downloader] yt-dlp version: {_ytdlp_version.stdout.strip()}")
+except Exception as _e:
+    print(f"[downloader] WARNING: could not get yt-dlp version: {_e}")
+
 
 class AudioUnavailableError(Exception):
     """No audio source could provide audio for this track."""
@@ -166,16 +173,17 @@ def _run_ytdlp_with_binary(binary: str, source: str, out_template: str, out_dir:
         "--no-progress",
         "--retries", "3",
         "--socket-timeout", "30",
-        "--extractor-args", "youtube:player_client=tv_embedded,ios,web;lang=en",
+        "--extractor-args", "youtube:player_client=ios,mweb,web;lang=en",
         "--no-check-certificates",
         "--prefer-free-formats",
         "--force-ipv4",
+        "--user-agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
     ]
 
-    # Add cookies if available (written from YT_COOKIES_B64 env var at startup, or dropped manually)
+    # Add cookies FIRST — yt-dlp uses them for auth + bot bypass
     if _COOKIES_PATH.exists():
-        cmd.extend(["--cookies", str(_COOKIES_PATH)])
-        print(f"[downloader] using cookies.txt")
+        cmd[1:1] = ["--cookies", str(_COOKIES_PATH)]
+        print(f"[downloader] using cookies.txt ({_COOKIES_PATH.stat().st_size:,} bytes)")
 
     # Add proxy if configured and not bypassed
     proxy_url = os.environ.get("YT_PROXY_URL")
@@ -381,13 +389,14 @@ def resolve_audio(track_data: dict, job_id: str, on_progress=None, allow_preview
             print(f"[job {job_id}] AUDIO SOURCE SELECTED: youtube")
             return path
         except Exception as e:
-            print(f"[job {job_id}] YouTube failed: {e}")
+            print(f"[job {job_id}] ⚠️  YOUTUBE FAILED — full track unavailable: {str(e)[:500]}")
             if not allow_preview_fallback:
                 print(f"[job {job_id}] preview fallback DISABLED — raising")
                 raise AudioUnavailableError(
                     f"YouTube download failed and preview fallback is disabled. "
                     f"Please upload your own audio file. (Error: {str(e)[:100]})"
                 )
+            print(f"[job {job_id}] ⚠️  FALLING BACK TO PREVIEW — stems will be ~30s, not full song")
             if on_progress:
                 on_progress("YouTube unavailable, trying preview...")
 
