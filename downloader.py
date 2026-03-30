@@ -391,10 +391,9 @@ def resolve_audio(track_data: dict, job_id: str, on_progress=None, allow_preview
         except Exception as e:
             print(f"[job {job_id}] ⚠️  YOUTUBE FAILED — full track unavailable: {str(e)[:500]}")
             if not allow_preview_fallback:
-                print(f"[job {job_id}] preview fallback DISABLED — raising")
+                print(f"[job {job_id}] preview fallback DISABLED — raising upload_required")
                 raise AudioUnavailableError(
-                    f"YouTube download failed and preview fallback is disabled. "
-                    f"Please upload your own audio file. (Error: {str(e)[:100]})"
+                    f"Full-track download unavailable. Upload your own audio file to get full-length stems."
                 )
             print(f"[job {job_id}] ⚠️  FALLING BACK TO PREVIEW — stems will be ~30s, not full song")
             if on_progress:

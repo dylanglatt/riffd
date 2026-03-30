@@ -519,9 +519,8 @@ def download_track():
                     print(f"[job {job_id}] AUDIO SOURCE SELECTED: youtube (direct URL)")
                 else:
                     _on_progress("Downloading full track...")
-                    audio_path = resolve_audio(track_data, job_id, on_progress=_on_progress, allow_preview_fallback=True)
-                    # Detect actual source — resolve_audio may have fallen back to preview if YouTube failed
-                    audio_source = "preview" if str(audio_path).endswith("preview.mp3") else "youtube"
+                    audio_path = resolve_audio(track_data, job_id, on_progress=_on_progress, allow_preview_fallback=False)
+                    audio_source = "youtube"
 
             print(f"[job {job_id}] download finished → {audio_path} (source={audio_source}, mode={mode})")
             jobs[job_id].update({
