@@ -703,6 +703,12 @@ def separate_stems(audio_path: str, song_id: str, progress_callback=None) -> dic
 
     refined = {}
 
+    # Cap total refined stems to prevent OOM on complex songs (e.g. Layla → 14 stems).
+    # Demucs returns 6 raw stems; stereo separation can multiply this to 15+.
+    # Each sub-stem is a full-length WAV — uncapped, a 7-min song creates 2GB+ of temp files.
+    # Drums and bass always get slots; remaining 8 slots go to pitched stems by energy.
+    MAX_REFINED_STEMS = 10
+
     import gc as _gc
 
     for stem_name, raw_path in raw_stems.items():
@@ -746,6 +752,21 @@ def separate_stems(audio_path: str, song_id: str, progress_callback=None) -> dic
 
         # Split by stereo panning
         components = _stereo_separate(left, right)
+
+        # Check cap before any further splitting — if we're already at the limit,
+        # keep this stem as-is rather than creating more WAV files.
+        if len(refined) >= MAX_REFINED_STEMS:
+            dest = out_dir / f"{stem_name}.wav"
+            shutil.copy2(raw_path, dest)
+            del left, right
+            refined[stem_name] = {
+                "path": str(dest),
+                "energy": round(stem_energy, 6),
+                "active": True,
+                "label": stem_name.title(),
+            }
+            print(f"[processor] stem cap reached ({MAX_REFINED_STEMS}) — keeping {stem_name} as-is")
+            continue
 
         if not components:
             # No meaningful separation — keep original
@@ -812,7 +833,13 @@ def separate_stems(audio_path: str, song_id: str, progress_callback=None) -> dic
             }
             continue
 
-        # Multiple components — save each with numbered duplicates
+        # Multiple components — save each, but respect the cap.
+        # Trim sub_parts to fit within remaining slots so we don't blow past the limit.
+        remaining_slots = MAX_REFINED_STEMS - len(refined)
+        if len(sub_parts) > remaining_slots:
+            # Keep the loudest components when trimming
+            sub_parts = sorted(sub_parts, key=lambda p: p["energy"], reverse=True)[:remaining_slots]
+            print(f"[processor] trimmed {stem_name} to {remaining_slots} sub-parts (cap={MAX_REFINED_STEMS})")
         _save_sub_parts(sub_parts, sr, out_dir, refined)
         del sub_parts, components
         _gc.collect()
