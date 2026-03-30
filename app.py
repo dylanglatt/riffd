@@ -36,7 +36,7 @@ import threading
 import traceback
 from pathlib import Path
 from dotenv import load_dotenv
-from flask import Flask, render_template, request, jsonify, send_from_directory, session, redirect, url_for
+from flask import Flask, render_template, request, jsonify, send_from_directory, session, redirect, url_for, make_response
 from werkzeug.utils import secure_filename
 
 # Heavy processing modules deferred — loaded on first job, not at boot
@@ -1279,14 +1279,32 @@ def serve_stem_audio(job_id, stem_name):
     stems_dir = (OUTPUT_DIR / job_id / "stems").resolve()
     wav_path = stems_dir / f"{stem_name}.wav"
     mp3_path = stems_dir / f"{stem_name}.mp3"
+
+    # Determine which file to serve
     if wav_path.exists() and wav_path.stat().st_size > 0:
-        return send_from_directory(str(stems_dir), f"{stem_name}.wav")
+        serve_path = wav_path
+        mime = "audio/wav"
     elif mp3_path.exists() and mp3_path.stat().st_size > 0:
-        return send_from_directory(str(stems_dir), f"{stem_name}.mp3")
-    # File missing or empty — log and return 404 so client can retry
-    wav_size = wav_path.stat().st_size if wav_path.exists() else -1
-    print(f"[audio] {job_id}/{stem_name} not ready — wav={wav_size}b path={wav_path}")
-    return jsonify({"error": "stem not ready"}), 404
+        serve_path = mp3_path
+        mime = "audio/mpeg"
+    else:
+        wav_size = wav_path.stat().st_size if wav_path.exists() else -1
+        print(f"[audio] MISSING {job_id}/{stem_name} — wav={wav_size}b cwd={Path('.').resolve()} path={wav_path}")
+        return jsonify({"error": "stem not ready"}), 404
+
+    # Read and return directly — bypasses send_from_directory quirks on Render
+    try:
+        data = serve_path.read_bytes()
+        print(f"[audio] SERVING {job_id}/{stem_name} — {len(data):,}b from {serve_path}")
+        resp = make_response(data)
+        resp.headers["Content-Type"] = mime
+        resp.headers["Content-Length"] = len(data)
+        resp.headers["Accept-Ranges"] = "bytes"
+        resp.headers["Cache-Control"] = "no-cache"
+        return resp
+    except Exception as e:
+        print(f"[audio] READ ERROR {job_id}/{stem_name}: {e}")
+        return jsonify({"error": "read failed"}), 500
 
 
 
