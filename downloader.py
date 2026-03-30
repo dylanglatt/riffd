@@ -189,14 +189,16 @@ def _run_ytdlp_with_binary(binary: str, source: str, out_template: str, out_dir:
         "--user-agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
     ]
 
-    # Build extractor args — player_client + optional PO token
-    # android client typically doesn't require PO tokens; web/mweb do
-    extractor_parts = ["youtube:player_client=android,ios,web", "lang=en"]
+    # Build extractor args — player_client selection + optional PO token
+    # As of 2026.03: 'default' uses the web client, 'android' often works without PO tokens,
+    # 'web' requires PO tokens on many videos. Use 'default,android' as the safest combo.
+    # The 'formats=missing_pot' flag requests formats even when PO token is missing.
     po_token = os.environ.get("YT_PO_TOKEN", "").strip()
+    extractor_args = "youtube:player_client=default,android;formats=missing_pot;lang=en"
     if po_token:
-        extractor_parts[0] += f";po_token={po_token}"
+        extractor_args += f";po_token={po_token}"
         print(f"[downloader] using PO token ({len(po_token)} chars)")
-    cmd.extend(["--extractor-args", ";".join(extractor_parts)])
+    cmd.extend(["--extractor-args", extractor_args])
 
     # Add cookies FIRST — yt-dlp uses them for auth + bot bypass
     if _COOKIES_PATH.exists():
@@ -279,14 +281,118 @@ def download_audio_from_youtube(query_or_url: str, job_id: str) -> Path:
             raise first_err
 
 
+def _download_via_cobalt(query: str, job_id: str) -> Path:
+    """
+    Fallback YouTube download via Cobalt API (cobalt.tools).
+    Cobalt is an open-source media downloader that extracts audio from YouTube.
+    """
+    out_dir = UPLOAD_DIR / job_id
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    # Cobalt needs a direct YouTube URL, not a search query.
+    # First, resolve the search query to a video URL using yt-dlp --get-url (fast, no download)
+    video_url = None
+    if query.startswith("http"):
+        video_url = query
+    else:
+        search_source = f"ytsearch1:{query}" if not query.startswith("ytsearch") else query
+        try:
+            result = subprocess.run(
+                ["yt-dlp", "--get-url", "--no-playlist", search_source],
+                capture_output=True, text=True, timeout=30,
+            )
+            # yt-dlp --get-url returns the direct media URL, but we need the watch URL
+            # Use --get-id instead to get the video ID
+            id_result = subprocess.run(
+                ["yt-dlp", "--get-id", "--no-playlist", search_source],
+                capture_output=True, text=True, timeout=30,
+            )
+            vid_id = id_result.stdout.strip()
+            if vid_id:
+                video_url = f"https://www.youtube.com/watch?v={vid_id}"
+        except Exception as e:
+            print(f"[cobalt] could not resolve search to URL: {e}")
+
+    if not video_url:
+        raise RuntimeError("Cobalt: could not resolve search query to YouTube URL")
+
+    # Try multiple cobalt API endpoints
+    COBALT_APIS = [
+        "https://api.cobalt.tools",
+        "https://cobalt-api.kwiatekmiki.com",
+    ]
+
+    for api_base in COBALT_APIS:
+        try:
+            print(f"[cobalt] trying {api_base} — url: {video_url[:60]}")
+            resp = requests.post(
+                f"{api_base}/",
+                json={
+                    "url": video_url,
+                    "audioFormat": "mp3",
+                    "audioBitrate": "320",
+                    "downloadMode": "audio",
+                },
+                headers={
+                    "Accept": "application/json",
+                    "Content-Type": "application/json",
+                },
+                timeout=30,
+            )
+
+            if not resp.ok:
+                print(f"[cobalt] {api_base} returned {resp.status_code}: {resp.text[:200]}")
+                continue
+
+            data = resp.json()
+            status = data.get("status")
+            dl_url = data.get("url")
+
+            if status == "error":
+                print(f"[cobalt] {api_base} error: {data.get('error', {}).get('code', 'unknown')}")
+                continue
+
+            if not dl_url:
+                print(f"[cobalt] {api_base}: no download URL in response")
+                continue
+
+            # Download the audio file
+            print(f"[cobalt] downloading audio from cobalt...")
+            dl_resp = requests.get(dl_url, stream=True, timeout=180, headers={"User-Agent": "Mozilla/5.0"})
+            dl_resp.raise_for_status()
+
+            safe_name = re.sub(r'[^\w\s-]', '', query)[:80].strip() or "audio"
+            out_path = out_dir / f"{safe_name}.mp3"
+            with open(out_path, "wb") as f:
+                for chunk in dl_resp.iter_content(chunk_size=65536):
+                    f.write(chunk)
+
+            size = out_path.stat().st_size
+            if size < 100_000:
+                print(f"[cobalt] file too small ({size}b) — skipping")
+                out_path.unlink(missing_ok=True)
+                continue
+
+            print(f"[cobalt] ✅ SUCCESS → {out_path.name} ({size:,} bytes)")
+            return out_path
+
+        except Exception as e:
+            print(f"[cobalt] {api_base} error: {e}")
+            continue
+
+    raise RuntimeError("All Cobalt API endpoints failed")
+
+
 def _get_piped_instances() -> list[str]:
     """Fetch live Piped API instances dynamically. Falls back to hardcoded list."""
     FALLBACK = [
         "https://pipedapi.kavin.rocks",
         "https://pipedapi.leptons.xyz",
-        "https://piped-api.privacy.com.de",
-        "https://pipedapi.nosebs.ru",
         "https://pipedapi-libre.kavin.rocks",
+        "https://pipedapi.adminforge.de",
+        "https://api.piped.yt",
+        "https://pipedapi.drgns.space",
+        "https://pipedapi.nosebs.ru",
     ]
     try:
         r = requests.get("https://piped-instances.kavin.rocks/", timeout=8,
@@ -548,10 +654,21 @@ def resolve_audio(track_data: dict, job_id: str, on_progress=None, allow_preview
         except Exception as e:
             print(f"[job {job_id}] ⚠️  yt-dlp FAILED: {str(e)[:300]}")
 
-    # 2. YouTube via Piped API (bypasses datacenter IP blocks)
+    # 2. YouTube via Cobalt API (third-party extraction service)
     if query:
         if on_progress:
             on_progress("Trying alternative download...")
+        try:
+            path = _download_via_cobalt(query, job_id)
+            print(f"[job {job_id}] AUDIO SOURCE SELECTED: youtube (cobalt)")
+            return path
+        except Exception as e:
+            print(f"[job {job_id}] ⚠️  Cobalt FAILED: {str(e)[:300]}")
+
+    # 3. YouTube via Piped API (bypasses datacenter IP blocks)
+    if query:
+        if on_progress:
+            on_progress("Trying another alternative...")
         try:
             path = _download_via_piped(query, job_id)
             print(f"[job {job_id}] AUDIO SOURCE SELECTED: youtube (piped)")
@@ -559,7 +676,7 @@ def resolve_audio(track_data: dict, job_id: str, on_progress=None, allow_preview
         except Exception as e:
             print(f"[job {job_id}] ⚠️  Piped FAILED: {str(e)[:300]}")
 
-    # Both YouTube methods failed
+    # All YouTube methods failed (yt-dlp, cobalt, piped)
     if query and not allow_preview_fallback:
         print(f"[job {job_id}] all full-track sources failed — raising upload_required")
         raise AudioUnavailableError(
