@@ -367,23 +367,35 @@
       .results-nav::-webkit-scrollbar { display:none; }
       .results-nav-btn { padding:10px 0; font-size:0.75rem; white-space:nowrap; flex-shrink:0; }
       .ai-mark { font-size:0.5rem; padding:1px 3px; }
+      /* Transport: Play/Stop buttons larger for touch; Karaoke & Full Mix icon-only to save space */
       .transport-btn { width:44px; height:44px; }
       .transport-btn.stop-btn { width:40px; height:40px; }
       .transport-seek-wrap { height:56px; padding:8px 0; }
+      .transport-time { min-width:64px; font-size:0.75rem; }
+      .karaoke-btn span, .full-mix-btn span { display:none; }
+      .karaoke-btn, .full-mix-btn { padding:0; width:36px; height:36px; border-radius:3px; gap:0; }
+      .karaoke-btn svg, .full-mix-btn svg { width:15px; height:15px; }
       .vol-label { display:none; }
-      .results-meta { padding:16px; gap:8px; }
+      /* Meta toolbar: allow wrapping so Loop + Key controls don't overflow */
+      .results-meta { padding:14px 16px; gap:8px; flex-wrap:wrap; }
+      #results-meta-actions { flex-wrap:wrap; flex-shrink:1; row-gap:8px; column-gap:6px; width:100%; }
+      .meta-action-grp { flex-shrink:0; }
+      .meta-action-btn { margin-left:0; }
+      .meta-action-divider { display:none; }
+      /* Results panel padding */
+      .results-panel { padding:16px; }
+      /* Channels: flex layout with volume on its own row */
       .channel { display:flex; flex-wrap:wrap; gap:8px; padding:10px 12px; border-bottom:1px solid rgba(255,255,255,0.04); border-left:2px solid transparent; }
       .channel:nth-child(even) { background:transparent; }
       .channel.soloed { border-left-color:rgba(212,105,31,0.5); background:rgba(212,105,31,0.04); }
       .channel-name { flex:1; min-width:0; font-size:0.8125rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-      .ch-btn { width:36px; height:28px; font-size:0.6875rem; border-radius:3px; }
+      .ch-btn { width:36px; height:36px; font-size:0.6875rem; border-radius:3px; }
       .channel-volume { width:100%; order:5; }
       .vol-slider { width:100%; }
       .vol-slider::-webkit-slider-thumb { width:16px; height:16px; margin-top:-7px; }
       .vol-slider::-moz-range-thumb { width:16px; height:16px; }
       .stem-family-divider { padding:8px 12px 2px; }
       .tool-btn { width:36px; height:36px; }
-      /* harmonic section styles removed */
       .lyrics-block { padding:14px 16px; }
       .lyrics-line { font-size:0.9rem; }
       .new-song-btn { min-height:44px; padding:10px 20px; }
@@ -398,9 +410,6 @@
       #panel-key > div:first-child { flex-direction:column; gap:16px; }
       #decompose-cof { width:100%; display:flex; justify-content:center; }
       #decompose-key-detail { min-width:0 !important; width:100%; }
-      #results-meta-actions { flex-wrap:wrap; gap:8px; }
-      .meta-action-divider { display:none; }
-      /* harmonic overflow styles removed */
     }
 
     /* ═══ Small phone (360px) ═══ */
@@ -414,16 +423,19 @@
       .try-card-name { font-size:0.75rem; }
       .cap-grid { gap:16px; }
       .proc-hero { padding:20px 12px; }
-      /* proc-art-wrap uses default size in main flow */
       .proc-title { font-size:1.25rem; }
       .proc-sub { font-size:0.8125rem; }
       .proc-status { font-size:0.75rem; }
       .results-nav { gap:8px; padding:0 12px; }
       .results-panel { padding:12px; }
-      .transport-time { font-size:0.6875rem; min-width:60px; }
-      .tool-grp { gap:6px; }
-      .tool-input { width:56px; font-size:0.75rem; }
+      .transport-time { font-size:0.6875rem; min-width:56px; }
+      /* Karaoke/Full Mix even smaller at 360px */
+      .karaoke-btn, .full-mix-btn { width:32px; height:32px; }
+      .tool-grp { gap:4px; }
+      .tool-input { width:52px; font-size:0.75rem; padding:5px 6px; }
+      .tool-btn { width:32px; height:32px; font-size:0.8125rem; }
       .meta-chip { padding:3px 8px; font-size:0.6875rem; }
+      .ch-btn { width:32px; height:32px; }
       .lyrics-block-label { font-size:0.625rem; }
       .smart-recs { padding:20px 12px; }
       .smart-recs-header { gap:4px; margin-bottom:20px; padding-bottom:12px; }
@@ -433,7 +445,7 @@
       .sr-song-reason { font-size:0.6875rem; }
       .sr-cat-label { font-size:0.625rem; }
       .sr-category { margin-bottom:20px; }
-      .results-meta { padding:12px; }
+      .results-meta { padding:10px 12px; }
       /* Track banner — minimal */
       .track-banner { padding:20px 14px 16px; gap:12px; }
       .track-banner img, .track-banner .cover-placeholder { width:72px; height:72px; }
