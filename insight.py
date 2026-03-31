@@ -121,7 +121,7 @@ Genre/Tags: {genre}
    - Each entry: {{"title": "...", "artist": "...", "reason": "..."}}
    - Reasons MUST be under 8 words. No exceptions.
    - BANNED words in reasons: "feel", "vibe", "emotional", "intimate", "landscape", "character", "comparable", "accessible", "melancholic", "vulnerable", "yearning", "carefree", "laid-back", "breezy", "smooth", "warm", "rich"
-   - Mix eras — at least one song from before 2000 across the first three categories
+   - Genre proximity matters: when two songs equally satisfy the musical criteria, prefer the one closer in genre and era to {artist}. A hip-hop track should not surface classic rock recommendations unless the musical match is exceptionally specific and strong.
    - Pick well-known songs musicians would recognize
 
 3. "key_context": A single sentence (under 20 words) about the character or common usage of the detected key. Examples: "A bright, open key — the natural home of folk and country guitar." or "Dark and dramatic — a favorite of classical composers and metal bands alike." Do NOT mention specific instruments or production details you cannot know from the data.

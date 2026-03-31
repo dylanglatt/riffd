@@ -157,47 +157,47 @@
       <div class="tech-card">
         <div class="tech-name">Demucs</div>
         <div class="tech-role">Stem Separation</div>
-        <div class="tech-desc">Meta's state-of-the-art transformer model for audio source separation, running on cloud GPU via Replicate. Isolates up to 6 stems — vocals, drums, bass, guitar, piano, and other instruments — with high fidelity. Stereo field analysis further refines each stem by panning position, producing detailed sub-stem components.</div>
+        <div class="tech-desc">Meta's transformer model running on cloud GPU — isolates up to 6 stems with high fidelity and stereo field analysis.</div>
       </div>
       <div class="tech-card">
         <div class="tech-name">Basic Pitch</div>
         <div class="tech-role">Note & Pitch Detection</div>
-        <div class="tech-desc">Spotify's neural network for polyphonic pitch detection. Converts each isolated stem to MIDI-grade note events with accurate onset and duration. Per-instrument frequency ranges and confidence thresholds are applied to filter noise and improve accuracy.</div>
+        <div class="tech-desc">Spotify's neural network converts each stem into MIDI-grade note events with per-instrument filtering for accuracy.</div>
       </div>
       <div class="tech-card">
         <div class="tech-name">Essentia</div>
         <div class="tech-role">Key + Tempo Detection</div>
-        <div class="tech-desc">Music analysis library for key estimation and BPM detection, applied directly to the audio signal. Results feed into the harmonic analysis pipeline and are displayed in real time during instant analysis — before stems have finished separating.</div>
+        <div class="tech-desc">Detects key and BPM directly from the audio signal — results surface in real time before stem separation finishes.</div>
       </div>
       <div class="tech-card">
         <div class="tech-name">Web Audio API</div>
         <div class="tech-role">Browser Mixing Engine</div>
-        <div class="tech-desc">Browser-native audio processing powers the full mixer — mute, solo, per-stem volume, loop, and real-time pitch transposition — with no server roundtrips. Stems load in parallel and join the mix progressively. Initial fader levels are set proportionally to each stem's RMS energy, so the mix is balanced from the first play.</div>
+        <div class="tech-desc">Powers the full mixer — mute, solo, volume, loop, and pitch transposition — entirely in the browser, with no server roundtrips.</div>
       </div>
       <div class="tech-card">
         <div class="tech-name">Diatonic Template Matching</div>
         <div class="tech-role">Chord & Harmonic Analysis</div>
-        <div class="tech-desc">Windowed pitch-class histogram analysis matched against diatonic chord templates, segmented by song section. Produces roman numeral chord progressions relative to the detected key and powers the section-aligned harmonic timeline.</div>
+        <div class="tech-desc">Matches pitch-class histograms against chord templates by song section to produce roman numeral progressions and the harmonic timeline.</div>
       </div>
       <div class="tech-card">
         <div class="tech-name">Claude API</div>
         <div class="tech-role">Musical Insight</div>
-        <div class="tech-desc">Anthropic's language model generates structured musical analysis — progression names, key context, and theory-based song recommendations — from detected chords, key, tempo, and lyrics. Output is constrained to strict JSON for reliable downstream rendering.</div>
+        <div class="tech-desc">Generates progression names, key context, and theory-based recommendations from the detected chords, tempo, and lyrics.</div>
       </div>
       <div class="tech-card">
         <div class="tech-name">Multi-source Audio Acquisition</div>
         <div class="tech-role">Audio Pipeline</div>
-        <div class="tech-desc">A hardened acquisition pipeline sources audio through YouTube (via proxied yt-dlp with bot detection bypass), Spotify preview, and iTunes preview — with automatic fallback at each stage. User file upload is always available as a direct path. Every failure surfaces a clear next step instead of a broken state.</div>
+        <div class="tech-desc">Sources audio from YouTube, Spotify, and iTunes with automatic fallback at each stage — file upload always available as a direct path.</div>
       </div>
       <div class="tech-card">
         <div class="tech-name">Concurrent Job Queue</div>
         <div class="tech-role">Multi-user Processing</div>
-        <div class="tech-desc">Multiple users can run full analyses simultaneously. A FIFO job queue handles overflow gracefully — users waiting for a slot see live queue status and are automatically promoted when processing capacity opens, with no manual retry required.</div>
+        <div class="tech-desc">A FIFO queue lets multiple users run analyses simultaneously — waitlisted users see live status and are promoted automatically.</div>
       </div>
       <div class="tech-card">
         <div class="tech-name">Flask + Vanilla JS</div>
         <div class="tech-role">Application Stack</div>
-        <div class="tech-desc">Lightweight Python backend with a zero-dependency frontend. SQLite for track caching, filesystem-backed job state, and an in-memory job registry with automatic pruning. Deployed on Render with Gunicorn.</div>
+        <div class="tech-desc">Lightweight Python backend with a zero-dependency frontend. SQLite caching, filesystem job state, deployed on Render with Gunicorn.</div>
       </div>
     </div>
   </div>

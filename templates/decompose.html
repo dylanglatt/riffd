@@ -1600,6 +1600,15 @@ async function downloadTrack(){
     });
     const d = await r.json();
     if(d.error) throw new Error(d.error);
+
+    // Backend returned 202 prefetch_pending — prefetch is still running.
+    // Poll until it's ready, then retry the download (will hit the cache instantly).
+    if (d.status === "prefetch_pending" && d.prefetch_id) {
+      console.log(`[downloadTrack] prefetch still in progress (${d.prefetch_id}) — waiting...`);
+      await _waitForPrefetch(d.prefetch_id, 90);
+      return downloadTrack();
+    }
+
     await waitForReady(d.job_id, 180);
     currentJobId = d.job_id;
   } catch(e) {
@@ -1610,6 +1619,20 @@ async function downloadTrack(){
       setError("Download failed: " + e.message);
       showView("search");
     }
+  }
+}
+
+// Polls /api/prefetch/<id>/status until ready or failed, up to maxSeconds.
+async function _waitForPrefetch(prefetchId, maxSeconds = 90) {
+  const deadline = Date.now() + maxSeconds * 1000;
+  while (Date.now() < deadline) {
+    await sleep(2000);
+    try {
+      const r = await fetch(`/api/prefetch/${prefetchId}/status`);
+      const d = await r.json();
+      if (d.status === 'ready') { _prefetchReady = true; return; }
+      if (d.status === 'failed') return; // let the retry attempt its own download
+    } catch(e) { /* ignore transient errors, keep polling */ }
   }
 }
 
