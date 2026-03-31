@@ -16,4 +16,4 @@ Incrementing this immediately invalidates all existing caches — users will
 re-analyze on next search. Old cache files are NOT deleted, just ignored.
 """
 
-ANALYSIS_VERSION = "v4"
+ANALYSIS_VERSION = "v5"

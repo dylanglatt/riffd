@@ -305,10 +305,48 @@ def download_audio_from_youtube(query_or_url: str, job_id: str) -> Path:
             raise first_err
 
 
+def _get_cobalt_instances() -> list[str]:
+    """
+    Fetch live Cobalt API instances from the community registry.
+    Falls back to a hardcoded list if the registry is unreachable.
+
+    Note: api.cobalt.tools (the official instance) requires JWT auth as of v10 —
+    it is intentionally excluded. Community self-hosted instances do not require auth.
+    """
+    FALLBACK = [
+        "https://cobalt-api.kwiatekmiki.com",
+        "https://cobalt.api.lisek.world",
+        "https://cobalt-api.hyperna.me",
+        "https://cobalt.drgns.space",
+    ]
+    try:
+        r = requests.get(
+            "https://instances.cobalt.best/api/instances.json",
+            timeout=8,
+            headers={"User-Agent": "Mozilla/5.0"},
+        )
+        if r.ok:
+            instances = r.json()
+            # Filter to instances that have an API URL and don't require auth
+            api_urls = [
+                inst["api"].rstrip("/")
+                for inst in instances
+                if inst.get("api") and not inst.get("auth_required", False)
+                and "cobalt.tools" not in inst.get("api", "")  # exclude official (JWT-gated)
+            ]
+            merged = list(dict.fromkeys(api_urls[:8] + FALLBACK))
+            print(f"[cobalt] fetched {len(api_urls)} instances from registry, using {len(merged)} total")
+            return merged
+    except Exception as e:
+        print(f"[cobalt] instance registry failed: {e} — using fallback list")
+    return FALLBACK
+
+
 def _download_via_cobalt(query: str, job_id: str) -> Path:
     """
-    Fallback YouTube download via Cobalt API (cobalt.tools).
+    Fallback YouTube download via Cobalt API (community self-hosted instances).
     Cobalt is an open-source media downloader that extracts audio from YouTube.
+    The official api.cobalt.tools now requires JWT auth — we use community instances instead.
     """
     out_dir = UPLOAD_DIR / job_id
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -340,11 +378,8 @@ def _download_via_cobalt(query: str, job_id: str) -> Path:
     if not video_url:
         raise RuntimeError("Cobalt: could not resolve search query to YouTube URL")
 
-    # Try multiple cobalt API endpoints
-    COBALT_APIS = [
-        "https://api.cobalt.tools",
-        "https://cobalt-api.kwiatekmiki.com",
-    ]
+    # Dynamically fetch working Cobalt instances
+    COBALT_APIS = _get_cobalt_instances()
 
     for api_base in COBALT_APIS:
         try:
@@ -408,7 +443,11 @@ def _download_via_cobalt(query: str, job_id: str) -> Path:
 
 
 def _get_piped_instances() -> list[str]:
-    """Fetch live Piped API instances dynamically. Falls back to hardcoded list."""
+    """
+    Fetch live Piped API instances dynamically, merged with a hardcoded fallback list.
+    Always returns the full fallback list even if the registry returns results — this
+    ensures we have plenty of candidates even when the registry only returns a few entries.
+    """
     FALLBACK = [
         "https://pipedapi.kavin.rocks",
         "https://pipedapi.leptons.xyz",
@@ -417,19 +456,23 @@ def _get_piped_instances() -> list[str]:
         "https://api.piped.yt",
         "https://pipedapi.drgns.space",
         "https://pipedapi.nosebs.ru",
+        "https://piped-api.osphost.fi",
+        "https://pipedapi.tokhmi.xyz",
+        "https://api.piped.private.coffee",
     ]
     try:
         r = requests.get("https://piped-instances.kavin.rocks/", timeout=8,
                          headers={"User-Agent": "Mozilla/5.0"})
         if r.ok:
             instances = r.json()
-            # Each entry has "api_url" and "name" — filter to ones with an API URL
+            # Each entry has "api_url" — collect all with a valid API URL
             api_urls = [inst["api_url"].rstrip("/") for inst in instances
-                        if inst.get("api_url") and "kavin" not in inst.get("name", "").lower()]
-            # Put official instance first
-            urls = ["https://pipedapi.kavin.rocks"] + api_urls[:9]
-            print(f"[piped] fetched {len(urls)} instances from registry")
-            return urls
+                        if inst.get("api_url")]
+            # Merge registry results with fallback — registry entries go first,
+            # dict.fromkeys preserves order and deduplicates
+            merged = list(dict.fromkeys(api_urls + FALLBACK))[:15]
+            print(f"[piped] fetched {len(api_urls)} instances from registry, using {len(merged)} total")
+            return merged
     except Exception as e:
         print(f"[piped] instance registry failed: {e} — using fallback list")
     return FALLBACK

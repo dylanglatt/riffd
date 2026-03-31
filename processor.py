@@ -341,30 +341,22 @@ def _classify_component(features, stem_category, position):
         return "Backing Vocals"
 
     if stem_category == "guitar":
-        # No banjo check here — if Demucs classified the stem as guitar, it's a guitar.
-        # Bright/trebly electric guitars (e.g. Brian May) have high centroid + ZCR and would
-        # false-positive as banjo under spectral heuristics alone.
-        if c > 2200 and bw > 1200 and zcr > 0.10:
+        # Only sub-classify when spectral evidence is unambiguous (acoustic guitar).
+        # Lead/Rhythm distinction is handled by _melodic_split_pass via pitch detection —
+        # spectral centroid alone is too unreliable and causes double-numbering artifacts.
+        if c > 2500 and bw > 1400 and zcr > 0.12:
             return "Acoustic Guitar"
-        if c > 1800 and c_std > 400:
-            return "Lead Guitar"
-        if c > 1000:
-            return "Rhythm Guitar"
         return "Guitar"
 
     if stem_category == "other":
         if c > 3000 and zcr > 0.15:
             return "Banjo"
-        if c > 2200 and bw > 1200 and zcr > 0.10:
+        if c > 2500 and bw > 1400 and zcr > 0.12:
             return "Acoustic Guitar"
-        if c > 1800 and c_std > 400:
-            return "Lead Guitar"
-        if c > 1500 and bw < 1500:
-            return "Rhythm Guitar"
-        if c > 1200 and bw > 1800:
+        if c > 1500 and bw > 1800:
             return "Synth"
         if c > 800:
-            return "Other"
+            return "Atmosphere"
         return "Pad"
 
     if stem_category == "piano":
@@ -389,6 +381,394 @@ def _get_tab_renderer(label):
     if any(k in label_lower for k in ("piano", "keyboard", "organ", "synth", "pad")):
         return "note_list"
     return "note_list"
+
+
+# ─── Melodic Split ──────────────────────────────────────────────────────────
+
+def _extract_melodic_mask(note_events, sr: int, n_samples: int,
+                          n_fft: int = 2048, hop_length: int = 512) -> "np.ndarray | None":
+    """
+    Build an STFT-domain soft mask for monophonic melodic content from Basic Pitch
+    note events.
+
+    Parameters:
+        note_events: DataFrame with start_time_s, end_time_s, pitch_midi, confidence
+        sr: sample rate
+        n_samples: total number of audio samples (to compute n_time_frames)
+        n_fft: FFT size
+        hop_length: hop size
+
+    Returns a 2D soft mask (n_freq_bins x n_time_frames) where values near 1.0
+    indicate melodic (lead) content and values near 0.0 indicate accompaniment,
+    or None if no melody is detected.
+    """
+    if note_events is None or len(note_events) == 0:
+        return None
+
+    n_freq_bins = n_fft // 2 + 1
+    n_time_frames = (n_samples - n_fft) // hop_length + 1
+    if n_time_frames <= 0:
+        return None
+
+    freqs = np.fft.rfftfreq(n_fft, 1.0 / sr)  # frequency for each bin
+
+    # Build time grid (center time of each STFT frame)
+    frame_times = np.arange(n_time_frames) * hop_length / sr
+
+    # Identify monophonic melody notes per time frame.
+    # At each frame, find overlapping notes. If one note is significantly more
+    # confident than the rest (>1.5x), it's melody. Otherwise it's chordal.
+    mask = np.zeros((n_freq_bins, n_time_frames), dtype=np.float32)
+
+    # Pre-extract arrays for speed
+    starts = note_events["start_time_s"].values
+    ends = note_events["end_time_s"].values
+    pitches = note_events["pitch_midi"].values
+    confidences = note_events["confidence"].values if "confidence" in note_events.columns else np.ones(len(note_events))
+
+    # Process frame by frame in vectorized chunks for performance
+    # Group overlapping notes per frame using broadcasting on time boundaries
+    # For efficiency, process in chunks of frames
+    CHUNK = 512
+    for chunk_start in range(0, n_time_frames, CHUNK):
+        chunk_end = min(chunk_start + CHUNK, n_time_frames)
+        chunk_times = frame_times[chunk_start:chunk_end]
+
+        for i, t in enumerate(chunk_times):
+            frame_idx = chunk_start + i
+            # Find notes active at time t
+            active = (starts <= t) & (ends > t)
+            if not np.any(active):
+                continue
+
+            active_conf = confidences[active]
+            active_pitch = pitches[active]
+
+            # Sort by confidence descending
+            order = np.argsort(-active_conf)
+            active_conf = active_conf[order]
+            active_pitch = active_pitch[order]
+
+            # Monophonic detection: top note must be >1.5x the second
+            if len(active_conf) == 1:
+                melody_midi = active_pitch[0]
+            elif active_conf[0] > 1.5 * active_conf[1]:
+                melody_midi = active_pitch[0]
+            else:
+                continue  # chordal — skip
+
+            # Convert MIDI to Hz and compute harmonics (fundamental + 3 harmonics)
+            f0 = 440.0 * (2.0 ** ((melody_midi - 69) / 12.0))
+            harmonics = [f0 * (h + 1) for h in range(4)]
+
+            # Build Gaussian mask centered on each harmonic
+            bw = 60.0  # bandwidth in Hz per harmonic
+            for fh in harmonics:
+                if fh > sr / 2:
+                    break
+                # Gaussian: exp(-(f - fh)^2 / (2 * sigma^2))
+                sigma = bw / 2.0
+                gauss = np.exp(-((freqs - fh) ** 2) / (2 * sigma * sigma))
+                mask[:, frame_idx] = np.maximum(mask[:, frame_idx], gauss)
+
+    # Check if mask covers a meaningful amount — if >85% or <15% energy coverage, skip
+    mask_coverage = np.mean(mask > 0.1)
+    if mask_coverage < 0.01:
+        return None  # essentially no melody detected
+
+    return mask
+
+
+def _split_melodic_stem(left, right, sr: int, melodic_mask,
+                        n_fft: int = 2048, hop_length: int = 512):
+    """
+    Split a stem into lead (melodic) and accompaniment using an STFT mask.
+
+    Returns ((lead_left, lead_right), (acc_left, acc_right)) or None if split
+    is not meaningful (quality gate: both halves must have >= 15% of total energy).
+    """
+    def _apply_mask_channel(signal, mask, inverse=False):
+        """Apply (or invert) a T-F mask to a signal via STFT → mask → iSTFT."""
+        win = np.hanning(n_fft).astype(np.float32)
+        # Pad signal
+        orig_len = len(signal)
+        pad = (hop_length - (orig_len % hop_length)) % hop_length + n_fft
+        padded = np.pad(signal, (0, pad)).astype(np.float32)
+
+        n_frames = (len(padded) - n_fft) // hop_length + 1
+        out = np.zeros(len(padded), dtype=np.float32)
+        win_sq = np.zeros(len(padded), dtype=np.float32)
+
+        m = (1.0 - mask) if inverse else mask
+
+        for i in range(n_frames):
+            s = i * hop_length
+            frame = padded[s:s + n_fft] * win
+            F = np.fft.rfft(frame)
+
+            # Ensure mask frame index is in range
+            mi = min(i, m.shape[1] - 1)
+            F_masked = F * m[:, mi]
+
+            out[s:s + n_fft] += np.fft.irfft(F_masked, n=n_fft) * win
+            win_sq[s:s + n_fft] += win ** 2
+
+        norm = np.maximum(win_sq, 1e-8)
+        result = (out / norm)[:orig_len]
+        del out, win_sq, padded, norm
+        return result
+
+    lead_l = _apply_mask_channel(left, melodic_mask, inverse=False)
+    lead_r = _apply_mask_channel(right, melodic_mask, inverse=False)
+    acc_l = _apply_mask_channel(left, melodic_mask, inverse=True)
+    acc_r = _apply_mask_channel(right, melodic_mask, inverse=True)
+
+    # Quality gate: both halves must have >= 15% of total energy
+    total_energy = _rms((left + right) / 2)
+    if total_energy < 1e-8:
+        del lead_l, lead_r, acc_l, acc_r
+        return None
+
+    lead_energy = _rms((lead_l + lead_r) / 2)
+    acc_energy = _rms((acc_l + acc_r) / 2)
+
+    lead_ratio = lead_energy / total_energy
+    acc_ratio = acc_energy / total_energy
+
+    if lead_ratio < 0.15 or acc_ratio < 0.15:
+        del lead_l, lead_r, acc_l, acc_r
+        return None
+
+    return (lead_l, lead_r), (acc_l, acc_r)
+
+
+_SPLIT_LABEL_MAP = {
+    "Guitar":           ("Lead Guitar", "Rhythm Guitar"),
+    "Acoustic Guitar":  ("Lead Acoustic Guitar", "Acoustic Guitar Accompaniment"),
+    "Vocals":           ("Lead Vocals", "Backing Vocals"),
+    "Piano":            ("Piano Solo", "Piano Accompaniment"),
+    "Keyboard":         ("Keyboard Lead", "Keyboard Pad"),
+    "Synth":            ("Synth Lead", "Synth Pad"),
+    "Pad":              ("Pad Lead", "Pad Accompaniment"),
+    "Other":            ("Lead", "Accompaniment"),
+    "Atmosphere":       ("Atmosphere Lead", "Atmosphere"),
+}
+
+
+def _get_split_labels(original_label: str) -> tuple:
+    """
+    Map an instrument label to (lead_label, accompaniment_label).
+    """
+    if original_label in _SPLIT_LABEL_MAP:
+        return _SPLIT_LABEL_MAP[original_label]
+    # Fallback: prepend "Lead " / " Accompaniment"
+    return (f"Lead {original_label}", f"{original_label} Accompaniment")
+
+
+# Labels that indicate the stem was already split — don't split again
+_ALREADY_SPLIT_KEYWORDS = {"lead", "backing", "rhythm", "solo", "pad", "accompaniment"}
+
+
+def _melodic_split_pass(refined: dict, out_dir: "Path", sr: int = 44100,
+                        progress_callback=None) -> dict:
+    """
+    Post-processing pass: attempt to split non-drum/bass stems into
+    lead (melodic) and accompaniment components using pitch detection.
+
+    Modifies `refined` in place and returns it.
+    """
+    import gc as _gc
+
+    # Snapshot keys — we'll modify the dict during iteration
+    candidates = []
+    for key, stem_data in list(refined.items()):
+        label = stem_data.get("label", "")
+        label_lower = label.lower()
+
+        # Skip drums/bass
+        if "drum" in label_lower or "bass" in label_lower:
+            continue
+        # Skip already-split stems
+        if any(kw in label_lower for kw in _ALREADY_SPLIT_KEYWORDS):
+            continue
+        # Skip inactive or silent stems
+        if not stem_data.get("active", True):
+            continue
+        if stem_data.get("energy", 0) < MIN_ABSOLUTE_ENERGY:
+            continue
+
+        candidates.append((key, stem_data))
+
+    if not candidates:
+        return refined
+
+    MAX_REFINED_STEMS = 10  # must match the cap in separate_stems()
+
+    for key, stem_data in candidates:
+        # Check cap
+        if len(refined) >= MAX_REFINED_STEMS:
+            print(f"[melodic_split] stem cap reached ({MAX_REFINED_STEMS}) — stopping")
+            break
+
+        stem_path = stem_data["path"]
+
+        # Edge case: skip very short stems (< 5 seconds)
+        try:
+            left, right, file_sr = _read_wav(stem_path)
+        except Exception as e:
+            print(f"[melodic_split] failed to read {key}: {e}")
+            continue
+
+        duration = len(left) / file_sr
+        if duration < 5.0:
+            print(f"[melodic_split] skipping {key} — too short ({duration:.1f}s)")
+            del left, right
+            continue
+
+        if progress_callback:
+            progress_callback(f"Refining {stem_data.get('label', key)}...")
+
+        # Run Basic Pitch on the stem to get note events for melodic mask.
+        # Truncate to 90s for inference — the mask is derived from pitch patterns
+        # which are stable across a song; running the full file on a 9-min track
+        # creates huge TF tensors and risks OOM (e.g. Free Bird ~190MB per stem).
+        MELODIC_INFER_SECS = 90
+        import tempfile as _tempfile, subprocess as _subp_mel, os as _os_mel
+        _infer_tmp = None
+        infer_stem_path = stem_path
+        try:
+            _tmp_fd, _infer_tmp = _tempfile.mkstemp(suffix=f"_{key}_90s.wav")
+            _os_mel.close(_tmp_fd)
+            _subp_mel.run(
+                ["ffmpeg", "-y", "-i", stem_path, "-t", str(MELODIC_INFER_SECS), "-c", "copy", _infer_tmp],
+                capture_output=True, timeout=30,
+            )
+            if _os_mel.path.getsize(_infer_tmp) > 1000:
+                infer_stem_path = _infer_tmp
+                print(f"[melodic_split] truncated {key} to {MELODIC_INFER_SECS}s for Basic Pitch")
+        except Exception as _trunc_e:
+            print(f"[melodic_split] truncation warning ({key}): {_trunc_e} — using full file")
+
+        print(f"[melodic_split] running Basic Pitch on {key}...")
+        config = _get_instrument_config("note_list")
+        try:
+            model_output, midi_data, raw_note_events = predict(
+                str(infer_stem_path),
+                ICASSP_2022_MODEL_PATH,
+                onset_threshold=config["onset_threshold"],
+                frame_threshold=config["frame_threshold"],
+                minimum_note_length=config["min_note_length"],
+                minimum_frequency=config["min_freq"],
+                maximum_frequency=config["max_freq"],
+            )
+            del model_output, midi_data
+        except Exception as e:
+            print(f"[melodic_split] Basic Pitch failed for {key}: {e}")
+            del left, right
+            continue
+        finally:
+            if _infer_tmp and _os_mel.path.exists(_infer_tmp):
+                try:
+                    _os_mel.remove(_infer_tmp)
+                except Exception:
+                    pass
+
+        note_events = _normalize_note_events(raw_note_events)
+        del raw_note_events
+
+        if len(note_events) == 0:
+            print(f"[melodic_split] no notes detected for {key} — skipping")
+            del left, right
+            _gc.collect()
+            continue
+
+        # Build melodic mask
+        n_fft = 2048
+        hop_length = 512
+        melodic_mask = _extract_melodic_mask(note_events, file_sr, len(left),
+                                              n_fft=n_fft, hop_length=hop_length)
+        del note_events
+
+        if melodic_mask is None:
+            print(f"[melodic_split] no meaningful melody in {key} — skipping")
+            del left, right
+            _gc.collect()
+            continue
+
+        # Check energy coverage of mask before splitting
+        mask_energy_ratio = float(np.mean(melodic_mask))
+        if mask_energy_ratio > 0.85:
+            print(f"[melodic_split] {key} is essentially all melody ({mask_energy_ratio:.2f}) — skipping")
+            del left, right, melodic_mask
+            _gc.collect()
+            continue
+
+        # Split
+        result = _split_melodic_stem(left, right, file_sr, melodic_mask,
+                                      n_fft=n_fft, hop_length=hop_length)
+        del melodic_mask
+
+        if result is None:
+            print(f"[melodic_split] quality gate failed for {key} — keeping original")
+            del left, right
+            _gc.collect()
+            continue
+
+        (lead_l, lead_r), (acc_l, acc_r) = result
+        del left, right, result
+
+        # Get labels
+        original_label = stem_data.get("label", key.title())
+        lead_label, acc_label = _get_split_labels(original_label)
+        lead_key = _label_to_key(lead_label)
+        acc_key = _label_to_key(acc_label)
+
+        # Avoid key collisions
+        for k_ref in (lead_key, acc_key):
+            if k_ref in refined and k_ref != key:
+                n = 2
+                while f"{k_ref}_{n}" in refined:
+                    n += 1
+                if k_ref == lead_key:
+                    lead_key = f"{k_ref}_{n}"
+                else:
+                    acc_key = f"{k_ref}_{n}"
+
+        # Write new stems
+        lead_path = Path(out_dir) / f"{lead_key}.wav"
+        acc_path = Path(out_dir) / f"{acc_key}.wav"
+        _write_wav(lead_path, lead_l, lead_r, file_sr)
+        _write_wav(acc_path, acc_l, acc_r, file_sr)
+
+        lead_energy = _rms((lead_l + lead_r) / 2)
+        acc_energy = _rms((acc_l + acc_r) / 2)
+        del lead_l, lead_r, acc_l, acc_r
+
+        # Remove original, add two new entries
+        orig_path = Path(stem_data["path"])
+        del refined[key]
+        try:
+            orig_path.unlink()
+        except Exception:
+            pass
+
+        refined[lead_key] = {
+            "path": str(lead_path),
+            "energy": round(lead_energy, 6),
+            "active": True,
+            "label": lead_label,
+        }
+        refined[acc_key] = {
+            "path": str(acc_path),
+            "energy": round(acc_energy, 6),
+            "active": True,
+            "label": acc_label,
+        }
+
+        print(f"[melodic_split] {key} → {lead_key} (E={lead_energy:.4f}) + {acc_key} (E={acc_energy:.4f})")
+        _gc.collect()
+
+    return refined
 
 
 # ─── Main Separation Pipeline ────────────────────────────────────────────────
@@ -647,6 +1027,7 @@ def _separate_stems_replicate(audio_path: Path, out_dir: Path, progress_callback
         try:
             _data, _sr = _sf.read(str(mp3_tmp), dtype="float32")
             _sf.write(str(wav_dest), _data, _sr)
+            del _data, _sr  # Free immediately — these are large arrays (190MB+ for long songs)
         except Exception:
             # soundfile may not support MP3 in all environments — fall back to librosa
             import librosa as _librosa
@@ -655,6 +1036,7 @@ def _separate_stems_replicate(audio_path: Path, out_dir: Path, progress_callback
             if _data.ndim == 1:
                 _data = _np.stack([_data, _data], axis=0)
             _sf.write(str(wav_dest), _data.T, _sr)
+            del _data, _sr  # Free immediately
         finally:
             try:
                 mp3_tmp.unlink()
@@ -667,7 +1049,7 @@ def _separate_stems_replicate(audio_path: Path, out_dir: Path, progress_callback
     dl_items = [(k, v) for k, v in output.items()]
     if progress_callback:
         progress_callback(f"Downloading stems (0/{len(dl_items)})...")
-    with ThreadPoolExecutor(max_workers=len(dl_items) or 1) as _pool:
+    with ThreadPoolExecutor(max_workers=2) as _pool:  # 2 parallel max — each stem is ~190MB in RAM during conversion
         futures = {_pool.submit(_dl_stem, k, v): k for k, v in dl_items}
         completed_count = 0
         for fut in _as_completed(futures):
@@ -926,6 +1308,11 @@ def separate_stems(audio_path: str, song_id: str, progress_callback=None) -> dic
             raw_file.unlink()
         except Exception:
             pass
+
+    # ── Step 3: Melodic split pass ──
+    if progress_callback:
+        progress_callback("Refining instrument separation...")
+    refined = _melodic_split_pass(refined, out_dir, progress_callback=progress_callback)
 
     # If backing vocals exist, promote "Vocals" → "Lead Vocals" for clarity
     has_backing = any(
