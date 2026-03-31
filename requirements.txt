@@ -15,3 +15,4 @@ soundfile
 anthropic>=0.40.0
 essentia
 mutagen>=1.47
+playwright>=1.40

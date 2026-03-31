@@ -137,9 +137,16 @@ def _is_proxy_error(err: Exception) -> bool:
     ))
 
 
-def _run_ytdlp(source: str, job_id: str, use_proxy: bool = True) -> Path:
+def _is_stale_cookie_error(err: Exception) -> bool:
+    """Return True if the error is about expired/invalid YouTube cookies."""
+    from cookie_refresher import is_stale_cookie_error
+    return is_stale_cookie_error(err)
+
+
+def _run_ytdlp(source: str, job_id: str, use_proxy: bool = True, _cookie_retried: bool = False) -> Path:
     """Run yt-dlp with hardened flags. Tries yt-dlp first, falls back to yt-dlp-ejs.
-    If use_proxy=True and every attempt fails with a proxy error, retries once without proxy."""
+    If use_proxy=True and every attempt fails with a proxy error, retries once without proxy.
+    If cookies are stale, refreshes them via Playwright and retries once."""
     out_dir = UPLOAD_DIR / job_id
     out_dir.mkdir(parents=True, exist_ok=True)
     out_template = str(out_dir / "%(title)s.%(ext)s")
@@ -150,6 +157,7 @@ def _run_ytdlp(source: str, job_id: str, use_proxy: bool = True) -> Path:
 
     last_error = None
     all_proxy_errors = True
+    any_stale_cookie = False
     for binary in binaries:
         try:
             result = _run_ytdlp_with_binary(binary, source, out_template, out_dir, job_id, use_proxy=use_proxy)
@@ -158,6 +166,8 @@ def _run_ytdlp(source: str, job_id: str, use_proxy: bool = True) -> Path:
             last_error = e
             if not _is_proxy_error(e):
                 all_proxy_errors = False
+            if _is_stale_cookie_error(e):
+                any_stale_cookie = True
             print(f"[downloader] {binary} failed: {e}")
             for f in out_dir.glob("*.part"):
                 f.unlink(missing_ok=True)
@@ -166,7 +176,21 @@ def _run_ytdlp(source: str, job_id: str, use_proxy: bool = True) -> Path:
     # If every failure was a proxy error and we haven't already tried without proxy, retry direct
     if use_proxy and all_proxy_errors and os.environ.get("YT_PROXY_URL"):
         print(f"[downloader] proxy failed with 502 — retrying WITHOUT proxy")
-        return _run_ytdlp(source, job_id, use_proxy=False)
+        return _run_ytdlp(source, job_id, use_proxy=False, _cookie_retried=_cookie_retried)
+
+    # If any failure was a stale cookie error, refresh cookies and retry once
+    if any_stale_cookie and not _cookie_retried:
+        print(f"[downloader] 🍪 stale cookies detected — attempting Playwright refresh...")
+        try:
+            from cookie_refresher import refresh_cookies
+            success = refresh_cookies()
+            if success:
+                print(f"[downloader] 🍪 cookies refreshed — retrying yt-dlp")
+                return _run_ytdlp(source, job_id, use_proxy=use_proxy, _cookie_retried=True)
+            else:
+                print(f"[downloader] 🍪 cookie refresh failed — continuing with fallbacks")
+        except Exception as refresh_err:
+            print(f"[downloader] 🍪 cookie refresh error: {refresh_err}")
 
     raise last_error or RuntimeError("All yt-dlp binaries failed")
 

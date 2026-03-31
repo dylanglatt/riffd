@@ -32,6 +32,6 @@ test_*.py
 *.xlsx
 *.log
 *.mp3
-cookies.txt
+cookies*.txt
 data/analytics.jsonl
 *.bak
