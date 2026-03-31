@@ -1222,25 +1222,46 @@ function handleDragLeave(){document.getElementById("upload-area").classList.remo
 function handleDrop(e){e.preventDefault();handleDragLeave();const f=e.dataTransfer.files[0];if(f)uploadFile(f);}
 function handleFileSelect(e){const f=e.target.files[0];if(f)uploadFile(f);}
 async function uploadFile(file){
-  selectedTrack={name:file.name,artist:"Uploaded file",year:"",image_url:null};
-  _loadedStems={}; _karaokeActive=false;
-  _showHeroLoading();
+  // Mirror the Spotify selectTrack() flow exactly — same loading state, same progress bar.
+  cleanupAudio();
+  clearTimeout(pollInterval);
+  stemBuffers={}; stemGains={}; stemVolumes={}; stemMuted={}; stemSoloed={};
+  pauseOffset=0; duration=0;
+
+  selectedTrack={name:file.name, artist:"Uploaded file", year:"", image_url:null};
+  currentJobId=null; _loadedStems={}; _karaokeActive=false;
+  _prefetchId=null; _prefetchReady=false;
   setError("");
+
+  // Show results view with skeleton channels immediately (same as Spotify flow)
+  _topBar.show();
+  _showMixLoading();
+  _updateMixLoadingStatus("Uploading file...");
+  _topBar.startCreep(5, 18, 'Uploading...');
+
   try{
-    const fd=new FormData();fd.append("file",file);
+    const fd=new FormData();
+    fd.append("file", file);
     const r=await fetch("/api/upload",{method:"POST",body:fd});
     const d=await r.json();
-    if(d.error)throw new Error(d.error);
+    if(d.error) throw new Error(d.error);
     currentJobId=d.job_id;
-    _showMixLoading();
+
+    _updateMixLoadingStatus("Starting analysis...");
+    _topBar.advance(32, 'Separating stems...');
+
     const procR=await fetch(`/api/process/${currentJobId}`,{
-      method:"POST",headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({track_id:null,artist_id:null,track_meta:selectedTrack||{},analysis_mode:"deep"}),
+      method:"POST", headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({track_id:null, artist_id:null, track_meta:selectedTrack||{}, analysis_mode:"deep"}),
     });
     const procD=await procR.json();
-    if(procD.error)throw new Error(procD.error);
+    if(procD.error) throw new Error(procD.error);
     pollStatus();
-  }catch(e){setError("Upload failed: "+e.message);showView("confirm");}
+  }catch(e){
+    _resetLoadingUI();
+    setError("Upload failed: "+e.message);
+    showView("search");
+  }
 }
 
 // ─── Loading messages ───────────────────────────────────────────────────────
