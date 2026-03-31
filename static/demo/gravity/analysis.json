@@ -1,0 +1,108 @@
+{
+  "stems": {
+    "vocals": {
+      "label": "Vocals",
+      "energy": 0.082038,
+      "active": true
+    },
+    "rhythm_guitar": {
+      "label": "Rhythm Guitar",
+      "energy": 0.058818,
+      "active": true
+    },
+    "bass": {
+      "label": "Bass",
+      "energy": 0.094126,
+      "active": true
+    },
+    "drums": {
+      "label": "Drums",
+      "energy": 0.070848,
+      "active": true
+    },
+    "synth": {
+      "label": "Synth",
+      "energy": 0.017634,
+      "active": true
+    },
+    "piano": {
+      "label": "Piano",
+      "energy": 0.007245,
+      "active": true
+    }
+  },
+  "intelligence": {
+    "key": "C Major",
+    "key_num": 0,
+    "mode_num": 1,
+    "bpm": 123.9,
+    "bpm_confidence": 1.0,
+    "progression": null,
+    "key_confidence": 0.863
+  },
+  "lyrics": "\u2026 Read More\u00a0[Chorus]\nGravity is working against me\nAnd gravity wants to bring me down\n\n[Verse 1]\nOh, I'll never know\nWhat makes this man, with all the love that his heart can stand\nDream of ways to throw it all away\n\n[Chorus]\nWoah, woah\nGravity is working against me\nAnd gravity wants to bring me down\n\n[Verse 2]\nOh, twice as much ain't twice as good\nAnd can't sustain like one half could\nIt's wanting more that's gonna send me to my knees\n\n[Guitar Solo]\n\n[Repeat Verse 2]\nOh, twice as much ain't twice as good\nAnd can't sustain like one half could\nIt's wanting more that's gonna send me to my knees\n\n[Chorus]\nWoah, woah\nGravity, stay the hell away from me\nWoah, woah\nGravity has taken better men than me\nNow, how can that be?\n\n[Outro]\nJust keep me where the light is\nJust keep me where the light is\nJust keep me where the light is\nCome on, keep me where the light is\nCome on, keep me where the light is\nCome on, keep me where, now, keep me where the light is",
+  "tags": [
+    "blues",
+    "singer-songwriter",
+    "john mayer",
+    "acoustic",
+    "rock",
+    "male vocalists",
+    "alternative",
+    "house md"
+  ],
+  "insight": {
+    "progression_names": {},
+    "smart_recs": {
+      "same_progression": [
+        {
+          "title": "Wonderwall",
+          "artist": "Oasis",
+          "reason": "Same I-V-vi-IV progression foundation"
+        },
+        {
+          "title": "Layla",
+          "artist": "Derek and the Dominos",
+          "reason": "Blues-rock progression with minor pentatonic emphasis"
+        }
+      ],
+      "same_key_tempo": [],
+      "similar_harmony": [
+        {
+          "title": "The Thrill Is Gone",
+          "artist": "B.B. King",
+          "reason": "Minor pentatonic blues over major key foundation"
+        },
+        {
+          "title": "Crossroads",
+          "artist": "Cream",
+          "reason": "Blues-rock chromatic movement, minor-major tension"
+        }
+      ],
+      "more_by_artist": [
+        {
+          "title": "Slow Dancing in a Burning Room",
+          "artist": "John Mayer",
+          "reason": "Heavy blues-rock distortion, extended guitar solo"
+        },
+        {
+          "title": "Your Body Is a Wonderland",
+          "artist": "John Mayer",
+          "reason": "Fingerstyle acoustic, I-V-vi-IV progression"
+        },
+        {
+          "title": "Neon",
+          "artist": "John Mayer",
+          "reason": "Minor key blues with jazzy chord extensions"
+        },
+        {
+          "title": "Stop This Train",
+          "artist": "John Mayer",
+          "reason": "Introspective ballad, fingerstyle arrangement"
+        }
+      ]
+    },
+    "key_context": "C Major provides a bright, accessible foundation for blues-inflected singer-songwriter material."
+  },
+  "status": "complete"
+}

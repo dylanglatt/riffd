@@ -1,0 +1,244 @@
+{
+  "stems": {
+    "vocal": {
+      "label": "Vocal",
+      "energy": 0.047362,
+      "active": true
+    },
+    "backing_vocal_1": {
+      "label": "Backing Vocal 1",
+      "energy": 0.02061,
+      "active": true
+    },
+    "backing_vocal_2": {
+      "label": "Backing Vocal 2",
+      "energy": 0.020354,
+      "active": true
+    },
+    "lead_guitar": {
+      "label": "Lead Guitar",
+      "energy": 0.016867,
+      "active": true
+    },
+    "rhythm_guitar_1": {
+      "label": "Rhythm Guitar 1",
+      "energy": 0.017693,
+      "active": true
+    },
+    "rhythm_guitar_2": {
+      "label": "Rhythm Guitar 2",
+      "energy": 0.013928,
+      "active": true
+    },
+    "piano": {
+      "label": "Piano",
+      "energy": 0.017227,
+      "active": true
+    },
+    "additional_guitar": {
+      "label": "Additional Guitar",
+      "energy": 0.009427,
+      "active": true
+    },
+    "bass_guitar": {
+      "label": "Bass Guitar",
+      "energy": 0.063332,
+      "active": true
+    },
+    "drums": {
+      "label": "Drums",
+      "energy": 0.060175,
+      "active": true
+    }
+  },
+  "intelligence": {
+    "key": "A# Major",
+    "key_num": 10,
+    "mode_num": 1,
+    "bpm": 143.6,
+    "bpm_confidence": 0.5,
+    "progression": "I \u2013 vi \u2013 ii",
+    "progression_confidence": 0.4,
+    "progression_source": "audio",
+    "confidence": 0.94,
+    "harmonic_sections": []
+  },
+  "lyrics": "Caught in a landslide, no escape from reality\nOpen your eyes, look up to the skies and see\nI'm just a poor boy, I need no sympathy (Ooh, poor boy)\nBecause I'm easy come, easy go, little high, little low\nAny way the wind blows (Ooh, the wind blows)\nDoesn't really matter to me, to me\n\n[Verse 1]\nMama, just killed a man\nPut a gun against his head, pulled my trigger, now he's dead\nMama, life had just begun\nBut now I've gone and thrown it all away\nMama, ooh, didn't mean to make you cry\nIf I'm not back again this time tomorrow\nCarry on, carry on as if nothing really matters\n\n[Verse 2]\nToo late, my time has come\nSends shivers down my spine, body's aching all the time\nGoodbye, everybody, I've got to go\nGotta leave you all behind and face the truth\nMama, ooh (Any way the wind blows)\nI don't wanna die (Ooh)\nI sometimes wish I'd never been born at all (Ooh, ooh, ooh, ooh, ooh)\n\n[Guitar Solo]\n\n[Verse 3]\nI see a little silhouetto of a man\nScaramouche, Scaramouche, will you do the Fandango?\nThunderbolt and lightning, very, very frightening me\n(Galileo) Galileo, (Galileo) Galileo, Galileo Figaro\nMagnifico (Oh-oh-oh-oh)\nBut I'm just a poor boy, nobody loves me\nHe's just a poor boy from a poor family\nSpare him his life from this monstrosity\nEasy come, easy go, will you let me go?\nBismillah, no, we will not let you go (Let him go)\nBismillah, we will not let you go (Let him go)\nBismillah, we will not let you go (Let me go)\nWill not let you go (Let me go)\n(Never, never, never, never, never, never let me go) Will not let you go\nOh-oh-oh-oh\nNo, no, no, no, no, no, no\nOh, mamma mia, mamma mia (Mamma mia, let me go)\nBeelzebub has a devil put aside for me, for me, for me\n\n[Bridge]\nSo you think you can stone me and spit in my eye?\nSo you think you can love me and leave me to die?\nOh, baby, can't do this to me, baby\nJust gotta get out, just gotta get right outta here\n\n[Outro]\n(Ooh)\n(Ooh, yeah, ooh, yeah)\nNothing really matters, anyone can see\nNothing really matters\nNothing really matters to me\nAny way the wind blows",
+  "tags": [
+    "classic rock",
+    "rock",
+    "Queen",
+    "70s",
+    "80s",
+    "epic",
+    "hard rock",
+    "british"
+  ],
+  "insight": {
+    "progression_names": {
+      "main": "vi-IV-I progression"
+    },
+    "smart_recs": {
+      "same_progression": [
+        {
+          "title": "No One Like You",
+          "artist": "The Scorpions",
+          "reason": "Same I-vi-IV-V progression pattern",
+          "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music124/v4/8d/a4/f9/8da4f95f-4162-9d31-7131-fe49337a1689/00731453478626.rgb.jpg/300x300bb.jpg"
+        },
+        {
+          "title": "Stairway to Heaven",
+          "artist": "Led Zeppelin",
+          "reason": "Features vi-IV-I descending progression",
+          "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/5c/15/9b/5c159b27-95ca-b9a7-84e3-28e795fffd39/dj.kvkrpptq.jpg/300x300bb.jpg"
+        }
+      ],
+      "same_key_tempo": [
+        {
+          "title": "Rock and Roll",
+          "artist": "Led Zeppelin",
+          "reason": "A# Major, approximately 144 BPM",
+          "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/47/31/8e/47318e93-c0fa-35d1-8b84-809691955124/603497926121.jpg/300x300bb.jpg"
+        }
+      ],
+      "similar_harmony": [
+        {
+          "title": "The Great Gig in the Sky",
+          "artist": "Pink Floyd",
+          "reason": "Dynamic major-key shifts through sections",
+          "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music221/v4/3e/76/b0/3e76b0e3-762b-2286-a019-8afb19cee541/886445635829.jpg/300x300bb.jpg"
+        },
+        {
+          "title": "Comfortably Numb",
+          "artist": "Pink Floyd",
+          "reason": "Major key with chromatic bass movement",
+          "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music221/v4/3e/17/ec/3e17ec6d-f980-c64f-19e0-a6fd8bbf0c10/886445635850.jpg/300x300bb.jpg"
+        }
+      ],
+      "more_by_artist": [
+        {
+          "title": "Somebody to Love",
+          "artist": "Queen",
+          "reason": "Gospel-influenced major-key arrangement",
+          "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/4d/08/2a/4d082a9e-7898-1aa1-a02f-339810058d9e/14DMGIM05632.rgb.jpg/300x300bb.jpg"
+        },
+        {
+          "title": "The Show Must Go On",
+          "artist": "Queen",
+          "reason": "Multi-sectional operatic rock composition",
+          "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music123/v4/af/c8/14/afc81460-737f-5d91-73b6-9f1da41afcdc/14DMGIM05559.rgb.jpg/300x300bb.jpg"
+        },
+        {
+          "title": "Fat Bottomed Girls",
+          "artist": "Queen",
+          "reason": "Hard rock blues in A# with stomp beat",
+          "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/fe/19/b1/fe19b168-8cd6-c583-515c-e168828b593e/14DMGIM05551.rgb.jpg/300x300bb.jpg"
+        },
+        {
+          "title": "We Are the Champions",
+          "artist": "Queen",
+          "reason": "Triumphant major-key anthem arrangement",
+          "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/4d/08/2a/4d082a9e-7898-1aa1-a02f-339810058d9e/14DMGIM05632.rgb.jpg/300x300bb.jpg"
+        }
+      ]
+    },
+    "key_context": "A# Major is bright and powerful\u2014a bold key favored by rock and metal for anthemic impact."
+  },
+  "recommendations": {
+    "more_like_this": [],
+    "same_style": [
+      {
+        "id": "lastfm_Another_One_Bites_th_Queen",
+        "name": "Another One Bites the Dust",
+        "artist": "Queen",
+        "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/4d/08/2a/4d082a9e-7898-1aa1-a02f-339810058d9e/14DMGIM05632.rgb.jpg/300x300bb.jpg",
+        "year": "",
+        "duration_ms": 0,
+        "album": "",
+        "yt_query": "Queen - Another One Bites the Dust official audio",
+        "_source": "lastfm"
+      },
+      {
+        "id": "lastfm_Don't_Stop_Me_Now_Queen",
+        "name": "Don't Stop Me Now",
+        "artist": "Queen",
+        "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/4d/08/2a/4d082a9e-7898-1aa1-a02f-339810058d9e/14DMGIM05632.rgb.jpg/300x300bb.jpg",
+        "year": "",
+        "duration_ms": 0,
+        "album": "",
+        "yt_query": "Queen - Don't Stop Me Now official audio",
+        "_source": "lastfm"
+      },
+      {
+        "id": "lastfm_Dream_On_Aerosmith",
+        "name": "Dream On",
+        "artist": "Aerosmith",
+        "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music112/v4/e2/87/d9/e287d987-7b92-7749-737f-b5b8a6913f88/22UM1IM38560.rgb.jpg/300x300bb.jpg",
+        "year": "",
+        "duration_ms": 0,
+        "album": "",
+        "yt_query": "Aerosmith - Dream On official audio",
+        "_source": "lastfm"
+      },
+      {
+        "id": "lastfm_Stairway_to_Heaven_Led_Zeppelin",
+        "name": "Stairway to Heaven",
+        "artist": "Led Zeppelin",
+        "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/5c/15/9b/5c159b27-95ca-b9a7-84e3-28e795fffd39/dj.kvkrpptq.jpg/300x300bb.jpg",
+        "year": "",
+        "duration_ms": 0,
+        "album": "",
+        "yt_query": "Led Zeppelin - Stairway to Heaven official audio",
+        "_source": "lastfm"
+      },
+      {
+        "id": "lastfm_Under_Pressure_Queen_&_David_Bowie",
+        "name": "Under Pressure",
+        "artist": "Queen & David Bowie",
+        "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/4d/08/2a/4d082a9e-7898-1aa1-a02f-339810058d9e/14DMGIM05632.rgb.jpg/300x300bb.jpg",
+        "year": "",
+        "duration_ms": 0,
+        "album": "",
+        "yt_query": "Queen & David Bowie - Under Pressure official audio",
+        "_source": "lastfm"
+      },
+      {
+        "id": "lastfm_Starman_David_Bowie",
+        "name": "Starman",
+        "artist": "David Bowie",
+        "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music114/v4/5f/fa/56/5ffa56c2-ea1f-7a17-6bad-192ff9b6476d/825646124206.jpg/300x300bb.jpg",
+        "year": "",
+        "duration_ms": 0,
+        "album": "",
+        "yt_query": "David Bowie - Starman official audio",
+        "_source": "lastfm"
+      },
+      {
+        "id": "lastfm_Livin'_on_a_Prayer_Bon_Jovi",
+        "name": "Livin' on a Prayer",
+        "artist": "Bon Jovi",
+        "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music112/v4/40/16/3e/40163e24-6985-b785-d4ea-cbae07d74812/06UMGIM05422.rgb.jpg/300x300bb.jpg",
+        "year": "",
+        "duration_ms": 0,
+        "album": "",
+        "yt_query": "Bon Jovi - Livin' on a Prayer official audio",
+        "_source": "lastfm"
+      },
+      {
+        "id": "lastfm_I_Was_Made_for_Lovin_Kiss",
+        "name": "I Was Made for Lovin' You",
+        "artist": "Kiss",
+        "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music122/v4/92/7f/5c/927f5c6f-e24a-8db5-e165-38d8b9314d8d/14UMGIM16041.rgb.jpg/300x300bb.jpg",
+        "year": "",
+        "duration_ms": 0,
+        "album": "",
+        "yt_query": "Kiss - I Was Made for Lovin' You official audio",
+        "_source": "lastfm"
+      }
+    ],
+    "around_this_time": []
+  },
+  "audio_source": "youtube",
+  "audio_mode": "full",
+  "status": "complete"
+}

@@ -1,0 +1,226 @@
+{
+  "stems": {
+    "vocal": {
+      "label": "Vocal",
+      "energy": 0.088118,
+      "active": true
+    },
+    "acoustic_guitar": {
+      "label": "Acoustic Guitar",
+      "energy": 0.008917,
+      "active": true
+    },
+    "lead_guitar_1": {
+      "label": "Lead Guitar 1",
+      "energy": 0.026699,
+      "active": true
+    },
+    "lead_guitar_2": {
+      "label": "Lead Guitar 2",
+      "energy": 0.008188,
+      "active": true
+    },
+    "banjo": {
+      "label": "Banjo",
+      "energy": 0.054914,
+      "active": true
+    },
+    "bass_guitar": {
+      "label": "Bass Guitar",
+      "energy": 0.07206,
+      "active": true
+    },
+    "drums": {
+      "label": "Drums",
+      "energy": 0.061368,
+      "active": true
+    }
+  },
+  "intelligence": {
+    "key": "G Major",
+    "key_num": 7,
+    "mode_num": 1,
+    "bpm": 136.0,
+    "bpm_confidence": 0.5,
+    "progression": "vi \u2013 I \u2013 ii \u2013 V \u2013 I \u2013 V",
+    "progression_confidence": 0.5,
+    "progression_source": "web",
+    "confidence": 0.83,
+    "harmonic_sections": []
+  },
+  "lyrics": "Well, I'm running down the road tryin' to loosen my load\nI've got seven women on my mind\nFour that wanna own me, two that wanna stone me\nOne says she's a friend of mine\n\n[Chorus]\nTake it easy, take it easy\nDon't let the sound of your own wheels drive you crazy\nLighten up while you still can\nDon't even try to understand\nJust find a place to make your stand and take it easy\n\n[Verse 2]\nWell, I'm a standing on a corner in Winslow, Arizona\nAnd such a fine sight to see\nIt's a girl, my Lord, in a flatbed Ford\nSlowin' down to take a look at me\n\n[Chorus]\nCome on, baby, don't say maybe\nI gotta know if your sweet love is gonna save me\nWe may lose, and we may win\nThough we will never be here again\nSo open up, I'm climbin' in\nSo take it easy\n\n[Guitar Solo]\n\n[Verse 3]\nWell, I'm running down the road trying to loosen my load\nGot a world of trouble on my mind\nLookin' for a lover who won't blow my cover\nShe's so hard to find\n\n[Chorus]\nTake it easy, take it easy\nDon't let the sound of your own wheels make you crazy\nCome on baby, don't say maybe\nI gotta know if your sweet love is gonna save me\n\n[Outro]\n(Oh-oh-oh, oh-oh-oh, oh-oh-oh, oh-oh-oh\nOh-oh-oh, oh-oh-oh, oh-oh-oh, oh-oh-oh\nOh-oh-oh, oh-oh-oh)\nOh, we got it easy\nWe oughta take it easy",
+  "tags": [],
+  "insight": {
+    "progression_names": {
+      "main": "vi-I-ii-V turnaround"
+    },
+    "smart_recs": {
+      "same_progression": [
+        {
+          "title": "Don't Stop Believin'",
+          "artist": "Journey",
+          "reason": "Same vi-I-ii-V loop foundation",
+          "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music116/v4/71/2d/61/712d617d-f4a4-5904-1b11-d4b4b45c47c5/828768588925.jpg/300x300bb.jpg"
+        },
+        {
+          "title": "Wonderwall",
+          "artist": "Oasis",
+          "reason": "Uses vi-I-ii-V progression pattern",
+          "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music113/v4/04/92/e0/0492e08b-cbcc-9969-9ad6-8f5a0888068c/5051961007107.jpg/300x300bb.jpg"
+        }
+      ],
+      "same_key_tempo": [
+        {
+          "title": "Walking on Sunshine",
+          "artist": "Katrina & The Waves",
+          "reason": "G Major, 130-140 BPM range",
+          "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music124/v4/f6/b6/37/f6b6378c-9b34-72fb-9abe-4a6d6042ad53/13ULAIM49571.rgb.jpg/300x300bb.jpg"
+        },
+        {
+          "title": "Brown Eyed Girl",
+          "artist": "Van Morrison",
+          "reason": "G Major, mid-136 BPM region",
+          "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music221/v4/dd/0e/bc/dd0ebcee-9d50-fe99-4ef8-c0fb79932511/886445621334_Cover.jpg/300x300bb.jpg"
+        }
+      ],
+      "similar_harmony": [
+        {
+          "title": "Harvest Moon",
+          "artist": "Neil Young",
+          "reason": "Diatonic vi-I progression, open harmony",
+          "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music124/v4/4d/45/41/4d45414c-6364-51cf-2874-7c8aa755caaa/mzi.oetoyyot.jpg/300x300bb.jpg"
+        },
+        {
+          "title": "Dreams",
+          "artist": "Fleetwood Mac",
+          "reason": "Minor relative vi resolving to major I",
+          "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/d2/48/f4/d248f4ae-a7e4-a48e-1588-6617de3e8d76/mzi.izeorbmm.jpg/300x300bb.jpg"
+        }
+      ],
+      "more_by_artist": [
+        {
+          "title": "Hotel California",
+          "artist": "Eagles",
+          "reason": "Minor key with chromatic chord movement",
+          "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/88/16/2c/88162c3d-46db-8321-61f3-3a47404cfe76/075596050920.jpg/300x300bb.jpg"
+        },
+        {
+          "title": "Peaceful Easy Feeling",
+          "artist": "Eagles",
+          "reason": "Open tuning, fingerpicked acoustic arrangement",
+          "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music125/v4/8f/e7/f4/8fe7f417-d464-8879-b00e-3d4965a9cfd1/075596062329.jpg/300x300bb.jpg"
+        },
+        {
+          "title": "Witchy Woman",
+          "artist": "Eagles",
+          "reason": "Minor-key rocker, rare for their catalog",
+          "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music125/v4/f0/c7/c8/f0c7c8f4-4319-d357-ddaf-566ef8e2194e/081227979379.jpg/300x300bb.jpg"
+        },
+        {
+          "title": "The Long Run",
+          "artist": "Eagles",
+          "reason": "Extended harmonic progression, key modulation",
+          "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/9a/54/6e/9a546e8b-f994-8d1f-a94b-d2d642dee4ce/075596056021.jpg/300x300bb.jpg"
+        }
+      ]
+    },
+    "key_context": "G Major is bright and accessible\u2014a natural home for folk and country guitar tradition."
+  },
+  "recommendations": {
+    "more_like_this": [],
+    "same_style": [
+      {
+        "id": "lastfm_Peaceful_Easy_Feelin_Eagles",
+        "name": "Peaceful Easy Feeling",
+        "artist": "Eagles",
+        "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music125/v4/8f/e7/f4/8fe7f417-d464-8879-b00e-3d4965a9cfd1/075596062329.jpg/300x300bb.jpg",
+        "year": "",
+        "duration_ms": 0,
+        "album": "",
+        "yt_query": "Eagles - Peaceful Easy Feeling official audio",
+        "_source": "lastfm"
+      },
+      {
+        "id": "lastfm_Lyin'_Eyes_Eagles",
+        "name": "Lyin' Eyes",
+        "artist": "Eagles",
+        "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music125/v4/f0/c7/c8/f0c7c8f4-4319-d357-ddaf-566ef8e2194e/081227979379.jpg/300x300bb.jpg",
+        "year": "",
+        "duration_ms": 0,
+        "album": "",
+        "yt_query": "Eagles - Lyin' Eyes official audio",
+        "_source": "lastfm"
+      },
+      {
+        "id": "lastfm_Sister_Golden_Hair_America",
+        "name": "Sister Golden Hair",
+        "artist": "America",
+        "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/46/3b/02/463b020e-9f01-3b77-1b23-5bd556c8842d/dj.jjgrabsk.jpg/300x300bb.jpg",
+        "year": "",
+        "duration_ms": 0,
+        "album": "",
+        "yt_query": "America - Sister Golden Hair official audio",
+        "_source": "lastfm"
+      },
+      {
+        "id": "lastfm_Listen_to_the_Music_The_Doobie_Brothers",
+        "name": "Listen to the Music",
+        "artist": "The Doobie Brothers",
+        "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music124/v4/d5/ce/39/d5ce3991-f455-179b-51bb-8292ae035a1a/603497878246.jpg/300x300bb.jpg",
+        "year": "",
+        "duration_ms": 0,
+        "album": "",
+        "yt_query": "The Doobie Brothers - Listen to the Music official audio",
+        "_source": "lastfm"
+      },
+      {
+        "id": "lastfm_Ventura_Highway_America",
+        "name": "Ventura Highway",
+        "artist": "America",
+        "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Features114/v4/b2/4e/64/b24e640d-2324-4782-a537-c5f92c8609f0/dj.iiuqphlx.jpg/300x300bb.jpg",
+        "year": "",
+        "duration_ms": 0,
+        "album": "",
+        "yt_query": "America - Ventura Highway official audio",
+        "_source": "lastfm"
+      },
+      {
+        "id": "lastfm_Go_Your_Own_Way_Fleetwood_Mac",
+        "name": "Go Your Own Way",
+        "artist": "Fleetwood Mac",
+        "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music124/v4/4d/13/ba/4d13bac3-d3d5-7581-2c74-034219eadf2b/081227970949.jpg/300x300bb.jpg",
+        "year": "",
+        "duration_ms": 0,
+        "album": "",
+        "yt_query": "Fleetwood Mac - Go Your Own Way official audio",
+        "_source": "lastfm"
+      },
+      {
+        "id": "lastfm_Have_You_Ever_Seen_t_Creedence_Clearwater",
+        "name": "Have You Ever Seen the Rain?",
+        "artist": "Creedence Clearwater Revival",
+        "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/fb/93/81/fb938141-0ec9-ff80-3b57-3d3d0979e4b3/00888072356085.rgb.jpg/300x300bb.jpg",
+        "year": "",
+        "duration_ms": 0,
+        "album": "",
+        "yt_query": "Creedence Clearwater Revival - Have You Ever Seen the Rain? official audio",
+        "_source": "lastfm"
+      },
+      {
+        "id": "lastfm_The_Joker_Steve_Miller_Band",
+        "name": "The Joker",
+        "artist": "Steve Miller Band",
+        "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music112/v4/78/f8/cd/78f8cdac-35ff-34ee-4303-f447ef3a2c3f/13UAAIM00691.rgb.jpg/300x300bb.jpg",
+        "year": "",
+        "duration_ms": 0,
+        "album": "",
+        "yt_query": "Steve Miller Band - The Joker official audio",
+        "_source": "lastfm"
+      }
+    ],
+    "around_this_time": []
+  },
+  "audio_source": "youtube",
+  "audio_mode": "full",
+  "status": "complete"
+}
