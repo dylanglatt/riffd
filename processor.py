@@ -341,10 +341,9 @@ def _classify_component(features, stem_category, position):
         return "Backing Vocals"
 
     if stem_category == "guitar":
-        # Banjo: bright + high ZCR (plucked attack). Threshold lowered from 3000 to
-        # catch mellow country/folk banjos (e.g. Eagles) which sit in the 2500–3000 Hz range.
-        if c > 2500 and zcr > 0.13:
-            return "Banjo"
+        # No banjo check here — if Demucs classified the stem as guitar, it's a guitar.
+        # Bright/trebly electric guitars (e.g. Brian May) have high centroid + ZCR and would
+        # false-positive as banjo under spectral heuristics alone.
         if c > 2200 and bw > 1200 and zcr > 0.10:
             return "Acoustic Guitar"
         if c > 1800 and c_std > 400:
@@ -509,18 +508,48 @@ def _separate_stems_replicate(audio_path: Path, out_dir: Path, progress_callback
     print(f"[replicate] version = {VERSION[:16]}...")
 
     # ── Step 1: Upload audio file to Replicate ──
-    file_size = audio_path.stat().st_size
-    suffix = audio_path.suffix.lower().lstrip(".")
+    # Pre-transcode to 128kbps MP3 to halve upload size (Demucs doesn't need higher bitrate for separation)
+    upload_path = audio_path
+    _transcode_tmp = None
+    try:
+        import subprocess as _sp
+        _transcode_tmp = audio_path.parent / f"_upload_{audio_path.stem}_128k.mp3"
+        _tc = _sp.run(
+            ["ffmpeg", "-y", "-i", str(audio_path), "-b:a", "128k", "-ac", "2", str(_transcode_tmp)],
+            capture_output=True, timeout=60,
+        )
+        if _tc.returncode == 0 and _transcode_tmp.exists() and _transcode_tmp.stat().st_size > 0:
+            orig_size = audio_path.stat().st_size
+            new_size = _transcode_tmp.stat().st_size
+            print(f"[replicate] transcoded to 128kbps: {orig_size:,} → {new_size:,} bytes ({new_size*100//orig_size}%)")
+            upload_path = _transcode_tmp
+        else:
+            print(f"[replicate] transcode failed (rc={_tc.returncode}), uploading original")
+            _transcode_tmp = None
+    except Exception as _te:
+        print(f"[replicate] transcode skipped: {_te}")
+        _transcode_tmp = None
+
+    file_size = upload_path.stat().st_size
+    suffix = upload_path.suffix.lower().lstrip(".")
     mime = {"mp3": "audio/mpeg", "wav": "audio/wav", "m4a": "audio/mp4",
             "ogg": "audio/ogg", "flac": "audio/flac"}.get(suffix, "audio/mpeg")
-    print(f"[replicate] uploading audio: {audio_path.name} ({file_size} bytes, {mime})")
+    print(f"[replicate] uploading audio: {upload_path.name} ({file_size} bytes, {mime})")
 
-    upload_resp = _requests.post(
-        f"{REPLICATE_API}/files",
-        headers={"Authorization": f"Bearer {token}"},
-        files={"content": (audio_path.name, open(audio_path, "rb"), mime)},
-        timeout=120,
-    )
+    try:
+        upload_resp = _requests.post(
+            f"{REPLICATE_API}/files",
+            headers={"Authorization": f"Bearer {token}"},
+            files={"content": (upload_path.name, open(upload_path, "rb"), mime)},
+            timeout=300,
+        )
+    finally:
+        # Clean up transcode temp file regardless of upload outcome
+        if _transcode_tmp and _transcode_tmp.exists():
+            try:
+                _transcode_tmp.unlink()
+            except Exception:
+                pass
     if not upload_resp.ok:
         raise RuntimeError(f"Replicate file upload failed (HTTP {upload_resp.status_code}): {upload_resp.text[:300]}")
 
@@ -535,7 +564,7 @@ def _separate_stems_replicate(audio_path: Path, out_dir: Path, progress_callback
         "input": {
             "audio": file_url,
             "model_name": "htdemucs_6s",  # 6-stem: vocals/drums/bass/guitar/piano/other
-            "output_format": "wav",
+            "output_format": "mp3",  # mp3 is ~10x smaller than wav; we convert locally after download
             "shifts": 1,
         },
     }
@@ -601,29 +630,56 @@ def _separate_stems_replicate(audio_path: Path, out_dir: Path, progress_callback
         if not url or not isinstance(url, str):
             return stem_key, None, "no URL"
         stem_name = stem_key if stem_key in _KNOWN_STEMS else stem_key
-        dest = out_dir / f"_raw_{stem_name}.wav"
-        print(f"[replicate] downloading: {stem_name} → {dest.name}")
+        # Download as MP3 (output_format=mp3 is ~10x smaller than wav)
+        mp3_tmp = out_dir / f"_raw_{stem_name}.mp3"
+        wav_dest = out_dir / f"_raw_{stem_name}.wav"
+        print(f"[replicate] downloading: {stem_name} → {mp3_tmp.name}")
         with _requests.get(url, stream=True, timeout=120) as dl_resp:
             dl_resp.raise_for_status()
             byte_count = 0
-            with open(dest, "wb") as f:
+            with open(mp3_tmp, "wb") as f:
                 for chunk in dl_resp.iter_content(chunk_size=1024 * 1024):  # 1MB chunks
                     f.write(chunk)
                     byte_count += len(chunk)
-        print(f"[replicate] saved: {stem_name} ({byte_count:,} bytes)")
-        return stem_key, str(dest), None
+        print(f"[replicate] downloaded: {stem_name} ({byte_count:,} bytes) — converting to wav")
+        # Convert MP3 → WAV so downstream pipeline stays unchanged (expects .wav)
+        import soundfile as _sf
+        try:
+            _data, _sr = _sf.read(str(mp3_tmp), dtype="float32")
+            _sf.write(str(wav_dest), _data, _sr)
+        except Exception:
+            # soundfile may not support MP3 in all environments — fall back to librosa
+            import librosa as _librosa
+            import numpy as _np
+            _data, _sr = _librosa.load(str(mp3_tmp), sr=None, mono=False)
+            if _data.ndim == 1:
+                _data = _np.stack([_data, _data], axis=0)
+            _sf.write(str(wav_dest), _data.T, _sr)
+        finally:
+            try:
+                mp3_tmp.unlink()
+            except Exception:
+                pass
+        print(f"[replicate] saved: {stem_name}")
+        return stem_key, str(wav_dest), None
 
     raw_stems = {}
     dl_items = [(k, v) for k, v in output.items()]
+    if progress_callback:
+        progress_callback(f"Downloading stems (0/{len(dl_items)})...")
     with ThreadPoolExecutor(max_workers=len(dl_items) or 1) as _pool:
         futures = {_pool.submit(_dl_stem, k, v): k for k, v in dl_items}
+        completed_count = 0
         for fut in _as_completed(futures):
             stem_key, path, err = fut.result()
+            completed_count += 1
             if err:
                 print(f"[replicate] skipping stem '{stem_key}': {err}")
             elif path:
                 stem_name = stem_key if stem_key in _KNOWN_STEMS else stem_key
                 raw_stems[stem_name] = path
+                if progress_callback:
+                    progress_callback(f"Downloading stems ({completed_count}/{len(dl_items)})...")
 
     if not raw_stems:
         raise RuntimeError("Replicate returned no downloadable stems")
@@ -683,8 +739,18 @@ def separate_stems(audio_path: str, song_id: str, progress_callback=None) -> dic
             except Exception as e:
                 last_error = e
                 err_str = str(e)
-                # Retry on GPU preemption (code: PA) or transient failures
-                is_retryable = "code: PA" in err_str or "interrupted" in err_str.lower() or "starting" in err_str.lower()
+                # Retry on GPU preemption (code: PA), transient API failures, or network errors
+                # "timed out" / "connection aborted" cover socket write timeouts during upload
+                is_retryable = (
+                    "code: PA" in err_str
+                    or "interrupted" in err_str.lower()
+                    or "starting" in err_str.lower()
+                    or "timed out" in err_str.lower()
+                    or "time out" in err_str.lower()
+                    or "connection aborted" in err_str.lower()
+                    or "connectionerror" in err_str.lower()
+                    or "remotedisconnected" in err_str.lower()
+                )
                 if is_retryable and attempt < MAX_RETRIES:
                     print(f"[separation] attempt {attempt} failed (retryable): {e}")
                     continue
@@ -860,6 +926,29 @@ def separate_stems(audio_path: str, song_id: str, progress_callback=None) -> dic
             raw_file.unlink()
         except Exception:
             pass
+
+    # If backing vocals exist, promote "Vocals" → "Lead Vocals" for clarity
+    has_backing = any(
+        "backing" in v.get("label", "").lower() for v in refined.values()
+    )
+    if has_backing:
+        for key, stem_data in list(refined.items()):
+            if stem_data.get("label") == "Vocals":
+                stem_data["label"] = "Lead Vocals"
+                # Rename the file and dict key to match
+                new_key = "lead_vocals"
+                orig_path = Path(stem_data["path"])
+                new_path = orig_path.parent / "lead_vocals.wav"
+                try:
+                    orig_path.rename(new_path)
+                    stem_data["path"] = str(new_path)
+                except Exception:
+                    pass
+                refined[new_key] = stem_data
+                if key != new_key:
+                    del refined[key]
+                print(f"[processor] promoted 'Vocals' → 'Lead Vocals' (backing vocals present)")
+                break
 
     return refined
 

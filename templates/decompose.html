@@ -867,10 +867,20 @@ function _reorganizeStemGroups() {
     return '5';
   }
 
+  // Within a family, lead/main vocals come before backing vocals; otherwise alphabetical
+  function _stemSortKey(name) {
+    const r = _getStemRoot(name);
+    if (r === 'lead_vocals' || r === 'vocals') return '0_' + name;   // lead first
+    if (r.includes('backing') || r.includes('harmony')) return '2_' + name; // backing last
+    return '1_' + name; // everything else in the middle
+  }
   channels.sort((a, b) => {
     const na = a.id.replace('ch-', ''), nb = b.id.replace('ch-', '');
     const fa = _stemFamily(na), fb = _stemFamily(nb);
-    return fa !== fb ? fa.localeCompare(fb) : na.localeCompare(nb);
+    if (fa !== fb) return fa.localeCompare(fb);
+    // Same family — use vocal-aware sub-sort
+    if (fa === '0') return _stemSortKey(na).localeCompare(_stemSortKey(nb));
+    return na.localeCompare(nb);
   });
 
   // Re-append in sorted order with lightweight family dividers
@@ -1500,7 +1510,7 @@ function _buildWaveform() {
 }
 
 // ─── Processing ─────────────────────────────────────────────────────────────
-const POLL_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes max polling
+const POLL_TIMEOUT_MS = 14 * 60 * 1000; // 14 minutes max polling — matches backend JOB_TIMEOUT (15min) with 1min buffer
 let _pollStartTime = 0;
 
 function _resetLoadingUI() {
