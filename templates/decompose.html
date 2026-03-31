@@ -830,7 +830,10 @@ function _addStemChannel(stemName, stemData, jobId) {
   channel.className = 'channel stem-channel-enter';
   channel.id = `ch-${stemName}`;
   channel.innerHTML = `<div class="channel-name">${esc(label)}</div><div class="channel-volume"><input type="range" class="vol-slider" min="0" max="100" value="${initVol}" oninput="setVolume('${stemName}',this.value)" id="vol-${stemName}"/><span class="vol-label" id="vol-label-${stemName}">${initVol}</span></div><div class="ch-btns"><button class="ch-btn" id="mute-${stemName}" onclick="toggleMute('${stemName}')">M</button><button class="ch-btn" id="solo-${stemName}" onclick="toggleSolo('${stemName}')">S</button><button class="ch-btn stem-dl-btn" onclick="_downloadStem('${stemName}')" title="Download stem"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button></div>`;
-  mixerEl.appendChild(channel);
+  // Insert before the loading status element so channels appear above it, not after
+  const statusEl = document.getElementById('mix-loading-status');
+  if (statusEl) mixerEl.insertBefore(channel, statusEl);
+  else mixerEl.appendChild(channel);
   requestAnimationFrame(() => { channel.classList.add('visible'); });
   stemVolumes[stemName] = initVol / 100; stemMuted[stemName] = false; stemSoloed[stemName] = false;
   _loadSingleStemAudio(stemName, jobId);
@@ -1766,7 +1769,12 @@ function pollStatus(){
       if (d.stems && (d.status === 'complete' || d.status === 'partial' || d.status === 'processing')) {
         const newStems = Object.keys(d.stems).filter(k => !_loadedStems[k]);
         if (newStems.length > 0) {
-          if (Object.keys(_loadedStems).length === 0) { _removeSkeletonChannels(); }
+          if (Object.keys(_loadedStems).length === 0) {
+            _removeSkeletonChannels();
+            // Clear time-display label once channels start appearing — the mixer itself signals progress
+            const timeEl = document.getElementById('time-display');
+            if (timeEl && !timeEl.textContent.includes(':')) timeEl.textContent = '';
+          }
           for (const stemName of newStems) { _addStemChannel(stemName, d.stems[stemName], currentJobId); _loadedStems[stemName] = true; }
           const count = Object.keys(_loadedStems).length;
           _updateMixLoadingStatus(`${count} instrument${count > 1 ? 's' : ''} isolated...`);
