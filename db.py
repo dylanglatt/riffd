@@ -15,9 +15,9 @@ import time
 import json
 from pathlib import Path
 from contextlib import contextmanager
+from cache_version import ANALYSIS_VERSION
 
 DB_PATH = Path("riffd.db")
-ANALYSIS_VERSION = "v3"
 
 
 def _get_conn():

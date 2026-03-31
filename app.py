@@ -1227,8 +1227,8 @@ def process_audio(job_id):
             except Exception as _mp3_e:
                 print(f"[job {job_id}] WAV→MP3 warning: {_mp3_e}")
 
-            # ── Stage 5: Song intelligence + harmonic analysis ──
-            on_progress("Analyzing harmony and structure...")
+            # ── Stage 5: Song intelligence (key, BPM, progression) ──
+            on_progress("Analyzing key and structure...")
             print(f"[job {job_id}] [{_elapsed()}] INTELLIGENCE starting...")
             try:
                 if note_events_all:

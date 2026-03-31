@@ -80,51 +80,22 @@
     .hero-loading { transition:opacity .3s ease .15s; }
     .hero-loading.hidden { opacity:0; pointer-events:none; height:0; overflow:hidden; margin:0; }
 
+    /* ─── Processing / confirm hero (upload-required fallback only) ──────── */
     .proc-hero { display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:60vh; padding:40px 24px; text-align:center; }
-    .proc-art-wrap { position:relative; width:180px; height:180px; margin-bottom:28px; }
+    .proc-bg-blur { display:none; } /* not used in main flow */
+    .proc-art-wrap { position:relative; width:120px; height:120px; margin-bottom:20px; }
     .proc-art-glow { display:none; }
-    @keyframes _glow-pulse {
-      0%, 100% { opacity: 0.5; transform: scale(1); }
-      50%       { opacity: 1;   transform: scale(1.08); }
-    }
-    .proc-art-wrap.loading .proc-art-glow {
-      display: block;
-      position: absolute;
-      inset: -18px;
-      border-radius: 4px;
-      background: radial-gradient(ellipse at center, rgba(212,105,31,0.45) 0%, transparent 70%);
-      animation: _glow-pulse 2s ease-in-out infinite;
-      pointer-events: none;
-      z-index: 0;
-    }
-    .proc-art-wrap img { position:relative; width:180px; height:180px; object-fit:cover; z-index:1; }
-    .proc-art-wrap .proc-art-ph { position:relative; width:180px; height:180px; background:#0D0D0D; border:1px solid rgba(255,255,255,0.06); display:flex; align-items:center; justify-content:center; z-index:1; }
-    .proc-title { font-size:1.5rem; font-weight:500; letter-spacing:-0.02em; margin-bottom:8px; color:#F5F5F5; }
-    .proc-sub { color:rgba(245,245,245,0.5); font-size:0.9375rem; margin-bottom:32px; letter-spacing:-0.01em; }
-    .proc-chips { display:flex; gap:12px; flex-wrap:wrap; justify-content:center; margin-bottom:48px; }
+    .proc-art-wrap img { position:relative; width:120px; height:120px; object-fit:cover; z-index:1; border-radius:4px; }
+    .proc-art-wrap .proc-art-ph { position:relative; width:120px; height:120px; background:#0D0D0D; border:1px solid rgba(255,255,255,0.06); display:flex; align-items:center; justify-content:center; z-index:1; border-radius:4px; }
+    .proc-title { font-size:1.25rem; font-weight:500; letter-spacing:-0.02em; margin-bottom:6px; color:#F5F5F5; }
+    .proc-sub { color:rgba(245,245,245,0.5); font-size:0.875rem; margin-bottom:28px; letter-spacing:-0.01em; }
+    .proc-chips { display:flex; gap:12px; flex-wrap:wrap; justify-content:center; margin-bottom:40px; }
     .proc-chip { padding:8px 12px; font-size:0.625rem; font-weight:500; letter-spacing:0.05em; border:1px solid rgba(255,255,255,0.08); color:rgba(245,245,245,0.4); }
     .proc-chip .mc-val, .proc-chip span:last-child { color:#F5F5F5; font-size:0.875rem; font-weight:500; letter-spacing:-0.01em; }
-    .waveform-wrap { width:100%; max-width:400px; height:64px; position:relative; overflow:hidden; }
-    .waveform-bg, .waveform-fg { position:absolute; bottom:0; left:0; width:100%; height:100%; display:flex; align-items:flex-end; justify-content:center; gap:2px; }
-    .waveform-bg { opacity:1; }
-    .waveform-fg { width:0%; overflow:hidden; transition:width .8s cubic-bezier(.16,1,.3,1); }
-    .wv-bar {
-      flex-shrink:0; width:2px; background:rgba(245,245,245,0.25);
-      height:var(--h-max, 20px);
-      animation:wvPulse var(--dur, 3s) ease-in-out infinite;
-      animation-delay:var(--delay, 0s);
-      transform-origin:bottom;
-    }
-    .wv-bar:nth-child(18n) { background:rgba(212,105,31,0.6); }
-    .waveform-fg .wv-bar { background:rgba(212,105,31,0.7); }
-    @keyframes wvPulse {
-      0%, 100% { transform:scaleY(0.6); opacity:0.5; }
-      50% { transform:scaleY(1); opacity:1; }
-    }
-    .proc-status { margin-top:16px; color:rgba(245,245,245,0.4); font-size:0.875rem; font-weight:400; min-height:1.4em; transition:opacity .3s; letter-spacing:-0.01em; }
-    .proc-status.fading { opacity:0; }
-    .proc-estimate { margin-top:12px; color:rgba(245,245,245,0.35); font-size:0.8125rem; opacity:0; transition:opacity .8s ease .6s; letter-spacing:-0.01em; }
-    .proc-estimate.visible { opacity:1; }
+    .proc-steps { display:none; }
+    .waveform-wrap { display:none; }
+    .proc-status { display:none; }
+    .proc-estimate { display:none; }
 
     /* ═══ Mix Loading State ═══ */
     .skeleton-channel { pointer-events:none; opacity:0.6; }
@@ -135,7 +106,7 @@
     @keyframes skeletonShimmer { 0%,100%{opacity:0.3} 50%{opacity:0.7} }
     .skeleton-waveform .player-wv-bar { background:rgba(245,245,245,0.06) !important; animation:skeletonShimmer 2s ease-in-out infinite; }
     .transport-disabled { opacity:0.3 !important; pointer-events:none; }
-    .mix-loading-status { text-align:center; font-size:0.8125rem; color:rgba(245,245,245,0.35); padding:16px 0; transition:opacity 0.3s ease; min-height:1.4em; }
+    .mix-loading-status { text-align:center; font-size:0.8125rem; color:rgba(245,245,245,0.45); padding:16px 0; transition:opacity 0.3s ease; min-height:1.4em; letter-spacing:-0.01em; }
     .stem-channel-enter { opacity:0; transform:translateY(8px); transition:opacity .4s ease, transform .4s ease; }
     .stem-channel-enter.visible { opacity:1; transform:translateY(0); }
     .stem-dot { width:6px; height:6px; background:#4ade80; display:inline-block; margin-left:6px; animation:stemDotPulse 1.5s ease-in-out infinite; }
@@ -178,6 +149,11 @@
     .results-nav-btn:hover { color:rgba(245,245,245,0.7); transform:none; }
     .results-nav-btn.active { color:#F5F5F5; }
     .results-nav-btn.active::after { content:""; position:absolute; bottom:0; left:0; right:0; height:1px; background:#D4691F; opacity:0.7; }
+    .results-nav-btn.tab-loading { opacity:0.25; pointer-events:none; cursor:default; }
+    .tab-skeleton-wrap { display:flex; flex-direction:column; gap:12px; padding:4px 0; }
+    .tab-skeleton-row { display:flex; gap:10px; align-items:center; }
+    .tab-sk { background:rgba(245,245,245,0.04); animation:skeletonShimmer 1.5s ease-in-out infinite; border-radius:2px; }
+    .sr-skeleton { display:flex; flex-direction:column; gap:10px; padding:4px 0; }
     .results-panel { display:none; padding:24px; }
     .results-panel.active { display:block; animation:viewIn .2s ease; }
 
@@ -198,6 +174,11 @@
     .transport-btn.stop-btn svg { width:11px; height:11px; fill:rgba(245,245,245,0.7); }
     .transport-btn.stop-btn:hover svg { fill:#D4691F; }
     .transport-seek-wrap { flex:1; position:relative; height:48px; cursor:pointer; touch-action:none; }
+    /* Waveform loading progress fill */
+    #waveform-progress-fill { position:absolute; top:0; left:0; height:100%; width:0%; opacity:0; pointer-events:none; z-index:1; transition:width 0.8s ease, opacity 0.35s ease; }
+    #waveform-progress-fill.active { opacity:1; }
+    #waveform-progress-fill::before { content:''; position:absolute; inset:0; background:rgba(212,105,31,0.07); }
+    #waveform-progress-fill::after { content:''; position:absolute; top:0; right:0; bottom:0; width:2px; background:rgba(212,105,31,0.85); box-shadow:0 0 10px rgba(212,105,31,0.6), 0 0 20px rgba(212,105,31,0.2); }
     .player-waveform { display:flex; align-items:flex-end; gap:2px; height:100%; width:100%; position:absolute; top:0; left:0; }
     .player-wv-bar { width:2px; background:rgba(245,245,245,0.18); flex-shrink:0; }
     .player-wv-bar:nth-child(18n) { background:rgba(212,105,31,0.35); }
@@ -213,14 +194,16 @@
     .mixer-channels { display:flex; flex-direction:column; }
 
     /* Base channel row */
-    .channel { display:grid; grid-template-columns:148px 1fr 36px auto; align-items:center; gap:12px; padding:9px 16px; border-bottom:1px solid rgba(255,255,255,0.04); transition:background .12s, opacity .15s; }
+    .channel { display:grid; grid-template-columns:minmax(120px, 180px) 1fr auto; align-items:center; gap:10px; padding:7px 16px; border-bottom:1px solid rgba(255,255,255,0.04); transition:background .12s, opacity .15s, border-color .12s; border-left:2px solid transparent; }
     .channel:last-child { border-bottom:none; }
     .channel:hover { background:rgba(245,245,245,0.025); }
     .channel.muted { opacity:0.38; }
+    .channel.soloed { border-left-color:rgba(212,105,31,0.5); background:rgba(212,105,31,0.04); }
 
     /* Channel name */
     .channel-name { font-size:0.8125rem; font-weight:400; color:rgba(245,245,245,0.72); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; letter-spacing:-0.01em; }
     .channel.muted .channel-name { color:rgba(245,245,245,0.3); }
+    .channel.soloed .channel-name { color:rgba(245,245,245,0.9); }
 
     /* Fader */
     .channel-volume { display:flex; align-items:center; gap:8px; min-width:0; }
@@ -233,43 +216,21 @@
     .vol-slider::-moz-range-progress { background:rgba(212,105,31,0.5); height:2px; }
     .channel.muted .vol-slider::-webkit-slider-thumb { background:rgba(245,245,245,0.2); }
     .channel.muted .vol-slider::-moz-range-thumb { background:rgba(245,245,245,0.2); }
-    .vol-label { font-size:0.6875rem; color:rgba(245,245,245,0.28); min-width:26px; text-align:right; font-family:monospace; font-variant-numeric:tabular-nums; flex-shrink:0; }
+    .vol-label { display:none; }
 
     /* Action buttons */
-    .ch-btns { display:flex; align-items:center; gap:4px; }
-    .ch-btn { width:26px; height:26px; font-size:0.625rem; font-weight:600; letter-spacing:0.02em; display:flex; align-items:center; justify-content:center; cursor:pointer; border:1px solid rgba(255,255,255,0.07); background:transparent; color:rgba(245,245,245,0.3); transition:all .12s; padding:0; font-family:inherit; }
+    .ch-btns { display:flex; align-items:center; gap:3px; }
+    .ch-btn { width:28px; height:22px; font-size:0.5625rem; font-weight:600; letter-spacing:0.04em; text-transform:uppercase; display:flex; align-items:center; justify-content:center; cursor:pointer; border:1px solid rgba(255,255,255,0.07); border-radius:3px; background:transparent; color:rgba(245,245,245,0.3); transition:all .12s; padding:0; font-family:inherit; }
     .ch-btn:hover { border-color:rgba(255,255,255,0.14); color:rgba(245,245,245,0.6); }
-    .ch-btn.mute-active { background:rgba(245,245,245,0.05); color:rgba(245,245,245,0.12); border-color:rgba(255,255,255,0.04); }
+    .ch-btn.mute-active { background:rgba(245,245,245,0.06); color:rgba(245,245,245,0.15); border-color:rgba(255,255,255,0.04); }
     .ch-btn.solo-active { background:rgba(212,105,31,0.14); color:#D4691F; border-color:rgba(212,105,31,0.28); }
     .stem-dl-btn { opacity:0.35; }
     .stem-dl-btn:hover { opacity:0.75; }
 
-    /* ─── (group headers removed — flat stem list) ─────────────────────────── */
-    .stem-group-header {
-      display:flex; align-items:center; gap:10px;
-      padding:7px 16px 7px 12px;
-      background:rgba(245,245,245,0.03);
-      border-top:1px solid rgba(255,255,255,0.06);
-      border-bottom:1px solid rgba(255,255,255,0.04);
-      border-left:2px solid rgba(212,105,31,0.45);
-      cursor:pointer; user-select:none; margin-top:4px;
-    }
-    .stem-group-header:first-child { margin-top:0; border-top:none; }
-    .stem-group-header:hover { background:rgba(245,245,245,0.045); }
-    .stem-group-header:hover .stem-group-label { color:rgba(245,245,245,0.75); }
-    .stem-group-chevron { background:none; border:none; color:rgba(212,105,31,0.7); cursor:pointer; padding:0; flex-shrink:0; display:flex; align-items:center; outline:none; transition:color .12s; }
-    .stem-group-chevron:focus { outline:none; }
-    .stem-group-chevron svg { width:14px; height:14px; stroke:currentColor; stroke-width:2.5; fill:none; stroke-linecap:round; stroke-linejoin:round; display:block; transition:transform .2s ease; }
-    .stem-group-header.collapsed .stem-group-chevron svg { transform:rotate(-90deg); }
-    .stem-group-label { font-size:0.6875rem; text-transform:uppercase; letter-spacing:0.08em; color:rgba(245,245,245,0.5); flex:1; font-weight:500; }
-    .stem-group-header .vol-slider { width:100px; flex:none; min-width:60px; }
-    .stem-group-header .vol-label { min-width:24px; font-size:0.6875rem; }
-    .stem-group-header .ch-btn { width:26px; height:26px; }
-
-    /* Grouped child channels — indent + slightly softer name */
-    .grouped-channel { border-bottom:1px solid rgba(255,255,255,0.03); }
-    .grouped-channel:last-of-type { border-bottom:1px solid rgba(255,255,255,0.04); }
-    .grouped-channel .channel-name { padding-left:14px; color:rgba(245,245,245,0.58); font-size:0.8125rem; }
+    /* ─── Stem family dividers ─────────────────────────────────────────────── */
+    .stem-family-divider { padding:6px 16px 2px; }
+    .stem-family-divider:first-child { padding-top:4px; }
+    .stem-family-label { font-size:0.5625rem; text-transform:uppercase; letter-spacing:0.1em; color:rgba(245,245,245,0.22); font-weight:500; }
     .full-mix-btn { display:flex; align-items:center; gap:5px; padding:6px 14px; border-radius:20px; border:none; background:rgba(255,255,255,0.06); color:rgba(245,245,245,0.5); font-size:0.75rem; font-weight:500; letter-spacing:0.03em; cursor:pointer; transition:all 0.15s; flex-shrink:0; }
     .full-mix-btn:hover { color:rgba(245,245,245,0.8); background:rgba(255,255,255,0.1); }
     .karaoke-btn { display:flex; align-items:center; gap:5px; padding:6px 14px; border-radius:20px; border:none; background:rgba(255,255,255,0.06); color:rgba(245,245,245,0.5); font-size:0.75rem; font-weight:500; letter-spacing:0.03em; cursor:pointer; transition:all 0.15s; flex-shrink:0; }
@@ -351,9 +312,7 @@
       .hero-sub { font-size:1rem; }
       .search-input { padding:14px 18px 14px 42px; font-size:0.875rem; }
       .proc-hero { min-height:50vh; padding:28px 16px; }
-      .proc-art-wrap { width:140px; height:140px; }
-      .proc-art-wrap img { width:140px; height:140px; }
-      .proc-art-wrap .proc-art-ph { width:140px; height:140px; }
+      /* proc-art-wrap uses default size in main flow */
       .results-header { padding:0; }
       .results-nav { padding:0 16px; }
       .results-panel { padding:16px; }
@@ -362,8 +321,8 @@
       .transport-btn.stop-btn { width:32px; height:32px; }
       .transport-seek-wrap { min-width:0; flex:1 1 100%; order:3; height:56px; padding:8px 0; }
       .transport-time { font-size:0.75rem; min-width:70px; }
-      .channel { grid-template-columns:90px 1fr 36px auto; gap:8px; padding:10px 12px; }
-      .channel-name { font-size:0.8125rem; min-width:90px; }
+      .channel { grid-template-columns:100px 1fr auto; gap:8px; padding:8px 12px; }
+      .channel-name { font-size:0.8125rem; min-width:0; }
       .mix-tools { gap:16px; }
       .meta-chip { padding:4px 10px; font-size:0.75rem; }
       .results-nav-btn { padding:12px 0; font-size:0.8125rem; }
@@ -398,18 +357,18 @@
       .transport-seek-wrap { height:56px; padding:8px 0; }
       .vol-label { display:none; }
       .results-meta { padding:16px; gap:8px; }
-      .channel { display:flex; flex-wrap:wrap; gap:8px; padding:12px 12px; border-bottom:1px solid rgba(255,255,255,0.04); }
+      .channel { display:flex; flex-wrap:wrap; gap:8px; padding:10px 12px; border-bottom:1px solid rgba(255,255,255,0.04); border-left:2px solid transparent; }
       .channel:nth-child(even) { background:transparent; }
+      .channel.soloed { border-left-color:rgba(212,105,31,0.5); background:rgba(212,105,31,0.04); }
       .channel-name { flex:1; min-width:0; font-size:0.8125rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-      .ch-btn { width:36px; height:36px; font-size:0.75rem; line-height:36px; }
+      .ch-btn { width:36px; height:28px; font-size:0.6875rem; border-radius:3px; }
       .channel-volume { width:100%; order:5; }
       .vol-slider { width:100%; }
       .vol-slider::-webkit-slider-thumb { width:16px; height:16px; margin-top:-7px; }
       .vol-slider::-moz-range-thumb { width:16px; height:16px; }
+      .stem-family-divider { padding:8px 12px 2px; }
       .tool-btn { width:36px; height:36px; }
-      .harmonic-panel { padding:16px; }
-      .harmonic-section { padding:12px 16px; }
-      .hs-row-label { min-width:48px; }
+      /* harmonic section styles removed */
       .lyrics-block { padding:14px 16px; }
       .lyrics-line { font-size:0.9rem; }
       .new-song-btn { min-height:44px; padding:10px 20px; }
@@ -427,9 +386,7 @@
       /* Footer buttons — stack on mobile */
       .new-song-row { flex-wrap:wrap; gap:8px; padding:20px 12px; }
       .new-song-row .new-song-btn { flex:1; min-width:0; text-align:center; }
-      /* Harmonic overflow */
-      .hs-chords { font-size:0.75rem; word-break:break-all; }
-      .hs-numerals { font-size:0.6875rem; }
+      /* harmonic overflow styles removed */
     }
 
     /* ═══ Small phone (360px) ═══ */
@@ -443,9 +400,7 @@
       .try-card-name { font-size:0.75rem; }
       .cap-grid { gap:16px; }
       .proc-hero { padding:20px 12px; }
-      .proc-art-wrap { width:100px; height:100px; }
-      .proc-art-wrap img { width:100px; height:100px; }
-      .proc-art-wrap .proc-art-ph { width:100px; height:100px; }
+      /* proc-art-wrap uses default size in main flow */
       .proc-title { font-size:1.25rem; }
       .proc-sub { font-size:0.8125rem; }
       .proc-status { font-size:0.75rem; }
@@ -520,6 +475,7 @@
   <!-- CONFIRM + PROCESSING -->
   <div id="view-confirm" class="view">
     <div class="proc-hero">
+      <div class="proc-bg-blur" id="proc-bg-blur"></div>
       <div class="proc-art-wrap" id="proc-art-wrap">
         <div class="proc-art-glow"></div>
         <div class="proc-art-ph"><svg viewBox="0 0 24 24" width="36" height="36" style="opacity:.25"><path d="M12 3v10.55A4 4 0 1 0 14 17V7h4V3h-6Z" fill="currentColor"/></svg></div>
@@ -533,12 +489,27 @@
         <div id="error-msg" class="error-msg" style="text-align:center;margin-top:10px"></div>
       </div>
       <div class="hero-loading hidden" id="hero-loading">
-        <div class="waveform-wrap">
-          <div class="waveform-bg" id="wv-bg"></div>
-          <div class="waveform-fg" id="wv-fg"></div>
+        <div class="proc-steps" id="proc-steps">
+          <div class="proc-step" data-stage="download" id="step-download">
+            <div class="proc-step-icon"><div class="proc-step-dot"></div></div>
+            <span class="proc-step-label">Downloading audio</span>
+          </div>
+          <div class="proc-step" data-stage="stems" id="step-stems">
+            <div class="proc-step-icon"><div class="proc-step-dot"></div></div>
+            <span class="proc-step-label">Separating instruments</span>
+          </div>
+          <div class="proc-step" data-stage="analysis" id="step-analysis">
+            <div class="proc-step-icon"><div class="proc-step-dot"></div></div>
+            <span class="proc-step-label">Analyzing key & structure</span>
+          </div>
+          <div class="proc-step" data-stage="enrich" id="step-enrich">
+            <div class="proc-step-icon"><div class="proc-step-dot"></div></div>
+            <span class="proc-step-label">Generating insight</span>
+          </div>
         </div>
-        <div class="proc-status" id="progress-label">Analyzing the track...</div>
-        <div class="proc-estimate" id="proc-estimate">Analyzing...</div>
+        <!-- Hidden legacy elements for backward compat -->
+        <div class="proc-status" id="progress-label" style="display:none">Analyzing the track...</div>
+        <div class="proc-estimate" id="proc-estimate" style="display:none">Analyzing...</div>
       </div>
     </div>
   </div>
@@ -550,7 +521,8 @@
         <div class="track-banner" id="results-banner"></div>
         <div id="result-warning" style="display:none;margin-top:12px;padding:10px 14px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:var(--radius-xs);color:rgba(245,245,245,0.4);font-size:.78rem;line-height:1.5;"></div>
         <div class="results-meta" id="results-meta"></div>
-        <div id="harmonic-sections"></div>
+        <!-- harmonic-sections hidden for now -->
+        <div id="harmonic-sections" style="display:none"></div>
       </div>
       <div class="results-nav" id="results-nav">
         <button class="results-nav-btn active" data-panel="mix" onclick="switchPanel('mix',this)">Mix</button>
@@ -572,6 +544,7 @@
               <div class="player-waveform" id="player-waveform-bg"></div>
               <div class="player-waveform-progress" id="player-waveform-fg"><div class="player-waveform" id="player-waveform-fg-inner"></div></div>
               <div class="player-cursor" id="player-cursor"></div>
+              <div id="waveform-progress-fill"></div>
               <input type="range" class="transport-seek" id="seek-bar" min="0" max="100" value="0" step="0.1" oninput="seekTo(this.value)" />
             </div>
             <div class="transport-time" id="time-display">0:00 / 0:00</div>
@@ -621,11 +594,129 @@ let _defaultTab = "mix";
 let _progressionNames = {};
 let _smartRecs = {};
 let _keyContext = "";
+
+// ─── Loading progress — waveform fill (primary) + ambient top bar ─────────────
+const _topBar = (() => {
+  let _pct = 0;
+  let _creepTimer = null;
+  let _loading = false;
+
+  function _setFill(pct) {
+    _pct = Math.max(_pct, pct);
+    const fill = document.getElementById('waveform-progress-fill');
+    if (fill) fill.style.width = _pct + '%';
+    // Ambient top bar mirrors the fill at low opacity — useful when scrolled away
+    const bar = document.getElementById('riffd-progress-bar');
+    if (bar) bar.style.width = _pct + '%';
+  }
+
+  function _setLabel(text) {
+    // Stage label lives in the time display during load — meaningful vs "--:-- / --:--"
+    if (!_loading) return;
+    const el = document.getElementById('time-display');
+    if (!el) return;
+    el.textContent = text ? _cleanProgressMsg(text) : '';
+    // Switch to proportional font for readable prose; monospace is restored on complete
+    el.style.fontFamily = 'inherit';
+    el.style.letterSpacing = '-0.01em';
+    el.style.color = 'rgba(245,245,245,0.4)';
+    el.style.fontSize = '0.75rem';
+  }
+
+  function _clearCreep() {
+    if (_creepTimer) { clearInterval(_creepTimer); _creepTimer = null; }
+  }
+
+  return {
+    show() {
+      _pct = 0; _loading = true;
+      const fill = document.getElementById('waveform-progress-fill');
+      const bar  = document.getElementById('riffd-progress-bar');
+      const wrap = document.getElementById('riffd-progress-wrap');
+      if (fill) { fill.style.transition = 'none'; fill.style.width = '0%'; }
+      if (bar)  { bar.style.transition  = 'none'; bar.style.width  = '0%'; }
+      requestAnimationFrame(() => {
+        if (fill) { fill.style.transition = 'width 0.8s ease, opacity 0.35s ease'; fill.classList.add('active'); }
+        if (bar)  { bar.style.transition  = 'width 0.8s ease'; }
+        if (wrap) wrap.classList.add('active');
+        _setFill(5);
+        _setLabel('Starting...');
+      });
+    },
+    advance(pct, label) {
+      _clearCreep();
+      _setFill(pct);
+      if (label !== undefined) _setLabel(label);
+    },
+    startCreep(fromPct, toPct, label) {
+      _clearCreep();
+      _setFill(fromPct);
+      _setLabel(label);
+      _creepTimer = setInterval(() => {
+        if (_pct < toPct) { _setFill(_pct + 1); }
+        else { _clearCreep(); }
+      }, 4000);
+    },
+    onProgress(msg) {
+      if (!msg) return;
+      const m = msg.toLowerCase();
+      _setLabel(msg);
+      if (m.includes('download') || m.includes('fetch') || m.includes('preparing')) {
+        this.startCreep(15, 28, msg);
+      } else if (m.includes('separat') || m.includes('starting')) {
+        _clearCreep(); _setFill(32);
+      } else if (m.includes('analyz') || m.includes('key') || m.includes('structure')) {
+        _clearCreep(); _setFill(75);
+      } else if (m.includes('insight') || m.includes('generating')) {
+        _clearCreep(); _setFill(85);
+      }
+    },
+    onStemLoaded(count) {
+      _clearCreep();
+      _setFill(Math.min(88, 55 + count * 5));
+      if (count === 1) _setLabel('Isolating stems...');
+    },
+    complete() {
+      _clearCreep(); _loading = false;
+      const fill = document.getElementById('waveform-progress-fill');
+      const bar  = document.getElementById('riffd-progress-bar');
+      if (fill) { fill.style.transition = 'width 0.4s ease, opacity 0.35s ease'; fill.style.width = '100%'; }
+      if (bar)  { bar.style.transition  = 'width 0.4s ease'; bar.style.width = '100%'; }
+      // Restore time display to monospace before real time appears
+      const timeEl = document.getElementById('time-display');
+      if (timeEl) { timeEl.style.fontFamily = ''; timeEl.style.letterSpacing = ''; timeEl.style.color = ''; timeEl.style.fontSize = ''; }
+      // Hold at 100% briefly, then fade fill out → waveform is revealed underneath
+      setTimeout(() => {
+        if (fill) fill.classList.remove('active');  // opacity → 0 via transition
+        const wrap = document.getElementById('riffd-progress-wrap');
+        if (wrap) wrap.style.opacity = '0';
+        setTimeout(() => {
+          if (fill) { fill.style.transition = ''; fill.style.width = '0%'; }
+          if (wrap) { wrap.classList.remove('active'); wrap.style.opacity = ''; }
+          if (bar)  { bar.style.transition = ''; bar.style.width = '0%'; }
+          _pct = 0;
+        }, 400);
+      }, 400);
+    },
+    reset() {
+      _clearCreep(); _pct = 0; _loading = false;
+      const fill = document.getElementById('waveform-progress-fill');
+      const wrap = document.getElementById('riffd-progress-wrap');
+      const bar  = document.getElementById('riffd-progress-bar');
+      if (fill) { fill.classList.remove('active'); fill.style.transition = 'none'; fill.style.width = '0%'; }
+      if (wrap) { wrap.classList.remove('active'); wrap.style.opacity = ''; }
+      if (bar)  { bar.style.transition = 'none'; bar.style.width = '0%'; }
+      const timeEl = document.getElementById('time-display');
+      if (timeEl) { timeEl.style.fontFamily = ''; timeEl.style.letterSpacing = ''; timeEl.style.color = ''; timeEl.style.fontSize = ''; }
+    },
+  };
+})();
 let _prefetchId = null;
 let _prefetchReady = false;
 let _prefetchPollTimer = null;
 let _loadedStems = {};
 let _karaokeActive = false;
+let _stemLabelCounts = {};  // dedup display labels across stems from different sources
 
 function _pollPrefetch(pfId) {
   if (_prefetchPollTimer) clearInterval(_prefetchPollTimer);
@@ -674,7 +765,7 @@ function _getStemRoot(stemKey) {
   if (s === 'fingerpicking_guitar') s = 'acoustic_guitar';
   if (s === 'bass' || s === 'electric_bass' || s === 'upright_bass' || s === 'synth_bass') return 'bass_guitar';
   if (s === 'drum' || s === 'percussion' || s === 'beat') return 'drums';
-  if (s === 'keys' || s === 'keyboard' || s === 'synth') return 'piano';
+  if (s === 'keys' || s === 'keyboard' || s === 'synth' || s === 'pad') return 'piano';
 
   // Return the stripped name — named variants (lead_guitar, rhythm_guitar,
   // acoustic_guitar, electric_guitar, lead_vocal, backing_vocal …) stay distinct.
@@ -685,7 +776,14 @@ function _getStemRoot(stemKey) {
 function _addStemChannel(stemName, stemData, jobId) {
   const mixerEl = document.getElementById('mixer-channels');
   if (!mixerEl) return;
-  const label = formatStemLabel(stemName, (stemData && stemData.label) || "");
+  // Drop near-silent stems — they add mixer clutter without musical value
+  if (stemData && stemData.energy != null && stemData.energy < 0.008) {
+    console.log(`[mixer] skipping ${stemName} — energy too low (${stemData.energy.toFixed(4)})`);
+    return;
+  }
+  const baseLabel = formatStemLabel(stemName, (stemData && stemData.label) || "");
+  const labelCount = (_stemLabelCounts[baseLabel] = (_stemLabelCounts[baseLabel] || 0) + 1);
+  const label = labelCount > 1 ? `${baseLabel} ${labelCount}` : baseLabel;
   const initVol = _energyToVolume(stemData && stemData.energy);
   const channel = document.createElement('div');
   channel.className = 'channel stem-channel-enter';
@@ -713,13 +811,17 @@ function _reorganizeStemGroups() {
   const channels = Array.from(mixerEl.querySelectorAll('.channel'));
   if (!channels.length) return;
 
-  // Sort stems in musical order: Vocals → Guitar family → Bass → Piano/Keys → Drums → other
+  // Remove old dividers
+  mixerEl.querySelectorAll('.stem-family-divider').forEach(d => d.remove());
+
+  const _familyNames = { '0': 'Vocals', '1': 'Guitars', '2': 'Bass', '3': 'Keys', '4': 'Drums', '5': 'Other' };
+
   function _stemFamily(stemName) {
     const r = _getStemRoot(stemName);
     if (r.includes('vocal') || r.includes('voice') || r.includes('choir')) return '0';
+    if (r.includes('bass'))   return '2';  // must come before guitar — 'bass_guitar' contains 'guitar'
     if (r.includes('guitar')) return '1';
-    if (r.includes('bass'))   return '2';
-    if (r === 'piano' || r.includes('key') || r.includes('organ') || r.includes('synth')) return '3';
+    if (r === 'piano' || r.includes('key') || r.includes('organ') || r.includes('synth') || r.includes('pad')) return '3';
     if (r.includes('drum') || r.includes('perc')) return '4';
     return '5';
   }
@@ -730,8 +832,25 @@ function _reorganizeStemGroups() {
     return fa !== fb ? fa.localeCompare(fb) : na.localeCompare(nb);
   });
 
-  // Re-append in sorted order — flat list, no headers
-  channels.forEach(ch => mixerEl.appendChild(ch));
+  // Re-append in sorted order with lightweight family dividers
+  let lastFamily = null;
+  channels.forEach(ch => {
+    const name = ch.id.replace('ch-', '');
+    const fam = _stemFamily(name);
+    // Only show divider when there are multiple families
+    if (fam !== lastFamily) {
+      // Skip divider if there's only one family total
+      const families = new Set(channels.map(c => _stemFamily(c.id.replace('ch-', ''))));
+      if (families.size > 1) {
+        const div = document.createElement('div');
+        div.className = 'stem-family-divider';
+        div.innerHTML = `<span class="stem-family-label">${_familyNames[fam] || 'Other'}</span>`;
+        mixerEl.appendChild(div);
+      }
+      lastFamily = fam;
+    }
+    mixerEl.appendChild(ch);
+  });
 }
 
 function resetFullMix() {
@@ -743,7 +862,7 @@ function resetFullMix() {
     const chEl = document.getElementById(`ch-${n}`);
     if (soloBtn) soloBtn.classList.remove('solo-active');
     if (muteBtn) muteBtn.classList.remove('mute-active');
-    if (chEl) chEl.classList.remove('muted');
+    if (chEl) { chEl.classList.remove('muted'); chEl.classList.remove('soloed'); }
     const energy = jobData && jobData.stems && jobData.stems[n] ? jobData.stems[n].energy : null;
     const vol = _energyToVolume(energy);
     stemVolumes[n] = vol / 100;
@@ -761,6 +880,23 @@ function resetFullMix() {
   if (btn) { btn.style.color = '#D4691F'; btn.style.background = 'rgba(212,105,31,0.12)'; setTimeout(() => { btn.style.color = ''; btn.style.background = ''; }, 300); }
 }
 
+function _removeStemChannel(stemName) {
+  // Called when audio fails to load — silently removes the dead channel from the mixer
+  const ch = document.getElementById(`ch-${stemName}`);
+  if (!ch) return;
+  ch.style.transition = 'opacity 0.3s ease';
+  ch.style.opacity = '0';
+  setTimeout(() => {
+    ch.remove();
+    // Re-run grouping in case a family divider is now orphaned
+    _reorganizeStemGroups();
+  }, 300);
+  // Clean up state
+  delete stemVolumes[stemName];
+  delete stemMuted[stemName];
+  delete stemSoloed[stemName];
+}
+
 async function _loadSingleStemAudio(stemName, jobId, _attempt = 0) {
   const MAX_RETRIES = 4;
   const RETRY_DELAY_MS = 3000;
@@ -773,7 +909,8 @@ async function _loadSingleStemAudio(stemName, jobId, _attempt = 0) {
         console.warn(`[audio] ${stemName} not ready (${r.status}), retry ${_attempt + 1}/${MAX_RETRIES} in ${RETRY_DELAY_MS}ms`);
         setTimeout(() => _loadSingleStemAudio(stemName, jobId, _attempt + 1), RETRY_DELAY_MS);
       } else {
-        console.warn(`[audio] ${stemName} failed after ${MAX_RETRIES} retries`);
+        console.warn(`[audio] ${stemName} failed after ${MAX_RETRIES} retries — removing channel`);
+        _removeStemChannel(stemName);
       }
       return;
     }
@@ -782,6 +919,9 @@ async function _loadSingleStemAudio(stemName, jobId, _attempt = 0) {
       if (_attempt < MAX_RETRIES) {
         console.warn(`[audio] ${stemName} returned empty buffer, retry ${_attempt + 1}/${MAX_RETRIES}`);
         setTimeout(() => _loadSingleStemAudio(stemName, jobId, _attempt + 1), RETRY_DELAY_MS);
+      } else {
+        console.warn(`[audio] ${stemName} empty after ${MAX_RETRIES} retries — removing channel`);
+        _removeStemChannel(stemName);
       }
       return;
     }
@@ -916,6 +1056,13 @@ function renderSearchResults() {
 
 function selectByIndex(i){const t=searchResults[i];if(t)selectTrack(t);}
 async function selectTrack(t){
+  // Tear down any active audio from the previous track before loading new one
+  cleanupAudio();
+  clearTimeout(pollInterval);
+  stemBuffers={}; stemGains={}; stemVolumes={}; stemMuted={}; stemSoloed={};
+  pauseOffset=0; duration=0;
+  _topBar.show();
+
   selectedTrack=t; currentJobId=null; setError(""); _loadedStems={}; _karaokeActive=false;  if (_prefetchPollTimer) { clearInterval(_prefetchPollTimer); _prefetchPollTimer = null; }
   _prefetchId=null; _prefetchReady=false;
   console.log(`[ui] selectTrack → ${t.name} by ${t.artist} (id=${t.id||'none'})`);
@@ -950,13 +1097,14 @@ async function selectTrack(t){
         currentJobId = d.job_id;
         jobData = { status:"complete", stems:d.analysis.stems||{}, intelligence:d.analysis.intelligence||{}, lyrics:d.analysis.lyrics||null, tags:d.analysis.tags||[], insight:d.analysis.insight||null, audio_source:d.analysis.audio_source||null, audio_mode:d.analysis.audio_mode||null };
         renderResults(jobData);
+        _topBar.complete();
         return;
       }
     } catch(e) { console.warn("[track] lookup failed:", e); }
   }
 
-  // Start unified full analysis
-  _showHeroLoading();
+  // Skip proc-hero — go straight to mixer with skeleton + banner
+  _showMixLoading();
   startProcessing();
 }
 // Strip remaster/reissue noise from display titles — purely cosmetic, never touches underlying data
@@ -1065,10 +1213,10 @@ const _stageMsgs = {
 function _detectStage(backendProgress) {
   if (!backendProgress) return null;
   const p = backendProgress.toLowerCase();
-  if (p.includes("download") || p.includes("fetching audio") || p.includes("starting download")) return "download";
-  if (p.includes("demucs") || p.includes("separating") || p.includes("analyzing instruments") || p.includes("analyzing ") && !p.includes("key") && !p.includes("harmonic")) return "stems";
-  if (p.includes("tempo") || p.includes("key") || p.includes("progression") || p.includes("analyzing key")) return "analysis";
-  if (p.includes("lyrics") || p.includes("recommend") || p.includes("tags")) return "enrich";
+  if (p.includes("download") || p.includes("fetching audio") || p.includes("starting download") || p.includes("getting audio") || p.includes("preparing audio")) return "download";
+  if (p.includes("demucs") || p.includes("separating") || p.includes("analyzing instruments") || p.includes("stems") || (p.includes("analyzing ") && !p.includes("key") && !p.includes("harmonic"))) return "stems";
+  if (p.includes("tempo") || p.includes("key") || p.includes("progression") || p.includes("analyzing key") || p.includes("structure")) return "analysis";
+  if (p.includes("lyrics") || p.includes("recommend") || p.includes("tags") || p.includes("insight") || p.includes("metadata")) return "enrich";
   if (p.includes("done") || p.includes("finaliz")) return "finalize";
   return null;
 }
@@ -1106,6 +1254,7 @@ function startLoadingMessages(stage) {
 function setLoadingStage(stage) {
   if (stage && stage !== _currentStage) {
     _currentStage = stage;
+    _setProcessingStep(stage);
   }
 }
 
@@ -1123,6 +1272,11 @@ function _populateHero() {
   const glow = '<div class="proc-art-glow"></div>';
   if (selectedTrack.image_url) {
     artWrap.innerHTML = glow + `<img src="${esc(selectedTrack.image_url)}" alt="" onerror="_artFailHero(this)" />`;
+    // Blurred background
+    const bgEl = document.getElementById("proc-bg-blur");
+    if (bgEl) bgEl.style.backgroundImage = `url(${selectedTrack.image_url})`;
+    // Extract dominant color for glow
+    _extractGlowColor(selectedTrack.image_url);
   } else { artWrap.innerHTML = glow + '<div class="proc-art-ph"><svg viewBox="0 0 24 24" width="36" height="36" style="opacity:.25"><path d="M12 3v10.55A4 4 0 1 0 14 17V7h4V3h-6Z" fill="currentColor"/></svg></div>'; }
   document.getElementById("proc-title").textContent = cleanTitle(selectedTrack.name) || "Untitled";
   const subParts = [];
@@ -1131,7 +1285,29 @@ function _populateHero() {
   if (selectedTrack.album) subParts.push(cleanTitle(selectedTrack.album));
   document.getElementById("proc-sub").textContent = subParts.join(" \u00b7 ");
   document.getElementById("proc-chips").innerHTML = "";
-  if (!_waveformBuilt) { _buildWaveform(); _waveformBuilt = true; }
+  // Reset step indicators
+  document.querySelectorAll('.proc-step').forEach(s => { s.classList.remove('active', 'done'); s.querySelector('.proc-step-icon').innerHTML = '<div class="proc-step-dot"></div>'; });
+}
+
+function _extractGlowColor(imgUrl) {
+  const img = new Image();
+  img.crossOrigin = "anonymous";
+  img.onload = () => {
+    try {
+      const canvas = document.createElement("canvas");
+      canvas.width = 8; canvas.height = 8;
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(img, 0, 0, 8, 8);
+      const data = ctx.getImageData(0, 0, 8, 8).data;
+      let rSum = 0, gSum = 0, bSum = 0, count = 0;
+      for (let i = 0; i < data.length; i += 4) {
+        rSum += data[i]; gSum += data[i+1]; bSum += data[i+2]; count++;
+      }
+      const r = Math.round(rSum / count), g = Math.round(gSum / count), b = Math.round(bSum / count);
+      document.getElementById("proc-art-wrap").style.setProperty("--glow-color", `rgba(${r},${g},${b},0.5)`);
+    } catch(e) { /* CORS or other — fall back to default orange glow */ }
+  };
+  img.src = imgUrl;
 }
 
 function _showHeroPreProcess() {
@@ -1141,6 +1317,9 @@ function _showHeroPreProcess() {
   document.getElementById("hero-loading").classList.add("hidden");
   document.getElementById("process-btn").disabled = false;
   document.getElementById("process-btn").textContent = "Dive In";
+  // Reset blurred bg opacity for pre-process state (subtler)
+  const bgEl = document.getElementById("proc-bg-blur");
+  if (bgEl) bgEl.style.opacity = "0.12";
 }
 
 function _showHeroLoading() {
@@ -1149,13 +1328,28 @@ function _showHeroLoading() {
   document.getElementById("hero-actions").classList.add("hidden");
   const heroLoading = document.getElementById("hero-loading");
   heroLoading.classList.remove("hidden");
-  const wvWrap = heroLoading.querySelector(".waveform-wrap");
-  if (wvWrap) wvWrap.style.display = "none";
-  const est = document.getElementById("proc-estimate");
-  if (est) est.style.display = "none";
-  const progLabel = document.getElementById("progress-label");
-  if (progLabel) { progLabel.style.display = ""; progLabel.textContent = "Preparing\u2026"; }
+  _setProcessingStep("download");
   showView("confirm");
+}
+
+function _setProcessingStep(stage) {
+  const order = ["download", "stems", "analysis", "enrich"];
+  const idx = order.indexOf(stage);
+  if (idx < 0) return;
+  order.forEach((s, i) => {
+    const el = document.getElementById(`step-${s}`);
+    if (!el) return;
+    el.classList.remove("active", "done");
+    if (i < idx) {
+      el.classList.add("done");
+      el.querySelector(".proc-step-icon").innerHTML = '<svg class="proc-step-check" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
+    } else if (i === idx) {
+      el.classList.add("active");
+      el.querySelector(".proc-step-icon").innerHTML = '<div class="proc-step-spinner"></div>';
+    } else {
+      el.querySelector(".proc-step-icon").innerHTML = '<div class="proc-step-dot"></div>';
+    }
+  });
 }
 
 function buildProcessingBanner() { _showHeroLoading(); }
@@ -1253,12 +1447,15 @@ async function startProcessing(){
   setError("");
 
   if(selectedTrack && !currentJobId) {
+    _updateMixLoadingStatus("Downloading audio...");
+    _topBar.startCreep(15, 28, 'Downloading...');
     await downloadTrack();
     if(!currentJobId) return;
   }
   if(!currentJobId){ setError("No audio loaded."); return; }
 
-  _showMixLoading();
+  _updateMixLoadingStatus("Starting analysis...");
+  _topBar.advance(32, 'Separating stems...');
 
   try {
     const r = await fetch(`/api/process/${currentJobId}`, {
@@ -1276,7 +1473,7 @@ async function startProcessing(){
   } catch(e) {
     _resetLoadingUI();
     setError("Analysis failed: " + e.message);
-    showView("confirm");
+    showView("search");
   }
 }
 
@@ -1321,7 +1518,7 @@ async function downloadTrack(){
       _showUploadRequired();
     } else {
       setError("Download failed: " + e.message);
-      showView("confirm");
+      showView("search");
     }
   }
 }
@@ -1332,6 +1529,7 @@ async function waitForReady(jid, mw=180){
     await sleep(1500);
     const r = await fetch(`/api/status/${jid}`);
     const d = await r.json();
+    if(d.progress) { _updateMixLoadingStatus(d.progress); _topBar.onProgress(d.progress); }
     if(d.status === "ready") return d;
     if(d.status === "complete" || d.status === "partial") return d;
     if(d.status === "upload_required") throw new Error("upload_required");
@@ -1344,7 +1542,7 @@ function pollStatus(){
   let pct = 20;
   _pollStartTime = Date.now();
   clearTimeout(pollInterval);
-  let _renderedLyrics = false, _renderedRecs = false, _renderedHarmonic = false, _renderedKey = false;
+  let _renderedLyrics = false, _renderedRecs = false, _renderedKey = false;
 
   function _pollInterval() {
     const elapsed = Date.now() - _pollStartTime;
@@ -1357,7 +1555,7 @@ function pollStatus(){
     if(Date.now() - _pollStartTime > POLL_TIMEOUT_MS) {
       _resetLoadingUI();
       setError("Processing timed out. The server may still be working \u2014 try refreshing in a minute.");
-      showView("confirm");
+      showView("search");
       return;
     }
 
@@ -1368,7 +1566,7 @@ function pollStatus(){
       if(r.status === 404 || d.error === "Unknown job ID" || !d.status) {
         _resetLoadingUI();
         setError("Job was lost (server may have restarted). Please try again.");
-        showView("confirm");
+        showView("search");
         return;
       }
 
@@ -1377,10 +1575,7 @@ function pollStatus(){
         _renderedKey = true;
         _silentlyUpdateMetaChips(d.intelligence);
       }
-      if (d.intelligence && d.intelligence.harmonic_sections && !_renderedHarmonic) {
-        _renderedHarmonic = true;
-        _renderHarmonicSections(d.intelligence.harmonic_sections);
-      }
+      // harmonic sections disabled
       if (d.lyrics && !_renderedLyrics) {
         _renderedLyrics = true;
         const lyricsEl = document.getElementById('lyrics-content');
@@ -1395,23 +1590,29 @@ function pollStatus(){
         _renderSmartRecs(_smartRecs);
         const keyCtxEl = document.getElementById("key-context");
         if (keyCtxEl) { keyCtxEl.textContent = _keyContext; keyCtxEl.style.display = _keyContext ? "block" : "none"; }
+      } else if (!_renderedRecs && d.recommendations && (d.recommendations.same_style || []).length > 0) {
+        // LLM unavailable mid-poll — show Last.fm matches as they arrive
+        _renderedRecs = true;
+        _renderSmartRecs({ same_style: d.recommendations.same_style });
       }
       if (d.tags && d.tags.length) { jobData = jobData || {}; jobData.tags = d.tags; }
 
-      // Progressive stem loading
+      // Progressive stem loading — transport stays disabled until status=complete
       if (d.stems && (d.status === 'complete' || d.status === 'partial' || d.status === 'processing')) {
         const newStems = Object.keys(d.stems).filter(k => !_loadedStems[k]);
         if (newStems.length > 0) {
-          if (Object.keys(_loadedStems).length === 0) { _removeSkeletonChannels(); _enableTransport(); }
+          if (Object.keys(_loadedStems).length === 0) { _removeSkeletonChannels(); }
           for (const stemName of newStems) { _addStemChannel(stemName, d.stems[stemName], currentJobId); _loadedStems[stemName] = true; }
           const count = Object.keys(_loadedStems).length;
           _updateMixLoadingStatus(`${count} instrument${count > 1 ? 's' : ''} isolated...`);
+          _topBar.onStemLoaded(count);
         }
       }
 
       // Update loading status
       if (d.progress) {
         _updateMixLoadingStatus(d.progress);
+        _topBar.onProgress(d.progress);
         const detected = _detectStage(d.progress);
         if (detected) setLoadingStage(detected);
       }
@@ -1425,7 +1626,7 @@ function pollStatus(){
         // Final stem loading
         if (d.stems) {
           Object.keys(d.stems).filter(k => !_loadedStems[k]).forEach(k => {
-            if (Object.keys(_loadedStems).length === 0) { _removeSkeletonChannels(); _enableTransport(); }
+            if (Object.keys(_loadedStems).length === 0) { _removeSkeletonChannels(); }
             _addStemChannel(k, d.stems[k], currentJobId); _loadedStems[k] = true;
           });
         }
@@ -1433,7 +1634,7 @@ function pollStatus(){
           if (!_renderedKey) { _renderedKey = true; _silentlyUpdateMetaChips(d.intelligence); }
           else if (d.intelligence.key && d.intelligence.key !== 'Unknown') { _silentlyUpdateMetaChips(d.intelligence); }
         }
-        if (d.intelligence && d.intelligence.harmonic_sections) _renderHarmonicSections(d.intelligence.harmonic_sections);
+        // harmonic sections disabled
         if (d.lyrics) { const lyricsEl = document.getElementById('lyrics-content'); if (lyricsEl) lyricsEl.innerHTML = _formatLyrics(d.lyrics); }
         if (d.insight) {
           const llm = d.insight;
@@ -1443,20 +1644,31 @@ function pollStatus(){
           _renderSmartRecs(_smartRecs);
           const keyCtxEl = document.getElementById("key-context");
           if (keyCtxEl) { keyCtxEl.textContent = _keyContext; keyCtxEl.style.display = _keyContext ? "block" : "none"; }
+        } else if (d.recommendations && (d.recommendations.same_style || []).length > 0) {
+          // LLM unavailable — fall back to Last.fm style matches
+          _renderSmartRecs({ same_style: d.recommendations.same_style });
         }
+
+        // Mark all processing steps complete
+        _setProcessingStep("finalize");
+        document.querySelectorAll('.proc-step').forEach(s => {
+          s.classList.remove('active'); s.classList.add('done');
+          s.querySelector('.proc-step-icon').innerHTML = '<svg class="proc-step-check" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
+        });
+        stopLoadingMessages();
 
         _reorganizeStemGroups();
         _removeSkeletonChannels();
         _enableTransport();
+        _unlockTabs();
+        _topBar.complete();
         const statusEl = document.getElementById('mix-loading-status');
         if (statusEl) { statusEl.style.opacity = '0'; setTimeout(() => statusEl.remove(), 300); }
         _buildPlayerWaveform();
         updateTimeDisplay();
         if (selectedTrack && selectedTrack.id) _addShareButton();
 
-        if (d.status === 'partial') {
-          _showResultWarning("Some analysis features are limited for this track.");
-        }
+        // partial status no longer shown — non-critical step failures are silent
         if (d.audio_source === 'preview' || d.audio_mode === 'preview') {
           _showResultWarning('These stems are from a ~30s preview clip. Full-track download was unavailable. Upload your own audio file for full-length stems.');
         }
@@ -1467,7 +1679,7 @@ function pollStatus(){
         _resetLoadingUI();
         const step = d.error_step ? ` (at: ${d.error_step})` : "";
         setError((d.error || "Unknown error") + step);
-        showView("confirm");
+        showView("search");
         return;
 
       } else if (d.status === 'upload_required') {
@@ -1482,7 +1694,7 @@ function pollStatus(){
     } catch(e) {
       _resetLoadingUI();
       setError("Lost connection to server.");
-      showView("confirm");
+      showView("search");
     }
   }
 
@@ -1508,7 +1720,7 @@ async function renderResults(data) {
 
   const stems=data.stems||{}, intel=data.intelligence||{}, recs=data.recommendations||{}, lyrics=data.lyrics||null, tags=data.tags||[];
   const activeNames = Object.keys(stems).filter(n => {const i=stems[n]; return !i||i.active!==false;});
-  if(!activeNames.length){setError("No stems detected.");showView("confirm");return;}
+  if(!activeNames.length){setError("No stems detected.");showView("search");return;}
   const metaEl=document.getElementById("results-meta");
   let chips="";
 
@@ -1524,8 +1736,7 @@ async function renderResults(data) {
   _smartRecs = llmData.smart_recs || {};
   _keyContext = llmData.key_context || "";
 
-  // Render section-based harmonic analysis
-  _renderHarmonicSections(intel.harmonic_sections || []);
+  // harmonic sections disabled
   songKey=(intel.key_num>=0)?{num:intel.key_num,mode:intel.mode_num,name:intel.key}:null;
 
   // Initialize Tonality Map in the Key tab
@@ -1586,6 +1797,7 @@ function _showMixLoading() {
   document.getElementById("smart-recs-content").innerHTML = '<div class="smart-recs-empty">Theory-based recommendations will appear here once analysis completes.</div>';
   const keyCtxEl = document.getElementById("key-context");
   if (keyCtxEl) { keyCtxEl.textContent = ''; keyCtxEl.style.display = 'none'; }
+  _stemLabelCounts = {};
   document.getElementById("loop-start").value = "0:00";
   document.getElementById("loop-end").value = "";
   loopActive = false;
@@ -1595,6 +1807,28 @@ function _showMixLoading() {
   document.getElementById("transposed-key").textContent = "";
   switchPanel("mix");
   _defaultTab = "mix";
+
+  // Lock non-Mix tabs during load — dim them so they read as "not ready yet"
+  document.querySelectorAll('.results-nav-btn:not([data-panel="mix"])').forEach(b => b.classList.add('tab-loading'));
+
+  // Inject skeleton placeholders so non-Mix tabs feel like "loading" not "broken"
+  document.getElementById('decompose-cof').innerHTML = '';
+  document.getElementById('decompose-key-detail').innerHTML =
+    '<div class="tab-skeleton-wrap">' +
+    '<div class="tab-skeleton-row"><div class="tab-sk" style="width:48px;height:10px"></div><div class="tab-sk" style="width:80px;height:10px"></div></div>' +
+    '<div class="tab-skeleton-row"><div class="tab-sk" style="width:64px;height:10px"></div><div class="tab-sk" style="width:120px;height:10px"></div></div>' +
+    '<div class="tab-skeleton-row"><div class="tab-sk" style="width:56px;height:10px"></div><div class="tab-sk" style="width:96px;height:10px"></div></div>' +
+    '</div>';
+  document.getElementById('smart-recs-content').innerHTML =
+    '<div class="sr-skeleton">' +
+    [0,1,2].map(() =>
+      '<div class="tab-skeleton-row"><div class="tab-sk" style="width:40px;height:40px;flex-shrink:0"></div>' +
+      '<div style="flex:1;display:flex;flex-direction:column;gap:6px">' +
+      '<div class="tab-sk" style="width:60%;height:10px"></div>' +
+      '<div class="tab-sk" style="width:40%;height:8px"></div></div></div>'
+    ).join('') +
+    '</div>';
+
   showView("results");
 }
 
@@ -1615,15 +1849,29 @@ function _buildSkeletonWaveform() {
   bg.classList.add('skeleton-waveform');
 }
 
+function _cleanProgressMsg(msg) {
+  if (!msg) return msg;
+  return msg
+    .replace(/\s*\(\d+\.?\d*\s*s\)/gi, '')    // strip (3s), (3.5s)
+    .replace(/\s*\(\d+m\s*\d*s?\)/gi, '')      // strip (1m), (1m23s)
+    .replace(/^Running\s+/i, '')               // "Running Demucs..." → "Demucs..."
+    .replace(/\s{2,}/g, ' ')
+    .trim();
+}
+
 function _updateMixLoadingStatus(text) {
   const el = document.getElementById('mix-loading-status');
   if (!el) return;
   el.style.opacity = '0';
-  setTimeout(() => { el.textContent = text; el.style.opacity = '1'; }, 200);
+  setTimeout(() => { el.textContent = _cleanProgressMsg(text); el.style.opacity = '1'; }, 200);
 }
 
 function _enableTransport() {
   document.querySelectorAll(".transport-btn").forEach(b => { b.classList.remove('transport-disabled'); });
+}
+
+function _unlockTabs() {
+  document.querySelectorAll('.results-nav-btn.tab-loading').forEach(b => b.classList.remove('tab-loading'));
 }
 
 function _removeSkeletonChannels() {
@@ -1886,7 +2134,7 @@ function updateTimeDisplay(){document.getElementById("time-display").textContent
 function updatePlayIcon(){document.getElementById("play-icon").style.display=isPlaying?"none":"block";document.getElementById("pause-icon").style.display=isPlaying?"block":"none";}
 function setVolume(n,v){stemVolumes[n]=parseInt(v)/100;document.getElementById(`vol-label-${n}`).textContent=v;updateGains();}
 function toggleMute(n){stemMuted[n]=!stemMuted[n];document.getElementById(`mute-${n}`).classList.toggle("mute-active",stemMuted[n]);document.getElementById(`ch-${n}`).classList.toggle("muted",stemMuted[n]);updateGains();_syncGroupMuteState(n);}
-function toggleSolo(n){stemSoloed[n]=!stemSoloed[n];document.getElementById(`solo-${n}`).classList.toggle("solo-active",stemSoloed[n]);updateGains();}
+function toggleSolo(n){stemSoloed[n]=!stemSoloed[n];document.getElementById(`solo-${n}`).classList.toggle("solo-active",stemSoloed[n]);document.getElementById(`ch-${n}`).classList.toggle("soloed",stemSoloed[n]);updateGains();}
 function toggleKaraoke() {
   _karaokeActive = !_karaokeActive;
   const btn = document.getElementById('karaoke-btn');
@@ -1911,6 +2159,7 @@ function setProgress(t,p){
 }
 function setError(m){const e=document.getElementById("error-msg");e.textContent=m;e.style.display=m?"block":"none";}
 function resetApp(){
+  _topBar.reset();
   cleanupAudio();stopLoadingMessages();pauseOffset=0;duration=0;currentJobId=null;selectedTrack=null;jobData=null;
   searchResults=[];lastQuery="";loopActive=false;transposeAmount=0;songKey=null;clearTimeout(pollInterval);
   _loadedStems={};_karaokeActive=false;_stemGroupBaselines={};
@@ -1927,6 +2176,7 @@ function resetApp(){
   document.getElementById("results-meta").innerHTML="";document.getElementById("harmonic-sections").innerHTML="";document.getElementById("lyrics-content").innerHTML="";document.getElementById("smart-recs-content").innerHTML="";_progressionNames={};_smartRecs={};_keyContext="";
   document.getElementById("loop-btn").classList.remove("active");document.getElementById("transpose-display").textContent="0";document.getElementById("transposed-key").textContent="";
   document.getElementById("proc-estimate").classList.remove("visible");
+  const _bgBlur = document.getElementById("proc-bg-blur"); if (_bgBlur) _bgBlur.style.backgroundImage = "";
   _hideResultWarning();setError("");showView("search");
 }
 function fmtMs(ms){const s=Math.floor((ms||0)/1000);return`${Math.floor(s/60)}:${String(s%60).padStart(2,"0")}`;}
@@ -2027,6 +2277,7 @@ function _renderSmartRecs(recs) {
     { key: 'same_progression', label: 'Same Progression' },
     { key: 'same_key_tempo', label: 'Same Key + Tempo' },
     { key: 'similar_harmony', label: 'Similar Harmony' },
+    { key: 'same_style', label: 'Similar Style' },
   ];
 
   const artistSongs = recs['more_by_artist'] || [];
@@ -2052,10 +2303,11 @@ function _renderSmartRecs(recs) {
     html += `<div class="sr-cat-label">${cat.label}</div>`;
     html += `<div class="sr-songs">`;
     for (const s of songs) {
+      const title = s.title || s.name || '';  // LLM uses 'title', Last.fm uses 'name'
       const art = s.image_url
         ? `<img class="sr-art" src="${esc(s.image_url)}" alt="" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'sr-art-ph'}))">`
         : `<div class="sr-art-ph"></div>`;
-      html += `<div class="sr-song" data-title="${esc(s.title)}" data-artist="${esc(s.artist)}" onclick="_loadRec(this.dataset.title,this.dataset.artist,this)">${art}<div class="sr-song-info"><span class="sr-song-title">${esc(s.title)}</span><span class="sr-song-artist">${esc(s.artist)}</span></div>`;
+      html += `<div class="sr-song" data-title="${esc(title)}" data-artist="${esc(s.artist)}" onclick="_loadRec(this.dataset.title,this.dataset.artist,this)">${art}<div class="sr-song-info"><span class="sr-song-title">${esc(title)}</span><span class="sr-song-artist">${esc(s.artist)}</span></div>`;
       if (s.reason) html += `<span class="sr-song-reason">${esc(s.reason)}</span>`;
       html += `</div>`;
     }
@@ -2069,10 +2321,11 @@ function _renderSmartRecs(recs) {
     html += `<div class="sr-cat-label">More from ${esc(artistName)}</div>`;
     html += `<div class="sr-songs">`;
     for (const s of artistSongs) {
+      const title = s.title || s.name || '';
       const art = s.image_url
         ? `<img class="sr-art" src="${esc(s.image_url)}" alt="" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'sr-art-ph'}))">`
         : `<div class="sr-art-ph"></div>`;
-      html += `<div class="sr-song" data-title="${esc(s.title)}" data-artist="${esc(s.artist)}" onclick="_loadRec(this.dataset.title,this.dataset.artist,this)">${art}<div class="sr-song-info"><span class="sr-song-title">${esc(s.title)}</span><span class="sr-song-artist">${esc(s.artist)}</span></div>`;
+      html += `<div class="sr-song" data-title="${esc(title)}" data-artist="${esc(s.artist)}" onclick="_loadRec(this.dataset.title,this.dataset.artist,this)">${art}<div class="sr-song-info"><span class="sr-song-title">${esc(title)}</span><span class="sr-song-artist">${esc(s.artist)}</span></div>`;
       if (s.reason) html += `<span class="sr-song-reason">${esc(s.reason)}</span>`;
       html += `</div>`;
     }

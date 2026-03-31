@@ -7,12 +7,10 @@ Uses a JSON file for history entries and the outputs/ dir for cached result payl
 import json
 import time
 from pathlib import Path
+from cache_version import ANALYSIS_VERSION
 
 HISTORY_FILE = Path("history.json")
 CACHE_DIR = Path("outputs")
-
-# Bump this when analysis logic changes to invalidate old caches
-ANALYSIS_VERSION = "v3"  # bumped: fixed BPM, stem labels, cache stems
 
 # In-memory cache for history.json — avoids re-reading the file 4-6 times per song flow
 _history_cache = None
