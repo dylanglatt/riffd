@@ -449,17 +449,13 @@ def download_track():
             bg = _bg_downloads.get(track_id)
 
         if bg:
-            # If prefetch is still downloading, wait for it (up to 60s) instead of starting a duplicate
+            # If prefetch is still downloading, return immediately — blocking here would
+            # exceed Gunicorn's 30s worker timeout, killing the worker and wiping in-memory state.
+            # The frontend handles this by polling /api/prefetch/<id>/status and retrying.
             if bg["status"] == "downloading":
-                import time as _wait_time
-                print(f"[download] prefetch in progress for track_id={track_id} — waiting...")
-                deadline = _wait_time.time() + 60
-                while _wait_time.time() < deadline:
-                    _wait_time.sleep(2)
-                    with _bg_lock:
-                        bg = _bg_downloads.get(track_id)
-                    if not bg or bg["status"] != "downloading":
-                        break
+                prefetch_id = bg.get("prefetch_id")
+                print(f"[download] prefetch in progress for track_id={track_id} — returning pending to frontend")
+                return jsonify({"status": "prefetch_pending", "prefetch_id": prefetch_id}), 202
 
             # Re-check after potential wait
             if bg and bg["status"] == "ready" and bg.get("audio_path"):
