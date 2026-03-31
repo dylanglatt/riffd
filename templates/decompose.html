@@ -66,6 +66,7 @@
     /* Confirm / Processing */
     .track-banner { display:flex; flex-direction:column; align-items:center; gap:20px; padding:36px 24px 28px; border-bottom:1px solid rgba(255,255,255,0.08); }
     .track-banner img,.track-banner .cover-placeholder { width:120px; height:120px; object-fit:cover; flex-shrink:0; }
+    .track-banner img { box-shadow:0 0 28px 6px var(--banner-glow-color,transparent); transition:box-shadow 0.8s ease; }
     .cover-placeholder { display:flex; align-items:center; justify-content:center; background:#0D0D0D; border:1px solid rgba(255,255,255,0.08); }
     .track-banner-title { font-size:1.125rem; font-weight:500; line-height:1.3; color:#F5F5F5; letter-spacing:-0.01em; text-align:center; }
     .track-banner-sub { color:rgba(245,245,245,0.5); font-size:0.875rem; margin-top:4px; letter-spacing:-0.01em; text-align:center; }
@@ -124,7 +125,14 @@
     /* Results */
     .results-shell { padding:0; overflow:hidden; border:1px solid rgba(255,255,255,0.08); background:transparent; }
     .results-header { padding:0; }
-    .results-meta { display:flex; gap:12px; flex-wrap:wrap; padding:24px; align-items:center; border-bottom:1px solid rgba(255,255,255,0.08); }
+    .results-meta { display:flex; padding:14px 24px; align-items:center; border-bottom:1px solid rgba(255,255,255,0.08); justify-content:space-between; gap:12px; flex-wrap:wrap; min-height:56px; }
+    #results-meta-chips { display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+    #results-meta-actions { display:flex; align-items:center; flex-shrink:0; gap:0; }
+    .meta-action-grp { display:flex; align-items:center; gap:6px; }
+    .meta-action-divider { width:1px; height:18px; background:rgba(255,255,255,0.07); margin:0 14px; flex-shrink:0; }
+    .meta-action-sep { color:rgba(245,245,245,0.25); font-size:0.8125rem; padding:0 2px; }
+    .meta-action-btn { background:transparent; color:rgba(245,245,245,0.4); border:1px solid rgba(255,255,255,0.08); padding:5px 14px; font-size:0.8125rem; font-weight:400; cursor:pointer; transition:all .2s; letter-spacing:-0.01em; font-family:inherit; margin-left:8px; white-space:nowrap; }
+    .meta-action-btn:hover { border-color:rgba(255,255,255,0.16); color:rgba(245,245,245,0.65); }
     .meta-chip { display:inline-flex; align-items:center; gap:8px; padding:6px 12px; border:1px solid rgba(255,255,255,0.08); font-size:0.8125rem; }
     .meta-chip .mc-label { color:rgba(245,245,245,0.4); font-size:0.6875rem; font-weight:400; letter-spacing:0.03em; text-transform:uppercase; }
     .meta-chip .mc-val { color:#F5F5F5; font-weight:500; letter-spacing:-0.01em; }
@@ -188,7 +196,7 @@
     .player-waveform-progress .player-wv-bar:nth-child(18n) { background:rgba(212,105,31,0.8); }
     .transport-seek { position:absolute; top:0; left:0; width:100%; height:100%; opacity:0; cursor:pointer; z-index:2; -webkit-appearance:none; appearance:none; margin:0; }
     .player-cursor { position:absolute; top:0; width:1px; height:100%; background:rgba(245,245,245,0.4); pointer-events:none; z-index:1; left:0%; transition:left 0.1s linear; }
-    .transport-time { font-size:0.8125rem; color:rgba(245,245,245,0.5); font-family:monospace; min-width:80px; text-align:right; }
+    .transport-time { font-size:0.8125rem; color:rgba(245,245,245,0.5); font-family:monospace; min-width:80px; max-width:160px; text-align:right; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 
     /* ─── Mixer channel strips ─────────────────────────────────────────────── */
     .mixer-channels { display:flex; flex-direction:column; }
@@ -237,8 +245,6 @@
     .karaoke-btn:hover { color:rgba(245,245,245,0.8); background:rgba(255,255,255,0.1); }
     .karaoke-btn.karaoke-active { color:#D4691F; background:rgba(212,105,31,0.12); }
 
-    /* Tools row */
-    .mix-tools { display:flex; gap:32px; margin-top:20px; padding-top:20px; border-top:1px solid rgba(255,255,255,0.06); flex-wrap:wrap; align-items:center; }
     .tool-grp { display:flex; align-items:center; gap:8px; padding:0; background:transparent; border:none; }
     .tool-lbl { font-size:0.6875rem; color:rgba(245,245,245,0.3); text-transform:uppercase; letter-spacing:0.06em; font-weight:600; }
     .tool-input { width:64px; background:rgba(245,245,245,0.04); border:1px solid rgba(255,255,255,0.08); padding:6px 10px; color:rgba(245,245,245,0.6); font-size:0.8125rem; font-family:monospace; text-align:center; outline:none; transition:border-color .2s; }
@@ -292,6 +298,20 @@
     .sr-loading { display:flex; align-items:center; justify-content:center; padding:48px 20px; }
     .sr-spinner { width:20px; height:20px; border:2px solid rgba(255,255,255,0.06); border-top-color:rgba(212,105,31,0.5); animation:srSpin .6s linear infinite; }
 
+    /* ═══ Theory Bridge CTAs ═══ */
+    .theory-bridge { margin-top:24px; padding-top:20px; border-top:1px solid rgba(255,255,255,0.05); }
+    .theory-bridge-label { font-size:0.6875rem; font-weight:600; text-transform:uppercase; letter-spacing:0.07em; color:rgba(245,245,245,0.3); margin-bottom:10px; }
+    .theory-bridge-links { display:flex; flex-wrap:wrap; gap:8px; }
+    .theory-bridge-btn {
+      display:inline-flex; align-items:center; gap:5px; padding:7px 12px;
+      font-size:0.8125rem; font-family:inherit; letter-spacing:-0.01em;
+      border:1px solid rgba(212,105,31,0.2); color:rgba(212,105,31,0.7);
+      background:rgba(212,105,31,0.03); cursor:pointer; text-decoration:none;
+      transition:all .15s;
+    }
+    .theory-bridge-btn:hover { border-color:rgba(212,105,31,0.45); color:#D4691F; background:rgba(212,105,31,0.07); }
+    .theory-bridge-btn svg { width:12px; height:12px; opacity:.6; }
+
     /* ═══ Lyrics panel ═══ */
     .lyrics-wrap { display:flex; flex-direction:column; gap:8px; max-width:620px; }
     .lyrics-block { border:1px solid rgba(255,255,255,0.06); padding:20px 24px 22px; transition:border-color 0.15s; }
@@ -301,9 +321,6 @@
     .lyrics-break { height:8px; }
     .lyrics-empty { padding:40px 20px; text-align:center; color:rgba(245,245,245,0.5); font-size:0.875rem; letter-spacing:-0.01em; }
 
-    .new-song-row { padding:32px 24px 24px; border-top:1px solid rgba(255,255,255,0.06); display:flex; justify-content:center; }
-    .new-song-btn { background:transparent; color:rgba(245,245,245,0.5); border:1px solid rgba(255,255,255,0.1); padding:10px 28px; font-size:0.875rem; font-weight:400; cursor:pointer; transition:all .2s; letter-spacing:-0.01em; }
-    .new-song-btn:hover { border-color:rgba(255,255,255,0.2); color:rgba(245,245,245,0.7); }
 
     /* ═══ Tablet (768px) ═══ */
     @media(max-width:768px) {
@@ -323,7 +340,6 @@
       .transport-time { font-size:0.75rem; min-width:70px; }
       .channel { grid-template-columns:100px 1fr auto; gap:8px; padding:8px 12px; }
       .channel-name { font-size:0.8125rem; min-width:0; }
-      .mix-tools { gap:16px; }
       .meta-chip { padding:4px 10px; font-size:0.75rem; }
       .results-nav-btn { padding:12px 0; font-size:0.8125rem; }
       .try-card { width:140px; }
@@ -343,7 +359,6 @@
     @media(max-width:480px) {
       .hero-headline { font-size:2rem; }
       .cap-grid { grid-template-columns:1fr; }
-      .mix-tools { flex-direction:column; align-items:flex-start; }
       .track-meta { display:none; }
       .proc-art-wrap { width:120px; height:120px; }
       .proc-art-wrap img { width:120px; height:120px; }
@@ -383,9 +398,8 @@
       #panel-key > div:first-child { flex-direction:column; gap:16px; }
       #decompose-cof { width:100%; display:flex; justify-content:center; }
       #decompose-key-detail { min-width:0 !important; width:100%; }
-      /* Footer buttons — stack on mobile */
-      .new-song-row { flex-wrap:wrap; gap:8px; padding:20px 12px; }
-      .new-song-row .new-song-btn { flex:1; min-width:0; text-align:center; }
+      #results-meta-actions { flex-wrap:wrap; gap:8px; }
+      .meta-action-divider { display:none; }
       /* harmonic overflow styles removed */
     }
 
@@ -420,8 +434,6 @@
       .sr-cat-label { font-size:0.625rem; }
       .sr-category { margin-bottom:20px; }
       .results-meta { padding:12px; }
-      .new-song-row { flex-direction:column; gap:8px; align-items:stretch; padding:24px 16px 20px; }
-      .new-song-btn { text-align:center; }
       /* Track banner — minimal */
       .track-banner { padding:20px 14px 16px; gap:12px; }
       .track-banner img, .track-banner .cover-placeholder { width:72px; height:72px; }
@@ -520,7 +532,30 @@
       <div class="results-header">
         <div class="track-banner" id="results-banner"></div>
         <div id="result-warning" style="display:none;margin-top:12px;padding:10px 14px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:var(--radius-xs);color:rgba(245,245,245,0.4);font-size:.78rem;line-height:1.5;"></div>
-        <div class="results-meta" id="results-meta"></div>
+        <div class="results-meta" id="results-meta">
+          <div id="results-meta-chips"></div>
+          <div id="results-meta-actions">
+            <div class="meta-action-grp">
+              <span class="tool-lbl">Loop</span>
+              <input type="text" class="tool-input" id="loop-start" value="0:00" />
+              <span class="meta-action-sep">to</span>
+              <input type="text" class="tool-input" id="loop-end" placeholder="end" />
+              <button class="tool-btn" id="loop-btn" onclick="toggleLoop()">&#8635;</button>
+              <span class="loop-hint" id="loop-hint"></span>
+            </div>
+            <div class="meta-action-divider"></div>
+            <div class="meta-action-grp">
+              <span class="tool-lbl">Key</span>
+              <button class="tool-btn" onclick="transposeBy(-1)">-</button>
+              <div class="transpose-val" id="transpose-display">0</div>
+              <button class="tool-btn" onclick="transposeBy(1)">+</button>
+              <span class="transposed-key" id="transposed-key"></span>
+            </div>
+            <div class="meta-action-divider"></div>
+            <button class="meta-action-btn" onclick="resetApp()">New Song</button>
+            <div id="share-action-slot" style="display:inline-flex;"></div>
+          </div>
+        </div>
         <!-- harmonic-sections hidden for now -->
         <div id="harmonic-sections" style="display:none"></div>
       </div>
@@ -552,10 +587,6 @@
             <button class="full-mix-btn" id="full-mix-btn" onclick="resetFullMix()" title="Reset to full mix"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 4v6h6"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg><span>Full Mix</span></button>
           </div>
           <div class="mixer-channels" id="mixer-channels"></div>
-          <div class="mix-tools">
-            <div class="tool-grp"><span class="tool-lbl">Loop</span><input type="text" class="tool-input" id="loop-start" value="0:00" /><span style="color:rgba(245,245,245,0.25);font-size:0.8125rem">to</span><input type="text" class="tool-input" id="loop-end" placeholder="end" /><button class="tool-btn" id="loop-btn" onclick="toggleLoop()">&#8635;</button><span class="loop-hint" id="loop-hint"></span></div>
-            <div class="tool-grp"><span class="tool-lbl">Key</span><button class="tool-btn" onclick="transposeBy(-1)">-</button><div class="transpose-val" id="transpose-display">0</div><button class="tool-btn" onclick="transposeBy(1)">+</button><span class="transposed-key" id="transposed-key"></span></div>
-          </div>
         </div>
       </div>
       <div class="results-panel" id="panel-key">
@@ -564,15 +595,13 @@
           <div id="decompose-key-detail" style="flex:1;min-width:260px"></div>
         </div>
         <div class="key-context" id="key-context"></div>
+        <div id="key-theory-bridge"></div>
       </div>
       <div class="results-panel" id="panel-lyrics">
         <div id="lyrics-content"></div>
       </div>
       <div class="results-panel" id="panel-recommended">
         <div id="smart-recs-content"></div>
-      </div>
-      <div class="new-song-row" id="results-footer">
-        <button class="new-song-btn" onclick="resetApp()">New Song</button>
       </div>
     </div>
   </div>
@@ -941,8 +970,49 @@ function _notifyMixTab() {
   }
 }
 
+function _renderTheoryBridge(keyName, progressionNames) {
+  const el = document.getElementById('key-theory-bridge');
+  if (!el) return;
+  const links = [];
+
+  // Key deep-link
+  if (keyName && keyName !== 'Unknown') {
+    const encoded = encodeURIComponent(keyName);
+    links.push(`<a class="theory-bridge-btn" href="/learn?section=keys&key=${encoded}">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 2v20M2 12h20"/></svg>
+      Explore ${esc(keyName)} in Theory
+    </a>`);
+    // Also link to scales for this key's mode (Major/Minor)
+    const isMinor = keyName.toLowerCase().includes('minor');
+    const mode = isMinor ? 'Minor' : 'Major';
+    links.push(`<a class="theory-bridge-btn" href="/learn?section=scales&field=family&val=${mode}">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 20h20M6 16v4M10 12v8M14 8v12M18 4v16"/></svg>
+      ${esc(mode)} Scales
+    </a>`);
+  }
+
+  // Progression deep-links from named progressions
+  if (progressionNames) {
+    const names = Object.values(progressionNames).filter(Boolean);
+    const unique = [...new Set(names)].slice(0, 2);
+    for (const name of unique) {
+      const encoded = encodeURIComponent(name);
+      links.push(`<a class="theory-bridge-btn" href="/learn?section=progressions&search=${encoded}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12h4l3-9 4 18 3-9h4"/></svg>
+        "${esc(name)}" Progression
+      </a>`);
+    }
+  }
+
+  if (!links.length) return;
+  el.innerHTML = `<div class="theory-bridge">
+    <div class="theory-bridge-label">Explore in Theory</div>
+    <div class="theory-bridge-links">${links.join('')}</div>
+  </div>`;
+}
+
 function _silentlyUpdateMetaChips(intel) {
-  const metaEl = document.getElementById('results-meta');
+  const metaEl = document.getElementById('results-meta-chips');
   if (!metaEl) return;
   let chips = '';
   const tags = jobData?.tags || [];
@@ -952,6 +1022,8 @@ function _silentlyUpdateMetaChips(intel) {
   metaEl.innerHTML = chips;
   songKey = (intel.key_num >= 0) ? { num: intel.key_num, mode: intel.mode_num, name: intel.key } : songKey;
   _initDecomposeKeyTab(intel.key);
+  // Render bridge with key info; progression names may arrive later via insight
+  _renderTheoryBridge(intel.key, _progressionNames || {});
 }
 
 function showView(n) { views.forEach(v => { const el=document.getElementById(`view-${v}`); if(el) el.classList.toggle("active",v===n); }); }
@@ -1130,7 +1202,7 @@ function cleanTitle(name) {
     .trim();
 }
 
-function buildBanner(id,t,audioSource,audioMode){const el=document.getElementById(id);if(!el)return;const img=t.image_url?`<img src="${esc(t.image_url)}" alt="" onerror="_artFailBanner(this)">`:'<div class="cover-placeholder"><svg viewBox="0 0 24 24" width="20" height="20" style="opacity:.3"><path d="M12 3v10.55A4 4 0 1 0 14 17V7h4V3h-6Z" fill="currentColor"/></svg></div>';const subParts=[t.artist||"Unknown"];if(t.year)subParts.push(esc(String(t.year)));if(t.album)subParts.push(esc(cleanTitle(t.album)));el.innerHTML=`${img}<div><div class="track-banner-title">${esc(cleanTitle(t.name||"Untitled"))}</div><div class="track-banner-sub">${subParts.join(" \u00b7 ")}</div></div>`;}
+function buildBanner(id,t,audioSource,audioMode){const el=document.getElementById(id);if(!el)return;const img=t.image_url?`<img src="${esc(t.image_url)}" alt="" crossorigin="anonymous" onload="_applyBannerGlow(this,'${id}')" onerror="_artFailBanner(this)">`:'<div class="cover-placeholder"><svg viewBox="0 0 24 24" width="20" height="20" style="opacity:.3"><path d="M12 3v10.55A4 4 0 1 0 14 17V7h4V3h-6Z" fill="currentColor"/></svg></div>';const subParts=[t.artist||"Unknown"];if(t.year)subParts.push(esc(String(t.year)));if(t.album)subParts.push(esc(cleanTitle(t.album)));el.innerHTML=`${img}<div><div class="track-banner-title">${esc(cleanTitle(t.name||"Untitled"))}</div><div class="track-banner-sub">${subParts.join(" \u00b7 ")}</div></div>`;}
 
 // ─── Upload ─────────────────────────────────────────────────────────────────
 function handleDragOver(e){e.preventDefault();document.getElementById("upload-area").classList.add("drag-over");}
@@ -1287,6 +1359,24 @@ function _populateHero() {
   document.getElementById("proc-chips").innerHTML = "";
   // Reset step indicators
   document.querySelectorAll('.proc-step').forEach(s => { s.classList.remove('active', 'done'); s.querySelector('.proc-step-icon').innerHTML = '<div class="proc-step-dot"></div>'; });
+}
+
+function _applyBannerGlow(img, bannerId) {
+  const el = document.getElementById(bannerId);
+  if (!el || !img) return;
+  try {
+    const canvas = document.createElement("canvas");
+    canvas.width = 8; canvas.height = 8;
+    const ctx = canvas.getContext("2d");
+    ctx.drawImage(img, 0, 0, 8, 8);
+    const data = ctx.getImageData(0, 0, 8, 8).data;
+    let rSum = 0, gSum = 0, bSum = 0, count = 0;
+    for (let i = 0; i < data.length; i += 4) {
+      rSum += data[i]; gSum += data[i+1]; bSum += data[i+2]; count++;
+    }
+    const r = Math.round(rSum / count), g = Math.round(gSum / count), b = Math.round(bSum / count);
+    el.style.setProperty("--banner-glow-color", `rgba(${r},${g},${b},0.35)`);
+  } catch(e) { /* CORS — skip glow */ }
 }
 
 function _extractGlowColor(imgUrl) {
@@ -1590,6 +1680,8 @@ function pollStatus(){
         _renderSmartRecs(_smartRecs);
         const keyCtxEl = document.getElementById("key-context");
         if (keyCtxEl) { keyCtxEl.textContent = _keyContext; keyCtxEl.style.display = _keyContext ? "block" : "none"; }
+        // Refresh bridge now that progression names are available
+        _renderTheoryBridge(d.intelligence?.key || (songKey && songKey.name), _progressionNames);
       } else if (!_renderedRecs && d.recommendations && (d.recommendations.same_style || []).length > 0) {
         // LLM unavailable mid-poll — show Last.fm matches as they arrive
         _renderedRecs = true;
@@ -1644,6 +1736,7 @@ function pollStatus(){
           _renderSmartRecs(_smartRecs);
           const keyCtxEl = document.getElementById("key-context");
           if (keyCtxEl) { keyCtxEl.textContent = _keyContext; keyCtxEl.style.display = _keyContext ? "block" : "none"; }
+          _renderTheoryBridge(d.intelligence?.key || (songKey && songKey.name), _progressionNames);
         } else if (d.recommendations && (d.recommendations.same_style || []).length > 0) {
           // LLM unavailable — fall back to Last.fm style matches
           _renderSmartRecs({ same_style: d.recommendations.same_style });
@@ -1721,14 +1814,14 @@ async function renderResults(data) {
   const stems=data.stems||{}, intel=data.intelligence||{}, recs=data.recommendations||{}, lyrics=data.lyrics||null, tags=data.tags||[];
   const activeNames = Object.keys(stems).filter(n => {const i=stems[n]; return !i||i.active!==false;});
   if(!activeNames.length){setError("No stems detected.");showView("search");return;}
-  const metaEl=document.getElementById("results-meta");
+  const metaEl=document.getElementById("results-meta-chips");
   let chips="";
 
   if(tags && tags.length) { const genre = tags[0].charAt(0).toUpperCase() + tags[0].slice(1); chips+=`<span class="meta-chip"><span class="mc-label">Genre</span><span class="mc-val">${esc(genre)}</span></span>`; }
   if(intel.key && intel.key !== "Unknown") { chips+=`<span class="meta-chip"><span class="mc-label">Key</span><span class="mc-val">${esc(intel.key)}</span></span>`; }
   if(selectedTrack && selectedTrack.year) { chips+=`<span class="meta-chip"><span class="mc-label">Year</span><span class="mc-val">${esc(String(selectedTrack.year))}</span></span>`; }
 
-  metaEl.innerHTML=chips;
+  if(metaEl) metaEl.innerHTML=chips;
 
   // LLM-derived intelligence
   const llmData = data.insight || {};
@@ -1781,7 +1874,8 @@ async function renderResults(data) {
 // ─── Mix Loading State ─────────────────────────────────────────────────────
 function _showMixLoading() {
   buildBanner("results-banner", selectedTrack || {name:"Result",artist:""}, null, null);
-  document.getElementById("results-meta").innerHTML = '';
+  const _rmc = document.getElementById("results-meta-chips"); if(_rmc) _rmc.innerHTML = '';
+  const _rss = document.getElementById("share-action-slot"); if(_rss) _rss.innerHTML = '';
   document.getElementById("harmonic-sections").innerHTML = '';
   _buildSkeletonWaveform();
   document.getElementById("time-display").textContent = "--:-- / --:--";
@@ -1890,8 +1984,7 @@ function _addShareButton() {
   const shareUrl = `${window.location.origin}/s/${selectedTrack.id}`;
   const shareBtn = document.createElement('button');
   shareBtn.id = 'share-btn';
-  shareBtn.className = 'new-song-btn';
-  shareBtn.style.cssText = 'font-size:0.8125rem; padding:8px 20px;';
+  shareBtn.className = 'meta-action-btn';
   shareBtn.textContent = 'Share Analysis';
   shareBtn.onclick = () => {
     navigator.clipboard.writeText(shareUrl).then(() => {
@@ -1901,8 +1994,8 @@ function _addShareButton() {
       prompt('Copy this link:', shareUrl);
     });
   };
-  const newSongRow = document.getElementById('results-footer');
-  if (newSongRow) newSongRow.appendChild(shareBtn);
+  const shareSlot = document.getElementById('share-action-slot');
+  if (shareSlot) { shareSlot.innerHTML = ''; shareSlot.appendChild(shareBtn); }
 }
 
 
@@ -2173,7 +2266,7 @@ function resetApp(){
   const wvFg=document.getElementById("wv-fg");if(wvFg)wvFg.style.width="0%";
   document.getElementById("progress-label").textContent="Analyzing the track...";document.getElementById("progress-label").classList.remove("fading");
   document.getElementById("seek-bar").value=0;document.getElementById("time-display").textContent="0:00 / 0:00";
-  document.getElementById("results-meta").innerHTML="";document.getElementById("harmonic-sections").innerHTML="";document.getElementById("lyrics-content").innerHTML="";document.getElementById("smart-recs-content").innerHTML="";_progressionNames={};_smartRecs={};_keyContext="";
+  const _rmc2=document.getElementById("results-meta-chips");if(_rmc2)_rmc2.innerHTML="";const _rss2=document.getElementById("share-action-slot");if(_rss2)_rss2.innerHTML="";document.getElementById("harmonic-sections").innerHTML="";document.getElementById("lyrics-content").innerHTML="";document.getElementById("smart-recs-content").innerHTML="";_progressionNames={};_smartRecs={};_keyContext="";
   document.getElementById("loop-btn").classList.remove("active");document.getElementById("transpose-display").textContent="0";document.getElementById("transposed-key").textContent="";
   document.getElementById("proc-estimate").classList.remove("visible");
   const _bgBlur = document.getElementById("proc-bg-blur"); if (_bgBlur) _bgBlur.style.backgroundImage = "";

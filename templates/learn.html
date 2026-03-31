@@ -7,9 +7,10 @@
   .studio-sub { font-size:1.125rem; font-weight:400; letter-spacing:-0.01em; line-height:1.65; color:rgba(245,245,245,0.55); margin-bottom:8px; }
 
   /* Search */
-  .studio-search-wrap { max-width:560px; margin:0 auto 64px; position:relative; }
+  .studio-search-wrap { max-width:560px; margin:0 auto 64px; }
+  .studio-search-inner { position:relative; display:flex; align-items:center; }
   .studio-search {
-    width:100%; padding:14px 20px 14px 48px; font-size:0.9375rem; font-family:inherit;
+    width:100%; padding:14px 108px 14px 48px; font-size:0.9375rem; font-family:inherit;
     background:transparent; border:1px solid rgba(255,255,255,0.15);
     color:#F5F5F5; outline:none; transition:border-color .2s; letter-spacing:-0.01em;
   }
@@ -107,7 +108,79 @@
   .ai-searching { font-size:0.875rem; color:rgba(245,245,245,0.4); padding:20px 0; text-align:center; letter-spacing:-0.01em; }
   .ai-searching::after { content:''; display:inline-block; width:12px; height:12px; margin-left:8px; border:1.5px solid rgba(212,105,31,0.3); border-top-color:#D4691F; border-radius:50%; animation:aiSpin .6s linear infinite; vertical-align:middle; }
   @keyframes aiSpin { to { transform:rotate(360deg) } }
-  .search-mode-hint { font-size:0.75rem; color:rgba(245,245,245,0.25); margin-top:6px; text-align:center; letter-spacing:-0.01em; transition:opacity .2s; }
+  .search-mode-hint { display:none; }
+
+  /* AI toggle — inline inside search bar */
+  .ai-toggle-btn {
+    position:absolute; right:12px; top:50%; transform:translateY(-50%);
+    display:inline-flex; align-items:center; gap:5px; padding:5px 10px;
+    font-size:0.75rem; font-weight:400; letter-spacing:-0.01em;
+    border:1px solid rgba(255,255,255,0.10); color:rgba(245,245,245,0.35);
+    background:#0B0B0B; cursor:pointer; transition:all .2s; font-family:inherit;
+  }
+  .ai-toggle-btn:hover { border-color:rgba(212,105,31,0.3); color:rgba(212,105,31,0.7); }
+  .ai-toggle-btn.ai-on { border-color:rgba(212,105,31,0.4); color:#D4691F; background:rgba(212,105,31,0.06); }
+  .ai-toggle-dot { width:5px; height:5px; border-radius:50%; background:currentColor; flex-shrink:0; }
+
+  /* View toggle */
+  .view-toggle { display:flex; gap:0; margin-left:auto; }
+  .view-btn {
+    display:flex; align-items:center; gap:5px;
+    padding:0 10px; height:30px; border:1px solid rgba(255,255,255,0.08);
+    background:transparent; color:rgba(245,245,245,0.35); cursor:pointer; transition:all .15s;
+    font-size:0.75rem; font-family:inherit; letter-spacing:-0.01em;
+  }
+  .view-btn + .view-btn { border-left:none; }
+  .view-btn:hover { color:rgba(245,245,245,0.6); }
+  .view-btn.active { color:#F5F5F5; border-color:rgba(255,255,255,0.20); }
+  .view-btn svg { width:12px; height:12px; flex-shrink:0; }
+
+  /* Compact list view */
+  .theory-grid.list-view { display:flex; flex-direction:column; gap:0; }
+  .theory-grid.list-view .theory-card {
+    padding:11px 16px; display:flex; align-items:baseline; gap:16px; border-bottom:none; border-top:none;
+    border-left:none; border-right:none; border-bottom:1px solid rgba(255,255,255,0.05);
+  }
+  .theory-grid.list-view .theory-card:first-child { border-top:1px solid rgba(255,255,255,0.05); }
+  .theory-grid.list-view .theory-card:hover { background:rgba(255,255,255,0.02); border-color:rgba(255,255,255,0.05); }
+  .theory-grid.list-view .tc-header { margin-bottom:0; flex-shrink:0; min-width:200px; }
+  .theory-grid.list-view .tc-formula { margin-bottom:0; flex-shrink:0; min-width:160px; }
+  .theory-grid.list-view .tc-desc { display:none; }
+  .theory-grid.list-view .tc-extra { margin-top:0; }
+  .theory-grid.list-view .tc-list-meta { display:flex; align-items:center; gap:12px; margin-left:auto; flex-shrink:0; }
+  .tc-list-meta { display:none; }
+
+  /* Transposition tool */
+  .transpose-bar {
+    display:flex; align-items:center; gap:10px; margin-bottom:20px;
+    padding:10px 14px; border:1px solid rgba(255,255,255,0.06);
+    background:rgba(255,255,255,0.015);
+  }
+  .transpose-label { font-size:0.8125rem; color:rgba(245,245,245,0.4); letter-spacing:-0.01em; flex-shrink:0; }
+  .transpose-select {
+    padding:5px 10px; font-size:0.8125rem; font-family:inherit;
+    background:#0D0D0D; border:1px solid rgba(255,255,255,0.10);
+    color:#F5F5F5; outline:none; cursor:pointer; letter-spacing:-0.01em;
+    transition:border-color .15s;
+  }
+  .transpose-select:focus { border-color:rgba(212,105,31,0.4); }
+  .transpose-reset {
+    font-size:0.8125rem; color:rgba(245,245,245,0.3); cursor:pointer;
+    background:none; border:none; font-family:inherit; padding:0; transition:color .15s; letter-spacing:-0.01em;
+  }
+  .transpose-reset:hover { color:#f87171; }
+  .transpose-key-display { font-size:0.8125rem; color:rgba(245,245,245,0.5); letter-spacing:-0.01em; }
+  .transpose-key-display strong { color:#D4691F; font-weight:500; }
+
+  /* Cross-section links on cards */
+  .tc-related { margin-top:10px; display:flex; flex-wrap:wrap; gap:6px; }
+  .tc-related-link {
+    font-size:0.75rem; color:rgba(212,105,31,0.7); cursor:pointer;
+    border:1px solid rgba(212,105,31,0.15); padding:3px 8px;
+    transition:all .15s; letter-spacing:-0.01em; background:none;
+    font-family:inherit; white-space:nowrap;
+  }
+  .tc-related-link:hover { color:#D4691F; border-color:rgba(212,105,31,0.35); background:rgba(212,105,31,0.04); }
 
   /* Pagination */
   .pagination { display:flex; align-items:center; justify-content:center; gap:4px; margin-top:32px; }
@@ -165,13 +238,16 @@
   <div class="studio-head">
     <div class="studio-title">Explore music theory.</div>
     <div class="studio-sub">Chords, scales, progressions, and keys — searchable and filterable.</div>
-    <div class="beta-msg">Beta — continuously improving with every analysis.</div>
   </div>
 
   <div class="studio-search-wrap">
-    <svg class="studio-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-    <input class="studio-search" id="global-search" placeholder="Search chords, scales, progressions..." autocomplete="off" />
-    <div class="search-mode-hint" id="search-hint">Try asking a question: "What scales work for jazz?"</div>
+    <div class="studio-search-inner">
+      <svg class="studio-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input class="studio-search" id="global-search" placeholder="Search chords, scales, progressions..." autocomplete="off" />
+      <button class="ai-toggle-btn" id="ai-toggle-btn" onclick="_toggleAiMode()">
+        <span class="ai-toggle-dot"></span>Ask AI
+      </button>
+    </div>
   </div>
 
   <div class="studio-layout">
@@ -205,6 +281,7 @@
         <div class="ai-answer-box" id="ai-answer-chords"></div>
         <div class="filter-row" id="filters-chords"></div>
         <div class="active-pills" id="active-chords"></div>
+        <div class="transpose-bar" id="transpose-bar-chords" style="display:none"></div>
         <div class="theory-grid" id="grid-chords"></div>
         <div class="pagination" id="pag-chords"></div>
       </div>
@@ -286,6 +363,16 @@ const _search = {};
 const _page = {};      // section → current page (0-indexed)
 const PER_PAGE = 18;
 let _currentSection = 'chords';
+let _viewMode = 'grid';    // 'grid' | 'list'
+let _transposeRoot = 'C';  // currently selected root for transposition
+let _aiModeForced = false; // user explicitly toggled AI mode on
+
+const CHROMATIC = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+// Enharmonic display map for flats
+const ENHARMONIC = { 'C#':'Db', 'D#':'Eb', 'F#':'Gb', 'G#':'Ab', 'A#':'Bb' };
+
+// Cross-section relationship maps built after data loads
+const _relatedCache = {};  // key → { section, name }[]
 
 const FILTER_GROUPS = {
   chords: [
@@ -431,6 +518,16 @@ function _renderFilters(section) {
     html += `<span class="filter-clear" onclick="_clearFilters('${section}')">Clear all</span>`;
   }
 
+  // View toggle (grid/list) — always right-aligned
+  html += `<div class="view-toggle" style="margin-left:auto">
+    <button class="view-btn${_viewMode==='grid'?' active':''}" onclick="_setViewMode('grid')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>Grid
+    </button>
+    <button class="view-btn${_viewMode==='list'?' active':''}" onclick="_setViewMode('list')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>List
+    </button>
+  </div>`;
+
   bar.innerHTML = html;
 
   // Active filter pills below dropdowns (so user can see + remove individual filters)
@@ -447,6 +544,66 @@ function _renderFilters(section) {
   pillsEl.innerHTML = pills;
 }
 
+function _transposeFormula(formula, semitones) {
+  if (!formula || semitones === 0) return formula;
+  // Transpose a space/dash/comma-separated note sequence (e.g. "C - E - G" or "C D E F G")
+  return formula.replace(/\b([A-G][#b]?)\b/g, note => {
+    const normalized = note.replace('b', '#').replace(/([A-G])b/, (_, n) => {
+      const idx = CHROMATIC.indexOf(n);
+      return CHROMATIC[(idx - 1 + 12) % 12];
+    });
+    let idx = CHROMATIC.indexOf(normalized);
+    if (idx === -1) {
+      // Try sharp equivalent of flat
+      const sharpEq = Object.entries(ENHARMONIC).find(([,v]) => v === normalized);
+      if (sharpEq) idx = CHROMATIC.indexOf(sharpEq[0]);
+    }
+    if (idx === -1) return note; // unknown note — leave as-is
+    const newNote = CHROMATIC[(idx + semitones + 12) % 12];
+    // Prefer flats if the original used flats
+    if (note.includes('b') && ENHARMONIC[newNote]) return ENHARMONIC[newNote];
+    return newNote;
+  });
+}
+
+function _getSemitones() {
+  const fromIdx = CHROMATIC.indexOf('C');
+  const toName = _transposeRoot.replace('b', '#');
+  let toIdx = CHROMATIC.indexOf(toName);
+  if (toIdx === -1) {
+    const sharp = Object.entries(ENHARMONIC).find(([,v]) => v === _transposeRoot);
+    if (sharp) toIdx = CHROMATIC.indexOf(sharp[0]);
+  }
+  return toIdx === -1 ? 0 : (toIdx - fromIdx + 12) % 12;
+}
+
+function _getRelatedLinks(item, section) {
+  const links = [];
+  if (section === 'chords') {
+    // Link to progressions containing this chord quality
+    const q = item.quality;
+    if (q) links.push({ label: `Progressions → ${q.split(' ')[0]}`, section:'progressions', search: q.split(' ')[0] });
+    // Link to scales with shared genres
+    const genre = (item.genres||[])[0];
+    if (genre) links.push({ label: `Scales for ${genre}`, section:'scales', filter:{ field:'genres', val:genre } });
+  } else if (section === 'scales') {
+    // Link to key for this scale family
+    if (item.family === 'Major') links.push({ label: 'Explore Keys', section:'keys', filter:{ field:'mode', val:'Major' } });
+    else if (item.family === 'Minor' || item.family === 'Harmonic Minor' || item.family === 'Melodic Minor') links.push({ label: 'Explore Keys', section:'keys', filter:{ field:'mode', val:'Minor' } });
+    const genre = (item.genres||[])[0];
+    if (genre) links.push({ label: `Chords for ${genre}`, section:'chords', filter:{ field:'genres', val:genre } });
+  } else if (section === 'progressions') {
+    const genre = (item.genres||[])[0];
+    if (genre) links.push({ label: `Scales for ${genre}`, section:'scales', filter:{ field:'genres', val:genre } });
+    if (item.category) links.push({ label: `${item.category} Keys`, section:'keys', filter:{ field:'genres', val:item.category } });
+  } else if (section === 'keys') {
+    if (item.mode) links.push({ label: `${item.mode} Scales`, section:'scales', filter:{ field:'family', val:item.mode } });
+    const genre = (item.genres||[])[0];
+    if (genre) links.push({ label: `${genre} Progressions`, section:'progressions', filter:{ field:'genres', val:genre } });
+  }
+  return links.slice(0, 2);
+}
+
 function _renderCards(section) {
   const items = _filtered[section] || [];
   const grid = document.getElementById('grid-' + section);
@@ -454,34 +611,44 @@ function _renderCards(section) {
   const start = pg * PER_PAGE;
   const pageItems = items.slice(start, start + PER_PAGE);
 
+  // Sync view mode class
+  grid.classList.toggle('list-view', _viewMode === 'list');
+
   if (!items.length) {
     grid.innerHTML = '<div class="empty-section">No matches. Try adjusting filters or search.</div>';
     document.getElementById('pag-' + section).innerHTML = '';
     return;
   }
 
+  const semitones = _getSemitones();
+
   grid.innerHTML = pageItems.map(item => {
-    const formulaField = item.notes || item.formula || '';
-    const tags = [];
-    if (item.difficulty) tags.push(item.difficulty);
-    if (item.quality) tags.push(item.quality);
-    if (item.family) tags.push(item.family);
-    if (item.category) tags.push(item.category);
-    (item.context||[]).forEach(c => tags.push(c));
-    (item.genres||[]).slice(0,3).forEach(g => tags.push(g));
-    (item.mood||[]).slice(0,1).forEach(m => tags.push(m));
+    const rawFormula = item.notes || item.formula || '';
+    const formulaField = (section === 'chords' || section === 'scales' || section === 'progressions')
+      ? _transposeFormula(rawFormula, semitones)
+      : rawFormula;
 
     let extra = '';
-    if (section === 'keys' && item.relative) extra = `<div class="tc-extra">Relative: ${_esc(item.relative)}${item.brightness ? ' \u00b7 ' + item.brightness : ''}</div>`;
-    if (section === 'progressions' && item.function) extra = `<div class="tc-extra">${_esc(item.function)}${item.chords ? ' \u00b7 ' + item.chords + ' chords' : ''}</div>`;
-    if (section === 'scales' && item.notes) extra = `<div class="tc-extra">${item.notes} notes${item.family ? ' \u00b7 ' + item.family : ''}</div>`;
+    if (section === 'keys' && item.relative) extra = `<div class="tc-extra">Relative: ${_esc(item.relative)}${item.brightness ? ' · ' + item.brightness : ''}</div>`;
+    if (section === 'progressions' && item.function) extra = `<div class="tc-extra">${_esc(item.function)}${item.chords ? ' · ' + item.chords + ' chords' : ''}</div>`;
+    if (section === 'scales' && item.notes) extra = `<div class="tc-extra">${item.notes} notes${item.family ? ' · ' + item.family : ''}</div>`;
+
+    // Cross-section related links
+    const relLinks = _getRelatedLinks(item, section);
+    const relHtml = relLinks.length
+      ? `<div class="tc-related">${relLinks.map(l => `<button class="tc-related-link" onclick="_jumpToSection('${_esc(l.section)}','${l.filter ? _esc(l.filter.field) : ''}','${l.filter ? _esc(l.filter.val) : ''}','${l.search ? _esc(l.search) : ''}')">${_esc(l.label)} →</button>`).join('')}</div>`
+      : '';
+
+    // List-view meta
+    const listMeta = `<div class="tc-list-meta">${item.badge ? `<span class="tc-badge">${_esc(item.badge)}</span>` : ''}${item.difficulty ? `<span style="font-size:0.75rem;color:rgba(245,245,245,0.25)">${_esc(item.difficulty)}</span>` : ''}</div>`;
 
     return `<div class="theory-card">
-      <div class="tc-header"><span class="tc-name">${_esc(item.name)}</span>${item.badge ? `<span class="tc-badge">${_esc(item.badge)}</span>` : ''}</div>
+      <div class="tc-header"><span class="tc-name">${_esc(item.name)}</span>${_viewMode === 'grid' && item.badge ? `<span class="tc-badge">${_esc(item.badge)}</span>` : ''}</div>
       ${formulaField ? `<div class="tc-formula">${_esc(formulaField)}</div>` : ''}
       <div class="tc-desc">${_esc(item.desc)}</div>
       ${extra}
-      <div class="tc-tags">${tags.map(t => `<span class="tc-tag">${_esc(t)}</span>`).join('')}</div>
+      ${relHtml}
+      ${listMeta}
     </div>`;
   }).join('');
 
@@ -512,7 +679,95 @@ function _goPage(section, pg) {
 
 function _renderSection(section) {
   _renderFilters(section);
+  _renderTransposeBar(section);
   _renderCards(section);
+}
+
+// ─── View Mode ────────────────────────────────────────────────────────────────
+function _setViewMode(mode) {
+  _viewMode = mode;
+  // Re-render all loaded sections so toggle stays in sync
+  ['chords','scales','progressions','keys'].forEach(s => {
+    if (_data[s]) _renderSection(s);
+  });
+}
+
+// ─── Transposition ────────────────────────────────────────────────────────────
+const TRANSPOSE_SECTIONS = ['chords'];
+
+function _renderTransposeBar(section) {
+  const bar = document.getElementById('transpose-bar-' + section);
+  if (!bar || !TRANSPOSE_SECTIONS.includes(section)) return;
+
+  const allRoots = [...CHROMATIC, ...Object.values(ENHARMONIC)].sort();
+  const uniqueRoots = ['C','C#/Db','D','D#/Eb','E','F','F#/Gb','G','G#/Ab','A','A#/Bb','B'];
+  const rootValues = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+
+  let opts = rootValues.map((r, i) => {
+    const label = ENHARMONIC[r] ? `${r} / ${ENHARMONIC[r]}` : r;
+    return `<option value="${r}"${_transposeRoot === r ? ' selected' : ''}>${label}</option>`;
+  }).join('');
+
+  const isTransposed = _transposeRoot !== 'C';
+
+  bar.style.display = 'flex';
+  bar.innerHTML = `
+    <span class="transpose-label">Root key</span>
+    <select class="transpose-select" onchange="_setTransposeRoot(this.value)">${opts}</select>
+    ${isTransposed ? `<span class="transpose-key-display">Showing in <strong>${_esc(_transposeRoot)}</strong></span>` : ''}
+    ${isTransposed ? `<button class="transpose-reset" onclick="_setTransposeRoot('C')">Reset</button>` : ''}
+  `;
+}
+
+function _setTransposeRoot(root) {
+  _transposeRoot = root;
+  TRANSPOSE_SECTIONS.forEach(s => {
+    if (_data[s]) _renderSection(s);
+  });
+}
+
+// ─── Cross-section jump ───────────────────────────────────────────────────────
+function _jumpToSection(targetSection, filterField, filterVal, searchStr) {
+  const link = document.querySelector(`.sidebar-link[onclick*="'${targetSection}'"]`);
+  _showSection(targetSection, link);
+  // Clear existing filters on the target section
+  for (const set of Object.values(_filters[targetSection] || {})) set.clear();
+  _search[targetSection] = '';
+  _clearAiAnswer(targetSection);
+  if (filterField && filterVal) {
+    if (_filters[targetSection][filterField]) {
+      _filters[targetSection][filterField].add(filterVal);
+    }
+  }
+  if (searchStr) {
+    _search[targetSection] = searchStr.toLowerCase();
+    document.getElementById('global-search').value = searchStr;
+  } else {
+    document.getElementById('global-search').value = '';
+  }
+  _applyFilters(targetSection);
+  _renderSection(targetSection);
+}
+
+// ─── AI Mode Toggle ───────────────────────────────────────────────────────────
+function _toggleAiMode() {
+  _aiModeForced = !_aiModeForced;
+  const btn = document.getElementById('ai-toggle-btn');
+  const input = document.getElementById('global-search');
+  if (_aiModeForced) {
+    btn.classList.add('ai-on');
+    btn.innerHTML = '<span class="ai-toggle-dot"></span>AI On';
+    input.placeholder = 'Ask anything: "What scales work for neo-soul?"';
+    input.focus();
+  } else {
+    btn.classList.remove('ai-on');
+    btn.innerHTML = '<span class="ai-toggle-dot"></span>Ask AI';
+    input.placeholder = 'Search chords, scales, progressions...';
+    if (!input.value.trim()) {
+      _clearAiAnswer(_currentSection);
+      _aiMode = false;
+    }
+  }
 }
 
 // AI search state
@@ -539,14 +794,14 @@ function _clearAiAnswer(section) {
 document.getElementById('global-search').addEventListener('input', function() {
   const raw = this.value.trim();
   const q = raw.toLowerCase();
-  const hint = document.getElementById('search-hint');
 
   if (_aiDebounce) clearTimeout(_aiDebounce);
   if (_aiAbort) { _aiAbort.abort(); _aiAbort = null; }
 
-  if (_isAiQuery(raw)) {
+  const shouldUseAi = _aiModeForced || _isAiQuery(raw);
+
+  if (raw && shouldUseAi) {
     _aiMode = true;
-    if (hint) hint.style.opacity = '0';
     _search[_currentSection] = '';
     _applyFilters(_currentSection);
     const answerBox = document.getElementById('ai-answer-' + _currentSection);
@@ -556,7 +811,6 @@ document.getElementById('global-search').addEventListener('input', function() {
   } else {
     _aiMode = false;
     _clearAiAnswer(_currentSection);
-    if (hint) hint.style.opacity = raw.length > 0 ? '0' : '1';
     _search[_currentSection] = q;
     _applyFilters(_currentSection);
     _renderSection(_currentSection);
@@ -640,6 +894,56 @@ async function _loadSection(section) {
   _renderSection(section);
 }
 
+// ─── Deep-link from Analyze page ─────────────────────────────────────────────
+// Supported params: ?section=keys&key=C+Major  or  ?section=progressions&search=I-V-vi-IV
+function _handleDeepLink() {
+  const params = new URLSearchParams(window.location.search);
+  const section = params.get('section');
+  const keyParam = params.get('key');
+  const searchParam = params.get('search');
+  const filterField = params.get('field');
+  const filterVal = params.get('val');
+
+  if (!section || !['chords','scales','progressions','keys'].includes(section)) return;
+
+  // Wait until the target section data has loaded, then navigate
+  function _applyDeepLink() {
+    const link = document.querySelector(`.sidebar-link[onclick*="'${section}'"]`);
+    _showSection(section, link);
+    for (const set of Object.values(_filters[section] || {})) set.clear();
+    _search[section] = '';
+    if (filterField && filterVal && _filters[section][filterField]) {
+      _filters[section][filterField].add(filterVal);
+    }
+    if (searchParam) {
+      _search[section] = searchParam.toLowerCase();
+      document.getElementById('global-search').value = searchParam;
+    }
+    if (keyParam && section === 'keys') {
+      // Pre-populate search with key name
+      _search[section] = keyParam.toLowerCase();
+      document.getElementById('global-search').value = keyParam;
+    }
+    _applyFilters(section);
+    _renderSection(section);
+  }
+
+  // If data already loaded, apply immediately; otherwise wait
+  if (_data[section] && _data[section].length > 0) {
+    _applyDeepLink();
+  } else {
+    const originalLoad = _loadSection;
+    const checkInterval = setInterval(() => {
+      if (_data[section] && _data[section].length > 0) {
+        clearInterval(checkInterval);
+        _applyDeepLink();
+      }
+    }, 100);
+    setTimeout(() => clearInterval(checkInterval), 5000); // safety timeout
+  }
+}
+
 ['chords','scales','progressions','keys'].forEach(_loadSection);
+_handleDeepLink();
 </script>
 {% endblock %}
