@@ -658,7 +658,70 @@ def upload_file():
     save_path.parent.mkdir(parents=True, exist_ok=True)
     f.save(save_path)
     jobs[job_id] = {"status": "ready", "audio_path": str(save_path), "progress": "File uploaded"}
-    return jsonify({"job_id": job_id, "filename": filename})
+
+    # Silently attempt to match Spotify metadata — never blocks or errors
+    track_meta = _match_upload_metadata(filename, str(save_path))
+    resp = {"job_id": job_id, "filename": filename}
+    if track_meta:
+        resp["track_meta"] = track_meta
+    return jsonify(resp)
+
+
+def _match_upload_metadata(filename: str, filepath: str) -> dict | None:
+    """
+    Try to find Spotify metadata for an uploaded file using ID3 tags or filename parsing.
+    Returns a track dict (same shape as search results) or None — never raises.
+    Runs synchronously in the upload request; typically completes in <400ms.
+    """
+    try:
+        import difflib
+        title, artist = None, None
+
+        # 1. Read embedded tags (mutagen handles mp3/flac/m4a/ogg)
+        try:
+            from mutagen import File as _MutagenFile
+            audio = _MutagenFile(filepath, easy=True)
+            if audio:
+                title = (audio.get("title") or [None])[0]
+                artist = (audio.get("artist") or [None])[0]
+                # mutagen easy tags return strings directly
+                if title: title = str(title).strip()
+                if artist: artist = str(artist).strip()
+        except Exception:
+            pass
+
+        # 2. Fall back to filename parsing ("Artist - Title.mp3" pattern)
+        if not title:
+            stem = Path(filename).stem.replace("_", " ").replace(".", " ")
+            parts = re.split(r"\s*[-–—]\s*", stem, maxsplit=1)
+            if len(parts) == 2:
+                artist = artist or parts[0].strip()
+                title = parts[1].strip()
+            else:
+                title = stem.strip()
+
+        if not title:
+            return None
+
+        # 3. Spotify search
+        query = f"{artist} {title}".strip() if artist else title
+        results = search_spotify(query, limit=3)
+        if not results:
+            return None
+
+        # 4. Confidence gate — reject weak matches to avoid wrong art
+        top = results[0]
+        ratio = difflib.SequenceMatcher(None, title.lower(), top["name"].lower()).ratio()
+        if ratio < 0.65:
+            print(f"[upload] metadata match rejected: '{title}' vs '{top['name']}' (ratio={ratio:.2f})")
+            return None
+
+        print(f"[upload] metadata match: '{top['name']}' by {top['artist']} (ratio={ratio:.2f})")
+        return top
+
+    except Exception as e:
+        print(f"[upload] metadata match error: {e}")
+        return None
 
 
 def _process_instant(job_id, audio_path, req_data):
@@ -1398,6 +1461,96 @@ def serve_stem_audio(job_id, stem_name):
         print(f"[audio] READ ERROR {job_id}/{stem_name}: {e}")
         return jsonify({"error": "read failed"}), 500
 
+
+
+# ── Admin routes ──────────────────────────────────────────────────────────────
+
+@app.route("/api/admin/refresh-cookies", methods=["POST"])
+def admin_refresh_cookies():
+    """
+    Trigger a Playwright-based YouTube cookie refresh.
+    Protected by ADMIN_SECRET env var (pass as ?secret= or Authorization header).
+    """
+    admin_secret = os.environ.get("ADMIN_SECRET", "").strip()
+    if admin_secret:
+        provided = (
+            request.args.get("secret", "")
+            or request.headers.get("Authorization", "").removeprefix("Bearer ").strip()
+        )
+        if provided != admin_secret:
+            return jsonify({"error": "unauthorized"}), 401
+
+    try:
+        from cookie_refresher import refresh_cookies
+        success = refresh_cookies(timeout=45)
+        if success:
+            size = Path("cookies.txt").stat().st_size if Path("cookies.txt").exists() else 0
+            return jsonify({"status": "ok", "message": "Cookies refreshed", "size_bytes": size})
+        else:
+            return jsonify({"status": "failed", "message": "Cookie refresh failed — check logs"}), 500
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+# ── Demo routes ────────────────────────────────────────────────────────────────
+
+@app.route("/demo")
+def demo():
+    demo_tracks = [
+        {
+            "id": "take_it_easy",
+            "name": "Take It Easy",
+            "artist": "Eagles",
+            "year": "1972",
+            "cover": "/static/demo/take_it_easy/cover.jpg",
+            "key": "G Major",
+            "bpm": 0,
+        },
+        {
+            "id": "gravity",
+            "name": "Gravity",
+            "artist": "John Mayer",
+            "year": "2006",
+            "cover": "/static/demo/gravity/cover.jpg",
+            "key": "C Major",
+            "bpm": 0,
+        },
+        {
+            "id": "bohemian_rhapsody",
+            "name": "Bohemian Rhapsody",
+            "artist": "Queen",
+            "year": "1975",
+            "cover": "/static/demo/bohemian_rhapsody/cover.jpg",
+            "key": "Bb Major",
+            "bpm": 0,
+        },
+    ]
+    return render_template("demo.html", active_page="demo", demo_tracks=demo_tracks)
+
+
+@app.route("/api/demo/<demo_id>")
+def get_demo_analysis(demo_id):
+    """Serve pre-baked analysis for a demo track. Identical shape to /api/status/<job_id>."""
+    safe_id = demo_id.replace("/", "").replace("..", "")
+    analysis_path = os.path.join("static", "demo", safe_id, "analysis.json")
+    if not os.path.exists(analysis_path):
+        return jsonify({"error": "Demo track not found"}), 404
+    with open(analysis_path) as f:
+        import json as _json_local
+        data = _json_local.load(f)
+    return jsonify(data)
+
+
+@app.route("/api/demo/<demo_id>/audio/<stem_name>")
+def serve_demo_stem(demo_id, stem_name):
+    """Serve pre-baked stem audio for a demo track. Supports range requests for seeking."""
+    safe_id = demo_id.replace("/", "").replace("..", "")
+    safe_stem = stem_name.replace("/", "").replace("..", "").replace(".mp3", "")
+    stems_dir = os.path.join("static", "demo", safe_id, "stems")
+    mp3_path = os.path.join(stems_dir, f"{safe_stem}.mp3")
+    if not os.path.exists(mp3_path):
+        return jsonify({"error": "Stem not found"}), 404
+    return send_file(mp3_path, mimetype="audio/mpeg", conditional=True)
 
 
 @app.route("/api/download_stem/<job_id>/<stem_name>")
