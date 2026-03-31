@@ -341,7 +341,9 @@ def _classify_component(features, stem_category, position):
         return "Backing Vocals"
 
     if stem_category == "guitar":
-        if c > 3000 and zcr > 0.15:
+        # Banjo: bright + high ZCR (plucked attack). Threshold lowered from 3000 to
+        # catch mellow country/folk banjos (e.g. Eagles) which sit in the 2500–3000 Hz range.
+        if c > 2500 and zcr > 0.13:
             return "Banjo"
         if c > 2200 and bw > 1200 and zcr > 0.10:
             return "Acoustic Guitar"
@@ -888,6 +890,11 @@ def _save_sub_parts(parts, sr, out_dir, refined):
     label_seen = dict(existing_label_counts)
     filtered = []
     for part in parts_sorted:
+        # Skip near-silent components — stereo separation can produce artifacts
+        # just above the 0.5× detection threshold that have no audible content.
+        if part["energy"] < SILENCE_THRESHOLD:
+            print(f"[processor] skipping silent sub-part '{part['label']}' (energy={part['energy']:.5f})")
+            continue
         lbl = part["label"]
         if label_seen.get(lbl, 0) < MAX_PER_LABEL:
             label_seen[lbl] = label_seen.get(lbl, 0) + 1
