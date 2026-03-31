@@ -747,35 +747,10 @@ def analyze_song_from_notes(all_note_events, song_name="", artist="", lyrics_tex
         progression = None
         prog_source = "none"
 
-    # ── Section-based harmonic analysis ──
+    # ── Section-based harmonic analysis — DISABLED ──
+    # Skipped to reduce processing time. The harmonic_analysis module and
+    # chord_source.fetch_chords_from_web are still available if re-enabled.
     harmonic_sections = []
-    try:
-        from harmonic_analysis import build_harmonic_analysis
-        # Get raw chord sequence from the external result if available
-        raw_chords = None
-        if song_name and artist:
-            try:
-                from chord_source import fetch_chords_from_web
-                raw_chords = fetch_chords_from_web(song_name, artist)
-                if raw_chords and len(raw_chords) >= 3:
-                    print(f"[intel] fetched {len(raw_chords)} raw chords for section analysis")
-                else:
-                    raw_chords = None
-            except Exception:
-                raw_chords = None
-
-        ha = build_harmonic_analysis(
-            chord_sequence=raw_chords,
-            lyrics_text=lyrics_text,
-            key_num=key_num,
-            mode_num=mode_num,
-            key_confidence=key_conf,
-        )
-        harmonic_sections = ha.get("harmonic_sections", [])
-        print(f"[intel] harmonic analysis: {len(harmonic_sections)} sections")
-    except Exception as e:
-        print(f"[intel] harmonic analysis failed: {e}")
-        import traceback; traceback.print_exc()
 
     return {
         "key": key_str,

@@ -70,8 +70,12 @@ SILENCE_THRESHOLD = 0.003
 
 # Minimum component energy relative to the stem's total energy
 # to be included (avoids showing ghost components).
-# 0.15 = component must be at least 15% as loud as the stem — filters bleed artifacts.
-MIN_RELATIVE_ENERGY = 0.15
+# 0.25 = component must be at least 25% as loud as the stem — filters quiet bleed artifacts.
+MIN_RELATIVE_ENERGY = 0.25
+
+# Absolute minimum RMS energy for a component to be kept at all.
+# Prevents near-silent ghost stems from appearing in the mixer.
+MIN_ABSOLUTE_ENERGY = 0.008
 
 
 # ─── Note Detection Configuration ────────────────────────────────────────────
@@ -333,21 +337,16 @@ def _classify_component(features, stem_category, position):
 
     if stem_category == "vocals":
         if position == "center":
-            return "Lead Vocal"
-        elif position == "left":
-            return "Backing Vocal"
-        else:
-            return "Harmony Vocal"
+            return "Vocals"
+        return "Backing Vocals"
 
     if stem_category == "guitar":
         if c > 3000 and zcr > 0.15:
             return "Banjo"
         if c > 2200 and bw > 1200 and zcr > 0.10:
-            if position == "center":
-                return "Acoustic Guitar"
             return "Acoustic Guitar"
         if c > 1800 and c_std > 400:
-            return "Lead Guitar"  # same spectral profile regardless of pan position
+            return "Lead Guitar"
         if c > 1000:
             return "Rhythm Guitar"
         return "Guitar"
@@ -362,15 +361,15 @@ def _classify_component(features, stem_category, position):
         if c > 1500 and bw < 1500:
             return "Rhythm Guitar"
         if c > 1200 and bw > 1800:
-            return "Keys"
+            return "Synth"
         if c > 800:
-            return "Instrument"
-        return "Synth Pad"
+            return "Other"
+        return "Pad"
 
     if stem_category == "piano":
         if c > 1500 and bw > 1500:
             return "Piano"
-        return "Keys"
+        return "Keyboard"
 
     return stem_category.title()
 
@@ -386,7 +385,7 @@ def _get_tab_renderer(label):
         return "bass_tab"
     if any(k in label_lower for k in ("guitar", "banjo", "mandolin", "ukulele")):
         return "guitar_tab"
-    if any(k in label_lower for k in ("piano", "keys", "organ", "synth")):
+    if any(k in label_lower for k in ("piano", "keyboard", "organ", "synth", "pad")):
         return "note_list"
     return "note_list"
 
@@ -722,7 +721,7 @@ def separate_stems(audio_path: str, song_id: str, progress_callback=None) -> dic
                 "path": str(dest),
                 "energy": round(energy, 6),
                 "active": energy > SILENCE_THRESHOLD,
-                "label": "Drum Kit" if stem_name == "drums" else "Bass Guitar",
+                "label": "Drums" if stem_name == "drums" else "Bass",
             }
             continue
 
@@ -791,8 +790,8 @@ def separate_stems(audio_path: str, song_id: str, progress_callback=None) -> dic
             mono = (comp_l + comp_r) / 2
             energy = _rms(mono)
 
-            # Skip components that are too quiet relative to the stem
-            if energy < stem_energy * MIN_RELATIVE_ENERGY:
+            # Skip components that are too quiet (relative or absolute)
+            if energy < stem_energy * MIN_RELATIVE_ENERGY or energy < MIN_ABSOLUTE_ENERGY:
                 continue
 
             feat = _spectral_features(mono, sr)
@@ -869,14 +868,24 @@ def _label_to_key(label):
 
 
 def _save_sub_parts(parts, sr, out_dir, refined):
-    """Save sub-parts with simple numbered labels, capped at 2 per label."""
+    """Save sub-parts with simple numbered labels, capped at 2 per label globally."""
     # Sort by energy descending — keep the loudest instances of each label
     parts_sorted = sorted(parts, key=lambda p: p["energy"], reverse=True)
 
-    # Cap at 2 per label — 3 nearly-identical Piano components should be Piano + Piano 2,
-    # not Piano + Piano 2 + Piano 3. Keeps the mixer clean without hiding real distinct parts.
+    # Cap at 2 per label GLOBALLY — count labels already saved across all previous stems
+    # so that two different Demucs stems producing the same label don't bypass the cap.
     MAX_PER_LABEL = 2
-    label_seen = {}
+    existing_label_counts = {}
+    for stem_data in refined.values():
+        lbl = stem_data.get("label", "")
+        if lbl:
+            # Strip trailing " 2", " 3" etc. to get the base label for counting
+            base = lbl.rsplit(" ", 1)
+            if len(base) == 2 and base[1].isdigit():
+                lbl = base[0]
+            existing_label_counts[lbl] = existing_label_counts.get(lbl, 0) + 1
+
+    label_seen = dict(existing_label_counts)
     filtered = []
     for part in parts_sorted:
         lbl = part["label"]
