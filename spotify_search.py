@@ -44,21 +44,31 @@ def _headers():
     return {"Authorization": f"Bearer {_get_token()}"}
 
 
-_EDITION_PATTERN = __import__("re").compile(
-    r"\s*[\(\[]"
-    r"(super\s+deluxe|deluxe\s+edition|deluxe\s+version|deluxe|"
-    r"remastered|remaster|\d{4}\s+remaster|\d{4}\s+remastered|"
+_EDITION_TERMS = (
+    r"super\s+deluxe|deluxe\s+edition|deluxe\s+version|deluxe|"
+    r"remastered|remaster|\d{4}\s+remaster(?:ed)?|"
     r"expanded\s+edition|expanded|anniversary\s+edition|\d+th\s+anniversary|"
-    r"bonus\s+tracks?|special\s+edition|collector'?s\s+edition|"
-    r"platinum\s+edition|gold\s+edition|limited\s+edition)"
-    r"[\)\]]",
+    r"bonus\s+tracks?|bonus\s+track\s+version|special\s+edition|"
+    r"collector'?s\s+edition|platinum\s+edition|gold\s+edition|"
+    r"limited\s+edition|international\s+version"
+)
+# Bracketed: "(Deluxe Version)", "[Remastered]"
+_EDITION_BRACKETED = __import__("re").compile(
+    r"\s*[\(\[]\s*(?:" + _EDITION_TERMS + r")\s*[\)\]]",
+    __import__("re").IGNORECASE,
+)
+# Unbracketed trailing: "Album Name Deluxe Edition" or "Album - Remastered"
+_EDITION_TRAILING = __import__("re").compile(
+    r"(?:\s*[-–—]\s*|\s+)(?:" + _EDITION_TERMS + r")\s*$",
     __import__("re").IGNORECASE,
 )
 
 
 def _clean_album_name(name: str) -> str:
     """Strip edition/remaster suffixes from Spotify album names."""
-    return _EDITION_PATTERN.sub("", name).strip()
+    name = _EDITION_BRACKETED.sub("", name)
+    name = _EDITION_TRAILING.sub("", name)
+    return name.strip()
 
 
 def _format_track(t) -> dict:

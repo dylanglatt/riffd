@@ -1194,21 +1194,22 @@ async function selectTrack(t){
 // Strip remaster/reissue noise from display titles — purely cosmetic, never touches underlying data
 function cleanTitle(name) {
   if (!name) return name;
-  const _VSEP = /\s*[-–—−]\s*/;  // any dash variant including Unicode minus
   return name
     // "(Remastered 2015)" or "(2015 Stereo Remaster)" — parens with year anywhere inside
     .replace(/\s*\([^)]*\d{4}[^)]*Remaster(?:ed)?[^)]*\)/gi, '')
     .replace(/\s*\([^)]*Remaster(?:ed)?[^)]*\d{4}[^)]*\)/gi, '')
-    // "- 2013 Remaster", "- 2013 Stereo Remaster", "- 2013 (any words) Remaster"
+    // "- 2013 Remaster", "- 2013 Stereo Remaster"
     .replace(/\s*[-–—−]\s*\d{4}(?:\s+\w+)*\s+Remaster(?:ed)?\b/gi, '')
-    // "- Remastered", "— Remastered"
-    .replace(/\s*[-–—−]\s*Remaster(?:ed)\b/gi, '')
+    // "- Remastered 2011" or "- Remastered" — consume optional trailing year so it doesn't orphan
+    .replace(/\s*[-–—−]\s*Remaster(?:ed)\b(?:\s+\d{4})?/gi, '')
     // "[2013 Remaster]"
     .replace(/\s*\[\d{4}[^\]]*Remaster(?:ed)?[^\]]*\]/gi, '')
     // "(Remastered)" or "[Remastered]" with no year
     .replace(/\s*[\[(]Remaster(?:ed)?[\])]/gi, '')
     // standalone trailing "Remastered" / ", Remastered"
     .replace(/,?\s*Remaster(?:ed)\b/gi, '')
+    // Edition labels — parens or brackets: (Deluxe Version), [Super Deluxe], etc.
+    .replace(/\s*[\(\[](super\s+deluxe|deluxe\s+edition|deluxe\s+version|deluxe|expanded\s+edition|expanded|anniversary\s+edition|\d+th\s+anniversary|bonus\s+tracks?|special\s+edition|collector'?s\s+edition|platinum\s+edition|limited\s+edition|international\s+version|bonus\s+track\s+version)[\)\]]/gi, '')
     // orphaned trailing dash+year left by above passes e.g. "Title - 2015"
     .replace(/\s*[-–—−]\s*\d{4}\s*$/g, '')
     .trim();
@@ -1246,6 +1247,12 @@ async function uploadFile(file){
     const d=await r.json();
     if(d.error) throw new Error(d.error);
     currentJobId=d.job_id;
+
+    // Silently upgrade to Spotify metadata if a confident match was found
+    if(d.track_meta){
+      selectedTrack = d.track_meta;
+      buildBanner("results-banner", selectedTrack, null, null);
+    }
 
     _updateMixLoadingStatus("Starting analysis...");
     _topBar.advance(32, 'Separating stems...');
