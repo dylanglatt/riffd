@@ -275,8 +275,8 @@
 <div class="page-content">
   <!-- Song Picker -->
   <div class="demo-header">
-    <div class="demo-title">Demo<span class="demo-badge">Pre-loaded</span></div>
-    <div class="demo-sub">Three classic songs, fully separated and ready to explore. No waiting.</div>
+    <div class="demo-title">Demo</div>
+    <div class="demo-sub">Three classic songs, fully separated and ready to explore.</div>
   </div>
 
   <!-- Song selector dropdown -->
@@ -719,10 +719,17 @@ function _reorganizeStemGroups() {
     if (r.includes('drum') || r.includes('perc')) return '4';
     return '5';
   }
+  function _stemPriority(name) {
+    if (name.startsWith('lead')) return 0;
+    if (name.startsWith('backing') || name.startsWith('rhythm')) return 2;
+    return 1;
+  }
   channels.sort((a, b) => {
     const na = a.id.replace('ch-', ''), nb = b.id.replace('ch-', '');
     const fa = _stemFamily(na), fb = _stemFamily(nb);
     if (fa !== fb) return fa.localeCompare(fb);
+    const pa = _stemPriority(na), pb = _stemPriority(nb);
+    if (pa !== pb) return pa - pb;
     return na.localeCompare(nb);
   });
   let lastFamily = null;
