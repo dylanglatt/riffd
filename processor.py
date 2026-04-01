@@ -548,7 +548,9 @@ def _split_melodic_stem(left, right, sr: int, melodic_mask,
 _SPLIT_LABEL_MAP = {
     "Guitar":           ("Lead Guitar", "Rhythm Guitar"),
     "Acoustic Guitar":  ("Lead Acoustic Guitar", "Acoustic Guitar Accompaniment"),
-    "Vocals":           ("Lead Vocals", "Backing Vocals"),
+    # Vocals intentionally excluded — melodic pitch-split produces false
+    # lead/backing dupes on single-voice tracks (e.g. "Kiss Me").  Genuine
+    # backing vocals are already caught by the stereo-refinement pass.
     "Piano":            ("Piano Solo", "Piano Accompaniment"),
     "Keyboard":         ("Keyboard Lead", "Keyboard Pad"),
     "Synth":            ("Synth Lead", "Synth Pad"),
