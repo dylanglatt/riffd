@@ -20,23 +20,18 @@
       "energy": 0.017609,
       "active": true
     },
-    "backing_vocals": {
-      "label": "Backing Vocals",
+    "lead_vocals": {
+      "label": "Lead Vocals",
       "energy": 0.028998,
       "active": true
     },
-    "piano_solo": {
-      "label": "Piano Solo",
-      "energy": 0.008136,
-      "active": true
-    },
-    "piano_accompaniment": {
-      "label": "Piano Accompaniment",
+    "piano": {
+      "label": "Piano",
       "energy": 0.019234,
       "active": true
     },
-    "lead_vocals": {
-      "label": "Lead Vocals",
+    "backing_vocals": {
+      "label": "Backing Vocals",
       "energy": 0.016426,
       "active": true
     },

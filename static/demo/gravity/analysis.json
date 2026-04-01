@@ -10,19 +10,9 @@
       "energy": 0.071243,
       "active": true
     },
-    "piano": {
-      "label": "Piano",
-      "energy": 0.007465,
-      "active": true
-    },
-    "lead_guitar": {
-      "label": "Lead Guitar",
+    "guitar": {
+      "label": "Guitar",
       "energy": 0.041074,
-      "active": true
-    },
-    "rhythm_guitar": {
-      "label": "Rhythm Guitar",
-      "energy": 0.037385,
       "active": true
     },
     "atmosphere_lead": {
