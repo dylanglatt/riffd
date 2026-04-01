@@ -71,6 +71,46 @@
     .track-banner-title { font-size:1.125rem; font-weight:500; line-height:1.3; color:#F5F5F5; letter-spacing:-0.01em; text-align:center; }
     .track-banner-sub { color:rgba(245,245,245,0.5); font-size:0.875rem; margin-top:4px; letter-spacing:-0.01em; text-align:center; }
     .error-msg { display:none; color:#f87171; font-size:0.875rem; margin-top:12px; }
+
+    /* ─── Capacity / graceful-error card ─────────────────────────────────── */
+    .capacity-overlay {
+      display:none; position:fixed; inset:0; z-index:9000;
+      background:rgba(0,0,0,0.65); backdrop-filter:blur(6px);
+      align-items:center; justify-content:center;
+    }
+    .capacity-overlay.visible { display:flex; }
+    .capacity-card {
+      background:#141414; border:1px solid rgba(255,255,255,0.08);
+      border-radius:12px; padding:36px 32px 28px; max-width:380px; width:90%;
+      text-align:center; animation:capFadeIn .25s ease;
+    }
+    @keyframes capFadeIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+    .capacity-icon {
+      width:48px; height:48px; margin:0 auto 20px; border-radius:50%;
+      background:rgba(212,105,31,0.10); display:flex; align-items:center; justify-content:center;
+    }
+    .capacity-icon svg { width:22px; height:22px; stroke:#D4691F; stroke-width:1.5; fill:none; }
+    .capacity-heading {
+      font-size:1.0625rem; font-weight:500; color:#F5F5F5; margin-bottom:8px;
+      letter-spacing:-0.01em;
+    }
+    .capacity-body {
+      font-size:0.875rem; color:rgba(245,245,245,0.5); line-height:1.6;
+      letter-spacing:-0.01em; margin-bottom:24px;
+    }
+    .capacity-actions { display:flex; flex-direction:column; align-items:center; gap:12px; }
+    .capacity-cta {
+      padding:12px 28px; font-size:0.875rem; font-weight:500;
+      background:#FAFAF9; color:#0D0D0D; border:none; border-radius:6px;
+      cursor:pointer; transition:transform .1s; letter-spacing:-0.01em; font-family:inherit;
+    }
+    .capacity-cta:hover { transform:translateY(-0.5px); }
+    .capacity-dismiss {
+      background:none; border:none; color:rgba(245,245,245,0.35);
+      font-size:0.8125rem; cursor:pointer; padding:0; font-family:inherit;
+      letter-spacing:-0.01em; transition:color .2s;
+    }
+    .capacity-dismiss:hover { color:#F5F5F5; }
     .hero-cta { padding:14px 28px; font-size:0.9375rem; font-weight:500; background:#FAFAF9; color:black; border:none; cursor:pointer; transition:transform .1s; letter-spacing:-0.01em; }
     .hero-cta:hover { transform:translateY(-0.5px); }
     .hero-cta:disabled { opacity:.3; cursor:not-allowed; transform:none; }
@@ -519,6 +559,25 @@
         <button class="hero-back" onclick="resetApp()">Pick another song</button>
         <div id="error-msg" class="error-msg" style="text-align:center;margin-top:10px"></div>
       </div>
+
+      <!-- Capacity / graceful-error overlay -->
+      <div id="capacity-overlay" class="capacity-overlay" onclick="if(event.target===this)dismissCapacity()">
+        <div class="capacity-card">
+          <div class="capacity-icon">
+            <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"/>
+              <path d="M12 8v4M12 16h.01"/>
+            </svg>
+          </div>
+          <div class="capacity-heading" id="capacity-heading"></div>
+          <div class="capacity-body" id="capacity-body"></div>
+          <div class="capacity-actions">
+            <button class="capacity-cta" id="capacity-cta" onclick="dismissCapacity()">Try Again</button>
+            <button class="capacity-dismiss" onclick="dismissCapacity(); resetApp();">Pick another song</button>
+          </div>
+        </div>
+      </div>
+
       <div class="hero-loading hidden" id="hero-loading">
         <div class="proc-steps" id="proc-steps">
           <div class="proc-step" data-stage="download" id="step-download">
@@ -1616,12 +1675,25 @@ async function startProcessing(){
       }),
     });
     const d = await r.json();
+    if (r.status === 503 || d.status === "busy") {
+      _resetLoadingUI();
+      showCapacity(
+        "Riffd is at capacity",
+        "We\u2019re processing other tracks right now. Give it a moment and try again.",
+        "Try Again"
+      );
+      return;
+    }
     if (d.error) throw new Error(d.error);
     pollStatus();
   } catch(e) {
     _resetLoadingUI();
-    setError("Analysis failed: " + e.message);
-    showView("search");
+    showCapacity(
+      "Something went wrong",
+      "We hit an unexpected issue starting the analysis. Try again, or try a different track.",
+      "Try Again",
+      {clearJob: true}
+    );
   }
 }
 
@@ -1674,8 +1746,11 @@ async function downloadTrack(){
     if (e.message === "upload_required") {
       _showUploadRequired();
     } else {
-      setError("Download failed: " + e.message);
-      showView("search");
+      showCapacity(
+        "Couldn\u2019t download this track",
+        "The audio source may be unavailable. Try again, or try a different track.",
+        "Try Again"
+      );
     }
   }
 }
@@ -1725,8 +1800,12 @@ function pollStatus(){
   async function _poll() {
     if(Date.now() - _pollStartTime > POLL_TIMEOUT_MS) {
       _resetLoadingUI();
-      setError("Processing timed out. The server may still be working \u2014 try refreshing in a minute.");
-      showView("search");
+      showCapacity(
+        "This one\u2019s taking a while",
+        "The analysis is taking longer than expected. You can try again or pick a different track.",
+        "Try Again",
+        {clearJob: true}
+      );
       return;
     }
 
@@ -1736,8 +1815,12 @@ function pollStatus(){
 
       if(r.status === 404 || d.error === "Unknown job ID" || !d.status) {
         _resetLoadingUI();
-        setError("Job was lost (server may have restarted). Please try again.");
-        showView("search");
+        showCapacity(
+          "Riffd had a hiccup",
+          "The server restarted while processing your track. Sorry about that \u2014 try again.",
+          "Try Again",
+          {clearJob: true}
+        );
         return;
       }
 
@@ -1862,9 +1945,21 @@ function pollStatus(){
 
       } else if (d.status === 'error') {
         _resetLoadingUI();
-        const step = d.error_step ? ` (at: ${d.error_step})` : "";
-        setError((d.error || "Unknown error") + step);
-        showView("search");
+        if (d.error_step === 'timeout') {
+          showCapacity(
+            "This one\u2019s taking a while",
+            "The analysis timed out. You can try again or pick a different track.",
+            "Try Again",
+            {clearJob: true}
+          );
+        } else {
+          showCapacity(
+            "Something went wrong",
+            "We hit an unexpected issue. Try again, or try a different track.",
+            "Try Again",
+            {clearJob: true}
+          );
+        }
         return;
 
       } else if (d.status === 'upload_required') {
@@ -1878,8 +1973,12 @@ function pollStatus(){
       }
     } catch(e) {
       _resetLoadingUI();
-      setError("Lost connection to server.");
-      showView("search");
+      showCapacity(
+        "Lost connection",
+        "Couldn\u2019t reach the server. Check your connection and try again.",
+        "Retry",
+        {clearJob: true}
+      );
     }
   }
 
@@ -2356,6 +2455,20 @@ function setProgress(t,p){
   if(fg) fg.style.width=p+"%";
 }
 function setError(m){const e=document.getElementById("error-msg");e.textContent=m;e.style.display=m?"block":"none";}
+
+/* ─── Capacity / graceful-error card ─────────────────────────────────────── */
+function showCapacity(heading, body, ctaText, opts) {
+  document.getElementById("capacity-heading").textContent = heading;
+  document.getElementById("capacity-body").textContent = body;
+  const cta = document.getElementById("capacity-cta");
+  cta.textContent = ctaText || "Try Again";
+  // If the job is dead, clear the stale ID so "Try Again" re-downloads
+  if (opts && opts.clearJob) currentJobId = null;
+  document.getElementById("capacity-overlay").classList.add("visible");
+}
+function dismissCapacity() {
+  document.getElementById("capacity-overlay").classList.remove("visible");
+}
 function resetApp(){
   _topBar.reset();
   cleanupAudio();stopLoadingMessages();pauseOffset=0;duration=0;currentJobId=null;selectedTrack=null;jobData=null;
@@ -2375,7 +2488,7 @@ function resetApp(){
   document.getElementById("loop-btn").classList.remove("active");document.getElementById("transpose-display").textContent="0";document.getElementById("transposed-key").textContent="";
   document.getElementById("proc-estimate").classList.remove("visible");
   const _bgBlur = document.getElementById("proc-bg-blur"); if (_bgBlur) _bgBlur.style.backgroundImage = "";
-  _hideResultWarning();setError("");showView("search");
+  _hideResultWarning();setError("");dismissCapacity();showView("search");
 }
 function fmtMs(ms){const s=Math.floor((ms||0)/1000);return`${Math.floor(s/60)}:${String(s%60).padStart(2,"0")}`;}
 function fmtSec(s){s=Math.max(0,Math.floor(s||0));return`${Math.floor(s/60)}:${String(s%60).padStart(2,"0")}`;}

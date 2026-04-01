@@ -1206,14 +1206,16 @@ def process_audio(job_id):
             _log_memory(f"[job {job_id}] PROCESS END")
             print(f"[mem] active processing jobs: {_active_processing}")
 
-    # Either start immediately or queue if all slots are busy
+    # Either start immediately or reject gracefully if at capacity
     with _processing_lock:
         if _active_processing >= MAX_CONCURRENT_JOBS:
-            _job_queue.append((job_id, run))
-            jobs[job_id]["status"] = "queued"
-            jobs[job_id]["progress"] = f"Waiting for a processing slot ({len(_job_queue)} in queue)..."
-            print(f"[job {job_id}] QUEUED: {_active_processing} jobs active, {len(_job_queue)} in queue")
-            return jsonify({"status": "queued", "job_id": job_id})
+            print(f"[job {job_id}] REJECTED: {_active_processing} jobs active (max {MAX_CONCURRENT_JOBS})")
+            # Clean up the job entry so it doesn't linger
+            jobs.pop(job_id, None)
+            return jsonify({
+                "status": "busy",
+                "error": "Riffd is at capacity right now. Try again in a moment.",
+            }), 503
 
     threading.Thread(target=run, daemon=True).start()
     return jsonify({"status": "processing", "job_id": job_id})

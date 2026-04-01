@@ -10,9 +10,9 @@
       "energy": 0.059339,
       "active": true
     },
-    "acoustic_guitar": {
-      "label": "Acoustic Guitar",
-      "energy": 0.008448,
+    "banjo": {
+      "label": "Banjo",
+      "energy": 0.024900,
       "active": true
     },
     "lead_guitar": {
@@ -25,13 +25,8 @@
       "energy": 0.039126,
       "active": true
     },
-    "lead_vocals": {
-      "label": "Lead Vocals",
-      "energy": 0.036922,
-      "active": true
-    },
-    "backing_vocals": {
-      "label": "Backing Vocals",
+    "vocals": {
+      "label": "Vocals",
       "energy": 0.071775,
       "active": true
     }

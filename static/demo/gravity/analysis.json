@@ -17,12 +17,12 @@
     },
     "lead_guitar": {
       "label": "Lead Guitar",
-      "energy": 0.037385,
+      "energy": 0.041074,
       "active": true
     },
     "rhythm_guitar": {
       "label": "Rhythm Guitar",
-      "energy": 0.041074,
+      "energy": 0.037385,
       "active": true
     },
     "atmosphere_lead": {
@@ -30,13 +30,8 @@
       "energy": 0.01033,
       "active": true
     },
-    "lead_vocals": {
-      "label": "Lead Vocals",
-      "energy": 0.023818,
-      "active": true
-    },
-    "backing_vocals": {
-      "label": "Backing Vocals",
+    "vocals": {
+      "label": "Vocals",
       "energy": 0.07634,
       "active": true
     }
