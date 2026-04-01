@@ -14,63 +14,67 @@
 
 ## What It Is
 
-Riffd is a music analysis tool that breaks any song into its component parts — stems, chords, key, tempo, lyrics, and structure — in a single interface. Search a song, get instant harmonic analysis in seconds; trigger a full analysis and you can isolate individual instruments, mute stems, export MIDI, and discover songs with similar harmonic DNA.
+Riffd takes any song and breaks it into its components — isolated stems, detected key and tempo, lyrics, and theory context — in one place. Search a track, trigger an analysis, and within a few minutes you can hear the individual parts, explore what key it's in, and discover other songs built on the same harmonic logic.
 
-It's a solo-built, deployed product running on real infrastructure, processing real user requests.
+Solo-built and deployed. Real infrastructure, real users.
 
 ---
 
 ## Why I Built It
 
-Every music tool does one thing. A stem splitter. A chord chart. A lyrics site. A tuner. You end up with five tabs open to answer one question: *what's actually happening in this song?*
-
-I wanted a single tool that connected the full pipeline — from raw audio to structured, playable musical information. So I built it, deployed it, and kept iterating until it worked reliably for people who aren't me.
+The insight you get from hearing an isolated bass line is different when you can also see the key, the diatonic chords, and why the progression works — all at once. Those connections don't exist when the tools don't talk to each other. Riffd is the version where they do.
 
 ---
 
 ## Product Decisions Worth Explaining
 
-A few design choices that reflect how I think about building:
+**Build for failure, not the happy path.** YouTube blocks requests. Replicate times out. The Claude API returns malformed JSON. The app only became genuinely usable once every external dependency had an explicit fallback and every failure surfaced a clear next step rather than a broken state.
 
-**Preview-first, deep analysis on demand.** Users get key, BPM, chords, and lyrics in ~3–5 seconds using a fast preview path (no GPU, no Demucs). Full stem separation is opt-in. This made the product usable instantly instead of asking users to wait 90 seconds before seeing anything.
+**Silent queue promotion.** When the concurrent job limit is hit, users are queued and promoted automatically when a slot opens — no error message, no manual retry. The degraded state is invisible.
 
-**Silence over errors.** When a user exceeds the concurrent job limit, they're queued and silently promoted when a slot opens — no error shown, no manual retry required. The failure state is invisible. That's a UX decision, not a technical one.
+**Partial results over nothing.** The pipeline has five stages. If one fails, the rest still render. A user always gets something rather than a blank screen.
 
-**Build for failure, not the happy path.** YouTube blocks requests. Spotify previews expire. Replicate times out. Anthropic returns malformed JSON. Every external dependency fails eventually. The app only became usable once every failure had an explicit fallback and surfaced a clear next step rather than a broken state.
-
-**Partial results over nothing.** The ML pipeline has five stages. If one fails, the others still render. Users get whatever completed rather than a blank screen.
+**Prefetch on selection.** Full-track download starts the moment a user selects a song, before they click anything. By the time they trigger analysis, the audio is usually already waiting.
 
 ---
 
 ## What It Does
 
-- **Stem separation** — isolate vocals, bass, drums, guitar, piano, and other instruments via GPU-accelerated neural source separation
-- **Grouped interactive mixer** — stems organized by instrument family with collapsible groups, energy-balanced faders, mute, solo, loop, and real-time transposition
-- **Harmonic analysis** — chords aligned to song sections with roman numeral notation relative to the detected key
-- **Key + tempo detection** — derived from audio, not metadata
-- **Lyrics** — full text with section structure
-- **Smart recommendations** — discovery based on music theory (matching progressions, keys, voice leading) rather than listening history
-- **Studio** — interactive theory reference for every key
-- **MIDI export** — per-stem note detection files, ready for any DAW
-- **Multi-user job queue** — concurrent processing with graceful overflow and silent promotion
+**Stem separation** — GPU-accelerated neural source separation via Demucs, isolating vocals, bass, drums, guitar, piano, and other instruments in ~20 seconds on cloud GPU.
+
+**Interactive mixer** — stems sorted by instrument family, with per-stem volume faders, mute, solo, real-time pitch transposition across all stems simultaneously (±12 semitones), loop controls, karaoke mode, and a Full Mix reset that restores energy-balanced defaults.
+
+**Key + tempo detection** — derived from the audio signal via Essentia, not pulled from metadata.
+
+**Key panel** — detected key with its full diatonic chord set, common progressions, relative and parallel key relationships, and a tonality map. Links into the Theory Studio for deeper reference.
+
+**Smart recommendations** — song discovery based on musical DNA: matching chord progressions, shared key and tempo, or specific harmonic techniques. Not listening history, not genre, not mood.
+
+**Lyrics** — full text with section structure.
+
+**Theory Studio** — interactive reference for chords, scales, progressions, and keys across every root note, with LLM-powered natural language search.
+
+**Shareable analysis** — every completed analysis gets a permanent URL.
+
+**Per-stem download** — any separated stem is available as an audio file.
 
 ---
 
 ## Technical Highlights
 
-**Audio acquisition.** Multi-source pipeline: YouTube (proxied yt-dlp with dual-binary retry and bot detection bypass), Spotify preview, iTunes preview, user upload — with automatic fallback at each stage. Full-mode downloads fail loudly when YouTube is unavailable, prompting upload rather than silently degrading to a 30-second clip.
+**Audio acquisition.** Full-track download via yt-dlp with dual-binary retry, bot detection bypass, and proxy support. When YouTube fails, the app surfaces an upload prompt rather than silently degrading to a short preview. Background prefetch fires on song selection so the download is usually complete before the user starts analysis.
 
-**GPU stem separation.** Demucs (htdemucs_6stems) runs on cloud GPU via Replicate's API, with audio uploaded directly through their file API. Separation completes in ~20 seconds. Stereo field analysis using STFT-domain panning masks further refines each stem into sub-components by position, with RMS energy gating to suppress ghost components below threshold.
+**GPU stem separation.** Demucs (htdemucs_6stems) runs on cloud GPU via Replicate's file API. Separation completes in ~20 seconds. STFT-domain panning analysis then refines each stem by stereo position — center, left-panned, right-panned — with RMS energy gating to suppress ghost components below threshold.
 
-**Signal processing + ML pipeline.** Stem separation (Demucs), pitch extraction (Basic Pitch / TensorFlow), key and BPM detection (Essentia), stereo field analysis, and section-based harmonic analysis are combined into one end-to-end workflow with per-stage error isolation.
+**ML pipeline with progressive delivery.** Stem separation (Demucs), pitch extraction (Basic Pitch / TensorFlow), and key/BPM detection (Essentia) run as one end-to-end pipeline with per-stage error isolation. Key and BPM results are pushed to the frontend as they complete, so the user sees them before stems finish loading.
 
-**Intelligent mixer.** Each stem's fader initializes proportional to its RMS energy — so the mix is balanced from the first play. Group-level faders and mute let users hear instrument families before individual components.
+**Mixer and audio engine.** Faders initialize proportional to each stem's RMS energy so the starting mix is balanced without manual adjustment. Real-time pitch transposition applies `AudioBufferSourceNode.detune` across all active stems simultaneously, keeping them phase-coherent.
 
-**LLM-powered insight.** Claude generates structured musical analysis — progression names, key context, theory-based recommendations — from detected chords, key, tempo, and lyrics. Output is constrained to strict JSON for reliable downstream rendering.
+**LLM-powered insight.** Claude Haiku generates named progressions, key context, and theory-based recommendations from detected key, tempo, and lyrics. Output is constrained to strict JSON. Recommendations regenerate independently — no need to re-run the full analysis pipeline.
 
-**Performance.** YouTube audio downloads as MP3 to skip transcoding (10x smaller files). WAV stems are converted to 192kbps MP3 post-analysis (20x reduction) before serving. Heavy imports (numpy, TensorFlow, Basic Pitch) are deferred to first job execution. Preview analysis runs synchronously in ~3–5 seconds while the full pipeline runs asynchronously in the background.
+**Performance.** Audio downloads as MP3 to skip transcoding (10x smaller than WAV). Stems are re-encoded to 192kbps MP3 post-analysis before being served (20x reduction). Heavy Python imports — numpy, TensorFlow, Basic Pitch — are deferred to first job execution, keeping startup RSS around 40MB instead of 300MB.
 
-**Resilience.** Every external dependency — YouTube, Spotify, Genius, Replicate, Anthropic — can and will fail. TensorFlow memory is explicitly cleared after each job via `keras.backend.clear_session()` to prevent session compounding. Intermediate files are cleaned up post-processing.
+**Memory and cleanup.** TensorFlow sessions are explicitly cleared after each job via `keras.backend.clear_session()` to prevent memory compounding across sequential runs. Completed jobs are pruned from memory after 10 minutes; job directories from disk after 7 days.
 
 ---
 
@@ -79,14 +83,13 @@ A few design choices that reflect how I think about building:
 | Layer | Technology |
 |---|---|
 | Backend | Python / Flask / Gunicorn |
-| Stem separation | Demucs (htdemucs_6stems) via Replicate API |
+| Stem separation | Demucs (htdemucs_6stems) via Replicate |
 | Pitch detection | Basic Pitch (Spotify) / TensorFlow |
-| Audio analysis | Essentia (key, BPM) |
-| Harmonic analysis | Custom diatonic template matching |
+| Audio analysis | Essentia |
 | LLM | Claude API (Anthropic) |
-| Audio acquisition | yt-dlp, Spotify API, iTunes API |
+| Audio acquisition | yt-dlp, Spotify API |
 | Frontend | Vanilla JS / Web Audio API |
-| Database | SQLite (track cache) |
+| Database | SQLite |
 | Deployment | Render (Standard, 2GB) |
 
 ---
