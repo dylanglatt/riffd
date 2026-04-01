@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Studio{% endblock %}
+{% block title %}riffd — Theory{% endblock %}
 
 {% block extra_css %}
   .studio-head { text-align:center; padding-top:128px; margin-bottom:80px; }
@@ -206,11 +206,19 @@
     .sidebar-nav { flex-direction:row; overflow-x:auto; gap:4px; }
     .sidebar-link { white-space:nowrap; padding:8px 12px; }
     .sidebar-link.active::before { display:none; }
-    .filter-row { gap:6px; }
+    .filter-row { gap:6px; flex-wrap:wrap; }
     .filter-dd-btn { font-size:0.75rem; padding:5px 10px; }
     .theory-grid { grid-template-columns:1fr; }
     .pagination { gap:4px; }
     .page-btn { width:28px; height:28px; font-size:0.75rem; }
+    /* Pull Grid/List toggle onto its own full-width row above the filter dropdowns */
+    .view-toggle {
+      order: -1;
+      width: 100%;
+      margin-left: 0;
+      justify-content: flex-end;
+      margin-bottom: 2px;
+    }
   }
   @media(max-width:480px) {
     .studio-head { padding-top:48px; margin-bottom:32px; }
@@ -519,7 +527,7 @@ function _renderFilters(section) {
   }
 
   // View toggle (grid/list) — always right-aligned
-  html += `<div class="view-toggle" style="margin-left:auto">
+  html += `<div class="view-toggle">
     <button class="view-btn${_viewMode==='grid'?' active':''}" onclick="_setViewMode('grid')">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>Grid
     </button>

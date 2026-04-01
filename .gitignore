@@ -29,6 +29,17 @@ build/
 design/
 static/*
 !static/demo/
+!static/demo/**
+!static/favicon.ico
+!static/favicon.svg
+!static/favicon-16.png
+!static/favicon-32.png
+!static/favicon-48.png
+!static/favicon-64.png
+!static/favicon-192.png
+!static/favicon-512.png
+!static/apple-touch-icon.png
+!static/site.webmanifest
 test_*.py
 *.xlsx
 *.log
