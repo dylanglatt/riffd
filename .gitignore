@@ -27,6 +27,9 @@ build/
 # Internal
 .claude/
 design/
+*_PROMPT.md
+*.docx
+.fuse_hidden*
 static/*
 !static/demo/
 !static/demo/**
