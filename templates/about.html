@@ -112,7 +112,7 @@
 
   <div class="about-hero">
     <div class="hero-title">Pull apart any song.</div>
-    <div class="hero-sub">Isolate the vocals, guitar, bass — hear what's underneath. Understand what makes it work.</div>
+    <div class="hero-sub">Not just vocals, guitar, bass — lead guitar separated from rhythm, piano solo from accompaniment. Hear exactly what you need to learn.</div>
   </div>
 
 
@@ -130,7 +130,7 @@
       <div class="flow-step">
         <div class="fs-num">2</div>
         <div class="fs-title">Isolate</div>
-        <div class="fs-desc">Separate every instrument and vocal into individual stems.</div>
+        <div class="fs-desc">Separate every instrument and vocal into individual stems — including lead guitar vs. rhythm guitar, and piano solo vs. accompaniment.</div>
       </div>
       <div class="flow-step">
         <div class="fs-num">3</div>
@@ -157,12 +157,12 @@
       <div class="tech-card">
         <div class="tech-name">Demucs</div>
         <div class="tech-role">Stem Separation</div>
-        <div class="tech-desc">Meta's transformer model running on cloud GPU — isolates up to 6 stems with high fidelity and stereo field analysis.</div>
+        <div class="tech-desc">Meta's transformer model running on cloud GPU — isolates up to 6 stems with high fidelity and stereo field analysis. A second melodic separation pass then splits guitar and piano stems into their lead and accompaniment components.</div>
       </div>
       <div class="tech-card">
         <div class="tech-name">Basic Pitch</div>
-        <div class="tech-role">Note & Pitch Detection</div>
-        <div class="tech-desc">Spotify's neural network converts each stem into MIDI-grade note events with per-instrument filtering for accuracy.</div>
+        <div class="tech-role">Note Detection & Melodic Split</div>
+        <div class="tech-desc">Spotify's pitch detection model converts each stem into note events. The upper-register notes (above the 55th percentile pitch) are identified as lead content — this is what separates the lead guitar line from rhythm chords.</div>
       </div>
       <div class="tech-card">
         <div class="tech-name">Essentia</div>

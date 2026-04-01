@@ -1,53 +1,53 @@
 {
   "stems": {
-    "vocal": {
-      "label": "Vocal",
-      "energy": 0.047362,
-      "active": true
-    },
-    "backing_vocal_1": {
-      "label": "Backing Vocal 1",
-      "energy": 0.02061,
-      "active": true
-    },
-    "backing_vocal_2": {
-      "label": "Backing Vocal 2",
-      "energy": 0.020354,
-      "active": true
-    },
-    "lead_guitar": {
-      "label": "Lead Guitar",
-      "energy": 0.016867,
-      "active": true
-    },
-    "rhythm_guitar_1": {
-      "label": "Rhythm Guitar 1",
-      "energy": 0.017693,
-      "active": true
-    },
-    "rhythm_guitar_2": {
-      "label": "Rhythm Guitar 2",
-      "energy": 0.013928,
-      "active": true
-    },
-    "piano": {
-      "label": "Piano",
-      "energy": 0.017227,
-      "active": true
-    },
-    "additional_guitar": {
-      "label": "Additional Guitar",
-      "energy": 0.009427,
-      "active": true
-    },
-    "bass_guitar": {
-      "label": "Bass Guitar",
-      "energy": 0.063332,
-      "active": true
-    },
     "drums": {
       "label": "Drums",
-      "energy": 0.060175,
+      "energy": 0.060199,
+      "active": true
+    },
+    "bass": {
+      "label": "Bass",
+      "energy": 0.063365,
+      "active": true
+    },
+    "guitar": {
+      "label": "Guitar",
+      "energy": 0.033215,
+      "active": true
+    },
+    "acoustic_guitar": {
+      "label": "Acoustic Guitar",
+      "energy": 0.023453,
+      "active": true
+    },
+    "synth": {
+      "label": "Synth",
+      "energy": 0.017609,
+      "active": true
+    },
+    "backing_vocals": {
+      "label": "Backing Vocals",
+      "energy": 0.028998,
+      "active": true
+    },
+    "piano_solo": {
+      "label": "Piano Solo",
+      "energy": 0.008136,
+      "active": true
+    },
+    "piano_accompaniment": {
+      "label": "Piano Accompaniment",
+      "energy": 0.019234,
+      "active": true
+    },
+    "lead_vocals": {
+      "label": "Lead Vocals",
+      "energy": 0.016426,
+      "active": true
+    },
+    "backing_vocals_2": {
+      "label": "Backing Vocals 2",
+      "energy": 0.042928,
       "active": true
     }
   },
@@ -57,7 +57,7 @@
     "mode_num": 1,
     "bpm": 143.6,
     "bpm_confidence": 0.5,
-    "progression": "I \u2013 vi \u2013 ii",
+    "progression": "I \u2013 vi \u2013 ii \u2013 I",
     "progression_confidence": 0.4,
     "progression_source": "audio",
     "confidence": 0.94,
@@ -76,73 +76,73 @@
   ],
   "insight": {
     "progression_names": {
-      "main": "vi-IV-I progression"
+      "main": "vi-IV-I-V progression"
     },
     "smart_recs": {
       "same_progression": [
         {
-          "title": "No One Like You",
-          "artist": "The Scorpions",
-          "reason": "Same I-vi-IV-V progression pattern",
-          "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music124/v4/8d/a4/f9/8da4f95f-4162-9d31-7131-fe49337a1689/00731453478626.rgb.jpg/300x300bb.jpg"
+          "title": "Don't Stop Believin'",
+          "artist": "Journey",
+          "reason": "Identical I-vi-IV-V loop structure",
+          "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music116/v4/71/2d/61/712d617d-f4a4-5904-1b11-d4b4b45c47c5/828768588925.jpg/300x300bb.jpg"
         },
         {
-          "title": "Stairway to Heaven",
-          "artist": "Led Zeppelin",
-          "reason": "Features vi-IV-I descending progression",
-          "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/5c/15/9b/5c159b27-95ca-b9a7-84e3-28e795fffd39/dj.kvkrpptq.jpg/300x300bb.jpg"
+          "title": "With or Without You",
+          "artist": "U2",
+          "reason": "Same vi-IV-I-V progression pattern",
+          "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music125/v4/9a/48/54/9a485494-b969-aaf4-a916-07452ea69869/06UMGIM72507.rgb.jpg/300x300bb.jpg"
         }
       ],
       "same_key_tempo": [
         {
-          "title": "Rock and Roll",
-          "artist": "Led Zeppelin",
+          "title": "Another One Bites the Dust",
+          "artist": "Queen",
           "reason": "A# Major, approximately 144 BPM",
-          "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/47/31/8e/47318e93-c0fa-35d1-8b84-809691955124/603497926121.jpg/300x300bb.jpg"
+          "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/4d/08/2a/4d082a9e-7898-1aa1-a02f-339810058d9e/14DMGIM05632.rgb.jpg/300x300bb.jpg"
         }
       ],
       "similar_harmony": [
         {
-          "title": "The Great Gig in the Sky",
-          "artist": "Pink Floyd",
-          "reason": "Dynamic major-key shifts through sections",
-          "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music221/v4/3e/76/b0/3e76b0e3-762b-2286-a019-8afb19cee541/886445635829.jpg/300x300bb.jpg"
+          "title": "Stairway to Heaven",
+          "artist": "Led Zeppelin",
+          "reason": "Descending bass line with shifting harmonic movement",
+          "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/5c/15/9b/5c159b27-95ca-b9a7-84e3-28e795fffd39/dj.kvkrpptq.jpg/300x300bb.jpg"
         },
         {
           "title": "Comfortably Numb",
           "artist": "Pink Floyd",
-          "reason": "Major key with chromatic bass movement",
+          "reason": "Dramatic harmonic shifts between sections",
           "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music221/v4/3e/17/ec/3e17ec6d-f980-c64f-19e0-a6fd8bbf0c10/886445635850.jpg/300x300bb.jpg"
         }
       ],
       "more_by_artist": [
         {
+          "title": "We Are the Champions",
+          "artist": "Queen",
+          "reason": "Extended operatic arrangement, major-key anthem",
+          "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/4d/08/2a/4d082a9e-7898-1aa1-a02f-339810058d9e/14DMGIM05632.rgb.jpg/300x300bb.jpg"
+        },
+        {
           "title": "Somebody to Love",
           "artist": "Queen",
-          "reason": "Gospel-influenced major-key arrangement",
+          "reason": "Gospel-influenced chord progressions, soulful harmony",
           "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/4d/08/2a/4d082a9e-7898-1aa1-a02f-339810058d9e/14DMGIM05632.rgb.jpg/300x300bb.jpg"
         },
         {
           "title": "The Show Must Go On",
           "artist": "Queen",
-          "reason": "Multi-sectional operatic rock composition",
+          "reason": "Chromatic harmonic movement, theatrical key changes",
           "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music123/v4/af/c8/14/afc81460-737f-5d91-73b6-9f1da41afcdc/14DMGIM05559.rgb.jpg/300x300bb.jpg"
         },
         {
           "title": "Fat Bottomed Girls",
           "artist": "Queen",
-          "reason": "Hard rock blues in A# with stomp beat",
+          "reason": "Straight major-key rock, rhythmic drive contrast",
           "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/fe/19/b1/fe19b168-8cd6-c583-515c-e168828b593e/14DMGIM05551.rgb.jpg/300x300bb.jpg"
-        },
-        {
-          "title": "We Are the Champions",
-          "artist": "Queen",
-          "reason": "Triumphant major-key anthem arrangement",
-          "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/4d/08/2a/4d082a9e-7898-1aa1-a02f-339810058d9e/14DMGIM05632.rgb.jpg/300x300bb.jpg"
         }
       ]
     },
-    "key_context": "A# Major is bright and powerful\u2014a bold key favored by rock and metal for anthemic impact."
+    "key_context": "A# Major is bright and open, suited for grand, dramatic rock statements."
   },
   "recommendations": {
     "more_like_this": [],
@@ -240,5 +240,8 @@
   },
   "audio_source": "youtube",
   "audio_mode": "full",
-  "status": "complete"
+  "job_id": "67323f2d",
+  "track_id": "7tFiyTwD0nx5a1eklYtX2J",
+  "_analysis_version": "v5",
+  "_cached_at": 1775003007.876906
 }

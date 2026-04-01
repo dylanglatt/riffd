@@ -349,8 +349,6 @@ def _classify_component(features, stem_category, position):
         return "Guitar"
 
     if stem_category == "other":
-        if c > 3000 and zcr > 0.15:
-            return "Banjo"
         if c > 2500 and bw > 1400 and zcr > 0.12:
             return "Acoustic Guitar"
         if c > 1500 and bw > 1800:
@@ -388,19 +386,16 @@ def _get_tab_renderer(label):
 def _extract_melodic_mask(note_events, sr: int, n_samples: int,
                           n_fft: int = 2048, hop_length: int = 512) -> "np.ndarray | None":
     """
-    Build an STFT-domain soft mask for monophonic melodic content from Basic Pitch
-    note events.
+    Build an STFT-domain soft mask for lead (melodic) content using a
+    pitch-percentile approach.
 
-    Parameters:
-        note_events: DataFrame with start_time_s, end_time_s, pitch_midi, confidence
-        sr: sample rate
-        n_samples: total number of audio samples (to compute n_time_frames)
-        n_fft: FFT size
-        hop_length: hop size
+    Instead of trying to detect monophonic frames via confidence ratios
+    (which fails on mixed stems where lead + rhythm guitar coexist),
+    we identify the upper-register notes — those above the 55th percentile
+    pitch — as "lead" content. In a mixed guitar stem, lead lines are
+    consistently higher-pitched than rhythm chord tones.
 
-    Returns a 2D soft mask (n_freq_bins x n_time_frames) where values near 1.0
-    indicate melodic (lead) content and values near 0.0 indicate accompaniment,
-    or None if no melody is detected.
+    Returns a 2D soft mask (n_freq_bins x n_time_frames) or None.
     """
     if note_events is None or len(note_events) == 0:
         return None
@@ -410,71 +405,76 @@ def _extract_melodic_mask(note_events, sr: int, n_samples: int,
     if n_time_frames <= 0:
         return None
 
-    freqs = np.fft.rfftfreq(n_fft, 1.0 / sr)  # frequency for each bin
+    freqs = np.fft.rfftfreq(n_fft, 1.0 / sr)
+    frame_times = np.arange(n_time_frames) * hop_length / sr  # noqa: F841
 
-    # Build time grid (center time of each STFT frame)
-    frame_times = np.arange(n_time_frames) * hop_length / sr
+    # --- Pitch-percentile melody detection ---
+    # Filter to confident notes only first (avoid ghost notes polluting the distribution)
+    conf_col = "confidence" if "confidence" in note_events.columns else None
+    if conf_col:
+        confident_notes = note_events[note_events[conf_col] >= 0.30].copy()
+    else:
+        confident_notes = note_events.copy()
 
-    # Identify monophonic melody notes per time frame.
-    # At each frame, find overlapping notes. If one note is significantly more
-    # confident than the rest (>1.5x), it's melody. Otherwise it's chordal.
+    if len(confident_notes) == 0:
+        return None
+
+    pitches = confident_notes["pitch_midi"].values
+
+    # Compute pitch threshold: notes above the 55th percentile are "lead".
+    # This captures the upper melodic register while excluding the bulk of
+    # chord tones which sit in the lower-mid register.
+    pitch_threshold = float(np.percentile(pitches, 55))
+
+    # Filter to upper-register "lead" notes
+    lead_notes = confident_notes[confident_notes["pitch_midi"] >= pitch_threshold]
+
+    if len(lead_notes) == 0:
+        return None
+
+    starts = lead_notes["start_time_s"].values
+    ends = lead_notes["end_time_s"].values
+    lead_pitches = lead_notes["pitch_midi"].values
+
     mask = np.zeros((n_freq_bins, n_time_frames), dtype=np.float32)
 
-    # Pre-extract arrays for speed
-    starts = note_events["start_time_s"].values
-    ends = note_events["end_time_s"].values
-    pitches = note_events["pitch_midi"].values
-    confidences = note_events["confidence"].values if "confidence" in note_events.columns else np.ones(len(note_events))
+    # 100 Hz bandwidth captures enough energy around each harmonic for
+    # meaningful signal separation
+    bw = 100.0
 
-    # Process frame by frame in vectorized chunks for performance
-    # Group overlapping notes per frame using broadcasting on time boundaries
-    # For efficiency, process in chunks of frames
-    CHUNK = 512
-    for chunk_start in range(0, n_time_frames, CHUNK):
-        chunk_end = min(chunk_start + CHUNK, n_time_frames)
-        chunk_times = frame_times[chunk_start:chunk_end]
+    for note_idx in range(len(lead_notes)):
+        note_start = starts[note_idx]
+        note_end = ends[note_idx]
+        midi = lead_pitches[note_idx]
 
-        for i, t in enumerate(chunk_times):
-            frame_idx = chunk_start + i
-            # Find notes active at time t
-            active = (starts <= t) & (ends > t)
-            if not np.any(active):
-                continue
+        frame_start = max(0, int(note_start * sr / hop_length))
+        frame_end = min(n_time_frames, int(note_end * sr / hop_length) + 1)
 
-            active_conf = confidences[active]
-            active_pitch = pitches[active]
+        if frame_start >= frame_end:
+            continue
 
-            # Sort by confidence descending
-            order = np.argsort(-active_conf)
-            active_conf = active_conf[order]
-            active_pitch = active_pitch[order]
+        # Convert MIDI pitch to Hz and compute harmonics (fundamental + 3)
+        f0 = 440.0 * (2.0 ** ((midi - 69) / 12.0))
+        harmonics = [f0 * (h + 1) for h in range(4)]
 
-            # Monophonic detection: top note must be >1.5x the second
-            if len(active_conf) == 1:
-                melody_midi = active_pitch[0]
-            elif active_conf[0] > 1.5 * active_conf[1]:
-                melody_midi = active_pitch[0]
-            else:
-                continue  # chordal — skip
+        sigma = bw / 2.0
+        for fh in harmonics:
+            if fh > sr / 2:
+                break
+            gauss = np.exp(-((freqs - fh) ** 2) / (2 * sigma * sigma)).astype(np.float32)
+            mask[:, frame_start:frame_end] = np.maximum(
+                mask[:, frame_start:frame_end],
+                gauss[:, np.newaxis]
+            )
 
-            # Convert MIDI to Hz and compute harmonics (fundamental + 3 harmonics)
-            f0 = 440.0 * (2.0 ** ((melody_midi - 69) / 12.0))
-            harmonics = [f0 * (h + 1) for h in range(4)]
+    # Check mask has meaningful coverage
+    mask_coverage = float(np.mean(mask > 0.05))
+    print(f"[melodic_split] mask coverage: {mask_coverage:.3f} "
+          f"(pitch_threshold={pitch_threshold:.1f} MIDI, "
+          f"lead_notes={len(lead_notes)}/{len(confident_notes)})")
 
-            # Build Gaussian mask centered on each harmonic
-            bw = 60.0  # bandwidth in Hz per harmonic
-            for fh in harmonics:
-                if fh > sr / 2:
-                    break
-                # Gaussian: exp(-(f - fh)^2 / (2 * sigma^2))
-                sigma = bw / 2.0
-                gauss = np.exp(-((freqs - fh) ** 2) / (2 * sigma * sigma))
-                mask[:, frame_idx] = np.maximum(mask[:, frame_idx], gauss)
-
-    # Check if mask covers a meaningful amount — if >85% or <15% energy coverage, skip
-    mask_coverage = np.mean(mask > 0.1)
-    if mask_coverage < 0.01:
-        return None  # essentially no melody detected
+    if mask_coverage < 0.005:  # 0.5% minimum — very lenient, quality gate handles the rest
+        return None
 
     return mask
 
@@ -535,7 +535,10 @@ def _split_melodic_stem(left, right, sr: int, melodic_mask,
     lead_ratio = lead_energy / total_energy
     acc_ratio = acc_energy / total_energy
 
-    if lead_ratio < 0.15 or acc_ratio < 0.15:
+    # 5% (was 8%, was 15%) — tiled mask approach means both halves should have
+    # meaningful energy throughout the song; 5% filters near-silence ghost splits
+    # while letting valid subtle separations through.
+    if lead_ratio < 0.05 or acc_ratio < 0.05:
         del lead_l, lead_r, acc_l, acc_r
         return None
 
@@ -580,7 +583,7 @@ def _melodic_split_pass(refined: dict, out_dir: "Path", sr: int = 44100,
     import gc as _gc
 
     # Snapshot keys — we'll modify the dict during iteration
-    candidates = []
+    raw_candidates = []
     for key, stem_data in list(refined.items()):
         label = stem_data.get("label", "")
         label_lower = label.lower()
@@ -597,7 +600,27 @@ def _melodic_split_pass(refined: dict, out_dir: "Path", sr: int = 44100,
         if stem_data.get("energy", 0) < MIN_ABSOLUTE_ENERGY:
             continue
 
-        candidates.append((key, stem_data))
+        raw_candidates.append((key, stem_data))
+
+    # De-duplicate by base instrument: stereo refinement can produce "Guitar" and
+    # "Guitar 2" (center vs side components of the same Demucs stem). Running a
+    # melodic split on both creates doubled artifacts like "Lead Guitar 2" and
+    # "Guitar 2 Accompaniment". Only split the highest-energy stem per base label.
+    import re as _re
+    def _base_label(lbl: str) -> str:
+        """Strip trailing number suffix, e.g. 'Guitar 2' → 'guitar', 'Acoustic Guitar 2' → 'acoustic guitar'."""
+        return _re.sub(r'\s+\d+$', '', lbl).strip().lower()
+
+    seen_base: dict = {}
+    for key, stem_data in raw_candidates:
+        base = _base_label(stem_data.get("label", key))
+        energy = stem_data.get("energy", 0)
+        if base not in seen_base or energy > seen_base[base][1]:
+            seen_base[base] = (key, energy, stem_data)
+
+    candidates = [(v[0], v[2]) for v in seen_base.values()]
+    print(f"[melodic_split] {len(raw_candidates)} raw candidates → {len(candidates)} after de-dup: "
+          f"{[v[2].get('label', v[0]) for v in seen_base.values()]}")
 
     if not candidates:
         return refined
@@ -682,26 +705,39 @@ def _melodic_split_pass(refined: dict, out_dir: "Path", sr: int = 44100,
             _gc.collect()
             continue
 
-        # Build melodic mask
+        # Build melodic mask.
+        # We build it from the 90s inference window only (matching the Basic Pitch
+        # truncation above), then tile it to cover the full audio duration.
+        # This prevents the second half of the song from being all-zero in the mask
+        # (which would make the lead track silent after 90s and fail the quality gate).
         n_fft = 2048
         hop_length = 512
-        melodic_mask = _extract_melodic_mask(note_events, file_sr, len(left),
-                                              n_fft=n_fft, hop_length=hop_length)
+        infer_n_samples = min(len(left), int(MELODIC_INFER_SECS * file_sr))
+        mask_90s = _extract_melodic_mask(note_events, file_sr, infer_n_samples,
+                                         n_fft=n_fft, hop_length=hop_length)
         del note_events
 
-        if melodic_mask is None:
+        if mask_90s is None:
             print(f"[melodic_split] no meaningful melody in {key} — skipping")
             del left, right
             _gc.collect()
             continue
 
+        # Tile the 90s mask to cover the full audio duration
+        n_time_full = (len(left) - n_fft) // hop_length + 1
+        n_tile = int(np.ceil(n_time_full / mask_90s.shape[1]))
+        melodic_mask = np.tile(mask_90s, (1, n_tile))[:, :n_time_full].copy()
+        del mask_90s
+
         # Check energy coverage of mask before splitting
         mask_energy_ratio = float(np.mean(melodic_mask))
         if mask_energy_ratio > 0.85:
-            print(f"[melodic_split] {key} is essentially all melody ({mask_energy_ratio:.2f}) — skipping")
+            print(f"[melodic_split] {key} is essentially all melody ({mask_energy_ratio:.2f}) — skipping split")
             del left, right, melodic_mask
             _gc.collect()
             continue
+
+        print(f"[melodic_split] {key} mask tiled to full audio (mean={mask_energy_ratio:.4f})")
 
         # Split
         result = _split_melodic_stem(left, right, file_sr, melodic_mask,
@@ -715,11 +751,19 @@ def _melodic_split_pass(refined: dict, out_dir: "Path", sr: int = 44100,
             continue
 
         (lead_l, lead_r), (acc_l, acc_r) = result
-        del left, right, result
 
-        # Get labels
+        # Log split energies before deleting source arrays
         original_label = stem_data.get("label", key.title())
         lead_label, acc_label = _get_split_labels(original_label)
+        lead_e = _rms((lead_l + lead_r) / 2)
+        acc_e = _rms((acc_l + acc_r) / 2)
+        total_e = _rms((left + right) / 2)
+        print(f"[melodic_split] SPLIT SUCCESS: {original_label} → "
+              f"{lead_label} (energy={lead_e/max(total_e,1e-8):.2f}) + "
+              f"{acc_label} (energy={acc_e/max(total_e,1e-8):.2f})")
+        del left, right, result
+
+        # lead_label, acc_label, original_label already set above for logging
         lead_key = _label_to_key(lead_label)
         acc_key = _label_to_key(acc_label)
 
@@ -1346,43 +1390,60 @@ def _label_to_key(label):
 
 
 def _save_sub_parts(parts, sr, out_dir, refined):
-    """Save sub-parts with simple numbered labels, capped at 2 per label globally."""
-    # Sort by energy descending — keep the loudest instances of each label
-    parts_sorted = sorted(parts, key=lambda p: p["energy"], reverse=True)
+    """Save sub-parts, merging components with the same label into a single stem.
 
-    # Cap at 2 per label GLOBALLY — count labels already saved across all previous stems
-    # so that two different Demucs stems producing the same label don't bypass the cap.
-    MAX_PER_LABEL = 2
-    existing_label_counts = {}
-    for stem_data in refined.values():
-        lbl = stem_data.get("label", "")
-        if lbl:
-            # Strip trailing " 2", " 3" etc. to get the base label for counting
-            base = lbl.rsplit(" ", 1)
-            if len(base) == 2 and base[1].isdigit():
-                lbl = base[0]
-            existing_label_counts[lbl] = existing_label_counts.get(lbl, 0) + 1
-
-    label_seen = dict(existing_label_counts)
-    filtered = []
-    for part in parts_sorted:
-        # Skip near-silent components — stereo separation can produce artifacts
-        # just above the 0.5× detection threshold that have no audible content.
+    When stereo refinement produces multiple components with identical classifications
+    (e.g., center Guitar + side Guitar), merging them avoids confusing "Guitar 2"
+    artifacts. The merged stem is the sum of the components (preserving loudness).
+    """
+    # Skip near-silent components first
+    active_parts = []
+    for part in parts:
         if part["energy"] < SILENCE_THRESHOLD:
             print(f"[processor] skipping silent sub-part '{part['label']}' (energy={part['energy']:.5f})")
             continue
-        lbl = part["label"]
-        if label_seen.get(lbl, 0) < MAX_PER_LABEL:
-            label_seen[lbl] = label_seen.get(lbl, 0) + 1
-            filtered.append(part)
+        active_parts.append(part)
 
-    label_index = {}
-    for part in filtered:
-        base_label = part["label"]
+    # Group by label — merge same-label components into one stem
+    from collections import OrderedDict
+    label_groups: OrderedDict = OrderedDict()
+    for part in sorted(active_parts, key=lambda p: p["energy"], reverse=True):
+        lbl = part["label"]
+        if lbl not in label_groups:
+            label_groups[lbl] = part.copy()
+        else:
+            # Merge by summing audio (additive mix of stereo components)
+            merged = label_groups[lbl]
+            # Match lengths in case components differ by a sample
+            min_len = min(len(merged["left"]), len(part["left"]))
+            merged["left"] = merged["left"][:min_len] + part["left"][:min_len]
+            merged["right"] = merged["right"][:min_len] + part["right"][:min_len]
+            merged["energy"] = _rms((merged["left"] + merged["right"]) / 2)
+            print(f"[processor] merged duplicate '{lbl}' sub-parts into single stem")
+
+    # Check how many of each label are already saved across all stems in this job
+    existing_label_counts: dict = {}
+    for stem_data in refined.values():
+        lbl = stem_data.get("label", "")
+        if lbl:
+            base = lbl.rsplit(" ", 1)
+            base_lbl = base[0] if len(base) == 2 and base[1].isdigit() else lbl
+            existing_label_counts[base_lbl] = existing_label_counts.get(base_lbl, 0) + 1
+
+    # Save each merged group — still allow up to 2 per base label globally
+    # (e.g. Backing Vocals from vocals stem + Backing Vocals from other stem)
+    MAX_PER_LABEL = 2
+    label_seen = dict(existing_label_counts)
+    label_index: dict = {}
+
+    for base_label, part in label_groups.items():
+        if label_seen.get(base_label, 0) >= MAX_PER_LABEL:
+            print(f"[processor] skipping '{base_label}' — already have {MAX_PER_LABEL} instances")
+            continue
+        label_seen[base_label] = label_seen.get(base_label, 0) + 1
+
         idx = label_index.get(base_label, 0)
         label_index[base_label] = idx + 1
-
-        # First occurrence keeps the base name; extras get a number suffix
         label = base_label if idx == 0 else f"{base_label} {idx + 1}"
         key = _label_to_key(label)
 
