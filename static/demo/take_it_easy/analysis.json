@@ -1,38 +1,38 @@
 {
   "stems": {
-    "vocal": {
-      "label": "Vocal",
-      "energy": 0.088118,
-      "active": true
-    },
-    "acoustic_guitar": {
-      "label": "Acoustic Guitar",
-      "energy": 0.008917,
-      "active": true
-    },
-    "lead_guitar_1": {
-      "label": "Lead Guitar 1",
-      "energy": 0.026699,
-      "active": true
-    },
-    "lead_guitar_2": {
-      "label": "Lead Guitar 2",
-      "energy": 0.008188,
-      "active": true
-    },
-    "banjo": {
-      "label": "Banjo",
-      "energy": 0.054914,
-      "active": true
-    },
-    "bass_guitar": {
-      "label": "Bass Guitar",
-      "energy": 0.07206,
+    "bass": {
+      "label": "Bass",
+      "energy": 0.068421,
       "active": true
     },
     "drums": {
       "label": "Drums",
-      "energy": 0.061368,
+      "energy": 0.059339,
+      "active": true
+    },
+    "acoustic_guitar": {
+      "label": "Acoustic Guitar",
+      "energy": 0.008448,
+      "active": true
+    },
+    "lead_guitar": {
+      "label": "Lead Guitar",
+      "energy": 0.043365,
+      "active": true
+    },
+    "rhythm_guitar": {
+      "label": "Rhythm Guitar",
+      "energy": 0.039126,
+      "active": true
+    },
+    "lead_vocals": {
+      "label": "Lead Vocals",
+      "energy": 0.036922,
+      "active": true
+    },
+    "backing_vocals": {
+      "label": "Backing Vocals",
+      "energy": 0.071775,
       "active": true
     }
   },
@@ -59,72 +59,66 @@
         {
           "title": "Don't Stop Believin'",
           "artist": "Journey",
-          "reason": "Same vi-I-ii-V loop foundation",
+          "reason": "Same vi-I-ii-V progression pattern",
           "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music116/v4/71/2d/61/712d617d-f4a4-5904-1b11-d4b4b45c47c5/828768588925.jpg/300x300bb.jpg"
         },
         {
           "title": "Wonderwall",
           "artist": "Oasis",
-          "reason": "Uses vi-I-ii-V progression pattern",
+          "reason": "Uses identical vi-I-ii-V loop structure",
           "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music113/v4/04/92/e0/0492e08b-cbcc-9969-9ad6-8f5a0888068c/5051961007107.jpg/300x300bb.jpg"
         }
       ],
       "same_key_tempo": [
         {
-          "title": "Walking on Sunshine",
-          "artist": "Katrina & The Waves",
-          "reason": "G Major, 130-140 BPM range",
-          "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music124/v4/f6/b6/37/f6b6378c-9b34-72fb-9abe-4a6d6042ad53/13ULAIM49571.rgb.jpg/300x300bb.jpg"
+          "title": "Ventura Highway",
+          "artist": "America",
+          "reason": "G Major at approximately 136 BPM",
+          "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Features114/v4/b2/4e/64/b24e640d-2324-4782-a537-c5f92c8609f0/dj.iiuqphlx.jpg/300x300bb.jpg"
         },
         {
-          "title": "Brown Eyed Girl",
-          "artist": "Van Morrison",
-          "reason": "G Major, mid-136 BPM region",
-          "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music221/v4/dd/0e/bc/dd0ebcee-9d50-fe99-4ef8-c0fb79932511/886445621334_Cover.jpg/300x300bb.jpg"
+          "title": "Rocky Mountain High",
+          "artist": "John Denver",
+          "reason": "G Major, mid-tempo around 130-140 BPM",
+          "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music125/v4/50/ea/c9/50eac997-ed30-4a79-08a3-fb416f5413d2/886447612101.jpg/300x300bb.jpg"
         }
       ],
       "similar_harmony": [
         {
-          "title": "Harvest Moon",
-          "artist": "Neil Young",
-          "reason": "Diatonic vi-I progression, open harmony",
-          "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music124/v4/4d/45/41/4d45414c-6364-51cf-2874-7c8aa755caaa/mzi.oetoyyot.jpg/300x300bb.jpg"
-        },
-        {
-          "title": "Dreams",
-          "artist": "Fleetwood Mac",
-          "reason": "Minor relative vi resolving to major I",
-          "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/d2/48/f4/d248f4ae-a7e4-a48e-1588-6617de3e8d76/mzi.izeorbmm.jpg/300x300bb.jpg"
+          "title": "Hotel California",
+          "artist": "Eagles",
+          "reason": "Minor key tonality with chromatic bass movement",
+          "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/88/16/2c/88162c3d-46db-8321-61f3-3a47404cfe76/075596050920.jpg/300x300bb.jpg"
         }
       ],
       "more_by_artist": [
         {
           "title": "Hotel California",
           "artist": "Eagles",
-          "reason": "Minor key with chromatic chord movement",
+          "reason": "Extended minor progression with chromatic descent",
           "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/88/16/2c/88162c3d-46db-8321-61f3-3a47404cfe76/075596050920.jpg/300x300bb.jpg"
         },
         {
-          "title": "Peaceful Easy Feeling",
+          "title": "Desperado",
           "artist": "Eagles",
-          "reason": "Open tuning, fingerpicked acoustic arrangement",
-          "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music125/v4/8f/e7/f4/8fe7f417-d464-8879-b00e-3d4965a9cfd1/075596062329.jpg/300x300bb.jpg"
+          "reason": "Fingerpicked acoustic arrangement in major key",
+          "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music125/v4/f0/c7/c8/f0c7c8f4-4319-d357-ddaf-566ef8e2194e/081227979379.jpg/300x300bb.jpg"
         },
         {
           "title": "Witchy Woman",
           "artist": "Eagles",
-          "reason": "Minor-key rocker, rare for their catalog",
+          "reason": "Minor pentatonic riff with rock arrangement",
           "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music125/v4/f0/c7/c8/f0c7c8f4-4319-d357-ddaf-566ef8e2194e/081227979379.jpg/300x300bb.jpg"
         },
         {
           "title": "The Long Run",
           "artist": "Eagles",
-          "reason": "Extended harmonic progression, key modulation",
+          "reason": "Driving rhythm with I-V oscillation pattern",
           "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/9a/54/6e/9a546e8b-f994-8d1f-a94b-d2d642dee4ce/075596056021.jpg/300x300bb.jpg"
         }
       ]
     },
-    "key_context": "G Major is bright and accessible\u2014a natural home for folk and country guitar tradition."
+    "key_context": "G Major is bright and accessible, favoring folk, country, and pop music traditions."
   },
   "recommendations": {
     "more_like_this": [],
@@ -222,5 +216,8 @@
   },
   "audio_source": "youtube",
   "audio_mode": "full",
-  "status": "complete"
+  "job_id": "84c00700",
+  "track_id": "4yugZvBYaoREkJKtbG08Qr",
+  "_analysis_version": "v5",
+  "_cached_at": 1775002839.627543
 }

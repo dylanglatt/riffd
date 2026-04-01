@@ -1,44 +1,57 @@
 {
   "stems": {
-    "vocals": {
-      "label": "Vocals",
-      "energy": 0.082038,
-      "active": true
-    },
-    "rhythm_guitar": {
-      "label": "Rhythm Guitar",
-      "energy": 0.058818,
-      "active": true
-    },
     "bass": {
       "label": "Bass",
-      "energy": 0.094126,
+      "energy": 0.094037,
       "active": true
     },
     "drums": {
       "label": "Drums",
-      "energy": 0.070848,
-      "active": true
-    },
-    "synth": {
-      "label": "Synth",
-      "energy": 0.017634,
+      "energy": 0.071243,
       "active": true
     },
     "piano": {
       "label": "Piano",
-      "energy": 0.007245,
+      "energy": 0.007465,
+      "active": true
+    },
+    "lead_guitar": {
+      "label": "Lead Guitar",
+      "energy": 0.037385,
+      "active": true
+    },
+    "rhythm_guitar": {
+      "label": "Rhythm Guitar",
+      "energy": 0.041074,
+      "active": true
+    },
+    "atmosphere_lead": {
+      "label": "Atmosphere Lead",
+      "energy": 0.01033,
+      "active": true
+    },
+    "lead_vocals": {
+      "label": "Lead Vocals",
+      "energy": 0.023818,
+      "active": true
+    },
+    "backing_vocals": {
+      "label": "Backing Vocals",
+      "energy": 0.07634,
       "active": true
     }
   },
   "intelligence": {
-    "key": "C Major",
-    "key_num": 0,
+    "key": "G Major",
+    "key_num": 7,
     "mode_num": 1,
-    "bpm": 123.9,
-    "bpm_confidence": 1.0,
-    "progression": null,
-    "key_confidence": 0.863
+    "bpm": 123.0,
+    "bpm_confidence": 0.5,
+    "progression": "vi \u2013 IV \u2013 I \u2013 V",
+    "progression_confidence": 0.57,
+    "progression_source": "web",
+    "confidence": 0.92,
+    "harmonic_sections": []
   },
   "lyrics": "\u2026 Read More\u00a0[Chorus]\nGravity is working against me\nAnd gravity wants to bring me down\n\n[Verse 1]\nOh, I'll never know\nWhat makes this man, with all the love that his heart can stand\nDream of ways to throw it all away\n\n[Chorus]\nWoah, woah\nGravity is working against me\nAnd gravity wants to bring me down\n\n[Verse 2]\nOh, twice as much ain't twice as good\nAnd can't sustain like one half could\nIt's wanting more that's gonna send me to my knees\n\n[Guitar Solo]\n\n[Repeat Verse 2]\nOh, twice as much ain't twice as good\nAnd can't sustain like one half could\nIt's wanting more that's gonna send me to my knees\n\n[Chorus]\nWoah, woah\nGravity, stay the hell away from me\nWoah, woah\nGravity has taken better men than me\nNow, how can that be?\n\n[Outro]\nJust keep me where the light is\nJust keep me where the light is\nJust keep me where the light is\nCome on, keep me where the light is\nCome on, keep me where the light is\nCome on, keep me where, now, keep me where the light is",
   "tags": [
@@ -52,57 +65,179 @@
     "house md"
   ],
   "insight": {
-    "progression_names": {},
+    "progression_names": {
+      "main": "Axis of Awesome"
+    },
     "smart_recs": {
       "same_progression": [
         {
+          "title": "Don't Stop Believin'",
+          "artist": "Journey",
+          "reason": "Identical vi-IV-I-V progression pattern",
+          "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music116/v4/71/2d/61/712d617d-f4a4-5904-1b11-d4b4b45c47c5/828768588925.jpg/300x300bb.jpg"
+        },
+        {
+          "title": "Someone Like You",
+          "artist": "Adele",
+          "reason": "Same vi-IV-I-V chord loop throughout",
+          "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music221/v4/eb/ca/25/ebca2596-cd1e-b295-91a3-771c868d0a79/191404113868.png/300x300bb.jpg"
+        }
+      ],
+      "same_key_tempo": [
+        {
           "title": "Wonderwall",
           "artist": "Oasis",
-          "reason": "Same I-V-vi-IV progression foundation"
+          "reason": "G Major, approximately 120 BPM",
+          "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music113/v4/04/92/e0/0492e08b-cbcc-9969-9ad6-8f5a0888068c/5051961007107.jpg/300x300bb.jpg"
+        },
+        {
+          "title": "Yellow",
+          "artist": "Coldplay",
+          "reason": "G Major at ~120 BPM tempo range",
+          "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music221/v4/f5/93/8c/f5938c49-964c-31d1-4b33-78b634f71fb7/190295978075.jpg/300x300bb.jpg"
+        }
+      ],
+      "similar_harmony": [
+        {
+          "title": "The Lemon Song",
+          "artist": "Led Zeppelin",
+          "reason": "Blues progression with minor vi borrowed chord",
+          "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music125/v4/1a/3d/bb/1a3dbb86-c1f8-737e-571f-d6b647a230be/dj.rhubuvkd.jpg/300x300bb.jpg"
         },
         {
           "title": "Layla",
           "artist": "Derek and the Dominos",
-          "reason": "Blues-rock progression with minor pentatonic emphasis"
-        }
-      ],
-      "same_key_tempo": [],
-      "similar_harmony": [
-        {
-          "title": "The Thrill Is Gone",
-          "artist": "B.B. King",
-          "reason": "Minor pentatonic blues over major key foundation"
-        },
-        {
-          "title": "Crossroads",
-          "artist": "Cream",
-          "reason": "Blues-rock chromatic movement, minor-major tension"
+          "reason": "vi-IV movement in classic blues-rock form",
+          "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music124/v4/89/ed/29/89ed29be-8412-0b5a-1df0-295fb5337dd6/00600753314289.rgb.jpg/300x300bb.jpg"
         }
       ],
       "more_by_artist": [
         {
-          "title": "Slow Dancing in a Burning Room",
-          "artist": "John Mayer",
-          "reason": "Heavy blues-rock distortion, extended guitar solo"
-        },
-        {
           "title": "Your Body Is a Wonderland",
           "artist": "John Mayer",
-          "reason": "Fingerstyle acoustic, I-V-vi-IV progression"
+          "reason": "Fingerstyle acoustic arrangement in waltz time",
+          "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music125/v4/0b/01/40/0b014055-6f12-94f6-6be6-35bb27676253/mzi.tciowflu.jpg/300x300bb.jpg"
         },
         {
-          "title": "Neon",
+          "title": "Slow Dancing in a Burning Room",
           "artist": "John Mayer",
-          "reason": "Minor key blues with jazzy chord extensions"
+          "reason": "Minor key blues progression with distorted guitar",
+          "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music124/v4/7a/a0/f4/7aa0f487-f983-390e-73ef-005115eea1e0/dj.oqpplyfm.jpg/300x300bb.jpg"
+        },
+        {
+          "title": "Continuum",
+          "artist": "John Mayer",
+          "reason": "Extended jazz harmonies and looped percussion base",
+          "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music124/v4/7a/a0/f4/7aa0f487-f983-390e-73ef-005115eea1e0/dj.oqpplyfm.jpg/300x300bb.jpg"
         },
         {
           "title": "Stop This Train",
           "artist": "John Mayer",
-          "reason": "Introspective ballad, fingerstyle arrangement"
+          "reason": "Complex time signature with fingerpicking focus",
+          "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music124/v4/7a/a0/f4/7aa0f487-f983-390e-73ef-005115eea1e0/dj.oqpplyfm.jpg/300x300bb.jpg"
         }
       ]
     },
-    "key_context": "C Major provides a bright, accessible foundation for blues-inflected singer-songwriter material."
+    "key_context": "G Major is bright and accessible\u2014a favorite key for folk-influenced singer-songwriters and blues musicians."
   },
-  "status": "complete"
+  "recommendations": {
+    "more_like_this": [],
+    "same_style": [
+      {
+        "id": "lastfm_Slow_Dancing_in_a_Bu_John_Mayer",
+        "name": "Slow Dancing in a Burning Room",
+        "artist": "John Mayer",
+        "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music124/v4/7a/a0/f4/7aa0f487-f983-390e-73ef-005115eea1e0/dj.oqpplyfm.jpg/300x300bb.jpg",
+        "year": "",
+        "duration_ms": 0,
+        "album": "",
+        "yt_query": "John Mayer - Slow Dancing in a Burning Room official audio",
+        "_source": "lastfm"
+      },
+      {
+        "id": "lastfm_The_Heart_of_Life_John_Mayer",
+        "name": "The Heart of Life",
+        "artist": "John Mayer",
+        "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music125/v4/99/4f/5f/994f5f40-a842-4dc7-58d4-a0210ae09c8c/dj.rengmjbv.jpg/300x300bb.jpg",
+        "year": "",
+        "duration_ms": 0,
+        "album": "",
+        "yt_query": "John Mayer - The Heart of Life official audio",
+        "_source": "lastfm"
+      },
+      {
+        "id": "lastfm_Gravity_John_Mayer_Trio",
+        "name": "Gravity",
+        "artist": "John Mayer Trio",
+        "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music124/v4/7a/a0/f4/7aa0f487-f983-390e-73ef-005115eea1e0/dj.oqpplyfm.jpg/300x300bb.jpg",
+        "year": "",
+        "duration_ms": 0,
+        "album": "",
+        "yt_query": "John Mayer Trio - Gravity official audio",
+        "_source": "lastfm"
+      },
+      {
+        "id": "lastfm_Give_Me_One_Reason_Tracy_Chapman",
+        "name": "Give Me One Reason",
+        "artist": "Tracy Chapman",
+        "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music114/v4/38/fe/e5/38fee58f-6ba6-c51b-2718-7cf0a38007bf/mzi.dtywsjpm.jpg/300x300bb.jpg",
+        "year": "",
+        "duration_ms": 0,
+        "album": "",
+        "yt_query": "Tracy Chapman - Give Me One Reason official audio",
+        "_source": "lastfm"
+      },
+      {
+        "id": "lastfm_Sitting,_Waiting,_Wi_Jack_Johnson",
+        "name": "Sitting, Waiting, Wishing",
+        "artist": "Jack Johnson",
+        "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/44/06/fd/4406fdc0-aab5-e300-82ba-3e5fe81a68a7/00602537868858.rgb.jpg/300x300bb.jpg",
+        "year": "",
+        "duration_ms": 0,
+        "album": "",
+        "yt_query": "Jack Johnson - Sitting, Waiting, Wishing official audio",
+        "_source": "lastfm"
+      },
+      {
+        "id": "lastfm_Whipping_Boy_Ben_Harper",
+        "name": "Whipping Boy",
+        "artist": "Ben Harper",
+        "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/f8/2f/8d/f82f8d93-182a-c4a6-97ef-05a645794145/00602547809698.rgb.jpg/300x300bb.jpg",
+        "year": "",
+        "duration_ms": 0,
+        "album": "",
+        "yt_query": "Ben Harper - Whipping Boy official audio",
+        "_source": "lastfm"
+      },
+      {
+        "id": "lastfm_Upside_Down_Jack_Johnson",
+        "name": "Upside Down",
+        "artist": "Jack Johnson",
+        "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/08/11/d2/0811d2b3-b4d5-dc22-1107-3625511844b5/00602537869770.rgb.jpg/300x300bb.jpg",
+        "year": "",
+        "duration_ms": 0,
+        "album": "",
+        "yt_query": "Jack Johnson - Upside Down official audio",
+        "_source": "lastfm"
+      },
+      {
+        "id": "lastfm_Power_of_the_Gospel_Ben_Harper",
+        "name": "Power of the Gospel",
+        "artist": "Ben Harper",
+        "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/4f/1c/be/4f1cbefb-7033-8310-f034-39587c659686/00602547810182.rgb.jpg/300x300bb.jpg",
+        "year": "",
+        "duration_ms": 0,
+        "album": "",
+        "yt_query": "Ben Harper - Power of the Gospel official audio",
+        "_source": "lastfm"
+      }
+    ],
+    "around_this_time": []
+  },
+  "audio_source": "youtube",
+  "audio_mode": "full",
+  "job_id": "a1435477",
+  "track_id": "3SktMqZmo3M9zbB7oKMIF7",
+  "_analysis_version": "v5",
+  "_cached_at": 1775003088.4963489
 }
