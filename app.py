@@ -1221,7 +1221,7 @@ def process_audio(job_id):
     return jsonify({"status": "processing", "job_id": job_id})
 
 
-JOB_TIMEOUT = 900  # 15 minutes — sequential Basic Pitch on full-length stems takes 5-10 min
+JOB_TIMEOUT = 720  # 12 minutes — must fire before frontend poll timeout (11 min) to ensure clean error
 
 @app.route("/api/status/<job_id>")
 def job_status(job_id):

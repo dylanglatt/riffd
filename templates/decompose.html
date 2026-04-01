@@ -1340,7 +1340,7 @@ async function uploadFile(file){
     if(procD.error) throw new Error(procD.error);
     pollStatus();
   }catch(e){
-    _resetLoadingUI();
+    _fullErrorCleanup();
     setError("Upload failed: "+e.message);
     showView("search");
   }
@@ -1575,7 +1575,7 @@ function _buildWaveform() {
 }
 
 // ─── Processing ─────────────────────────────────────────────────────────────
-const POLL_TIMEOUT_MS = 14 * 60 * 1000; // 14 minutes max polling — matches backend JOB_TIMEOUT (15min) with 1min buffer
+const POLL_TIMEOUT_MS = 11 * 60 * 1000; // 11 minutes max polling — matches backend JOB_TIMEOUT (12min) with 1min buffer
 let _pollStartTime = 0;
 
 function _resetLoadingUI() {
@@ -1588,6 +1588,27 @@ function _resetLoadingUI() {
   if (wvWrap) wvWrap.style.display = "";
   const progLabel = document.getElementById("progress-label");
   if (progLabel) progLabel.style.display = "";
+}
+
+// Full cleanup for errors that fire while results/skeleton view is showing
+function _fullErrorCleanup() {
+  _resetLoadingUI();
+  _topBar.reset();
+  clearTimeout(pollInterval);
+  // Tear down skeleton channels and loading status
+  const mixerEl = document.getElementById("mixer-channels");
+  if (mixerEl) mixerEl.innerHTML = '';
+  const statusBar = document.getElementById("mix-status-bar");
+  if (statusBar) statusBar.innerHTML = '';
+  // Reset processing steps
+  document.querySelectorAll('.proc-step').forEach(s => {
+    s.classList.remove('active', 'done');
+    s.querySelector('.proc-step-icon').innerHTML = '<div class="proc-step-dot"></div>';
+  });
+  // Go back to confirm view so "Try Again" works
+  document.getElementById("hero-actions").classList.remove("hidden");
+  document.getElementById("hero-loading").classList.add("hidden");
+  showView("confirm");
 }
 
 function _showUploadRequired() {
@@ -1674,7 +1695,7 @@ async function startProcessing(){
     });
     const d = await r.json();
     if (r.status === 503 || d.status === "busy") {
-      _resetLoadingUI();
+      _fullErrorCleanup();
       showCapacity(
         "Riffd is at capacity",
         "We\u2019re processing other tracks right now. Give it a moment and try again.",
@@ -1685,7 +1706,7 @@ async function startProcessing(){
     if (d.error) throw new Error(d.error);
     pollStatus();
   } catch(e) {
-    _resetLoadingUI();
+    _fullErrorCleanup();
     showCapacity(
       "Something went wrong",
       "We hit an unexpected issue starting the analysis. Try again, or try a different track.",
@@ -1740,7 +1761,7 @@ async function downloadTrack(){
     await waitForReady(d.job_id, 180);
     currentJobId = d.job_id;
   } catch(e) {
-    _resetLoadingUI();
+    _fullErrorCleanup();
     if (e.message === "upload_required") {
       _showUploadRequired();
     } else {
@@ -1797,7 +1818,7 @@ function pollStatus(){
 
   async function _poll() {
     if(Date.now() - _pollStartTime > POLL_TIMEOUT_MS) {
-      _resetLoadingUI();
+      _fullErrorCleanup();
       showCapacity(
         "This one\u2019s taking a while",
         "The analysis is taking longer than expected. You can try again or pick a different track.",
@@ -1812,7 +1833,7 @@ function pollStatus(){
       const d = await r.json();
 
       if(r.status === 404 || d.error === "Unknown job ID" || !d.status) {
-        _resetLoadingUI();
+        _fullErrorCleanup();
         showCapacity(
           "Riffd had a hiccup",
           "The server restarted while processing your track. Sorry about that \u2014 try again.",
@@ -1942,7 +1963,7 @@ function pollStatus(){
         return;
 
       } else if (d.status === 'error') {
-        _resetLoadingUI();
+        _fullErrorCleanup();
         if (d.error_step === 'timeout') {
           showCapacity(
             "This one\u2019s taking a while",
@@ -1961,7 +1982,7 @@ function pollStatus(){
         return;
 
       } else if (d.status === 'upload_required') {
-        _resetLoadingUI();
+        _fullErrorCleanup();
         _showUploadRequired();
         return;
 
@@ -1970,7 +1991,7 @@ function pollStatus(){
         pollInterval = setTimeout(_poll, _pollInterval());
       }
     } catch(e) {
-      _resetLoadingUI();
+      _fullErrorCleanup();
       showCapacity(
         "Lost connection",
         "Couldn\u2019t reach the server. Check your connection and try again.",
