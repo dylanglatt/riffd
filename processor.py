@@ -1148,7 +1148,7 @@ def separate_stems(audio_path: str, song_id: str, progress_callback=None) -> dic
 
     if use_hosted:
         print(f"[separation] path = replicate (hosted-only, no local fallback)")
-        MAX_RETRIES = 3
+        MAX_RETRIES = 2
         last_error = None
         for attempt in range(1, MAX_RETRIES + 1):
             try:
