@@ -349,10 +349,6 @@ def learn():
     return render_template("learn.html", active_page="learn")
 
 
-@app.route("/library")
-def library():
-    return render_template("library.html", active_page="library")
-
 
 @app.route("/practice")
 def practice():

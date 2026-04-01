@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Decompose{% endblock %}
+{% block title %}riffd — Analyze{% endblock %}
 
 {% block extra_css %}
     .narrow { max-width:640px; margin-left:auto; margin-right:auto; }
@@ -107,7 +107,14 @@
     @keyframes skeletonShimmer { 0%,100%{opacity:0.3} 50%{opacity:0.7} }
     .skeleton-waveform .player-wv-bar { background:rgba(245,245,245,0.06) !important; animation:skeletonShimmer 2s ease-in-out infinite; }
     .transport-disabled { opacity:0.3 !important; pointer-events:none; }
-    .mix-loading-status { text-align:center; font-size:0.8125rem; color:rgba(245,245,245,0.45); padding:16px 0; transition:opacity 0.3s ease; min-height:1.4em; letter-spacing:-0.01em; }
+    .mix-status-bar { min-height:40px; display:flex; align-items:center; justify-content:center; }
+    .mix-loading-status { text-align:center; font-size:0.8125rem; color:rgba(245,245,245,0.38); padding:10px 0; transition:opacity 0.3s ease; letter-spacing:-0.01em; display:flex; align-items:center; gap:0; }
+    .loading-dots { display:inline-flex; }
+    .loading-dots span { opacity:0; animation:dotFade 1.4s ease-in-out infinite; }
+    .loading-dots span:nth-child(1) { animation-delay:0s; }
+    .loading-dots span:nth-child(2) { animation-delay:0.2s; }
+    .loading-dots span:nth-child(3) { animation-delay:0.4s; }
+    @keyframes dotFade { 0%,80%,100%{opacity:0} 40%{opacity:1} }
     .stem-channel-enter { opacity:0; transform:translateY(8px); transition:opacity .4s ease, transform .4s ease; }
     .stem-channel-enter.visible { opacity:1; transform:translateY(0); }
     .stem-dot { width:6px; height:6px; background:#4ade80; display:inline-block; margin-left:6px; animation:stemDotPulse 1.5s ease-in-out infinite; }
@@ -599,6 +606,7 @@
             <button class="full-mix-btn" id="full-mix-btn" onclick="resetFullMix()" title="Reset to full mix"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 4v6h6"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg><span>Full Mix</span></button>
           </div>
           <div class="mixer-channels" id="mixer-channels"></div>
+          <div class="mix-status-bar" id="mix-status-bar"></div>
         </div>
       </div>
       <div class="results-panel" id="panel-key">
@@ -830,10 +838,7 @@ function _addStemChannel(stemName, stemData, jobId) {
   channel.className = 'channel stem-channel-enter';
   channel.id = `ch-${stemName}`;
   channel.innerHTML = `<div class="channel-name">${esc(label)}</div><div class="channel-volume"><input type="range" class="vol-slider" min="0" max="100" value="${initVol}" oninput="setVolume('${stemName}',this.value)" id="vol-${stemName}"/><span class="vol-label" id="vol-label-${stemName}">${initVol}</span></div><div class="ch-btns"><button class="ch-btn" id="mute-${stemName}" onclick="toggleMute('${stemName}')">M</button><button class="ch-btn" id="solo-${stemName}" onclick="toggleSolo('${stemName}')">S</button><button class="ch-btn stem-dl-btn" onclick="_downloadStem('${stemName}')" title="Download stem"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button></div>`;
-  // Insert before the loading status element so channels appear above it, not after
-  const statusEl = document.getElementById('mix-loading-status');
-  if (statusEl) mixerEl.insertBefore(channel, statusEl);
-  else mixerEl.appendChild(channel);
+  mixerEl.appendChild(channel);
   requestAnimationFrame(() => { channel.classList.add('visible'); });
   stemVolumes[stemName] = initVol / 100; stemMuted[stemName] = false; stemSoloed[stemName] = false;
   _loadSingleStemAudio(stemName, jobId);
@@ -1766,14 +1771,13 @@ function pollStatus(){
       if (d.tags && d.tags.length) { jobData = jobData || {}; jobData.tags = d.tags; }
 
       // Progressive stem loading — transport stays disabled until status=complete
+      let _stemsJustLoaded = false;
       if (d.stems && (d.status === 'complete' || d.status === 'partial' || d.status === 'processing')) {
         const newStems = Object.keys(d.stems).filter(k => !_loadedStems[k]);
         if (newStems.length > 0) {
+          _stemsJustLoaded = true;
           if (Object.keys(_loadedStems).length === 0) {
             _removeSkeletonChannels();
-            // Clear time-display label once channels start appearing — the mixer itself signals progress
-            const timeEl = document.getElementById('time-display');
-            if (timeEl && !timeEl.textContent.includes(':')) timeEl.textContent = '';
           }
           for (const stemName of newStems) { _addStemChannel(stemName, d.stems[stemName], currentJobId); _loadedStems[stemName] = true; }
           const count = Object.keys(_loadedStems).length;
@@ -1782,9 +1786,9 @@ function pollStatus(){
         }
       }
 
-      // Update loading status
+      // Update loading status — skip mixer status update if stems just loaded (avoid clobbering count)
       if (d.progress) {
-        _updateMixLoadingStatus(d.progress);
+        if (!_stemsJustLoaded) _updateMixLoadingStatus(d.progress);
         _topBar.onProgress(d.progress);
         const detected = _detectStage(d.progress);
         if (detected) setLoadingStage(detected);
@@ -1837,7 +1841,14 @@ function pollStatus(){
         _unlockTabs();
         _topBar.complete();
         const statusEl = document.getElementById('mix-loading-status');
-        if (statusEl) { statusEl.style.opacity = '0'; setTimeout(() => statusEl.remove(), 300); }
+        if (statusEl) {
+          statusEl.style.opacity = '0';
+          setTimeout(() => {
+            statusEl.remove();
+            const statusBar = document.getElementById('mix-status-bar');
+            if (statusBar) statusBar.innerHTML = '';
+          }, 300);
+        }
         _buildPlayerWaveform();
         updateTimeDisplay();
         if (selectedTrack && selectedTrack.id) _addShareButton();
@@ -1966,8 +1977,10 @@ function _showMixLoading() {
   for (let i = 0; i < 5; i++) {
     html += '<div class="channel skeleton-channel"><div class="skeleton-bar skeleton-name"></div><div class="channel-volume"><div class="skeleton-bar skeleton-slider"></div></div><div class="skeleton-bar skeleton-btn"></div><div class="skeleton-bar skeleton-btn"></div></div>';
   }
-  html += '<div class="mix-loading-status" id="mix-loading-status">Preparing analysis...</div>';
   mixerEl.innerHTML = html;
+  // Status lives outside the mixer so it never appears sandwiched between stem rows
+  const statusBar = document.getElementById('mix-status-bar');
+  if (statusBar) statusBar.innerHTML = '<div class="mix-loading-status" id="mix-loading-status">Preparing analysis<span class="loading-dots"><span>.</span><span>.</span><span>.</span></span></div>';
   document.getElementById("lyrics-content").innerHTML = '';
   document.getElementById("smart-recs-content").innerHTML = '<div class="smart-recs-empty">Theory-based recommendations will appear here once analysis completes.</div>';
   const keyCtxEl = document.getElementById("key-context");
@@ -2027,9 +2040,10 @@ function _buildSkeletonWaveform() {
 function _cleanProgressMsg(msg) {
   if (!msg) return msg;
   return msg
-    .replace(/\s*\(\d+\.?\d*\s*s\)/gi, '')    // strip (3s), (3.5s)
-    .replace(/\s*\(\d+m\s*\d*s?\)/gi, '')      // strip (1m), (1m23s)
-    .replace(/^Running\s+/i, '')               // "Running Demucs..." → "Demucs..."
+    .replace(/\s*\(\d+\.?\d*\s*s\)/gi, '')              // strip (3s), (3.5s)
+    .replace(/\s*\(\d+m\s*\d*s?\)/gi, '')               // strip (1m), (1m23s)
+    .replace(/^Running\s+/i, '')                         // "Running Demucs..." → "Demucs..."
+    .replace(/Stems ready\s*[—–\-]\s*analyzing/i, 'Analyzing structure') // contradictory copy
     .replace(/\s{2,}/g, ' ')
     .trim();
 }
@@ -2037,8 +2051,18 @@ function _cleanProgressMsg(msg) {
 function _updateMixLoadingStatus(text) {
   const el = document.getElementById('mix-loading-status');
   if (!el) return;
+  const clean = _cleanProgressMsg(text) || '';
   el.style.opacity = '0';
-  setTimeout(() => { el.textContent = _cleanProgressMsg(text); el.style.opacity = '1'; }, 200);
+  setTimeout(() => {
+    // Render trailing "..." as animated dots for a polished loading feel
+    if (clean.endsWith('...')) {
+      const base = clean.slice(0, -3);
+      el.innerHTML = `${base}<span class="loading-dots"><span>.</span><span>.</span><span>.</span></span>`;
+    } else {
+      el.textContent = clean;
+    }
+    el.style.opacity = '1';
+  }, 200);
 }
 
 function _enableTransport() {

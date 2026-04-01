@@ -1,27 +1,55 @@
 {% extends "base.html" %}
-{% block title %}Demo{% endblock %}
+{% block title %}riffd — Demo{% endblock %}
 
 {% block extra_css %}
-    /* ═══ Demo song picker ═══ */
-    .demo-header { padding-top:48px; margin-bottom:32px; }
+    /* ═══ Demo song selector (dropdown) ═══ */
+    .demo-header { padding-top:48px; margin-bottom:24px; }
     .demo-title { font-size:2rem; font-weight:500; letter-spacing:-0.03em; color:#F5F5F5; margin-bottom:6px; }
     .demo-sub { color:rgba(245,245,245,0.45); font-size:0.9375rem; letter-spacing:-0.01em; }
     .demo-badge { display:inline-block; font-size:0.625rem; font-weight:500; letter-spacing:0.06em; text-transform:uppercase; color:rgba(212,105,31,0.7); border:1px solid rgba(212,105,31,0.25); padding:3px 8px; margin-left:10px; vertical-align:middle; }
 
-    .demo-picker { display:flex; gap:14px; margin-bottom:32px; flex-wrap:wrap; }
-    .demo-card {
+    .demo-selector { position:relative; margin-bottom:28px; max-width:480px; }
+    .demo-sel-trigger {
       display:flex; align-items:center; gap:14px; padding:14px 18px;
-      border:1px solid rgba(255,255,255,0.08); background:rgba(255,255,255,0.02);
-      cursor:pointer; transition:all .2s; flex:1; min-width:240px; max-width:380px;
+      border:1px solid rgba(255,255,255,0.1); background:rgba(255,255,255,0.02);
+      cursor:pointer; transition:border-color .2s, background .2s; width:100%; text-align:left;
     }
-    .demo-card:hover { border-color:rgba(255,255,255,0.18); background:rgba(255,255,255,0.04); }
-    .demo-card.active { border-color:rgba(212,105,31,0.5); background:rgba(212,105,31,0.04); }
-    .demo-card-art { width:72px; height:72px; object-fit:cover; flex-shrink:0; }
-    .demo-card-info { flex:1; min-width:0; }
-    .demo-card-name { font-size:0.9375rem; font-weight:500; color:#F5F5F5; letter-spacing:-0.01em; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-    .demo-card-artist { font-size:0.8125rem; color:rgba(245,245,245,0.5); margin-top:3px; }
-    .demo-card-chips { display:flex; gap:6px; margin-top:8px; flex-wrap:wrap; }
-    .demo-chip { font-size:0.6875rem; padding:2px 8px; border:1px solid rgba(255,255,255,0.08); color:rgba(245,245,245,0.4); letter-spacing:0.02em; }
+    .demo-sel-trigger:hover { border-color:rgba(255,255,255,0.18); background:rgba(255,255,255,0.035); }
+    .demo-sel-trigger.open { border-color:rgba(212,105,31,0.4); background:rgba(212,105,31,0.03); }
+    .demo-sel-art { width:44px; height:44px; object-fit:cover; flex-shrink:0; }
+    .demo-sel-info { flex:1; min-width:0; }
+    .demo-sel-name { font-size:0.9375rem; font-weight:500; color:#F5F5F5; letter-spacing:-0.01em; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .demo-sel-artist { font-size:0.8125rem; color:rgba(245,245,245,0.45); margin-top:2px; }
+    .demo-sel-chips { display:flex; gap:5px; margin-top:5px; flex-wrap:wrap; }
+    .demo-sel-chip { font-size:0.6875rem; padding:2px 8px; border:1px solid rgba(255,255,255,0.08); color:rgba(245,245,245,0.38); letter-spacing:0.02em; }
+    .demo-sel-chevron { flex-shrink:0; transition:transform .25s cubic-bezier(0.4,0,0.2,1); color:rgba(245,245,245,0.35); }
+    .demo-sel-trigger.open .demo-sel-chevron { transform:rotate(180deg); }
+
+    .demo-sel-panel {
+      position:absolute; top:calc(100% + 3px); left:0; right:0; z-index:30;
+      background:#141414; border:1px solid rgba(255,255,255,0.09);
+      box-shadow:0 16px 48px rgba(0,0,0,.7), 0 4px 12px rgba(0,0,0,.4);
+      overflow:hidden;
+      max-height:0; opacity:0; pointer-events:none;
+      transition:max-height .32s cubic-bezier(0.4,0,0.2,1), opacity .2s ease;
+    }
+    .demo-sel-panel.open { max-height:400px; opacity:1; pointer-events:auto; }
+
+    .demo-sel-item {
+      display:flex; align-items:center; gap:14px; padding:12px 18px;
+      cursor:pointer; transition:background .12s;
+      border-bottom:1px solid rgba(255,255,255,0.04); position:relative;
+    }
+    .demo-sel-item:last-child { border-bottom:none; }
+    .demo-sel-item:hover { background:rgba(255,255,255,0.04); }
+    .demo-sel-item.active { background:rgba(212,105,31,0.05); }
+    .demo-sel-item.active::before { content:''; position:absolute; left:0; top:0; bottom:0; width:2px; background:#D4691F; opacity:0.7; }
+    .demo-sel-item-art { width:40px; height:40px; object-fit:cover; flex-shrink:0; }
+    .demo-sel-item-info { flex:1; min-width:0; }
+    .demo-sel-item-name { font-size:0.875rem; font-weight:500; color:#F5F5F5; letter-spacing:-0.01em; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .demo-sel-item-artist { font-size:0.75rem; color:rgba(245,245,245,0.4); margin-top:2px; }
+    .demo-sel-item-chips { display:flex; gap:5px; margin-top:4px; }
+    .demo-sel-item-chip { font-size:0.625rem; padding:2px 6px; border:1px solid rgba(255,255,255,0.07); color:rgba(245,245,245,0.35); letter-spacing:0.02em; }
 
     /* Demo loading overlay */
     .demo-loading { display:none; text-align:center; padding:48px 0; color:rgba(245,245,245,0.4); font-size:0.875rem; }
@@ -171,9 +199,7 @@
     @media(max-width:768px) {
       .demo-header { padding-top:32px; }
       .demo-title { font-size:1.5rem; }
-      .demo-picker { gap:10px; }
-      .demo-card { min-width:200px; padding:12px 14px; }
-      .demo-card-art { width:60px; height:60px; }
+      .demo-selector { max-width:100%; }
       .results-nav { padding:0 16px; }
       .results-panel { padding:16px; }
       .mixer-transport { gap:10px; flex-wrap:wrap; }
@@ -195,8 +221,6 @@
       .smart-recs-subtitle { margin-left:0; }
     }
     @media(max-width:480px) {
-      .demo-picker { flex-direction:column; }
-      .demo-card { max-width:none; }
       .results-nav { gap:16px; overflow-x:auto; -webkit-overflow-scrolling:touch; scrollbar-width:none; }
       .results-nav::-webkit-scrollbar { display:none; }
       .results-nav-btn { padding:10px 0; font-size:0.75rem; white-space:nowrap; flex-shrink:0; }
@@ -231,8 +255,6 @@
       #decompose-key-detail { min-width:0 !important; width:100%; }
     }
     @media(max-width:360px) {
-      .demo-card-art { width:56px; height:56px; }
-      .demo-card-name { font-size:0.8125rem; }
       .results-nav { gap:8px; padding:0 12px; }
       .results-panel { padding:12px; }
       .transport-time { font-size:0.6875rem; min-width:56px; }
@@ -257,21 +279,35 @@
     <div class="demo-sub">Three classic songs, fully separated and ready to explore. No waiting.</div>
   </div>
 
-  <div class="demo-picker">
-    {% for t in demo_tracks %}
-    <div class="demo-card{% if loop.first %} active{% endif %}" data-demo-id="{{ t.id }}" onclick="loadDemoTrack('{{ t.id }}')">
-      <img class="demo-card-art" src="{{ t.cover }}" alt="{{ t.name }}">
-      <div class="demo-card-info">
-        <div class="demo-card-name">{{ t.name }}</div>
-        <div class="demo-card-artist">{{ t.artist }}</div>
-        <div class="demo-card-chips">
-          {% if t.key %}<span class="demo-chip">{{ t.key }}</span>{% endif %}
-          {% if t.bpm %}<span class="demo-chip">{{ t.bpm }} BPM</span>{% endif %}
-          <span class="demo-chip">{{ t.year }}</span>
+  <!-- Song selector dropdown -->
+  <div class="demo-selector" id="demo-selector">
+    <button class="demo-sel-trigger" id="demo-sel-trigger" onclick="_toggleDemoSelector(event)">
+      <img class="demo-sel-art" id="demo-sel-art" src="{{ demo_tracks[0].cover }}" alt="{{ demo_tracks[0].name }}">
+      <div class="demo-sel-info">
+        <div class="demo-sel-name" id="demo-sel-name">{{ demo_tracks[0].name }}</div>
+        <div class="demo-sel-artist" id="demo-sel-artist">{{ demo_tracks[0].artist }}</div>
+        <div class="demo-sel-chips" id="demo-sel-chips">
+          {% if demo_tracks[0].key %}<span class="demo-sel-chip">{{ demo_tracks[0].key }}</span>{% endif %}
+          <span class="demo-sel-chip">{{ demo_tracks[0].year }}</span>
         </div>
       </div>
+      <svg class="demo-sel-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+    </button>
+    <div class="demo-sel-panel" id="demo-sel-panel">
+      {% for t in demo_tracks %}
+      <div class="demo-sel-item{% if loop.first %} active{% endif %}" data-demo-id="{{ t.id }}" onclick="_selectDemoSong('{{ t.id }}', this)">
+        <img class="demo-sel-item-art" src="{{ t.cover }}" alt="{{ t.name }}">
+        <div class="demo-sel-item-info">
+          <div class="demo-sel-item-name">{{ t.name }}</div>
+          <div class="demo-sel-item-artist">{{ t.artist }}</div>
+          <div class="demo-sel-item-chips">
+            {% if t.key %}<span class="demo-sel-item-chip">{{ t.key }}</span>{% endif %}
+            <span class="demo-sel-item-chip">{{ t.year }}</span>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
     </div>
-    {% endfor %}
   </div>
 
   <!-- Loading state -->
@@ -362,6 +398,7 @@ const demoMeta = {
     name: "{{ t.name }}",
     artist: "{{ t.artist }}",
     year: "{{ t.year }}",
+    key: "{{ t.key }}",
     image_url: "{{ t.cover }}"
   }{% if not loop.last %},{% endif %}
   {% endfor %}
@@ -429,12 +466,56 @@ function buildBanner(t) {
   const el = document.getElementById("results-banner");
   if (!el) return;
   const img = t.image_url
-    ? `<img src="${esc(t.image_url)}" alt="" crossorigin="anonymous" onload="_applyBannerGlow(this,'results-banner')">`
+    ? `<img src="${esc(t.image_url)}" alt="" onload="_applyBannerGlow(this,'results-banner')">`
     : '';
   const subParts = [t.artist || ""];
   if (t.year) subParts.push(esc(String(t.year)));
   el.innerHTML = `${img}<div><div class="track-banner-title">${esc(t.name || "")}</div><div class="track-banner-sub">${subParts.join(" \u00b7 ")}</div></div>`;
 }
+
+// ─── Demo selector dropdown ─────────────────────────────────────────────────
+function _toggleDemoSelector(e) {
+  e.stopPropagation();
+  const trigger = document.getElementById('demo-sel-trigger');
+  const panel = document.getElementById('demo-sel-panel');
+  const isOpen = trigger.classList.contains('open');
+  if (isOpen) { _closeDemoSelector(); }
+  else { trigger.classList.add('open'); panel.classList.add('open'); }
+}
+
+function _closeDemoSelector() {
+  const trigger = document.getElementById('demo-sel-trigger');
+  const panel = document.getElementById('demo-sel-panel');
+  if (trigger) trigger.classList.remove('open');
+  if (panel) panel.classList.remove('open');
+}
+
+function _selectDemoSong(demoId, itemEl) {
+  document.querySelectorAll('.demo-sel-item').forEach(i => i.classList.remove('active'));
+  itemEl.classList.add('active');
+  const meta = demoMeta[demoId];
+  if (meta) {
+    const artEl = document.getElementById('demo-sel-art');
+    if (artEl) { artEl.src = meta.image_url; artEl.alt = meta.name; }
+    const nameEl = document.getElementById('demo-sel-name');
+    if (nameEl) nameEl.textContent = meta.name;
+    const artistEl = document.getElementById('demo-sel-artist');
+    if (artistEl) artistEl.textContent = meta.artist;
+    const chipsEl = document.getElementById('demo-sel-chips');
+    if (chipsEl) {
+      chipsEl.innerHTML = (meta.key ? `<span class="demo-sel-chip">${esc(meta.key)}</span>` : '') +
+        `<span class="demo-sel-chip">${esc(meta.year)}</span>`;
+    }
+  }
+  _closeDemoSelector();
+  loadDemoTrack(demoId);
+}
+
+// Close dropdown when clicking outside
+document.addEventListener('click', function(e) {
+  const sel = document.getElementById('demo-selector');
+  if (sel && !sel.contains(e.target)) _closeDemoSelector();
+}, true);
 
 // ─── Panel switching ────────────────────────────────────────────────────────
 function switchPanel(name, btn) {

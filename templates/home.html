@@ -32,43 +32,168 @@
   }
   .cta-secondary:hover { border-color:rgba(255,255,255,0.30); }
 
-  /* Product preview — realistic decompose output */
-  .preview-card { border:1px solid rgba(255,255,255,0.08); }
-  .preview-header {
-    display:flex; align-items:center; gap:12px;
-    padding:16px 20px; border-bottom:1px solid rgba(255,255,255,0.08);
+  /* Product preview — realistic mixer interface */
+  .mixer-preview {
+    border:1px solid rgba(255,255,255,0.08); overflow:hidden;
+    position:relative; max-height:560px;
   }
-  .preview-art {
-    width:44px; height:44px; object-fit:cover; flex-shrink:0;
+  .mixer-preview::after {
+    content:''; position:absolute; bottom:0; left:0; right:0; height:80px;
+    background:linear-gradient(to bottom, transparent, #0D0D0D);
+    pointer-events:none; z-index:2;
   }
-  .preview-song-name { font-size:0.9375rem; font-weight:500; color:#F5F5F5; letter-spacing:-0.01em; }
-  .preview-song-artist { font-size:0.8125rem; color:rgba(245,245,245,0.5); margin-top:2px; letter-spacing:-0.01em; }
+  /* Song header */
+  .mp-song-header {
+    display:flex; flex-direction:column; align-items:center;
+    padding:20px 20px 14px; border-bottom:1px solid rgba(255,255,255,0.08);
+  }
+  .mp-album-art { width:80px; height:80px; object-fit:cover; margin-bottom:10px; }
+  .mp-song-name { font-size:1rem; font-weight:500; color:#F5F5F5; letter-spacing:-0.02em; margin-bottom:3px; }
+  .mp-song-meta { font-size:0.8125rem; color:rgba(245,245,245,0.45); letter-spacing:-0.01em; }
+  /* Info bar */
+  .mp-info-bar {
+    display:flex; align-items:center; justify-content:space-between;
+    padding:8px 14px; border-bottom:1px solid rgba(255,255,255,0.08);
+  }
+  .mp-info-left, .mp-info-right { display:flex; align-items:center; gap:5px; }
+  .mp-info-label {
+    color:rgba(245,245,245,0.3); font-weight:400; letter-spacing:0.05em;
+    text-transform:uppercase; font-size:0.5625rem;
+  }
+  .mp-info-val { color:#F5F5F5; font-weight:500; letter-spacing:-0.01em; font-size:0.75rem; }
+  .mp-loop-time {
+    background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.1);
+    padding:2px 7px; color:#F5F5F5; font-size:0.625rem; font-family:monospace;
+  }
+  .mp-info-dim { color:rgba(245,245,245,0.2); font-size:0.6875rem; }
+  .mp-key-ctrl { color:rgba(245,245,245,0.4); padding:0 3px; font-size:0.875rem; cursor:default; }
+  .mp-key-val { color:#F5F5F5; font-weight:500; font-size:0.6875rem; min-width:14px; text-align:center; }
+  /* Tabs */
+  .mp-tabs {
+    display:flex; gap:18px; padding:0 14px;
+    border-bottom:1px solid rgba(255,255,255,0.08);
+  }
+  .mp-tab {
+    padding:9px 0; font-size:0.75rem; color:rgba(245,245,245,0.4);
+    letter-spacing:-0.01em; position:relative; cursor:default;
+  }
+  .mp-tab-active { color:#F5F5F5; }
+  .mp-tab-active::after {
+    content:''; position:absolute; bottom:-1px; left:0; right:0;
+    height:1.5px; background:#D4691F;
+  }
+  /* Transport */
+  .mp-transport {
+    display:flex; align-items:center; gap:7px;
+    padding:10px 14px; border-bottom:1px solid rgba(255,255,255,0.08);
+  }
+  .mp-play-btn, .mp-stop-btn {
+    width:26px; height:26px; border:1px solid rgba(255,255,255,0.12);
+    display:flex; align-items:center; justify-content:center;
+    font-size:0.5rem; color:rgba(245,245,245,0.7); flex-shrink:0; cursor:default;
+  }
+  .mp-waveform {
+    display:flex; align-items:center; gap:1.5px; flex:1; height:28px; overflow:hidden;
+  }
+  .mp-wv-bar { width:2px; flex-shrink:0; background:rgba(245,245,245,0.18); }
+  .mp-wv-bar.accent { background:rgba(212,105,31,0.75); }
+  .mp-time {
+    font-size:0.625rem; color:rgba(245,245,245,0.4); font-family:monospace;
+    flex-shrink:0; letter-spacing:0.02em;
+  }
+  .mp-pill-btn {
+    padding:4px 9px; border:1px solid rgba(255,255,255,0.1);
+    font-size:0.5625rem; color:rgba(245,245,245,0.5); white-space:nowrap;
+    flex-shrink:0; cursor:default; display:flex; align-items:center; gap:3px;
+    letter-spacing:-0.01em;
+  }
+  /* Stems */
+  .mp-stems { padding:4px 0 60px; }
+  .mp-stem-group-label {
+    font-size:0.5rem; font-weight:500; letter-spacing:0.1em; text-transform:uppercase;
+    color:rgba(245,245,245,0.22); padding:8px 14px 3px;
+  }
+  .mp-stem-row {
+    display:flex; align-items:center; gap:10px; padding:6px 14px;
+  }
+  .mp-stem-name {
+    font-size:0.75rem; color:rgba(245,245,245,0.65); letter-spacing:-0.01em;
+    min-width:106px; flex-shrink:0;
+  }
+  .mp-slider-wrap { flex:1; padding:6px 0; cursor:default; }
+  .mp-slider-track { width:100%; height:2px; background:rgba(255,255,255,0.1); position:relative; }
+  .mp-slider-fill { height:100%; background:rgba(255,255,255,0.22); position:absolute; top:0; left:0; }
+  .mp-slider-thumb {
+    width:11px; height:11px; border-radius:50%; background:#D4691F;
+    position:absolute; top:50%; transform:translate(-50%,-50%);
+  }
+  .mp-stem-btns { display:flex; gap:3px; flex-shrink:0; }
+  .mp-stem-btn {
+    width:19px; height:19px; border:1px solid rgba(255,255,255,0.09);
+    display:flex; align-items:center; justify-content:center;
+    font-size:0.5rem; color:rgba(245,245,245,0.35); cursor:default; letter-spacing:0;
+  }
 
-  .preview-meta {
-    display:flex; gap:8px; padding:12px 20px; border-bottom:1px solid rgba(255,255,255,0.08);
+  /* AI Ask mockup */
+  .ai-mockup { width:100%; display:flex; flex-direction:column; }
+  .ai-search-bar {
+    display:flex; align-items:center; gap:14px;
+    border:1px solid rgba(255,255,255,0.14); padding:14px 18px;
+    margin-bottom:12px; background:rgba(255,255,255,0.02);
   }
-  .preview-badge {
-    padding:4px 10px; border:1px solid rgba(255,255,255,0.08); font-size:0.6875rem;
+  .ai-search-icon { flex-shrink:0; width:16px; height:16px; opacity:0.35; }
+  .ai-search-query {
+    flex:1; font-size:0.9375rem; color:rgba(245,245,245,0.85);
+    letter-spacing:-0.01em; text-align:left; line-height:1.4;
   }
-  .preview-badge-label { color:rgba(245,245,245,0.4); font-weight:400; letter-spacing:0.03em; margin-right:6px; }
-  .preview-badge-val { color:#F5F5F5; font-weight:500; letter-spacing:-0.01em; font-size:0.8125rem; }
-
-  .preview-body { padding:24px 20px; }
-  .preview-waveform { display:flex; align-items:flex-end; gap:2px; height:64px; margin-bottom:20px; }
-  .preview-wv-bar { width:2px; background:rgba(245,245,245,0.25); flex-shrink:0; }
-  .preview-wv-bar.accent { background:rgba(212,105,31,0.6); }
-  .preview-chords { display:flex; gap:8px; }
-  .preview-chord-box {
-    padding:6px 16px; border:1px solid rgba(255,255,255,0.08);
-    font-size:0.875rem; font-weight:500; color:rgba(245,245,245,0.7); letter-spacing:-0.01em;
+  .ai-ask-btn {
+    flex-shrink:0; padding:8px 16px; border:1px solid rgba(255,255,255,0.14);
+    font-size:0.8125rem; color:rgba(245,245,245,0.6); letter-spacing:-0.01em;
+    display:flex; align-items:center; gap:6px; white-space:nowrap;
+  }
+  .ai-ask-dot { width:6px; height:6px; border-radius:50%; background:#D4691F; }
+  .ai-answer-card {
+    flex:1; border:1px solid rgba(255,255,255,0.08); padding:28px 24px; text-align:left;
+    background:rgba(255,255,255,0.015);
+  }
+  .ai-answer-label {
+    font-size:0.625rem; font-weight:600; letter-spacing:0.12em; text-transform:uppercase;
+    color:#D4691F; margin-bottom:14px;
+  }
+  .ai-answer-text {
+    font-size:1rem; color:rgba(245,245,245,0.75); line-height:1.75;
+    letter-spacing:-0.01em;
+  }
+  @media(max-width:768px) {
+    .ai-search-bar { padding:12px 14px; gap:10px; }
+    .ai-search-query { font-size:0.875rem; }
+    .ai-ask-btn { padding:7px 12px; font-size:0.75rem; }
+    .ai-answer-card { padding:20px 18px; }
+    .ai-answer-text { font-size:0.9375rem; }
+  }
+  @media(max-width:480px) {
+    .ai-search-bar { flex-wrap:wrap; }
+    .ai-search-query { width:100%; order:2; }
+    .ai-search-icon { order:1; }
+    .ai-ask-btn { order:3; margin-left:auto; margin-top:8px; }
+    .ai-answer-text { font-size:0.875rem; }
   }
 
   /* Studio section */
   .studio-section {
-    display:grid; grid-template-columns:1fr 1fr; gap:64px; align-items:center;
     padding:160px 0; border-top:1px solid rgba(255,255,255,0.08);
   }
-  .studio-preview { border:1px solid rgba(255,255,255,0.08); padding:32px; }
+  .studio-section-header {
+    text-align:center; margin-bottom:56px;
+  }
+  .studio-section-header .hero-headline { margin-bottom:16px; }
+  .studio-section-header .hero-sub { margin:0 auto; }
+  .studio-section-grid {
+    display:grid; grid-template-columns:1fr 1fr; gap:48px; align-items:stretch;
+    margin-bottom:48px;
+  }
+  .studio-section-cta { display:flex; justify-content:center; }
+  .studio-preview { border:1px solid rgba(255,255,255,0.08); padding:32px; box-sizing:border-box; }
   .studio-preview-label {
     font-size:0.6875rem; font-weight:500; letter-spacing:0.08em; text-transform:uppercase;
     color:rgba(245,245,245,0.3); margin-bottom:24px;
@@ -152,41 +277,40 @@
 
   /* Footer */
   .home-footer {
-    border-top:1px solid rgba(255,255,255,0.08); padding:48px 0;
+    border-top:1px solid rgba(255,255,255,0.08); padding:40px 0;
     display:flex; justify-content:space-between; align-items:center;
   }
-  .home-footer-links { display:flex; gap:32px; }
+  .home-footer-left { display:flex; flex-direction:column; gap:5px; }
+  .home-footer-note { color:rgba(245,245,245,0.35); font-size:0.875rem; font-weight:400; letter-spacing:-0.01em; }
+  .home-footer-byline {
+    font-size:0.75rem; color:rgba(245,245,245,0.2); letter-spacing:-0.01em;
+  }
+  .home-footer-byline a { color:rgba(245,245,245,0.28); text-decoration:none; transition:color .2s; }
+  .home-footer-byline a:hover { color:rgba(245,245,245,0.6); }
+  .home-footer-links { display:flex; gap:24px; align-items:center; }
   .home-footer-links a { color:rgba(245,245,245,0.35); text-decoration:none; font-size:0.875rem; font-weight:400; letter-spacing:-0.01em; transition:color .2s; }
   .home-footer-links a:hover { color:#F5F5F5; }
-  .home-footer-note { color:rgba(245,245,245,0.35); font-size:0.875rem; font-weight:400; letter-spacing:-0.01em; }
-  .home-footer-builder {
-    display:flex; align-items:center; gap:16px;
-    font-size:0.8125rem; color:rgba(245,245,245,0.35); letter-spacing:-0.01em;
-  }
-  .home-footer-builder a {
-    color:rgba(245,245,245,0.4); text-decoration:none; transition:color .2s;
-  }
-  .home-footer-builder a:hover { color:#F5F5F5; }
   @media(max-width:640px) {
-    .home-footer { flex-direction:column; gap:20px; text-align:center; }
-    .home-footer-builder { justify-content:center; }
+    .home-footer { flex-direction:column; align-items:flex-start; gap:20px; }
   }
 
   @media(max-width:960px) {
     .home-hero { grid-template-columns:1fr; gap:48px; padding:120px 0 100px; }
-    .studio-section { grid-template-columns:1fr; gap:48px; }
-    .preview-card { max-width:520px; }
+    .studio-section { padding:100px 0; }
+    .studio-section-grid { grid-template-columns:1fr; gap:32px; }
+    .studio-section-header { margin-bottom:40px; }
+    .mixer-preview { max-width:520px; }
     .studio-preview { max-width:520px; }
     .features-grid { grid-template-columns:repeat(2,1fr); gap:40px; }
   }
   @media(max-width:768px) {
+    .studio-section { padding:80px 0; }
     .home-hero { padding:80px 0 64px; }
     .hero-headline { font-size:2.5rem; }
     .hero-sub { font-size:1rem; }
     .hero-ctas { flex-direction:column; }
     .cta-primary, .cta-secondary { width:100%; max-width:280px; justify-content:center; text-align:center; }
     .bottom-headline { font-size:2rem; }
-    .home-footer { flex-direction:column; gap:24px; text-align:center; }
   }
   @media(max-width:480px) {
     .hero-headline { font-size:2rem; }
@@ -199,7 +323,7 @@
     .home-hero { padding:64px 0 48px; gap:32px; }
     .hero-headline { font-size:1.75rem; }
     .hero-sub { font-size:0.875rem; }
-    .preview-card { overflow:hidden; }
+    .mixer-preview { overflow:hidden; }
     .preview-art { width:36px; height:36px; }
     .preview-header { padding:12px 16px; gap:10px; }
     .preview-song-name { font-size:0.8125rem; }
@@ -231,35 +355,100 @@
       </div>
     </div>
 
-    <!-- Realistic product preview: Take It Easy — Eagles -->
-    <div class="preview-card">
-      <div class="preview-header">
-        <img class="preview-art" src="https://is1-ssl.mzstatic.com/image/thumb/Music125/v4/8f/e7/f4/8fe7f417-d464-8879-b00e-3d4965a9cfd1/075596062329.jpg/600x600bb.jpg" alt="Take It Easy — Eagles" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" /><div style="display:none;width:44px;height:44px;background:#141414;border:1px solid rgba(255,255,255,0.06);align-items:center;justify-content:center;flex-shrink:0;color:rgba(245,245,245,0.2);font-size:0.75rem;font-weight:500">TE</div>
-        <div>
-          <div class="preview-song-name">Take It Easy</div>
-          <div class="preview-song-artist">Eagles</div>
+    <!-- Realistic product preview: mixer interface — Take It Easy, Eagles -->
+    <div class="mixer-preview">
+      <!-- Song header -->
+      <div class="mp-song-header">
+        <img class="mp-album-art" src="https://is1-ssl.mzstatic.com/image/thumb/Music125/v4/8f/e7/f4/8fe7f417-d464-8879-b00e-3d4965a9cfd1/075596062329.jpg/600x600bb.jpg" alt="Take It Easy" onerror="this.style.display='none'" />
+        <div class="mp-song-name">Take It Easy</div>
+        <div class="mp-song-meta">Eagles · 1972</div>
+      </div>
+      <!-- Info bar -->
+      <div class="mp-info-bar">
+        <div class="mp-info-left">
+          <span class="mp-info-label">KEY</span><span class="mp-info-val">G Major</span>
+          <span style="color:rgba(245,245,245,0.1);margin:0 1px">·</span>
+          <span class="mp-info-label">YEAR</span><span class="mp-info-val">1972</span>
+        </div>
+        <div class="mp-info-right">
+          <span class="mp-info-label">LOOP</span>
+          <span class="mp-loop-time">0:00</span>
+          <span class="mp-info-dim">to</span>
+          <span class="mp-loop-time">end</span>
+          <span style="margin-left:5px" class="mp-info-label">KEY</span>
+          <span class="mp-key-ctrl">−</span>
+          <span class="mp-key-val">0</span>
+          <span class="mp-key-ctrl">+</span>
         </div>
       </div>
-      <div class="preview-meta">
-        <div class="preview-badge"><span class="preview-badge-label">BPM</span><span class="preview-badge-val">138</span></div>
-        <div class="preview-badge"><span class="preview-badge-label">KEY</span><span class="preview-badge-val">G Major</span></div>
-        <div class="preview-badge"><span class="preview-badge-label">PROGRESSION</span><span class="preview-badge-val">I – IV – V – IV</span></div>
+      <!-- Tabs -->
+      <div class="mp-tabs">
+        <div class="mp-tab mp-tab-active">Mix</div>
+        <div class="mp-tab">Key</div>
+        <div class="mp-tab">Lyrics</div>
+        <div class="mp-tab">Recommended</div>
       </div>
-      <div class="preview-body">
-        <div class="preview-waveform" id="preview-waveform"></div>
-        <div class="preview-chords">
-          <div class="preview-chord-box">G</div>
-          <div class="preview-chord-box">C</div>
-          <div class="preview-chord-box">D</div>
-          <div class="preview-chord-box">C</div>
-          <div class="preview-chord-box">Em</div>
+      <!-- Transport -->
+      <div class="mp-transport">
+        <div class="mp-play-btn">▶</div>
+        <div class="mp-stop-btn">■</div>
+        <div class="mp-waveform" id="mixer-waveform"></div>
+        <div class="mp-time">0:00 / 3:31</div>
+        <div class="mp-pill-btn">🎤 Karaoke</div>
+        <div class="mp-pill-btn">↺ Full Mix</div>
+      </div>
+      <!-- Stems -->
+      <div class="mp-stems">
+        <div class="mp-stem-group-label">VOCALS</div>
+        <div class="mp-stem-row">
+          <div class="mp-stem-name">Backing Vocals</div>
+          <div class="mp-slider-wrap"><div class="mp-slider-track"><div class="mp-slider-fill" style="width:80%"></div><div class="mp-slider-thumb" style="left:80%"></div></div></div>
+          <div class="mp-stem-btns"><div class="mp-stem-btn">M</div><div class="mp-stem-btn">S</div><div class="mp-stem-btn">↓</div></div>
+        </div>
+        <div class="mp-stem-row">
+          <div class="mp-stem-name">Lead Vocals</div>
+          <div class="mp-slider-wrap"><div class="mp-slider-track"><div class="mp-slider-fill" style="width:55%"></div><div class="mp-slider-thumb" style="left:55%"></div></div></div>
+          <div class="mp-stem-btns"><div class="mp-stem-btn">M</div><div class="mp-stem-btn">S</div><div class="mp-stem-btn">↓</div></div>
+        </div>
+        <div class="mp-stem-group-label">GUITARS</div>
+        <div class="mp-stem-row">
+          <div class="mp-stem-name">Acoustic Guitar</div>
+          <div class="mp-slider-wrap"><div class="mp-slider-track"><div class="mp-slider-fill" style="width:55%"></div><div class="mp-slider-thumb" style="left:55%"></div></div></div>
+          <div class="mp-stem-btns"><div class="mp-stem-btn">M</div><div class="mp-stem-btn">S</div><div class="mp-stem-btn">↓</div></div>
+        </div>
+        <div class="mp-stem-row">
+          <div class="mp-stem-name">Lead Guitar</div>
+          <div class="mp-slider-wrap"><div class="mp-slider-track"><div class="mp-slider-fill" style="width:55%"></div><div class="mp-slider-thumb" style="left:55%"></div></div></div>
+          <div class="mp-stem-btns"><div class="mp-stem-btn">M</div><div class="mp-stem-btn">S</div><div class="mp-stem-btn">↓</div></div>
+        </div>
+        <div class="mp-stem-row">
+          <div class="mp-stem-name">Rhythm Guitar</div>
+          <div class="mp-slider-wrap"><div class="mp-slider-track"><div class="mp-slider-fill" style="width:55%"></div><div class="mp-slider-thumb" style="left:55%"></div></div></div>
+          <div class="mp-stem-btns"><div class="mp-stem-btn">M</div><div class="mp-stem-btn">S</div><div class="mp-stem-btn">↓</div></div>
+        </div>
+        <div class="mp-stem-group-label">BASS</div>
+        <div class="mp-stem-row">
+          <div class="mp-stem-name">Bass</div>
+          <div class="mp-slider-wrap"><div class="mp-slider-track"><div class="mp-slider-fill" style="width:80%"></div><div class="mp-slider-thumb" style="left:80%"></div></div></div>
+          <div class="mp-stem-btns"><div class="mp-stem-btn">M</div><div class="mp-stem-btn">S</div><div class="mp-stem-btn">↓</div></div>
+        </div>
+        <div class="mp-stem-group-label">DRUMS</div>
+        <div class="mp-stem-row">
+          <div class="mp-stem-name">Drums</div>
+          <div class="mp-slider-wrap"><div class="mp-slider-track"><div class="mp-slider-fill" style="width:75%"></div><div class="mp-slider-thumb" style="left:75%"></div></div></div>
+          <div class="mp-stem-btns"><div class="mp-stem-btn">M</div><div class="mp-stem-btn">S</div><div class="mp-stem-btn">↓</div></div>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Studio: Theory Reference -->
+  <!-- Studio: Theory Reference + AI Ask -->
   <div class="studio-section">
+    <div class="studio-section-header">
+      <div class="hero-headline">Know every key.</div>
+      <div class="hero-sub">Pick a key. See every chord and progression — then ask anything and get a direct answer.</div>
+    </div>
+    <div class="studio-section-grid">
     <div class="studio-preview">
       <div class="studio-preview-label">Theory — G Major</div>
       <div class="studio-key-title">G major</div>
@@ -297,12 +486,22 @@
       </div>
     </div>
 
-    <div class="hero-text">
-      <div class="hero-headline">Know every key.</div>
-      <div class="hero-sub">Pick a key. See the chords, the progressions, and how it all connects.</div>
-      <div class="hero-ctas">
-        <a href="/learn" class="cta-primary">Open Theory</a>
+    <div class="ai-mockup">
+      <div class="ai-search-bar">
+        <svg class="ai-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:#F5F5F5">
+          <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+        <span class="ai-search-query">What key and progression should I use to write a Beatles-style ballad?</span>
+        <div class="ai-ask-btn"><div class="ai-ask-dot"></div> Ask AI</div>
       </div>
+      <div class="ai-answer-card">
+        <div class="ai-answer-label">AI ANSWER</div>
+        <div class="ai-answer-text">For a Beatles-style ballad, try C major, G major, or A major with progressions like I–V–vi–IV (C–G–Am–F) or I–IV–V (C–F–G). These keys feel warm and open. Use major 7th chords like Cmaj7, Fmaj7, and Gmaj7 for that dreamy, sophisticated sound the Beatles loved in songs like <em>Let It Be</em> and <em>The Long and Winding Road</em>.</div>
+      </div>
+    </div>
+    </div><!-- end studio-section-grid -->
+    <div class="studio-section-cta">
+      <a href="/learn" class="cta-primary">Open Theory</a>
     </div>
   </div>
 
@@ -350,12 +549,12 @@
 
   <!-- Footer -->
   <div class="home-footer">
-    <div class="home-footer-note">&copy; 2026 Riffd</div>
-    <div class="home-footer-builder">
-      Built by <a href="https://linkedin.com/in/dylanjglatt" target="_blank" rel="noopener">Dylan Glatt</a>
-      <span style="color:rgba(245,245,245,0.15)">·</span>
+    <div class="home-footer-left">
+      <div class="home-footer-note">&copy; 2026 Riffd</div>
+      <div class="home-footer-byline">Built by <a href="https://linkedin.com/in/dylanjglatt" target="_blank" rel="noopener">Dylan Glatt</a></div>
+    </div>
+    <div class="home-footer-links">
       <a href="https://github.com/djglatt" target="_blank" rel="noopener">GitHub</a>
-      <span style="color:rgba(245,245,245,0.15)">·</span>
       <a href="https://linkedin.com/in/dylanjglatt" target="_blank" rel="noopener">LinkedIn</a>
     </div>
   </div>
@@ -363,12 +562,12 @@
 
 <script>
 (function(){
-  var wf = document.getElementById('preview-waveform');
+  var wf = document.getElementById('mixer-waveform');
   if (!wf) return;
-  for (var i = 0; i < 100; i++) {
+  for (var i = 0; i < 90; i++) {
     var bar = document.createElement('div');
-    bar.className = 'preview-wv-bar' + (i % 18 === 0 ? ' accent' : '');
-    bar.style.height = (12 + Math.random() * 48) + 'px';
+    bar.className = 'mp-wv-bar' + (i % 14 === 0 ? ' accent' : '');
+    bar.style.height = (6 + Math.random() * 22) + 'px';
     wf.appendChild(bar);
   }
 })();
