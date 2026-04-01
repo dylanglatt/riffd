@@ -359,6 +359,14 @@ def practice():
 def about():
     return render_template("about.html", active_page="about")
 
+@app.route('/analyze')
+def redirect_analyze():
+    return redirect('/decompose', code=301)
+
+@app.route('/theory')
+def redirect_theory():
+    return redirect('/learn', code=301)
+
 
 @app.route("/api/spotify/search")
 def spotify_search_route():
