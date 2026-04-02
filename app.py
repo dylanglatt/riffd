@@ -121,6 +121,7 @@ ALLOWED_EXTENSIONS = {".mp3", ".wav", ".flac", ".m4a", ".ogg", ".aac"}
 # Values: dict with status, progress, audio_path, audio_source, audio_mode, analysis results
 # WARNING: all state lost on server restart — persistent results are in filesystem cache + SQLite
 jobs = {}
+_stem_last_accessed: dict = {}  # job_id → timestamp of last audio request
 _processing_lock = threading.Lock()
 _active_processing = 0
 # Stem separation runs on Replicate (cloud GPU), so local RAM is not the bottleneck.
@@ -187,6 +188,19 @@ def _prune_old_jobs():
         if stale_bg:
             print(f"[mem] pruned {len(stale_bg)} stale prefetch entries")
 
+    # Delete stem audio files for jobs idle >30 minutes
+    # result_cache.json is preserved — only the stems/ subdirectory is removed
+    import time as _t2, shutil as _shutil2
+    _now2 = _t2.time()
+    idle_stem_jobs = [jid for jid, ts in list(_stem_last_accessed.items())
+                      if (_now2 - ts) > 1800]
+    for jid in idle_stem_jobs:
+        stems_dir = OUTPUT_DIR / jid / "stems"
+        if stems_dir.exists():
+            _shutil2.rmtree(stems_dir, ignore_errors=True)
+            print(f"[disk] deleted idle stems for {jid}")
+        del _stem_last_accessed[jid]
+
     # Prune old job directories from disk (outputs/ and uploads/) — 7 day retention
     _prune_old_disk_dirs()
 
@@ -203,7 +217,8 @@ def _prune_old_disk_dirs():
         return
     _last_disk_prune = now
 
-    max_age = 7 * 86400  # 7 days
+    _retention_hours = int(os.getenv("DISK_RETENTION_HOURS", "168"))  # default 7 days; set to 6 on Render
+    max_age = _retention_hours * 3600
     pruned = 0
     for parent in (OUTPUT_DIR, UPLOAD_DIR):
         if not parent.exists():
@@ -248,6 +263,10 @@ def allowed_file(filename: str) -> bool:
 
 
 _log_memory("startup")
+
+# Run disk cleanup immediately on startup rather than waiting for first request
+_last_disk_prune = 0
+threading.Thread(target=_prune_old_disk_dirs, daemon=True).start()
 
 # ─── Authentication ───────────────────────────────────────────────────────────
 
@@ -507,7 +526,6 @@ def download_track():
         try:
             track_data = {
                 "query": query or url,
-                "preview_url": None,  # No preview fallback
                 "artist": data.get("artist", ""),
                 "name": data.get("name", ""),
             }
@@ -523,7 +541,7 @@ def download_track():
                 print(f"[job {job_id}] AUDIO SOURCE SELECTED: youtube (direct URL)")
             else:
                 _on_progress("Downloading full track...")
-                audio_path = resolve_audio(track_data, job_id, on_progress=_on_progress, allow_preview_fallback=False)
+                audio_path = resolve_audio(track_data, job_id, on_progress=_on_progress)
                 audio_source = "youtube"
 
             print(f"[job {job_id}] download finished → {audio_path} (source={audio_source})")
@@ -607,20 +625,14 @@ def prefetch_full_track():
             print(f"[prefetch {prefetch_id}] bg_download thread started")
             track_data = {
                 "query": yt_query,
-                "preview_url": None,
                 "artist": artist,
                 "name": name,
             }
-            audio_path = resolve_audio(track_data, prefetch_id, allow_preview_fallback=False)
-            # Verify we actually got a full track, not a preview
-            if str(audio_path).endswith("preview.mp3"):
-                raise AudioUnavailableError("Only preview audio available — full track download failed")
-            is_full = True
+            audio_path = resolve_audio(track_data, prefetch_id)
             entry["status"] = "ready"
             entry["audio_path"] = str(audio_path)
-            entry["is_full_track"] = is_full
-            source_type = "youtube (full)" if is_full else "preview (fallback)"
-            print(f"[prefetch {prefetch_id}] COMPLETE → {source_type} → {audio_path}")
+            entry["is_full_track"] = True
+            print(f"[prefetch {prefetch_id}] COMPLETE → youtube → {audio_path}")
         except AudioUnavailableError as e:
             entry["status"] = "failed"
             entry["error"] = str(e)
@@ -836,6 +848,7 @@ def process_audio(job_id):
                 result["errors"] = failed_steps
                 result["error"] = f"{len(failed_steps)} step(s) failed: {', '.join(s['step'] for s in failed_steps)}"
             jobs[job_id].update(result)
+            import time as _t; _stem_last_accessed[job_id] = _t.time()
             status_label = result["status"]
             print(f"[job {job_id}] [{_elapsed()}] STATUS → {status_label}" + (f" (failed: {[s['step'] for s in failed_steps]})" if partial else ""))
             log_event("analysis_complete", {"job_id": job_id, "status": result["status"], "elapsed": round(_time.time() - _t0, 1)})
@@ -1274,6 +1287,8 @@ def serve_stem_audio(job_id, stem_name):
         wav_size = wav_path.stat().st_size if wav_path.exists() else -1
         print(f"[audio] MISSING {job_id}/{stem_name} — wav={wav_size}b cwd={Path('.').resolve()} path={wav_path}")
         return jsonify({"error": "stem not ready"}), 404
+
+    import time as _t; _stem_last_accessed[job_id] = _t.time()
 
     # Stream from disk — avoids loading 100MB+ WAV files into process memory per request.
     # send_file with conditional=True also enables proper Range request support for seeking.
