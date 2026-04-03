@@ -1731,7 +1731,6 @@ async function downloadTrack(){
   const postBody = {
     query: selectedTrack.yt_query,
     track_id: selectedTrack?.id || null,
-    preview_url: selectedTrack?.preview_url || null,
     artist: selectedTrack?.artist || "",
     name: selectedTrack?.name || "",
     album: selectedTrack?.album || "",
@@ -1955,10 +1954,6 @@ function pollStatus(){
         updateTimeDisplay();
         if (selectedTrack && selectedTrack.id) _addShareButton();
 
-        // partial status no longer shown — non-critical step failures are silent
-        if (d.audio_source === 'preview' || d.audio_mode === 'preview') {
-          _showResultWarning('These stems are from a ~30s preview clip. Full-track download was unavailable. Upload your own audio file for full-length stems.');
-        }
         console.log(`[poll] complete \u2014 ${Object.keys(_loadedStems).length} stems loaded`);
         return;
 

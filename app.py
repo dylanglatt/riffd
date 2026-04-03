@@ -53,7 +53,7 @@ from external_apis import get_lyrics, get_track_tags, enrich_recommendations_wit
 from downloader import download_audio_from_youtube, resolve_audio, AudioUnavailableError
 from analytics import log_event
 from history import add_to_history, get_recent, get_cached_result, save_cached_result, touch_history
-from db import init_db, migrate_from_history_json, get_track, upsert_track, set_track_status, touch_track, get_recent_tracks, get_analysis_for_track
+from db import init_db, migrate_from_history_json, get_track, upsert_track, set_track_status, touch_track, get_recent_tracks, get_analysis_for_track, upsert_job_checkpoint, recover_orphaned_jobs
 
 load_dotenv()
 
@@ -121,6 +121,19 @@ ALLOWED_EXTENSIONS = {".mp3", ".wav", ".flac", ".m4a", ".ogg", ".aac"}
 # Values: dict with status, progress, audio_path, audio_source, audio_mode, analysis results
 # WARNING: all state lost on server restart — persistent results are in filesystem cache + SQLite
 jobs = {}
+
+# Recover jobs orphaned by a server restart — insert stubs so /api/status returns a clean error
+for _orphan in recover_orphaned_jobs():
+    _oid = _orphan["job_id"]
+    if _oid not in jobs:
+        jobs[_oid] = {
+            "status": "failed",
+            "error": "Server restarted during processing — please try again.",
+            "progress": "Server restarted",
+        }
+        upsert_job_checkpoint(_oid, "failed", error="Server restarted during processing")
+        print(f"[recover] orphaned job {_oid} marked as failed")
+
 _stem_last_accessed: dict = {}  # job_id → timestamp of last audio request
 _processing_lock = threading.Lock()
 _active_processing = 0
@@ -159,6 +172,7 @@ def _dequeue_next():
             if job_id in jobs:
                 jobs[job_id]["status"] = "processing"
                 jobs[job_id]["progress"] = "Separating stems..."
+                upsert_job_checkpoint(job_id, "processing", progress="Separating stems...")
             threading.Thread(target=run_fn, daemon=True).start()
 
 
@@ -491,6 +505,7 @@ def download_track():
                     "audio_mode": "full",
                     "progress": "Download complete",
                 }
+                upsert_job_checkpoint(job_id, "ready", progress="Download complete")
                 print(f"[job {job_id}] DOWNLOAD REUSED from prefetch → {audio_path}")
                 log_event("prefetch_hit", {"track_id": track_id})
                 return jsonify({"job_id": job_id, "mode": mode})
@@ -511,11 +526,13 @@ def download_track():
                     job_id = str(uuid.uuid4())[:8]
                     audio_path = str(audio_files[0])
                     jobs[job_id] = {"status": "ready", "audio_path": audio_path, "audio_source": "cache", "audio_mode": "full", "progress": "Download complete"}
+                    upsert_job_checkpoint(job_id, "ready", progress="Download complete")
                     print(f"[job {job_id}] DOWNLOAD REUSED from job {old_job} → {audio_path}")
                     return jsonify({"job_id": job_id, "mode": mode})
 
     job_id = str(uuid.uuid4())[:8]
     jobs[job_id] = {"status": "downloading", "audio_mode": "full", "progress": "Getting audio..."}
+    upsert_job_checkpoint(job_id, "downloading", progress="Getting audio...")
     print(f"[job {job_id}] DOWNLOAD START query='{(query or url or '')[:60]}'")
 
     def run():
@@ -552,6 +569,7 @@ def download_track():
                 "audio_mode": "full",
                 "progress": "Download complete",
             })
+            upsert_job_checkpoint(job_id, "ready", progress="Download complete")
             print(f"[job {job_id}] STATUS → ready")
 
         except AudioUnavailableError as e:
@@ -563,6 +581,7 @@ def download_track():
                 "audio_mode": "full",
                 "error": "Full track unavailable. Please upload the audio file directly.",
             })
+            upsert_job_checkpoint(job_id, "upload_required", error="Full track unavailable")
             print(f"[job {job_id}] STATUS → upload_required")
 
         except Exception as e:
@@ -570,6 +589,7 @@ def download_track():
             traceback.print_exc()
             log_event("youtube_failed", {"job_id": job_id, "error": str(e)[:100]})
             jobs[job_id].update({"status": "error", "error": str(e)})
+            upsert_job_checkpoint(job_id, "error", error=str(e))
             print(f"[job {job_id}] STATUS → error")
 
     threading.Thread(target=run, daemon=True).start()
@@ -674,6 +694,7 @@ def upload_file():
     save_path.parent.mkdir(parents=True, exist_ok=True)
     f.save(save_path)
     jobs[job_id] = {"status": "ready", "audio_path": str(save_path), "progress": "File uploaded"}
+    upsert_job_checkpoint(job_id, "ready", progress="File uploaded")
 
     # Silently attempt to match Spotify metadata — never blocks or errors
     track_meta = _match_upload_metadata(filename, str(save_path))
@@ -772,6 +793,7 @@ def process_audio(job_id):
     jobs[job_id]["status"] = "processing"
     jobs[job_id]["progress"] = "Separating stems..."
     jobs[job_id]["_started_at"] = _time_mod.time()
+    upsert_job_checkpoint(job_id, "processing", progress="Separating stems...")
     print(f"[job {job_id}] process start analysis_mode=deep audio={audio_path}")
     log_event("deep_analysis_start", {"job_id": job_id, "audio_source": job.get("audio_source")})
 
@@ -849,6 +871,8 @@ def process_audio(job_id):
                 result["error"] = f"{len(failed_steps)} step(s) failed: {', '.join(s['step'] for s in failed_steps)}"
             jobs[job_id].update(result)
             import time as _t; _stem_last_accessed[job_id] = _t.time()
+            cache_path = str(Path("outputs") / job_id / "result_cache.json") if spotify_track_id else None
+            upsert_job_checkpoint(job_id, result["status"], progress=result.get("progress"), result_cache_path=cache_path, error=result.get("error"))
             status_label = result["status"]
             print(f"[job {job_id}] [{_elapsed()}] STATUS → {status_label}" + (f" (failed: {[s['step'] for s in failed_steps]})" if partial else ""))
             log_event("analysis_complete", {"job_id": job_id, "status": result["status"], "elapsed": round(_time.time() - _t0, 1)})
@@ -986,6 +1010,7 @@ def process_audio(job_id):
                     "error_step": "stem_separation",
                     "progress": "Stem separation failed",
                 })
+                upsert_job_checkpoint(job_id, "error", progress="Stem separation failed", error=str(_demucs_exc))
                 return
 
             gc.collect()
@@ -1250,6 +1275,7 @@ def job_status(job_id):
         if elapsed > JOB_TIMEOUT:
             print(f"[job {job_id}] WATCHDOG: job stuck for {elapsed:.0f}s, forcing error")
             job.update({"status": "error", "error": f"Processing timed out after {int(elapsed)}s", "error_step": "timeout"})
+            upsert_job_checkpoint(job_id, "error", error=f"Processing timed out after {int(elapsed)}s")
 
     # Only log status polls for terminal states (avoid noise from repeated polling)
     status = job.get("status", "")
