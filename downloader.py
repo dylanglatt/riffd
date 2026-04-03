@@ -1,27 +1,20 @@
 """
 downloader.py — Audio acquisition for Riffd.
 
-Two entry points:
-  resolve_preview(track_data, job_id)  — Preview-only. Spotify → iTunes. No YouTube. ~2s.
-  resolve_audio(track_data, job_id)    — Full waterfall. YouTube → Spotify → iTunes. ~30-120s.
+Entry point:
+  resolve_audio(track_data, job_id)  — Full waterfall. YouTube → upload prompt. ~30-120s.
 
 Audio source hierarchy:
-  1. Spotify preview_url (if provided by search results)  — direct MP3 download, ~1s
-  2. iTunes preview (API lookup by artist+name)            — MP3 download, ~2s
-  3. YouTube via yt-dlp (search or direct URL)             — WAV download, ~30-120s
+  1. YouTube via yt-dlp (search or direct URL)   — ~30-120s
+  2. YouTube via Cobalt API                       — fallback
+  3. YouTube via Piped API                        — fallback
   4. AudioUnavailableError → frontend prompts file upload
 
-Preview files saved as:  uploads/<job_id>/preview.mp3
 YouTube files saved as:  uploads/<job_id>/<title>.wav
 
 Failure modes:
-  - Spotify preview_url is often null (most tracks don't have one)
-  - iTunes lookup can return wrong track or no results
   - YouTube frequently fails on Render (bot detection, missing JS runtime)
   - All failures are caught and logged, never crash the server
-
-The preview path (resolve_preview) is the default for instant analysis.
-The full path (resolve_audio) is only used when user explicitly requests deep analysis.
 """
 
 import os
@@ -590,123 +583,17 @@ def _download_via_piped(query: str, job_id: str) -> Path:
     raise RuntimeError("All Piped instances failed — YouTube audio unavailable")
 
 
-def download_preview(url: str, job_id: str) -> Path:
+def resolve_audio(track_data: dict, job_id: str, on_progress=None) -> Path:
     """
-    Download an audio preview (Spotify or iTunes MP3 URL).
-    Returns path to the saved file.
-    """
-    out_dir = UPLOAD_DIR / job_id
-    out_dir.mkdir(parents=True, exist_ok=True)
-    save_path = out_dir / "preview.mp3"
-
-    print(f"[downloader] downloading preview: {url[:80]}")
-    resp = requests.get(url, timeout=30)
-    resp.raise_for_status()
-
-    save_path.write_bytes(resp.content)
-    print(f"[downloader] preview saved → {save_path.name} ({len(resp.content)} bytes)")
-    return save_path
-
-
-def get_itunes_preview_url(artist: str, track_name: str) -> str | None:
-    """
-    Look up a track on iTunes and return its preview URL if found.
-    """
-    try:
-        term = f"{artist} {track_name}"
-        print(f"[downloader] iTunes lookup: {term[:60]}")
-        resp = requests.get(
-            "https://itunes.apple.com/search",
-            params={"term": term, "media": "music", "entity": "song", "limit": 3},
-            timeout=10,
-        )
-        resp.raise_for_status()
-        results = resp.json().get("results", [])
-        if not results:
-            print("[downloader] iTunes: no results")
-            return None
-
-        # Basic string matching to find best result
-        artist_lower = artist.lower()
-        track_lower = track_name.lower()
-        for r in results:
-            r_artist = (r.get("artistName") or "").lower()
-            r_track = (r.get("trackName") or "").lower()
-            if artist_lower in r_artist or r_artist in artist_lower:
-                if track_lower in r_track or r_track in track_lower:
-                    url = r.get("previewUrl")
-                    if url:
-                        print(f"[downloader] iTunes match: {r.get('trackName')} by {r.get('artistName')}")
-                        return url
-
-        # If no exact match, return first result's preview if available
-        url = results[0].get("previewUrl")
-        if url:
-            print(f"[downloader] iTunes fallback: {results[0].get('trackName')} by {results[0].get('artistName')}")
-        return url
-
-    except Exception as e:
-        print(f"[downloader] iTunes lookup failed: {e}")
-        return None
-
-
-def resolve_preview(track_data: dict, job_id: str, on_progress=None) -> Path:
-    """
-    Preview-only path. Tries preview sources only (no YouTube).
-    Fast, reliable, returns 30-second audio clip.
-
-    track_data keys: preview_url, artist, name
-    Raises AudioUnavailableError if no preview source works.
-    """
-    preview_url = track_data.get("preview_url")
-    artist = track_data.get("artist", "")
-    name = track_data.get("name", "")
-    print(f"[job {job_id}] resolve_preview called — preview_url={bool(preview_url)} artist={artist[:20]} name={name[:30]}")
-
-    # 1. Spotify preview URL
-    if preview_url:
-        if on_progress:
-            on_progress("Getting preview audio...")
-        try:
-            path = download_preview(preview_url, job_id)
-            print(f"[job {job_id}] AUDIO SOURCE SELECTED: preview (spotify)")
-            return path
-        except Exception as e:
-            print(f"[job {job_id}] Spotify preview failed: {e}")
-
-    # 2. iTunes preview
-    if artist and name:
-        if on_progress:
-            on_progress("Getting preview audio...")
-        try:
-            itunes_url = get_itunes_preview_url(artist, name)
-            if itunes_url:
-                path = download_preview(itunes_url, job_id)
-                print(f"[job {job_id}] AUDIO SOURCE SELECTED: preview (itunes)")
-                return path
-            else:
-                print(f"[job {job_id}] iTunes: no preview URL found")
-        except Exception as e:
-            print(f"[job {job_id}] iTunes preview failed: {e}")
-
-    # No preview available
-    print(f"[job {job_id}] no preview source available")
-    raise AudioUnavailableError("No preview audio available for this track.")
-
-
-def resolve_audio(track_data: dict, job_id: str, on_progress=None, allow_preview_fallback: bool = True) -> Path:
-    """
-    Main entry point. Tries audio sources in waterfall order:
+    Main entry point. Tries YouTube sources in waterfall order:
     1. YouTube via yt-dlp (full song)
-    2. YouTube via Piped API (full song — bypasses IP blocks)
-    3. Spotify preview URL (only if allow_preview_fallback=True)
-    4. iTunes preview URL (only if allow_preview_fallback=True)
-    5. Raises AudioUnavailableError
+    2. YouTube via Cobalt API (full song — bypasses IP blocks)
+    3. YouTube via Piped API (full song — bypasses IP blocks)
+    4. Raises AudioUnavailableError → frontend prompts file upload
 
-    track_data keys: query, preview_url, artist, name
+    track_data keys: query, artist, name
     """
     query = track_data.get("query")
-    preview_url = track_data.get("preview_url")
     artist = track_data.get("artist", "")
     name = track_data.get("name", "")
 
@@ -743,44 +630,8 @@ def resolve_audio(track_data: dict, job_id: str, on_progress=None, allow_preview
         except Exception as e:
             print(f"[job {job_id}] ⚠️  Piped FAILED: {str(e)[:300]}")
 
-    # All YouTube methods failed (yt-dlp, cobalt, piped)
-    if query and not allow_preview_fallback:
-        print(f"[job {job_id}] all full-track sources failed — raising upload_required")
-        raise AudioUnavailableError(
-            f"Full-track download unavailable. Upload your own audio file to get full-length stems."
-        )
-
-    if query:
-        print(f"[job {job_id}] ⚠️  FALLING BACK TO PREVIEW — stems will be ~30s, not full song")
-        if on_progress:
-            on_progress("Full track unavailable, trying preview...")
-
-    # 2. Spotify preview URL
-    if preview_url:
-        try:
-            path = download_preview(preview_url, job_id)
-            print(f"[job {job_id}] AUDIO SOURCE SELECTED: preview (spotify)")
-            return path
-        except Exception as e:
-            print(f"[job {job_id}] Preview failed: {e}")
-            if on_progress:
-                on_progress("Trying iTunes preview...")
-
-    # 3. iTunes preview
-    if artist and name:
-        if on_progress and not preview_url:
-            on_progress("Trying iTunes preview...")
-        try:
-            itunes_url = get_itunes_preview_url(artist, name)
-            if itunes_url:
-                path = download_preview(itunes_url, job_id)
-                print(f"[job {job_id}] AUDIO SOURCE SELECTED: preview (itunes)")
-                return path
-            else:
-                print(f"[job {job_id}] iTunes: no preview URL found")
-        except Exception as e:
-            print(f"[job {job_id}] Preview failed: {e}")
-
-    # 4. All sources exhausted
-    print(f"[job {job_id}] all audio sources failed — upload required")
-    raise AudioUnavailableError("No audio source available. Please upload your own file.")
+    # All YouTube methods failed
+    print(f"[job {job_id}] all full-track sources failed — raising upload_required")
+    raise AudioUnavailableError(
+        "Full-track download unavailable. Upload your own audio file to get full-length stems."
+    )

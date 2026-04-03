@@ -67,6 +67,16 @@ def init_db():
         conn.execute("""
             CREATE INDEX IF NOT EXISTS idx_tracks_viewed ON tracks(last_viewed DESC)
         """)
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS job_checkpoints (
+                job_id TEXT PRIMARY KEY,
+                status TEXT,
+                progress TEXT,
+                result_cache_path TEXT,
+                error TEXT,
+                updated_at REAL
+            )
+        """)
     print(f"[db] initialized at {DB_PATH}")
 
 
@@ -231,3 +241,30 @@ def get_analysis_for_track(spotify_track_id: str) -> dict | None:
         return result
     except (json.JSONDecodeError, IOError):
         return None
+
+
+# ─── Job checkpoint persistence ────────────────────────────────────────────
+
+def upsert_job_checkpoint(job_id, status, progress=None, result_cache_path=None, error=None):
+    """Write or update a job checkpoint row."""
+    now = time.time()
+    with _db() as conn:
+        conn.execute("""
+            INSERT INTO job_checkpoints (job_id, status, progress, result_cache_path, error, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?)
+            ON CONFLICT(job_id) DO UPDATE SET
+                status = excluded.status,
+                progress = excluded.progress,
+                result_cache_path = excluded.result_cache_path,
+                error = excluded.error,
+                updated_at = excluded.updated_at
+        """, (job_id, status, progress, result_cache_path, error, now))
+
+
+def recover_orphaned_jobs():
+    """Return all checkpoint rows where status = 'processing' (orphaned by restart)."""
+    with _db() as conn:
+        rows = conn.execute(
+            "SELECT * FROM job_checkpoints WHERE status = 'processing'"
+        ).fetchall()
+        return [dict(r) for r in rows]
