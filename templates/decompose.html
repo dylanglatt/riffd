@@ -699,6 +699,7 @@ let loopActive = false, transposeAmount = 0, songKey = null;
 const KEY_NAMES_JS = ["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"];
 const views = ["search","confirm","results"];
 let _defaultTab = "mix";
+let _stemsPreloading = false;
 let _progressionNames = {};
 let _smartRecs = {};
 let _keyContext = "";
@@ -1222,7 +1223,7 @@ async function selectTrack(t){
   pauseOffset=0; duration=0;
   _topBar.show();
 
-  selectedTrack=t; currentJobId=null; setError(""); _loadedStems={}; _karaokeActive=false;  if (_prefetchPollTimer) { clearInterval(_prefetchPollTimer); _prefetchPollTimer = null; }
+  selectedTrack=t; currentJobId=null; setError(""); _loadedStems={}; _stemsPreloading=false; _karaokeActive=false;  if (_prefetchPollTimer) { clearInterval(_prefetchPollTimer); _prefetchPollTimer = null; }
   _prefetchId=null; _prefetchReady=false;
   console.log(`[ui] selectTrack → ${t.name} by ${t.artist} (id=${t.id||'none'})`);
 
@@ -1305,7 +1306,7 @@ async function uploadFile(file){
   pauseOffset=0; duration=0;
 
   selectedTrack={name:file.name, artist:"Uploaded file", year:"", image_url:null};
-  currentJobId=null; _loadedStems={}; _karaokeActive=false;
+  currentJobId=null; _loadedStems={}; _stemsPreloading=false; _karaokeActive=false;
   _prefetchId=null; _prefetchReady=false;
   setError("");
 
@@ -1575,7 +1576,7 @@ function _buildWaveform() {
 }
 
 // ─── Processing ─────────────────────────────────────────────────────────────
-const POLL_TIMEOUT_MS = 11 * 60 * 1000; // 11 minutes max polling — matches backend JOB_TIMEOUT (12min) with 1min buffer
+const POLL_TIMEOUT_MS = 19 * 60 * 1000; // 19 minutes max polling — matches backend JOB_TIMEOUT (20min) with 1min buffer
 let _pollStartTime = 0;
 
 function _resetLoadingUI() {
@@ -1609,6 +1610,7 @@ function _fullErrorCleanup() {
   document.getElementById("hero-actions").classList.remove("hidden");
   document.getElementById("hero-loading").classList.add("hidden");
   showView("confirm");
+  if (selectedTrack) _populateHero();
 }
 
 function _showUploadRequired() {
@@ -1711,7 +1713,7 @@ async function startProcessing(){
       "Something went wrong",
       "We hit an unexpected issue starting the analysis. Try again, or try a different track.",
       "Try Again",
-      {clearJob: true}
+      {clearJob: true, autoRetry: true}
     );
   }
 }
@@ -1822,7 +1824,7 @@ function pollStatus(){
         "This one\u2019s taking a while",
         "The analysis is taking longer than expected. You can try again or pick a different track.",
         "Try Again",
-        {clearJob: true}
+        {clearJob: true, autoRetry: true}
       );
       return;
     }
@@ -1837,7 +1839,7 @@ function pollStatus(){
           "Riffd had a hiccup",
           "The server restarted while processing your track. Sorry about that \u2014 try again.",
           "Try Again",
-          {clearJob: true}
+          {clearJob: true, autoRetry: true}
         );
         return;
       }
@@ -1884,6 +1886,24 @@ function pollStatus(){
           const count = Object.keys(_loadedStems).length;
           _updateMixLoadingStatus(`${count} instrument${count > 1 ? 's' : ''} isolated...`);
           _topBar.onStemLoaded(count);
+        }
+      }
+
+      // Early audio preload — start fetching+decoding stems as soon as Demucs finishes
+      if (d.stems_ready && !_stemsPreloading && d.status === 'processing') {
+        const preloadNames = Object.keys(d.stems || {}).filter(n => {
+          const info = d.stems[n]; return !info || info.active !== false;
+        });
+        if (preloadNames.length > 0) {
+          _stemsPreloading = true;
+          console.log(`[audio] stems_ready — preloading ${preloadNames.length} stems`);
+          loadStemAudio(preloadNames).then(() => {
+            console.log(`[audio] preload complete`);
+          }).catch(e => {
+            console.warn("[audio] preload failed, fallback will retry:", e);
+            _stemsPreloading = false;
+            stemBuffers = {};
+          });
         }
       }
 
@@ -1964,14 +1984,14 @@ function pollStatus(){
             "This one\u2019s taking a while",
             "The analysis timed out. You can try again or pick a different track.",
             "Try Again",
-            {clearJob: true}
+            {clearJob: true, autoRetry: true}
           );
         } else {
           showCapacity(
             "Something went wrong",
             "We hit an unexpected issue. Try again, or try a different track.",
             "Try Again",
-            {clearJob: true}
+            {clearJob: true, autoRetry: true}
           );
         }
         return;
@@ -1991,7 +2011,7 @@ function pollStatus(){
         "Lost connection",
         "Couldn\u2019t reach the server. Check your connection and try again.",
         "Retry",
-        {clearJob: true}
+        {clearJob: true, autoRetry: true}
       );
     }
   }
@@ -2069,10 +2089,16 @@ async function renderResults(data) {
   }
 
   // Load audio in background (parallel decode, non-blocking)
+  // Skip if stems were already preloaded during processing poll loop
   _reorganizeStemGroups();
-  loadStemAudio(activeNames).then(() => {
+  if (_stemsPreloading || Object.keys(stemBuffers).length > 0) {
+    console.log("[audio] stems already preloaded, skipping loadStemAudio");
     _buildPlayerWaveform();
-  }).catch(e => console.warn("[audio] decode error:", e));
+  } else {
+    loadStemAudio(activeNames).then(() => {
+      _buildPlayerWaveform();
+    }).catch(e => console.warn("[audio] decode error:", e));
+  }
 
 }
 
@@ -2478,6 +2504,11 @@ function showCapacity(heading, body, ctaText, opts) {
   cta.textContent = ctaText || "Try Again";
   // If the job is dead, clear the stale ID so "Try Again" re-downloads
   if (opts && opts.clearJob) currentJobId = null;
+  if (opts && opts.autoRetry) {
+    cta.onclick = () => { dismissCapacity(); startProcessing(); };
+  } else {
+    cta.onclick = () => { dismissCapacity(); };
+  }
   document.getElementById("capacity-overlay").classList.add("visible");
 }
 function dismissCapacity() {

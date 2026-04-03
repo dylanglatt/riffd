@@ -1020,6 +1020,7 @@ def process_audio(job_id):
             gc.collect()
             _log_memory(f"[job {job_id}] pre-basic-pitch")
             jobs[job_id]["stems"] = {k: {"label": v.get("label", k), "energy": v.get("energy", 0), "active": v.get("active", True)} for k, v in stems.items()}
+            jobs[job_id]["stems_ready"] = True
             jobs[job_id]["progress"] = "Stems ready — analyzing..."
 
             active_stems = {k: v for k, v in stems.items() if v.get("active", True)}
@@ -1259,7 +1260,7 @@ def process_audio(job_id):
     return jsonify({"status": "processing", "job_id": job_id})
 
 
-JOB_TIMEOUT = 720  # 12 minutes — must fire before frontend poll timeout (11 min) to ensure clean error
+JOB_TIMEOUT = 1200  # 20 minutes — must fire before frontend poll timeout (19 min) to ensure clean error
 
 @app.route("/api/status/<job_id>")
 def job_status(job_id):
@@ -1302,13 +1303,13 @@ def serve_stem_audio(job_id, stem_name):
     wav_path = stems_dir / f"{stem_name}.wav"
     mp3_path = stems_dir / f"{stem_name}.mp3"
 
-    # Determine which file to serve
-    if wav_path.exists() and wav_path.stat().st_size > 0:
-        serve_path = wav_path
-        mime = "audio/wav"
-    elif mp3_path.exists() and mp3_path.stat().st_size > 0:
+    # Determine which file to serve — MP3 preferred when available (5MB vs 100MB)
+    if mp3_path.exists() and mp3_path.stat().st_size > 0:
         serve_path = mp3_path
         mime = "audio/mpeg"
+    elif wav_path.exists() and wav_path.stat().st_size > 0:
+        serve_path = wav_path
+        mime = "audio/wav"
     else:
         wav_size = wav_path.stat().st_size if wav_path.exists() else -1
         print(f"[audio] MISSING {job_id}/{stem_name} — wav={wav_size}b cwd={Path('.').resolve()} path={wav_path}")
@@ -1318,14 +1319,19 @@ def serve_stem_audio(job_id, stem_name):
 
     # Stream from disk — avoids loading 100MB+ WAV files into process memory per request.
     # send_file with conditional=True also enables proper Range request support for seeking.
+    # Cache headers — stems are immutable per job_id+stem_name
+    cache_control = "public, max-age=86400, immutable" if mime == "audio/mpeg" else "public, max-age=3600"
+
     try:
         file_size = serve_path.stat().st_size
         print(f"[audio] SERVING {job_id}/{stem_name} — {file_size:,}b from {serve_path}")
-        return send_file(
+        resp = make_response(send_file(
             str(serve_path),
             mimetype=mime,
             conditional=True,  # Enables range requests (audio seek without re-downloading)
-        )
+        ))
+        resp.headers["Cache-Control"] = cache_control
+        return resp
     except Exception as e:
         print(f"[audio] READ ERROR {job_id}/{stem_name}: {e}")
         return jsonify({"error": "read failed"}), 500
