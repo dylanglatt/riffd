@@ -140,6 +140,12 @@ _active_processing = 0
 # Stem separation runs on Replicate (cloud GPU), so local RAM is not the bottleneck.
 # Allow multiple concurrent jobs; tune via MAX_CONCURRENT_JOBS env var if needed.
 MAX_CONCURRENT_JOBS = int(os.getenv("MAX_CONCURRENT_JOBS", "2"))
+
+# TensorFlow inference lock — only one job runs Basic Pitch at a time.
+# TF loads ~1.2GB and is not safely reentrant across threads. Two concurrent
+# jobs hitting inference simultaneously would OOM a 2GB instance. Jobs still
+# run Demucs in parallel (cloud GPU, no local RAM); they only queue here.
+_tf_inference_lock = threading.Lock()
 _job_queue: collections.deque = collections.deque()  # jobs waiting for a processing slot
 
 # ─── Background prefetch ─────────────────────────────────────────────────────
@@ -1095,6 +1101,13 @@ def process_audio(job_id):
             try:
                 from compat import patch_lzma
                 patch_lzma()
+                # Wait for exclusive access to TF before loading the model.
+                # Logged so we can see queue time in Render logs.
+                if not _tf_inference_lock.acquire(blocking=False):
+                    jobs[job_id]["progress"] = "Waiting for inference slot..."
+                    print(f"[job {job_id}] [{_elapsed()}] TF lock busy — waiting...")
+                    _tf_inference_lock.acquire()
+                print(f"[job {job_id}] [{_elapsed()}] TF lock acquired")
 
                 def _extract_one_stem(stem_key, stem_info):
                     import tempfile as _tempfile, subprocess as _sp, os as _os
@@ -1180,6 +1193,13 @@ def process_audio(job_id):
                 print(f"[job {job_id}] [{_elapsed()}] NOTE EXTRACTION finished → {len(note_events_all)} stems with notes")
             except Exception as e:
                 _fail("note_extraction", e)
+            finally:
+                # Always release the lock — even if inference crashed — so the next job isn't stuck.
+                try:
+                    _tf_inference_lock.release()
+                    print(f"[job {job_id}] [{_elapsed()}] TF lock released")
+                except RuntimeError:
+                    pass  # Already released or never acquired (e.g. no pitched stems)
 
             # ── WAV → MP3 cleanup (safety net) ──
             # Non-inference stems were converted before Basic Pitch loaded.
