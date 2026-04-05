@@ -1035,17 +1035,55 @@ def process_audio(job_id):
                 detected_bpm = intelligence["bpm"]
             print(f"[job {job_id}] [{_elapsed()}] key/BPM (from early detect): key={intelligence['key']} bpm={detected_bpm}")
 
-            # ── Stage 3: Note extraction (Basic Pitch) — sequential across priority stems ──
-            # Drums produce no useful pitch data — skip entirely.
-            # Secondary stems (harmony/backing vocals, synth, keys, other) are skipped for
-            # Basic Pitch — they add ~3-4 min processing time with marginal harmonic value.
-            # Their WAV files are preserved for playback; only inference is skipped.
+            # ── Stage 2.5: Early WAV→MP3 for non-inference stems ──
+            # Stems that won't go through Basic Pitch (drums, low-priority pitched)
+            # don't need their WAV files anymore. Converting now frees ~190MB per
+            # stem BEFORE TensorFlow loads, cutting peak memory significantly.
             _DRUM_KEYS = {"drums", "drum", "kick", "snare", "percussion"}
-            # Stems where Basic Pitch adds little harmonic value vs. processing cost
             _SKIP_INFERENCE_KEYS = {
                 "harmony_vocal", "backing_vocal", "synth", "other",
                 "keys", "guitar_layer", "strumming_guitar",
             }
+
+            def _is_inference_stem(k):
+                """True if this stem will go through Basic Pitch."""
+                kl = k.lower()
+                if kl in _DRUM_KEYS or kl.startswith("drum"):
+                    return False
+                if kl in _SKIP_INFERENCE_KEYS:
+                    return False
+                return True
+
+            import subprocess as _sp_early
+            _early_converted = 0
+            for _sk, _sv in active_stems.items():
+                if _is_inference_stem(_sk):
+                    continue  # Keep WAV — Basic Pitch needs it
+                _wav = Path(_sv["path"])
+                if not _wav.exists() or _wav.suffix.lower() != ".wav":
+                    continue
+                _mp3 = _wav.with_suffix(".mp3")
+                try:
+                    _rc = _sp_early.run(
+                        ["ffmpeg", "-y", "-i", str(_wav), "-b:a", "192k", "-ac", "2", str(_mp3)],
+                        capture_output=True, timeout=60,
+                    )
+                    if _rc.returncode == 0 and _mp3.exists() and _mp3.stat().st_size > 1000:
+                        _wav.unlink()
+                        _sv["path"] = str(_mp3)  # Update stem path for downstream
+                        _early_converted += 1
+                except Exception as _ec_e:
+                    print(f"[job {job_id}] early MP3 convert warning ({_sk}): {_ec_e}")
+            if _early_converted:
+                print(f"[job {job_id}] [{_elapsed()}] early WAV→MP3: freed {_early_converted} non-inference stems")
+                _log_memory(f"[job {job_id}] post-early-mp3")
+            del _sp_early
+
+            # ── Stage 3: Note extraction (Basic Pitch) — sequential across priority stems ──
+            # Drums produce no useful pitch data — skip entirely.
+            # Secondary stems (harmony/backing vocals, synth, keys, other) are skipped for
+            # Basic Pitch — they add ~3-4 min processing time with marginal harmonic value.
+            # Their MP3 files are preserved for playback; only inference is skipped.
             all_pitched = {k: v for k, v in active_stems.items()
                           if k.lower() not in _DRUM_KEYS and not k.lower().startswith("drum")}
             pitched_stems = {k: v for k, v in all_pitched.items()
@@ -1094,6 +1132,23 @@ def process_audio(job_id):
                             except Exception:
                                 pass
 
+                    # Convert this stem's WAV→MP3 immediately after inference.
+                    # Frees ~190MB per stem instead of holding all WAVs until the batch step.
+                    _wav_path = Path(full_path)
+                    if _wav_path.exists() and _wav_path.suffix.lower() == ".wav":
+                        _mp3_out = _wav_path.with_suffix(".mp3")
+                        try:
+                            _conv = _sp.run(
+                                ["ffmpeg", "-y", "-i", str(_wav_path), "-b:a", "192k", "-ac", "2", str(_mp3_out)],
+                                capture_output=True, timeout=60,
+                            )
+                            if _conv.returncode == 0 and _mp3_out.exists() and _mp3_out.stat().st_size > 1000:
+                                _wav_path.unlink()
+                                stem_info["path"] = str(_mp3_out)
+                                print(f"[job {job_id}] [{_elapsed()}] {stem_key} WAV→MP3 done (freed ~{_wav_path.name})")
+                        except Exception as _mp3_e:
+                            print(f"[job {job_id}] post-inference MP3 convert warning ({stem_key}): {_mp3_e}")
+
                     gc.collect()
                     print(f"[job {job_id}] [{_elapsed()}] Basic Pitch → {stem_key} done ({len(ne) if ne is not None else 0} notes)")
                     return stem_key, ne
@@ -1126,30 +1181,29 @@ def process_audio(job_id):
             except Exception as e:
                 _fail("note_extraction", e)
 
-            # ── WAV → MP3 conversion (post-analysis) ──
-            # Analysis is done; WAV files are no longer needed for processing.
-            # Convert to 192kbps MP3 to free disk space and reduce memory when serving.
-            # WAV stems are ~107MB each; MP3 reduces this to ~5MB — a 20x improvement.
-            # The audio endpoint already prefers MP3 when present, so no other changes needed.
+            # ── WAV → MP3 cleanup (safety net) ──
+            # Non-inference stems were converted before Basic Pitch loaded.
+            # Inference stems were converted individually after each extraction.
+            # This pass catches any stragglers (e.g. if a per-stem convert failed).
             try:
                 import subprocess as _sp_mp3
                 stems_dir_mp3 = OUTPUT_DIR / job_id / "stems"
-                converted = 0
+                _straggler = 0
                 for wav_file in list(stems_dir_mp3.glob("*.wav")):
                     mp3_file = wav_file.with_suffix(".mp3")
                     result = _sp_mp3.run(
                         ["ffmpeg", "-y", "-i", str(wav_file), "-b:a", "192k", "-ac", "2", str(mp3_file)],
-                        capture_output=True, timeout=120,
+                        capture_output=True, timeout=60,
                     )
                     if result.returncode == 0 and mp3_file.exists() and mp3_file.stat().st_size > 1000:
                         wav_file.unlink()
-                        converted += 1
+                        _straggler += 1
                     else:
                         print(f"[job {job_id}] MP3 convert failed for {wav_file.name}, keeping WAV")
-                _log_memory(f"[job {job_id}] post-mp3-convert")
-                print(f"[job {job_id}] [{_elapsed()}] WAV→MP3: converted {converted} stems")
+                if _straggler:
+                    print(f"[job {job_id}] [{_elapsed()}] WAV→MP3 cleanup: {_straggler} straggler(s)")
             except Exception as _mp3_e:
-                print(f"[job {job_id}] WAV→MP3 warning: {_mp3_e}")
+                print(f"[job {job_id}] WAV→MP3 cleanup warning: {_mp3_e}")
 
             # ── Stage 5: Song intelligence (key, BPM, progression) ──
             on_progress("Analyzing key and structure...")
