@@ -28,7 +28,13 @@ build/
 .claude/
 design/
 *_PROMPT.md
+PROMPT_*.md
+*_FIX_PROMPT.md
 *.docx
+
+# Obsolete deployment (migrated to Render)
+vercel.json
+api/
 .fuse_hidden*
 static/*
 !static/demo/
