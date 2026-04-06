@@ -1469,7 +1469,8 @@ def separate_stems(audio_path: str, song_id: str, progress_callback=None, instru
 
     import gc as _gc
 
-    for stem_name, raw_path in raw_stems.items():
+    try:  # try/finally ensures _raw_* intermediates are cleaned even on crash
+      for stem_name, raw_path in raw_stems.items():
         # Drums and bass: keep as-is (Demucs handles these well)
         if stem_name in ("drums", "bass"):
             dest = out_dir / f"{stem_name}.wav"
@@ -1606,22 +1607,27 @@ def separate_stems(audio_path: str, song_id: str, progress_callback=None, instru
         del sub_parts, components
         _gc.collect()
 
-    # Clean up intermediate files to save disk/memory
-    # Remove Demucs working directory (model output copies are already in _raw_*)
-    demucs_work_dir = out_dir / model
-    if demucs_work_dir.exists():
-        try:
-            shutil.rmtree(demucs_work_dir)
-            print(f"[processor] cleaned up {demucs_work_dir}")
-        except Exception as e:
-            print(f"[processor] cleanup warning: {e}")
+    finally:
+      # Clean up intermediate files to save disk/memory — ALWAYS runs, even on crash.
+      # Remove Demucs working directory (model output copies are already in _raw_*)
+      demucs_work_dir = out_dir / model
+      if demucs_work_dir.exists():
+          try:
+              shutil.rmtree(demucs_work_dir)
+              print(f"[processor] cleaned up {demucs_work_dir}")
+          except Exception as e:
+              print(f"[processor] cleanup warning: {e}")
 
-    # Remove _raw_* intermediate files (refined stems are the final output)
-    for raw_file in out_dir.glob("_raw_*.wav"):
-        try:
-            raw_file.unlink()
-        except Exception:
-            pass
+      # Remove _raw_* intermediate files (refined stems are the final output)
+      _raw_cleaned = 0
+      for raw_file in out_dir.glob("_raw_*.wav"):
+          try:
+              raw_file.unlink()
+              _raw_cleaned += 1
+          except Exception:
+              pass
+      if _raw_cleaned:
+          print(f"[processor] cleaned {_raw_cleaned} _raw_* intermediate files")
 
     # ── Step 3: Melodic split pass ──
     if progress_callback:

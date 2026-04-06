@@ -237,7 +237,7 @@ def _prune_old_disk_dirs():
         return
     _last_disk_prune = now
 
-    _retention_hours = int(os.getenv("DISK_RETENTION_HOURS", "168"))  # default 7 days; set to 6 on Render
+    _retention_hours = int(os.getenv("DISK_RETENTION_HOURS", "6"))  # default 6 hours — Render ephemeral disk fills fast
     max_age = _retention_hours * 3600
     pruned = 0
     for parent in (OUTPUT_DIR, UPLOAD_DIR):
@@ -255,7 +255,7 @@ def _prune_old_disk_dirs():
             except Exception:
                 pass
     if pruned:
-        print(f"[disk] pruned {pruned} old job directories (>7 days)")
+        print(f"[disk] pruned {pruned} old job directories (>{_retention_hours}h)")
 
 
 def _trim_job_result(job_id):
@@ -790,6 +790,20 @@ def process_audio(job_id):
 
     # Prune stale jobs before starting a new one
     _prune_old_jobs()
+
+    # Pre-flight disk space check — reject early if disk is dangerously low.
+    # A single job can need ~2GB (6 WAV stems + intermediates + analysis).
+    MIN_FREE_DISK_MB = int(os.getenv("MIN_FREE_DISK_MB", "1500"))
+    try:
+        _disk = os.statvfs(".")
+        _free_mb = (_disk.f_bavail * _disk.f_frsize) // (1024 * 1024)
+        print(f"[disk] free space: {_free_mb}MB (minimum: {MIN_FREE_DISK_MB}MB)")
+        if _free_mb < MIN_FREE_DISK_MB:
+            print(f"[disk] REJECTING job {job_id}: only {_free_mb}MB free")
+            jobs[job_id].update({"status": "error", "error": "Server disk space low — please try again later.", "progress": "Disk space insufficient"})
+            return jsonify({"status": "error", "error": "Server is temporarily low on disk space. Please try again in a few minutes."}), 503
+    except Exception as _disk_err:
+        print(f"[disk] space check failed (non-fatal): {_disk_err}")
 
     spotify_track_id = req_data.get("track_id")
     spotify_artist_id = req_data.get("artist_id")
@@ -1348,6 +1362,29 @@ def process_audio(job_id):
             failed_steps.append({"step": "unknown", "message": str(e)})
             _finalize()
         finally:
+            # Aggressive disk cleanup — remove leftover intermediates regardless of outcome.
+            # processor.py has its own try/finally, but this catches cases where the crash
+            # happens outside processor (e.g. during MP3 conversion or between stages).
+            try:
+                _stems_dir = OUTPUT_DIR / job_id / "stems"
+                if _stems_dir.exists():
+                    _cleaned = 0
+                    for _raw in list(_stems_dir.glob("_raw_*.wav")):
+                        try:
+                            _raw.unlink()
+                            _cleaned += 1
+                        except Exception:
+                            pass
+                    for _htd in list(_stems_dir.glob("htdemucs_*")):
+                        if _htd.is_dir():
+                            import shutil as _shutil_clean
+                            _shutil_clean.rmtree(_htd, ignore_errors=True)
+                            _cleaned += 1
+                    if _cleaned:
+                        print(f"[job {job_id}] post-job cleanup: removed {_cleaned} intermediate file(s)")
+            except Exception as _clean_err:
+                print(f"[job {job_id}] post-job cleanup warning: {_clean_err}")
+
             # Release processing slot, kick off any queued jobs, then GC
             with _processing_lock:
                 _active_processing -= 1
