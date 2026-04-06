@@ -1376,59 +1376,51 @@ def _separate_stems_replicate(audio_path: Path, out_dir: Path, progress_callback
     # htdemucs_6s returns 6 (adds guitar, piano) but some may be missing.
     _KNOWN_STEMS = {"vocals", "drums", "bass", "guitar", "piano", "other"}
 
-    # Download all stems in parallel — each is an independent HTTP request
-    from concurrent.futures import ThreadPoolExecutor, as_completed as _as_completed
+    # Download stems sequentially on the main thread.
+    # Previously used ThreadPoolExecutor(max_workers=1) which was already sequential,
+    # but the executor is vulnerable to "cannot schedule new futures after interpreter
+    # shutdown" if gunicorn recycles the worker mid-job. A plain loop avoids this.
 
-    def _dl_stem(stem_key, url):
+    raw_stems = {}
+    dl_items = [(k, v) for k, v in output.items()]
+    if progress_callback:
+        progress_callback(f"Downloading stems (0/{len(dl_items)})...")
+    for idx, (stem_key, url) in enumerate(dl_items):
         if not url or not isinstance(url, str):
-            return stem_key, None, "no URL"
+            print(f"[replicate] skipping stem '{stem_key}': no URL")
+            continue
         stem_name = stem_key if stem_key in _KNOWN_STEMS else stem_key
-        # Download as MP3 (output_format=mp3 is ~10x smaller than wav)
         mp3_tmp = out_dir / f"_raw_{stem_name}.mp3"
         wav_dest = out_dir / f"_raw_{stem_name}.wav"
         print(f"[replicate] downloading: {stem_name} → {mp3_tmp.name}")
-        with _requests.get(url, stream=True, timeout=120) as dl_resp:
-            dl_resp.raise_for_status()
-            byte_count = 0
-            with open(mp3_tmp, "wb") as f:
-                for chunk in dl_resp.iter_content(chunk_size=1024 * 1024):  # 1MB chunks
-                    f.write(chunk)
-                    byte_count += len(chunk)
-        print(f"[replicate] downloaded: {stem_name} ({byte_count:,} bytes) — converting to wav")
-        # Convert MP3 → WAV via ffmpeg subprocess — avoids loading ~190MB float32
-        # array per stem into Python memory. ffmpeg streams the conversion.
         try:
+            with _requests.get(url, stream=True, timeout=120) as dl_resp:
+                dl_resp.raise_for_status()
+                byte_count = 0
+                with open(mp3_tmp, "wb") as f:
+                    for chunk in dl_resp.iter_content(chunk_size=1024 * 1024):  # 1MB chunks
+                        f.write(chunk)
+                        byte_count += len(chunk)
+            print(f"[replicate] downloaded: {stem_name} ({byte_count:,} bytes) — converting to wav")
+            # Convert MP3 → WAV via ffmpeg subprocess — avoids loading ~190MB float32
+            # array per stem into Python memory. ffmpeg streams the conversion.
             _conv = subprocess.run(
                 ["ffmpeg", "-y", "-i", str(mp3_tmp), "-ar", "44100", "-ac", "2", str(wav_dest)],
                 capture_output=True, timeout=60,
             )
             if _conv.returncode != 0:
                 raise RuntimeError(f"ffmpeg MP3→WAV failed: {_conv.stderr[-300:]}")
+            print(f"[replicate] saved: {stem_name}")
+            raw_stems[stem_name] = str(wav_dest)
+        except Exception as e:
+            print(f"[replicate] skipping stem '{stem_key}': {e}")
         finally:
             try:
-                mp3_tmp.unlink()
+                mp3_tmp.unlink(missing_ok=True)
             except Exception:
                 pass
-        print(f"[replicate] saved: {stem_name}")
-        return stem_key, str(wav_dest), None
-
-    raw_stems = {}
-    dl_items = [(k, v) for k, v in output.items()]
-    if progress_callback:
-        progress_callback(f"Downloading stems (0/{len(dl_items)})...")
-    with ThreadPoolExecutor(max_workers=1) as _pool:  # Sequential — eliminates overlapping conversion memory
-        futures = {_pool.submit(_dl_stem, k, v): k for k, v in dl_items}
-        completed_count = 0
-        for fut in _as_completed(futures):
-            stem_key, path, err = fut.result()
-            completed_count += 1
-            if err:
-                print(f"[replicate] skipping stem '{stem_key}': {err}")
-            elif path:
-                stem_name = stem_key if stem_key in _KNOWN_STEMS else stem_key
-                raw_stems[stem_name] = path
-                if progress_callback:
-                    progress_callback(f"Downloading stems ({completed_count}/{len(dl_items)})...")
+        if progress_callback:
+            progress_callback(f"Downloading stems ({idx + 1}/{len(dl_items)})...")
 
     if not raw_stems:
         raise RuntimeError("Replicate returned no downloadable stems")
