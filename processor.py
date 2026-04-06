@@ -57,6 +57,22 @@ def _ensure_imports():
     print("[processor] heavy imports loaded (numpy, pandas, basic_pitch)")
 
 
+def _log_mem(label=""):
+    """Log current RSS from /proc/self/status (Linux). Lightweight — no imports."""
+    try:
+        with open("/proc/self/status") as f:
+            rss = hwm = None
+            for line in f:
+                if line.startswith("VmRSS:"):
+                    rss = int(line.split()[1]) // 1024  # kB → MB
+                elif line.startswith("VmHWM:"):
+                    hwm = int(line.split()[1]) // 1024
+            if rss is not None:
+                print(f"[mem] {label} RSS={rss}MB peak={hwm}MB")
+    except Exception:
+        pass
+
+
 UPLOAD_DIR = Path("uploads")
 OUTPUT_DIR = Path("outputs")
 
@@ -290,6 +306,7 @@ def _stereo_separate(left, right):
 
     Returns dict of position -> (left_ch, right_ch) for components with energy.
     """
+    _log_mem(f"[stereo_separate] START (input={len(left)*4/1024/1024:.0f}MB per ch)")
     N = 4096
     hop = N // 4
     win = np.hanning(N).astype(np.float32)
@@ -353,6 +370,7 @@ def _stereo_separate(left, right):
 
     # Release padded inputs
     del left_p, right_p
+    _log_mem("[stereo_separate] after STFT loop")
 
     # Normalize overlap-add
     norm = np.maximum(win_sq[:orig_len], 1e-8)
@@ -750,10 +768,12 @@ def _split_melodic_stem(left, right, sr: int, melodic_mask,
         del out, win_sq, padded, norm
         return result
 
+    _log_mem("[split_melodic] pre-STFT-apply (4 passes)")
     lead_l = _apply_mask_channel(left, melodic_mask, inverse=False)
     lead_r = _apply_mask_channel(right, melodic_mask, inverse=False)
     acc_l = _apply_mask_channel(left, melodic_mask, inverse=True)
     acc_r = _apply_mask_channel(right, melodic_mask, inverse=True)
+    _log_mem("[split_melodic] post-STFT-apply")
 
     # Quality gate: both halves must have >= 15% of total energy
     total_energy = _rms((left + right) / 2)
@@ -861,6 +881,7 @@ def _melodic_split_pass(refined: dict, out_dir: "Path", sr: int = 44100,
 
     MAX_REFINED_STEMS = 10  # must match the cap in separate_stems()
 
+    _log_mem(f"[melodic_split] START ({len(candidates)} candidates)")
     for key, stem_data in candidates:
         # Check cap
         if len(refined) >= MAX_REFINED_STEMS:
@@ -906,6 +927,7 @@ def _melodic_split_pass(refined: dict, out_dir: "Path", sr: int = 44100,
         except Exception as _trunc_e:
             print(f"[melodic_split] truncation warning ({key}): {_trunc_e} — using full file")
 
+        _log_mem(f"[melodic_split] pre-basic-pitch ({key}, dur={duration:.0f}s)")
         print(f"[melodic_split] running Basic Pitch on {key}...")
         config = _get_instrument_config("note_list")
         try:
@@ -930,6 +952,7 @@ def _melodic_split_pass(refined: dict, out_dir: "Path", sr: int = 44100,
                 except Exception:
                     pass
 
+        _log_mem(f"[melodic_split] post-basic-pitch ({key})")
         note_events = _normalize_note_events(raw_note_events)
         del raw_note_events
 
@@ -974,6 +997,7 @@ def _melodic_split_pass(refined: dict, out_dir: "Path", sr: int = 44100,
         print(f"[melodic_split] {key} mask tiled to full audio (mean={mask_energy_ratio:.4f})")
 
         # Split
+        _log_mem(f"[melodic_split] pre-STFT-split ({key}, mask={melodic_mask.nbytes/1024/1024:.1f}MB)")
         result = _split_melodic_stem(left, right, file_sr, melodic_mask,
                                       n_fft=n_fft, hop_length=hop_length)
         del melodic_mask
@@ -1045,7 +1069,9 @@ def _melodic_split_pass(refined: dict, out_dir: "Path", sr: int = 44100,
 
         print(f"[melodic_split] {key} → {lead_key} (E={lead_energy:.4f}) + {acc_key} (E={acc_energy:.4f})")
         _gc.collect()
+        _log_mem(f"[melodic_split] post-split ({key})")
 
+    _log_mem(f"[melodic_split] END ({len(refined)} stems)")
     return refined
 
 
@@ -1300,21 +1326,15 @@ def _separate_stems_replicate(audio_path: Path, out_dir: Path, progress_callback
                     f.write(chunk)
                     byte_count += len(chunk)
         print(f"[replicate] downloaded: {stem_name} ({byte_count:,} bytes) — converting to wav")
-        # Convert MP3 → WAV so downstream pipeline stays unchanged (expects .wav)
-        import soundfile as _sf
+        # Convert MP3 → WAV via ffmpeg subprocess — avoids loading ~190MB float32
+        # array per stem into Python memory. ffmpeg streams the conversion.
         try:
-            _data, _sr = _sf.read(str(mp3_tmp), dtype="float32")
-            _sf.write(str(wav_dest), _data, _sr)
-            del _data, _sr  # Free immediately — these are large arrays (190MB+ for long songs)
-        except Exception:
-            # soundfile may not support MP3 in all environments — fall back to librosa
-            import librosa as _librosa
-            import numpy as _np
-            _data, _sr = _librosa.load(str(mp3_tmp), sr=None, mono=False)
-            if _data.ndim == 1:
-                _data = _np.stack([_data, _data], axis=0)
-            _sf.write(str(wav_dest), _data.T, _sr)
-            del _data, _sr  # Free immediately
+            _conv = subprocess.run(
+                ["ffmpeg", "-y", "-i", str(mp3_tmp), "-ar", "44100", "-ac", "2", str(wav_dest)],
+                capture_output=True, timeout=60,
+            )
+            if _conv.returncode != 0:
+                raise RuntimeError(f"ffmpeg MP3→WAV failed: {_conv.stderr[-300:]}")
         finally:
             try:
                 mp3_tmp.unlink()
@@ -1423,6 +1443,7 @@ def separate_stems(audio_path: str, song_id: str, progress_callback=None, instru
         print(f"[separation] path = local")
         raw_stems, model = _separate_stems_local(audio_path, out_dir, progress_callback)
 
+    _log_mem(f"[separate_stems] post-demucs ({len(raw_stems)} raw stems)")
     # ── Step 2: Refine each stem ──
     if progress_callback:
         progress_callback("Analyzing instruments...")
@@ -1629,10 +1650,12 @@ def separate_stems(audio_path: str, song_id: str, progress_callback=None, instru
       if _raw_cleaned:
           print(f"[processor] cleaned {_raw_cleaned} _raw_* intermediate files")
 
+    _log_mem(f"[separate_stems] post-refine ({len(refined)} stems)")
     # ── Step 3: Melodic split pass ──
     if progress_callback:
         progress_callback("Refining instrument separation...")
     refined = _melodic_split_pass(refined, out_dir, progress_callback=progress_callback)
+    _log_mem(f"[separate_stems] post-melodic-split ({len(refined)} stems)")
 
     # If backing vocals exist, promote "Vocals" → "Lead Vocals" for clarity
     has_backing = any(
@@ -1761,6 +1784,7 @@ def extract_note_events(stem_path: str, stem_name: str, label: str = "", bpm: fl
     renderer = _get_tab_renderer(label or stem_name)
     config = _get_instrument_config(renderer, configs)
 
+    _log_mem(f"[extract_notes] pre-predict ({stem_name})")
     model_output, midi_data, note_events = predict(
         str(stem_path),
         ICASSP_2022_MODEL_PATH,
@@ -1771,6 +1795,7 @@ def extract_note_events(stem_path: str, stem_name: str, label: str = "", bpm: fl
         maximum_frequency=config["max_freq"],
     )
     del model_output, midi_data  # Large objects, not needed
+    _log_mem(f"[extract_notes] post-predict ({stem_name})")
 
     note_events = _normalize_note_events(note_events)
     _log_confidence_stats(stem_name, label, renderer, note_events, config["confidence_threshold"])
