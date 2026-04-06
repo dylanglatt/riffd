@@ -29,6 +29,81 @@ def _get_client():
         return None
 
 
+def predict_instruments(song_name: str, artist: str, tags: list[str] | None = None) -> dict | None:
+    """
+    Use Claude Haiku to predict what instruments are in a song before Demucs runs.
+    Returns dict with instruments list, boolean flags, and notable info, or None on failure.
+    """
+    client = _get_client()
+    if not client:
+        print("[hints] no ANTHROPIC_API_KEY set — skipping instrument prediction")
+        return None
+
+    genre = ", ".join(tags[:5]) if tags else "Unknown"
+    user_msg = f'Song: "{song_name}" by {artist}\nGenre/Tags: {genre}\n\nReturn the JSON instrument prediction.'
+
+    system_prompt = (
+        "You are a music production expert. Given a song title, artist, and genre tags, "
+        "predict the sound sources in the production.\n\n"
+        "CRITICAL: Use the right vocabulary for the genre. Each category has distinct sounds:\n"
+        "- electronic (house, techno, trance, EDM): 'synth lead', 'synth pad', 'sub bass', "
+        "'arpeggiator', 'pluck synth', 'FX/riser', 'acid bassline', 'vocoder'\n"
+        "- hiphop (hip-hop, trap, drill, boom bap, R&B): '808 bass', '808 kick', 'hi-hat rolls', "
+        "'vocal chops', 'sampled loop', 'synth bells', 'tag/producer tag'\n"
+        "- band (rock, punk, metal, alternative, indie): 'electric guitar', 'distorted guitar', "
+        "'bass guitar', 'drum kit', 'rhythm guitar', 'lead guitar'\n"
+        "- jazz (jazz, soul, funk, neo-soul, blues): 'upright bass', 'Rhodes piano', 'Wurlitzer', "
+        "'brushed drums', 'walking bass', 'horn section', 'vibraphone'\n"
+        "- classical (orchestral, film score, chamber): 'violin section', 'cello section', "
+        "'French horn', 'timpani', 'oboe', 'harp', 'woodwind section'\n"
+        "- singer_songwriter (acoustic, folk, country, indie folk): 'acoustic guitar', "
+        "'fingerpicked guitar', 'upright piano', 'harmonica', 'banjo', 'pedal steel'\n"
+        "- world (Latin, Afrobeat, reggae, K-pop, Bollywood, reggaeton): 'congas', 'bongos', "
+        "'steel drums', 'sitar', 'tabla', 'dembow beat', 'marimba', 'kora'\n"
+        "- ambient (ambient, shoegaze, dream pop, post-rock, drone): 'reverb guitar', "
+        "'shimmer pad', 'granular texture', 'feedback', 'bowed guitar', 'field recording'\n\n"
+        "Pick the BEST matching category. If the song blends genres, pick the dominant one.\n"
+        "Only list sounds you're confident are in the recording. Return valid JSON only.\n"
+        'Format: {"instruments": ["vocals", "synth lead", "sub bass", ...], '
+        '"category": "electronic|hiphop|band|jazz|classical|singer_songwriter|world|ambient", '
+        '"has_piano": false, "has_guitar": false, "has_synth": true, '
+        '"has_strings": false, "has_brass": false, "has_acoustic_guitar": false, '
+        '"has_sub_bass": true, "has_808": false, "has_sampled_elements": true, '
+        '"notable": "short note about production techniques, tuning, sound design, or unusual elements"}'
+    )
+
+    try:
+        t0 = time.time()
+        response = client.messages.create(
+            model="claude-haiku-4-5-20251001",
+            max_tokens=300,
+            system=system_prompt,
+            messages=[{"role": "user", "content": user_msg}],
+            timeout=8.0,
+        )
+        raw = response.content[0].text.strip()
+        elapsed = time.time() - t0
+        print(f"[hints] predicted in {elapsed:.1f}s ({len(raw)} chars)")
+
+        # Strip markdown code fences if present
+        if raw.startswith("```"):
+            raw = raw.split("\n", 1)[1] if "\n" in raw else raw[3:]
+            if raw.endswith("```"):
+                raw = raw[:-3]
+            raw = raw.strip()
+
+        result = json.loads(raw)
+        instruments = result.get("instruments", [])
+        print(f"[hints] predicted: {', '.join(instruments)}")
+        return result
+    except json.JSONDecodeError as e:
+        print(f"[hints] JSON parse failed: {e}")
+        return None
+    except Exception as e:
+        print(f"[hints] instrument prediction failed: {e}")
+        return None
+
+
 def generate_insight(song_name, artist, intelligence, lyrics=None, tags=None, exclude_songs=None):
     """
     Generate structured musical insight using Claude Haiku.

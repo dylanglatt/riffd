@@ -1674,6 +1674,11 @@ async function _uploadFromConfirm(file) {
 async function startProcessing(){
   setError("");
 
+  // Ensure we transition to the mixer/loading view — needed when triggered
+  // from the Dive In button or Try Again after an error recovery, since
+  // those paths land on the confirm view without calling _showMixLoading().
+  _showMixLoading();
+
   if(selectedTrack && !currentJobId) {
     _updateMixLoadingStatus("Downloading audio...");
     _topBar.startCreep(15, 28, 'Downloading...');

@@ -131,9 +131,110 @@ _DEFAULT_CONFIG = {
 }
 
 
-def _get_instrument_config(renderer_type: str) -> dict:
+def _get_instrument_config(renderer_type: str, configs: dict | None = None) -> dict:
     """Get Basic Pitch parameters + confidence threshold for an instrument type."""
-    return INSTRUMENT_CONFIGS.get(renderer_type, _DEFAULT_CONFIG)
+    source = configs if configs is not None else INSTRUMENT_CONFIGS
+    return source.get(renderer_type, _DEFAULT_CONFIG)
+
+
+# ─── Genre Profiles ─────────────────────────────────────────────────────────
+# Each profile defines frequency/confidence overrides for note detection and
+# energy thresholds for stem filtering. Adding a new genre = one dict entry.
+# Keys are category values returned by predict_instruments().
+
+GENRE_PROFILES = {
+    "electronic": {
+        "bass_tab":  {"min_freq": 20, "max_freq": 250, "confidence_threshold": 0.20},
+        "note_list": {"min_freq": 60, "max_freq": 4000, "confidence_threshold": 0.25},
+        "drum_tab":  {"min_freq": 20, "confidence_threshold": 0.12},
+        "energy": {"other": {"min_relative": 0.08, "min_absolute": 0.003},
+                   "bass":  {"min_relative": 0.08, "min_absolute": 0.003}},
+    },
+    "hiphop": {
+        "bass_tab":  {"min_freq": 20, "max_freq": 200, "confidence_threshold": 0.18},
+        "drum_tab":  {"min_freq": 20, "confidence_threshold": 0.12},
+        "note_list": {"min_freq": 60, "max_freq": 3500, "confidence_threshold": 0.25},
+        "energy": {"other": {"min_relative": 0.08, "min_absolute": 0.003},
+                   "bass":  {"min_relative": 0.06, "min_absolute": 0.002}},
+    },
+    "jazz": {
+        "bass_tab":  {"min_freq": 30, "max_freq": 500, "confidence_threshold": 0.25},
+        "guitar_tab": {"min_freq": 70, "max_freq": 1800},
+        "note_list": {"min_freq": 60, "max_freq": 3000, "confidence_threshold": 0.28},
+        "energy": {"piano": {"min_relative": 0.10, "min_absolute": 0.004},
+                   "other": {"min_relative": 0.10, "min_absolute": 0.004}},
+    },
+    "classical": {
+        "note_list": {"min_freq": 40, "max_freq": 4500, "confidence_threshold": 0.25},
+        "bass_tab":  {"min_freq": 30, "max_freq": 600, "confidence_threshold": 0.22},
+        "energy": {"other": {"min_relative": 0.06, "min_absolute": 0.002},
+                   "piano": {"min_relative": 0.08, "min_absolute": 0.003}},
+    },
+    "singer_songwriter": {
+        "guitar_tab": {"min_freq": 70, "max_freq": 1600, "confidence_threshold": 0.30},
+        "note_list":  {"min_freq": 70, "max_freq": 2500, "confidence_threshold": 0.30},
+        "energy": {"guitar": {"min_relative": 0.12, "min_absolute": 0.004},
+                   "piano":  {"min_relative": 0.10, "min_absolute": 0.004}},
+    },
+    "world": {
+        "note_list": {"min_freq": 50, "max_freq": 4000, "confidence_threshold": 0.25},
+        "drum_tab":  {"min_freq": 30, "max_freq": 5000, "confidence_threshold": 0.12},
+        "energy": {"other": {"min_relative": 0.08, "min_absolute": 0.003}},
+    },
+    "ambient": {
+        "note_list": {"min_freq": 40, "max_freq": 5000, "confidence_threshold": 0.20},
+        "bass_tab":  {"min_freq": 20, "max_freq": 300, "confidence_threshold": 0.18},
+        "energy": {"other": {"min_relative": 0.06, "min_absolute": 0.002},
+                   "guitar": {"min_relative": 0.08, "min_absolute": 0.003}},
+    },
+    # "band" uses default INSTRUMENT_CONFIGS — no overrides needed
+}
+
+
+def get_adjusted_configs(instrument_hints: dict | None) -> dict | None:
+    """Return a per-job copy of INSTRUMENT_CONFIGS adjusted for this song, or None if no adjustments needed."""
+    if not instrument_hints:
+        return None
+    import copy
+    configs = copy.deepcopy(INSTRUMENT_CONFIGS)
+    notable = (instrument_hints.get("notable") or "").lower()
+    category = (instrument_hints.get("category") or "").lower()
+    adjusted = False
+
+    # ── Apply genre profile overrides ──
+    profile = GENRE_PROFILES.get(category)
+    if profile:
+        for renderer_key in ("bass_tab", "guitar_tab", "drum_tab", "note_list"):
+            overrides = profile.get(renderer_key)
+            if overrides and renderer_key in configs:
+                configs[renderer_key].update(overrides)
+                adjusted = True
+        if adjusted:
+            print(f"[hints] applied '{category}' genre profile to note detection configs")
+
+    # ── Notable field tweaks (apply on top of genre profile) ──
+    if any(kw in notable for kw in ("drop d", "drop c", "downtuned", "down-tuned", "drop tuning")):
+        configs["guitar_tab"]["min_freq"] = 60
+        configs["bass_tab"]["min_freq"] = 22
+        print("[hints] adjusted guitar/bass freq range for drop tuning")
+        adjusted = True
+
+    if any(kw in notable for kw in ("slap", "high register bass", "slap bass")):
+        configs["bass_tab"]["max_freq"] = 500
+        print("[hints] expanded bass freq range for high register")
+        adjusted = True
+
+    if any(kw in notable for kw in ("extended range", "7-string", "8-string", "baritone")):
+        configs["guitar_tab"]["min_freq"] = 50
+        print("[hints] adjusted guitar freq range for extended range instrument")
+        adjusted = True
+
+    if any(kw in notable for kw in ("piccolo", "flute solo", "high register")):
+        configs["note_list"]["max_freq"] = 5000
+        print("[hints] expanded note_list freq range for high register content")
+        adjusted = True
+
+    return configs if adjusted else None
 
 
 # ─── WAV I/O ─────────────────────────────────────────────────────────────────
@@ -368,17 +469,148 @@ def _classify_component(features, stem_category, position):
 def _get_tab_renderer(label):
     """Map a classified instrument label to the right tab renderer."""
     label_lower = label.lower()
-    if "vocal" in label_lower:
+    if "vocal" in label_lower and "vocoder" not in label_lower:
         return "note_list"
-    if "drum" in label_lower:
+    if any(k in label_lower for k in ("drum", "808 kick", "percussion", "timpani", "tabla")):
         return "drum_tab"
+    # Bass variants — sub bass, acid bass, walking bass, 808 bass all get bass_tab
     if "bass" in label_lower:
         return "bass_tab"
-    if any(k in label_lower for k in ("guitar", "banjo", "mandolin", "ukulele")):
+    if any(k in label_lower for k in ("guitar", "banjo", "mandolin", "ukulele",
+                                       "pedal steel", "fiddle")):
         return "guitar_tab"
-    if any(k in label_lower for k in ("piano", "keyboard", "organ", "synth", "pad")):
-        return "note_list"
+    # Everything pitched that isn't bass/guitar/drums → note_list
     return "note_list"
+
+
+def apply_instrument_hints(stems: dict, instrument_hints: dict | None) -> dict:
+    """
+    Post-process refined stems using LLM instrument predictions.
+    Adjusts labels for vague "other" bucket classifications.
+    Handles both band and electronic/production music vocabulary.
+
+    Mutates and returns the stems dict.
+    """
+    if not instrument_hints:
+        return stems
+
+    predicted = [i.lower() for i in instrument_hints.get("instruments", [])]
+    if not predicted:
+        return stems
+
+    category = (instrument_hints.get("category") or "").lower()
+    predicted_str = " ".join(predicted)
+
+    reclassified = 0
+    for key, stem in stems.items():
+        label = stem["label"].lower()
+
+        # Only reclassify vague labels from the "other" bucket
+        if label not in ("pad", "atmosphere", "synth", "other"):
+            continue
+
+        old_label = stem["label"]
+        new_label = _match_predicted_label(predicted, predicted_str, category, features=None)
+        if new_label and new_label.lower() != label:
+            stem["label"] = new_label
+            print(f'[hints] reclassified "{old_label}" → "{new_label}" (stem: {key})')
+            reclassified += 1
+
+    if reclassified:
+        print(f"[hints] reclassified {reclassified} stem(s) using instrument predictions")
+    else:
+        print("[hints] no stems reclassified (labels already specific or no match)")
+
+    return stems
+
+
+def _match_predicted_label(predicted: list, predicted_str: str, category: str, features: dict | None) -> str | None:
+    """
+    Match predicted instruments to a display label.
+    Order: most specific first → genre-specific → generic fallbacks.
+    Returns None if no confident match.
+    """
+    # ── Electronic / production ──
+    if any(s in predicted for s in ("synth lead", "lead synth", "synth melody")):
+        return "Synth Lead"
+    if any(s in predicted for s in ("synth pad", "pad synth", "ambient pad", "shimmer pad")):
+        return "Synth Pad"
+    if any(s in predicted for s in ("pluck synth", "pluck", "synth pluck")):
+        return "Pluck"
+    if any(s in predicted for s in ("arpeggiator", "arp", "synth arp")):
+        return "Arp"
+    if any(s in predicted for s in ("acid bassline", "acid", "303")):
+        return "Acid Bass"
+    if any(s in predicted for s in ("sub bass", "sub-bass", "808 bass", "808")):
+        return "Sub Bass"
+    if any(s in predicted for s in ("fx", "fx/riser", "riser", "sweep", "impact", "transition")):
+        return "FX"
+    if any(s in predicted for s in ("vocoder", "talkbox", "vocal synth")):
+        return "Vocoder"
+    if any(s in predicted for s in ("sampled chops", "vocal chops", "chops", "sampled loop")):
+        return "Sample"
+    if any(s in predicted for s in ("synth bells", "bells", "chime")):
+        return "Bells"
+    if any(s in predicted for s in ("granular texture", "granular", "texture")):
+        return "Texture"
+    if any(s in predicted for s in ("field recording", "ambient noise")):
+        return "Field Recording"
+
+    # ── Jazz / soul / funk ──
+    if any(s in predicted for s in ("rhodes", "rhodes piano", "wurlitzer", "fender rhodes")):
+        return "Rhodes"
+    if any(s in predicted for s in ("vibraphone", "vibes", "marimba")):
+        return "Vibraphone" if "vibraphone" in predicted_str or "vibes" in predicted_str else "Marimba"
+    if any(s in predicted for s in ("horn section", "horns")):
+        return "Horns"
+
+    # ── Classical / orchestral ──
+    if any(s in predicted for s in ("violin section", "violin", "viola")):
+        return "Strings"
+    if any(s in predicted for s in ("cello section", "cello", "contrabass")):
+        return "Strings"
+    if any(s in predicted for s in ("strings", "string section", "orchestra", "orchestral strings")):
+        return "Strings"
+    if any(s in predicted for s in ("french horn", "timpani")):
+        return "Brass" if "french horn" in predicted_str else "Percussion"
+    if any(s in predicted for s in ("harp",)):
+        return "Harp"
+    if any(s in predicted for s in ("oboe", "flute", "clarinet", "bassoon", "woodwind", "woodwind section")):
+        return "Woodwind"
+
+    # ── World / Latin / global ──
+    if any(s in predicted for s in ("sitar", "tabla", "tanpura", "sarangi")):
+        return "Sitar" if "sitar" in predicted_str else "Tabla"
+    if any(s in predicted for s in ("congas", "bongos", "timbales", "djembe")):
+        return "Percussion"
+    if any(s in predicted for s in ("steel drums", "steel pan")):
+        return "Steel Drums"
+    if any(s in predicted for s in ("kora", "balafon", "kalimba", "mbira")):
+        return "Kora" if "kora" in predicted_str else "Kalimba"
+    if any(s in predicted for s in ("accordion", "bandoneon", "concertina")):
+        return "Accordion"
+
+    # ── Singer-songwriter / folk / country ──
+    if any(s in predicted for s in ("harmonica", "mouth harp")):
+        return "Harmonica"
+    if any(s in predicted for s in ("banjo",)):
+        return "Banjo"
+    if any(s in predicted for s in ("pedal steel", "lap steel", "steel guitar")):
+        return "Pedal Steel"
+    if any(s in predicted for s in ("fiddle",)):
+        return "Fiddle"
+
+    # ── Common across genres ──
+    if any(s in predicted for s in ("organ", "hammond", "b3", "hammond organ")):
+        return "Organ"
+    if any(s in predicted for s in ("brass", "trumpet", "horn", "trombone", "saxophone", "brass section")):
+        return "Brass"
+
+    # ── Generic synth fallback ──
+    if category in ("electronic", "hiphop", "ambient") or any(s in predicted for s in ("synth", "synthesizer")):
+        return "Synth"
+
+    return None
 
 
 # ─── Melodic Split ──────────────────────────────────────────────────────────
@@ -1117,7 +1349,7 @@ def _separate_stems_replicate(audio_path: Path, out_dir: Path, progress_callback
     return raw_stems, "replicate_htdemucs"
 
 
-def separate_stems(audio_path: str, song_id: str, progress_callback=None) -> dict:
+def separate_stems(audio_path: str, song_id: str, progress_callback=None, instrument_hints: dict | None = None) -> dict:
     """
     Full pipeline:
       1. Run Demucs for initial separation (hosted or local)
@@ -1196,6 +1428,38 @@ def separate_stems(audio_path: str, song_id: str, progress_callback=None) -> dic
         progress_callback("Analyzing instruments...")
 
     refined = {}
+
+    # Build per-stem energy overrides from instrument hints.
+    # Genre profiles define baseline overrides; boolean flags add instrument-specific tweaks.
+    energy_overrides = {}
+    if instrument_hints:
+        category = (instrument_hints.get("category") or "").lower()
+
+        # Apply genre profile energy overrides first (from GENRE_PROFILES)
+        profile = GENRE_PROFILES.get(category, {})
+        profile_energy = profile.get("energy", {})
+        if profile_energy:
+            for stem_key, thresholds in profile_energy.items():
+                energy_overrides[stem_key] = dict(thresholds)
+            print(f"[hints] applied '{category}' energy profile: {list(profile_energy.keys())}")
+
+        # Layer on instrument-specific overrides from boolean flags
+        if instrument_hints.get("has_piano"):
+            energy_overrides.setdefault("piano", {})
+            energy_overrides["piano"].update({"min_relative": 0.10, "min_absolute": 0.004})
+            print("[hints] lowered piano energy threshold (predicted present)")
+        if instrument_hints.get("has_strings") or instrument_hints.get("has_brass"):
+            energy_overrides.setdefault("other", {})
+            energy_overrides["other"].update({"min_relative": 0.10, "min_absolute": 0.004})
+            print("[hints] lowered 'other' energy threshold (strings/brass predicted)")
+        if instrument_hints.get("has_acoustic_guitar"):
+            energy_overrides.setdefault("guitar", {})
+            energy_overrides["guitar"].update({"min_relative": 0.12, "min_absolute": 0.004})
+            print("[hints] adjusted guitar energy threshold (acoustic guitar predicted)")
+        if instrument_hints.get("has_sub_bass") or instrument_hints.get("has_808"):
+            energy_overrides.setdefault("bass", {})
+            energy_overrides["bass"].update({"min_relative": 0.06, "min_absolute": 0.002})
+            print("[hints] lowered bass energy threshold (sub bass/808 predicted)")
 
     # Cap total refined stems to prevent OOM on complex songs (e.g. Layla → 14 stems).
     # Demucs returns 6 raw stems; stereo separation can multiply this to 15+.
@@ -1287,7 +1551,11 @@ def separate_stems(audio_path: str, song_id: str, progress_callback=None) -> dic
             energy = _rms(mono)
 
             # Skip components that are too quiet (relative or absolute)
-            if energy < stem_energy * MIN_RELATIVE_ENERGY or energy < MIN_ABSOLUTE_ENERGY:
+            # Use per-stem energy overrides from instrument hints if available
+            _overrides = energy_overrides.get(stem_name, {})
+            _rel_thresh = _overrides.get("min_relative", MIN_RELATIVE_ENERGY)
+            _abs_thresh = _overrides.get("min_absolute", MIN_ABSOLUTE_ENERGY)
+            if energy < stem_energy * _rel_thresh or energy < _abs_thresh:
                 continue
 
             feat = _spectral_features(mono, sr)
@@ -1473,15 +1741,19 @@ _NO_TAB_STEMS = {"vocals", "lead_vocal", "backing_vocal", "harmony_vocal",
                   "vocal_double", "vocal_layer", "vocal_pad"}
 
 
-def extract_note_events(stem_path: str, stem_name: str, label: str = "", bpm: float = 120.0):
+def extract_note_events(stem_path: str, stem_name: str, label: str = "", bpm: float = 120.0, configs: dict | None = None):
     """
     Run Basic Pitch inference on a stem and return the normalized note events DataFrame.
     No MIDI, CSV, or ASCII tab files are written — inference output only.
     Returns None on failure.
+
+    Args:
+        configs: Optional per-job INSTRUMENT_CONFIGS copy (from get_adjusted_configs).
+                 Falls back to module-level INSTRUMENT_CONFIGS when None.
     """
     _ensure_imports()
     renderer = _get_tab_renderer(label or stem_name)
-    config = _get_instrument_config(renderer)
+    config = _get_instrument_config(renderer, configs)
 
     model_output, midi_data, note_events = predict(
         str(stem_path),

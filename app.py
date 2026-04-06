@@ -945,7 +945,15 @@ def process_audio(job_id):
                     return []
 
             def _run_demucs():
-                return separate_stems(audio_path, job_id, progress_callback=on_progress)
+                # Wait for instrument hints (fast — <2s) so energy overrides
+                # can be applied during stem refinement. Hints resolve well
+                # before Demucs finishes its 20s+ separation.
+                hints = None
+                try:
+                    hints = fut_hints.result(timeout=10)
+                except Exception:
+                    pass  # Hints are optional — proceed without them
+                return separate_stems(audio_path, job_id, progress_callback=on_progress, instrument_hints=hints)
 
             def _run_early_key():
                 """Key + BPM on the original audio — runs concurrently with Demucs.
@@ -967,7 +975,16 @@ def process_audio(job_id):
             except Exception:
                 pass
 
-            with _TPE(max_workers=4) as _pool:
+            def _run_instrument_hints():
+                try:
+                    from insight import predict_instruments
+                    return predict_instruments(track_name, artist_name, tags=None)
+                except Exception as e:
+                    _fail("instrument_hints", e)
+                    return None
+
+            with _TPE(max_workers=5) as _pool:
+                fut_hints     = _pool.submit(_run_instrument_hints)
                 fut_demucs    = _pool.submit(_run_demucs)
                 fut_lyrics    = _pool.submit(_fetch_lyrics)
                 fut_tags      = _pool.submit(_fetch_tags)
@@ -999,6 +1016,14 @@ def process_audio(job_id):
                 except Exception as _ek_e:
                     print(f"[job {job_id}] [{_elapsed()}] early key publish error: {_ek_e}")
 
+                # Collect instrument hints (fast — should complete in <2s)
+                instrument_hints = fut_hints.result()
+                if instrument_hints:
+                    jobs[job_id]["instrument_hints"] = instrument_hints
+                    print(f"[job {job_id}] [{_elapsed()}] instrument hints collected")
+                else:
+                    print(f"[job {job_id}] [{_elapsed()}] instrument hints: none")
+
                 # Wait for Demucs (the slow one)
                 try:
                     stems = fut_demucs.result()
@@ -1022,6 +1047,12 @@ def process_audio(job_id):
             gc.collect()
             print(f"[job {job_id}] [{_elapsed()}] DEMUCS finished → {len(stems)} stems: {list(stems.keys())}")
             _log_memory(f"[job {job_id}] post-demucs")
+
+            # Apply instrument hints to improve stem classification
+            if stems and instrument_hints:
+                from processor import apply_instrument_hints
+                stems = apply_instrument_hints(stems, instrument_hints)
+
             # Free any large in-memory objects from demucs before Basic Pitch
             gc.collect()
             _log_memory(f"[job {job_id}] pre-basic-pitch")
@@ -1085,6 +1116,12 @@ def process_audio(job_id):
                 _log_memory(f"[job {job_id}] post-early-mp3")
             del _sp_early
 
+            # Adjust note detection configs based on instrument hints (per-job copy)
+            _adjusted_configs = None
+            if instrument_hints:
+                from processor import get_adjusted_configs
+                _adjusted_configs = get_adjusted_configs(instrument_hints)
+
             # ── Stage 3: Note extraction (Basic Pitch) — sequential across priority stems ──
             # Drums produce no useful pitch data — skip entirely.
             # Secondary stems (harmony/backing vocals, synth, keys, other) are skipped for
@@ -1136,7 +1173,7 @@ def process_audio(job_id):
                         print(f"[job {job_id}] truncation warning ({stem_key}): {_trunc_e} — using full file")
 
                     try:
-                        ne = extract_note_events(infer_path, stem_key, label=label, bpm=detected_bpm)
+                        ne = extract_note_events(infer_path, stem_key, label=label, bpm=detected_bpm, configs=_adjusted_configs)
                     finally:
                         # Always clean up temp file — full WAV untouched for playback
                         if tmp_path and _os.path.exists(tmp_path):
