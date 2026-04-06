@@ -1226,15 +1226,54 @@ def process_audio(job_id):
                     except Exception as _trunc_e:
                         print(f"[job {job_id}] truncation warning ({stem_key}): {_trunc_e} — using full file")
 
+                    # Run Basic Pitch in a child process so TF memory (~1.2GB) is
+                    # fully reclaimed by the OS when the child exits.
+                    # The parent stays lean between stems.
+                    import pickle as _pickle
+                    _result_path = None
                     try:
-                        ne = extract_note_events(infer_path, stem_key, label=label, bpm=detected_bpm, configs=_adjusted_configs)
+                        _res_fd, _result_path = _tempfile.mkstemp(suffix=f"_{stem_key}_notes.pkl")
+                        _os.close(_res_fd)
+
+                        # Serialize configs to pass to child process
+                        _configs_path = None
+                        if _adjusted_configs:
+                            _cfg_fd, _configs_path = _tempfile.mkstemp(suffix="_configs.pkl")
+                            _os.close(_cfg_fd)
+                            with open(_configs_path, "wb") as _cf:
+                                _pickle.dump(_adjusted_configs, _cf)
+
+                        _script = f'''
+import pickle, sys
+sys.path.insert(0, ".")
+from processor import extract_note_events
+configs = None
+configs_path = {_configs_path!r}
+if configs_path:
+    with open(configs_path, "rb") as f:
+        configs = pickle.load(f)
+result = extract_note_events({infer_path!r}, {stem_key!r}, label={label!r}, bpm={detected_bpm!r}, configs=configs)
+with open({_result_path!r}, "wb") as f:
+    pickle.dump(result, f)
+'''
+                        _proc = _sp.run(
+                            ["python", "-c", _script],
+                            capture_output=True, text=True, timeout=120,
+                            cwd=str(Path(__file__).parent),
+                        )
+                        if _proc.returncode != 0:
+                            raise RuntimeError(f"Basic Pitch subprocess failed: {_proc.stderr[-500:]}")
+
+                        with open(_result_path, "rb") as _rf:
+                            ne = _pickle.load(_rf)
                     finally:
-                        # Always clean up temp file — full WAV untouched for playback
-                        if tmp_path and _os.path.exists(tmp_path):
-                            try:
-                                _os.remove(tmp_path)
-                            except Exception:
-                                pass
+                        # Always clean up temp files
+                        for _tmp in (tmp_path, _result_path, _configs_path):
+                            if _tmp and _os.path.exists(_tmp):
+                                try:
+                                    _os.remove(_tmp)
+                                except Exception:
+                                    pass
 
                     # Convert this stem's WAV→MP3 immediately after inference.
                     # Frees ~190MB per stem instead of holding all WAVs until the batch step.
