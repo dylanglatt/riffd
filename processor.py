@@ -692,7 +692,14 @@ def _extract_melodic_mask(note_events, sr: int, n_samples: int,
     ends = lead_notes["end_time_s"].values
     lead_pitches = lead_notes["pitch_midi"].values
 
-    mask = np.zeros((n_freq_bins, n_time_frames), dtype=np.float32)
+    # Use disk-backed memmap for the mask array — moves ~101MB from RSS to
+    # disk-backed virtual memory that the OS can page out under pressure.
+    import tempfile as _tf_mask
+    _mask_fd, _mask_path = _tf_mask.mkstemp(suffix="_melodic_mask.dat")
+    import os as _os_mask
+    _os_mask.close(_mask_fd)
+    mask = np.memmap(_mask_path, dtype=np.float32, mode='w+',
+                     shape=(n_freq_bins, n_time_frames))
 
     # 100 Hz bandwidth captures enough energy around each harmonic for
     # meaningful signal separation
@@ -730,8 +737,15 @@ def _extract_melodic_mask(note_events, sr: int, n_samples: int,
           f"lead_notes={len(lead_notes)}/{len(confident_notes)})")
 
     if mask_coverage < 0.005:  # 0.5% minimum — very lenient, quality gate handles the rest
+        del mask
+        try:
+            _os_mask.remove(_mask_path)
+        except Exception:
+            pass
         return None
 
+    # Attach path for cleanup by caller
+    mask._memmap_path = _mask_path
     return mask
 
 
@@ -745,6 +759,7 @@ def _split_melodic_stem(left, right, sr: int, melodic_mask,
     """
     def _apply_mask_channel(signal, mask, inverse=False):
         """Apply (or invert) a T-F mask to a signal via STFT → mask → iSTFT."""
+        import tempfile as _tf_ch, os as _os_ch
         win = np.hanning(n_fft).astype(np.float32)
         # Pad signal
         orig_len = len(signal)
@@ -752,8 +767,14 @@ def _split_melodic_stem(left, right, sr: int, melodic_mask,
         padded = np.pad(signal, (0, pad)).astype(np.float32)
 
         n_frames = (len(padded) - n_fft) // hop_length + 1
-        out = np.zeros(len(padded), dtype=np.float32)
-        win_sq = np.zeros(len(padded), dtype=np.float32)
+
+        # Use memmap for output arrays — moves them to disk-backed virtual memory
+        _out_fd, _out_path = _tf_ch.mkstemp(suffix="_stft_out.dat")
+        _os_ch.close(_out_fd)
+        _wsq_fd, _wsq_path = _tf_ch.mkstemp(suffix="_stft_wsq.dat")
+        _os_ch.close(_wsq_fd)
+        out = np.memmap(_out_path, dtype=np.float32, mode='w+', shape=(len(padded),))
+        win_sq = np.memmap(_wsq_path, dtype=np.float32, mode='w+', shape=(len(padded),))
 
         m = (1.0 - mask) if inverse else mask
 
@@ -770,8 +791,14 @@ def _split_melodic_stem(left, right, sr: int, melodic_mask,
             win_sq[s:s + n_fft] += win ** 2
 
         norm = np.maximum(win_sq, 1e-8)
-        result = (out / norm)[:orig_len]
+        result = np.array((out / norm)[:orig_len])  # copy to regular array
         del out, win_sq, padded, norm
+        # Clean up memmap files
+        for _p in (_out_path, _wsq_path):
+            try:
+                _os_ch.remove(_p)
+            except Exception:
+                pass
         return result
 
     import gc as _gc_split
@@ -1018,7 +1045,15 @@ def _melodic_split_pass(refined: dict, out_dir: "Path", sr: int = 44100,
         n_time_full = (len(left) - n_fft) // hop_length + 1
         n_tile = int(np.ceil(n_time_full / mask_90s.shape[1]))
         melodic_mask = np.tile(mask_90s, (1, n_tile))[:, :n_time_full].copy()
+        # Clean up memmap file from _extract_melodic_mask
+        _mask_mm_path = getattr(mask_90s, '_memmap_path', None)
         del mask_90s
+        if _mask_mm_path:
+            import os as _os_mm
+            try:
+                _os_mm.remove(_mask_mm_path)
+            except Exception:
+                pass
 
         # Check energy coverage of mask before splitting
         mask_energy_ratio = float(np.mean(melodic_mask))
