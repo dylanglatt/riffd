@@ -1070,6 +1070,19 @@ def process_audio(job_id):
                 except Exception as _ek_e:
                     print(f"[job {job_id}] [{_elapsed()}] early key publish error: {_ek_e}")
 
+                # Unload essentia from process memory — it's never used again.
+                # Frees ~100MB that would otherwise stay resident for the rest of the job.
+                try:
+                    import sys as _sys_ess
+                    _ess_mods = [m for m in _sys_ess.modules if m.startswith("essentia")]
+                    for _em in _ess_mods:
+                        del _sys_ess.modules[_em]
+                    if _ess_mods:
+                        gc.collect()
+                        print(f"[job {job_id}] [{_elapsed()}] unloaded {len(_ess_mods)} essentia modules")
+                except Exception:
+                    pass
+
                 # Collect instrument hints (fast — should complete in <2s)
                 instrument_hints = fut_hints.result()
                 if instrument_hints:

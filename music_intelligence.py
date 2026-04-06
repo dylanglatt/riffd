@@ -109,9 +109,13 @@ def detect_key_from_audio(audio_path):
         import essentia.standard as es
         audio = es.MonoLoader(filename=str(audio_path), sampleRate=44100)()
         key, scale, confidence = es.KeyExtractor()(audio)
+        del audio
         key_num = _ESSENTIA_KEY_MAP.get(key, -1)
         mode_num = 1 if scale == "major" else 0
         print(f"[essentia] key={key} {scale} confidence={confidence:.3f}")
+        del es
+        import gc as _gc_ess
+        _gc_ess.collect()
         return key_num, mode_num, float(confidence)
     except ImportError:
         pass  # Essentia not installed — fall through to librosa
@@ -151,12 +155,19 @@ def detect_bpm_from_audio(audio_path):
         audio = es.MonoLoader(filename=str(audio_path), sampleRate=44100)()
         rhythm = es.RhythmExtractor2013(method="multifeature")
         bpm, beats, beats_confidence, _, beats_intervals = rhythm(audio)
+        del audio, rhythm
         import numpy as _np
         beats_conf_arr = _np.atleast_1d(beats_confidence)
         conf = float(beats_conf_arr.mean()) if len(beats_conf_arr) > 0 else 0.0
         if bpm < 40 or bpm > 250:
+            del es
+            import gc as _gc_bpm
+            _gc_bpm.collect()
             return 0, 0.0
         print(f"[essentia] bpm={bpm:.1f} confidence={conf:.3f} ({len(beats)} beats)")
+        del es
+        import gc as _gc_bpm
+        _gc_bpm.collect()
         return round(float(bpm), 1), round(min(1.0, conf), 3)
     except ImportError:
         pass  # Essentia not installed — fall through to librosa
