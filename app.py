@@ -1293,6 +1293,26 @@ def process_audio(job_id):
                 except RuntimeError:
                     pass  # Already released or never acquired (e.g. no pitched stems)
 
+            # ── Stage 3.5: Melodic split (reuses pre-computed note events) ──
+            # Runs AFTER note extraction so we can pass in note_events_all,
+            # eliminating a redundant TF model load (~1.2GB savings).
+            try:
+                if stems and note_events_all:
+                    from processor import _melodic_split_pass
+                    on_progress("Refining instrument separation...")
+                    print(f"[job {job_id}] [{_elapsed()}] MELODIC SPLIT starting with {len(note_events_all)} pre-computed note event sets...")
+                    stems_dir = OUTPUT_DIR / job_id / "stems"
+                    stems = _melodic_split_pass(stems, stems_dir,
+                                                progress_callback=on_progress,
+                                                note_events_dict=note_events_all)
+                    # Update the stems info published to frontend
+                    jobs[job_id]["stems"] = {k: {"label": v.get("label", k), "energy": v.get("energy", 0), "active": v.get("active", True)} for k, v in stems.items()}
+                    gc.collect()
+                    _log_memory(f"[job {job_id}] post-melodic-split")
+                    print(f"[job {job_id}] [{_elapsed()}] MELODIC SPLIT finished → {len(stems)} stems")
+            except Exception as e:
+                _fail("melodic_split", e)
+
             # ── WAV → MP3 cleanup (safety net) ──
             # Non-inference stems were converted before Basic Pitch loaded.
             # Inference stems were converted individually after each extraction.
