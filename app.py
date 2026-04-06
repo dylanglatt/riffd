@@ -883,6 +883,34 @@ def process_audio(job_id):
         def _elapsed():
             return f"{_time.time()-_t0:.1f}s"
 
+        # Memory guard — reject early if RSS is already too high.
+        # Prevents starting a job that will inevitably OOM and take down the service.
+        def _get_current_rss_mb():
+            try:
+                with open("/proc/self/status") as f:
+                    for line in f:
+                        if line.startswith("VmRSS:"):
+                            return int(line.split()[1]) / 1024
+            except Exception:
+                return 0  # Non-Linux (macOS dev) — skip guard
+
+        _current_rss = _get_current_rss_mb()
+        if _current_rss > 1400:  # Leave 600MB headroom for TF + STFT
+            gc.collect()
+            _current_rss = _get_current_rss_mb()
+            if _current_rss > 1400:
+                print(f"[job {job_id}] MEMORY GUARD: RSS={_current_rss:.0f}MB > 1400MB — rejecting")
+                jobs[job_id].update({
+                    "status": "error",
+                    "error": "Server memory too high — try again in a moment.",
+                    "progress": "Memory guard triggered",
+                })
+                upsert_job_checkpoint(job_id, "error", error="Server memory too high")
+                with _processing_lock:
+                    _active_processing -= 1
+                _dequeue_next()
+                return
+
         # Load heavy processing modules on first job
         separate_stems, extract_note_events = _lazy_processor()
         analyze_song_from_notes = _lazy_music_intelligence()
