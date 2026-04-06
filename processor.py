@@ -319,14 +319,17 @@ def _stereo_separate(left, right):
 
     n_frames = (out_len - N) // hop + 1
 
-    # Output accumulators (center, left-panned, right-panned) × (L, R channels)
-    c_l = np.zeros(out_len, dtype=np.float32)
-    c_r = np.zeros(out_len, dtype=np.float32)
-    p_ll = np.zeros(out_len, dtype=np.float32)
-    p_lr = np.zeros(out_len, dtype=np.float32)
-    p_rl = np.zeros(out_len, dtype=np.float32)
-    p_rr = np.zeros(out_len, dtype=np.float32)
-    win_sq = np.zeros(out_len, dtype=np.float32)
+    # Output accumulators — float16 halves memory (~177MB savings for 5-min song).
+    # Per-frame STFT math stays float32; results are cast to float16 before accumulation.
+    # Final output is normalized and truncated to 16-bit PCM, so float16 precision suffices.
+    c_l = np.zeros(out_len, dtype=np.float16)
+    c_r = np.zeros(out_len, dtype=np.float16)
+    p_ll = np.zeros(out_len, dtype=np.float16)
+    p_lr = np.zeros(out_len, dtype=np.float16)
+    p_rl = np.zeros(out_len, dtype=np.float16)
+    p_rr = np.zeros(out_len, dtype=np.float16)
+    win_sq = np.zeros(out_len, dtype=np.float16)
+    win_f16 = win.astype(np.float16)
 
     # Gaussian mask parameters
     sigma_c = 0.12   # center width
@@ -359,39 +362,39 @@ def _stereo_separate(left, right):
         lm /= total
         rm /= total
 
-        # Reconstruct and overlap-add
-        c_l[s:s + N] += np.fft.irfft(L * cm, n=N) * win
-        c_r[s:s + N] += np.fft.irfft(R * cm, n=N) * win
-        p_ll[s:s + N] += np.fft.irfft(L * lm, n=N) * win
-        p_lr[s:s + N] += np.fft.irfft(R * lm, n=N) * win
-        p_rl[s:s + N] += np.fft.irfft(L * rm, n=N) * win
-        p_rr[s:s + N] += np.fft.irfft(R * rm, n=N) * win
-        win_sq[s:s + N] += win ** 2
+        # Reconstruct and overlap-add (compute in float32, accumulate in float16)
+        c_l[s:s + N] += (np.fft.irfft(L * cm, n=N) * win).astype(np.float16)
+        c_r[s:s + N] += (np.fft.irfft(R * cm, n=N) * win).astype(np.float16)
+        p_ll[s:s + N] += (np.fft.irfft(L * lm, n=N) * win).astype(np.float16)
+        p_lr[s:s + N] += (np.fft.irfft(R * lm, n=N) * win).astype(np.float16)
+        p_rl[s:s + N] += (np.fft.irfft(L * rm, n=N) * win).astype(np.float16)
+        p_rr[s:s + N] += (np.fft.irfft(R * rm, n=N) * win).astype(np.float16)
+        win_sq[s:s + N] += win_f16 ** 2
 
     # Release padded inputs
     del left_p, right_p
     _log_mem("[stereo_separate] after STFT loop")
 
-    # Normalize overlap-add
-    norm = np.maximum(win_sq[:orig_len], 1e-8)
+    # Normalize overlap-add — upcast to float32 for division precision
+    norm = np.maximum(win_sq[:orig_len].astype(np.float32), 1e-8)
     del win_sq
 
     components = {}
 
-    cl = c_l[:orig_len] / norm
-    cr = c_r[:orig_len] / norm
+    cl = c_l[:orig_len].astype(np.float32) / norm
+    cr = c_r[:orig_len].astype(np.float32) / norm
     del c_l, c_r
     if _rms((cl + cr) / 2) > SILENCE_THRESHOLD:
         components["center"] = (cl, cr)
 
-    ll = p_ll[:orig_len] / norm
-    lr = p_lr[:orig_len] / norm
+    ll = p_ll[:orig_len].astype(np.float32) / norm
+    lr = p_lr[:orig_len].astype(np.float32) / norm
     del p_ll, p_lr
     if _rms(ll) > SILENCE_THRESHOLD * 0.5:
         components["left"] = (ll, lr)
 
-    rl = p_rl[:orig_len] / norm
-    rr = p_rr[:orig_len] / norm
+    rl = p_rl[:orig_len].astype(np.float32) / norm
+    rr = p_rr[:orig_len].astype(np.float32) / norm
     del p_rl, p_rr, norm
     if _rms(rr) > SILENCE_THRESHOLD * 0.5:
         components["right"] = (rl, rr)
