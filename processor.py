@@ -827,7 +827,7 @@ _ALREADY_SPLIT_KEYWORDS = {"lead", "backing", "rhythm", "solo", "pad", "accompan
 
 
 def _melodic_split_pass(refined: dict, out_dir: "Path", sr: int = 44100,
-                        progress_callback=None) -> dict:
+                        progress_callback=None, note_events_dict: dict | None = None) -> dict:
     """
     Post-processing pass: attempt to split non-drum/bass stems into
     lead (melodic) and accompaniment components using pitch detection.
@@ -906,55 +906,72 @@ def _melodic_split_pass(refined: dict, out_dir: "Path", sr: int = 44100,
         if progress_callback:
             progress_callback(f"Refining {stem_data.get('label', key)}...")
 
-        # Run Basic Pitch on the stem to get note events for melodic mask.
-        # Truncate to 90s for inference — the mask is derived from pitch patterns
-        # which are stable across a song; running the full file on a 9-min track
-        # creates huge TF tensors and risks OOM (e.g. Free Bird ~190MB per stem).
+        # Use pre-computed note events from the main Basic Pitch pass when available.
+        # This eliminates a redundant TF model load (~1.2GB) per melodic split candidate.
         MELODIC_INFER_SECS = 90
-        import tempfile as _tempfile, subprocess as _subp_mel, os as _os_mel
-        _infer_tmp = None
-        infer_stem_path = stem_path
-        try:
-            _tmp_fd, _infer_tmp = _tempfile.mkstemp(suffix=f"_{key}_90s.wav")
-            _os_mel.close(_tmp_fd)
-            _subp_mel.run(
-                ["ffmpeg", "-y", "-i", stem_path, "-t", str(MELODIC_INFER_SECS), "-c", "copy", _infer_tmp],
-                capture_output=True, timeout=30,
-            )
-            if _os_mel.path.getsize(_infer_tmp) > 1000:
-                infer_stem_path = _infer_tmp
-                print(f"[melodic_split] truncated {key} to {MELODIC_INFER_SECS}s for Basic Pitch")
-        except Exception as _trunc_e:
-            print(f"[melodic_split] truncation warning ({key}): {_trunc_e} — using full file")
+        note_events = None
+        if note_events_dict:
+            # Try exact key match first, then try matching by base stem name
+            _pre = note_events_dict.get(key)
+            if _pre is None:
+                # Melodic split candidates may have different keys than note extraction stems
+                # (e.g. "guitar" vs "rhythm_guitar"). Try partial match.
+                for _ne_key, _ne_val in note_events_dict.items():
+                    if _ne_key.lower() in key.lower() or key.lower() in _ne_key.lower():
+                        _pre = _ne_val
+                        break
+            if _pre is not None and len(_pre) > 0:
+                # Filter to first 90s (matching the original MELODIC_INFER_SECS truncation)
+                note_events = _pre[_pre["start_time_s"] <= MELODIC_INFER_SECS].copy()
+                print(f"[melodic_split] reusing pre-computed note events for {key} "
+                      f"({len(note_events)} notes within {MELODIC_INFER_SECS}s)")
 
-        _log_mem(f"[melodic_split] pre-basic-pitch ({key}, dur={duration:.0f}s)")
-        print(f"[melodic_split] running Basic Pitch on {key}...")
-        config = _get_instrument_config("note_list")
-        try:
-            model_output, midi_data, raw_note_events = predict(
-                str(infer_stem_path),
-                ICASSP_2022_MODEL_PATH,
-                onset_threshold=config["onset_threshold"],
-                frame_threshold=config["frame_threshold"],
-                minimum_note_length=config["min_note_length"],
-                minimum_frequency=config["min_freq"],
-                maximum_frequency=config["max_freq"],
-            )
-            del model_output, midi_data
-        except Exception as e:
-            print(f"[melodic_split] Basic Pitch failed for {key}: {e}")
-            del left, right
-            continue
-        finally:
-            if _infer_tmp and _os_mel.path.exists(_infer_tmp):
-                try:
-                    _os_mel.remove(_infer_tmp)
-                except Exception:
-                    pass
+        if note_events is None or len(note_events) == 0:
+            # Fallback: run Basic Pitch if no pre-computed events available
+            import tempfile as _tempfile, subprocess as _subp_mel, os as _os_mel
+            _infer_tmp = None
+            infer_stem_path = stem_path
+            try:
+                _tmp_fd, _infer_tmp = _tempfile.mkstemp(suffix=f"_{key}_90s.wav")
+                _os_mel.close(_tmp_fd)
+                _subp_mel.run(
+                    ["ffmpeg", "-y", "-i", stem_path, "-t", str(MELODIC_INFER_SECS), "-c", "copy", _infer_tmp],
+                    capture_output=True, timeout=30,
+                )
+                if _os_mel.path.getsize(_infer_tmp) > 1000:
+                    infer_stem_path = _infer_tmp
+                    print(f"[melodic_split] truncated {key} to {MELODIC_INFER_SECS}s for Basic Pitch")
+            except Exception as _trunc_e:
+                print(f"[melodic_split] truncation warning ({key}): {_trunc_e} — using full file")
 
-        _log_mem(f"[melodic_split] post-basic-pitch ({key})")
-        note_events = _normalize_note_events(raw_note_events)
-        del raw_note_events
+            _log_mem(f"[melodic_split] pre-basic-pitch ({key}, dur={duration:.0f}s)")
+            print(f"[melodic_split] running Basic Pitch on {key} (no pre-computed events)...")
+            config = _get_instrument_config("note_list")
+            try:
+                model_output, midi_data, raw_note_events = predict(
+                    str(infer_stem_path),
+                    ICASSP_2022_MODEL_PATH,
+                    onset_threshold=config["onset_threshold"],
+                    frame_threshold=config["frame_threshold"],
+                    minimum_note_length=config["min_note_length"],
+                    minimum_frequency=config["min_freq"],
+                    maximum_frequency=config["max_freq"],
+                )
+                del model_output, midi_data
+            except Exception as e:
+                print(f"[melodic_split] Basic Pitch failed for {key}: {e}")
+                del left, right
+                continue
+            finally:
+                if _infer_tmp and _os_mel.path.exists(_infer_tmp):
+                    try:
+                        _os_mel.remove(_infer_tmp)
+                    except Exception:
+                        pass
+
+            _log_mem(f"[melodic_split] post-basic-pitch ({key})")
+            note_events = _normalize_note_events(raw_note_events)
+            del raw_note_events
 
         if len(note_events) == 0:
             print(f"[melodic_split] no notes detected for {key} — skipping")
@@ -1651,11 +1668,9 @@ def separate_stems(audio_path: str, song_id: str, progress_callback=None, instru
           print(f"[processor] cleaned {_raw_cleaned} _raw_* intermediate files")
 
     _log_mem(f"[separate_stems] post-refine ({len(refined)} stems)")
-    # ── Step 3: Melodic split pass ──
-    if progress_callback:
-        progress_callback("Refining instrument separation...")
-    refined = _melodic_split_pass(refined, out_dir, progress_callback=progress_callback)
-    _log_mem(f"[separate_stems] post-melodic-split ({len(refined)} stems)")
+    # Melodic split pass is now called from app.py after note extraction,
+    # so pre-computed note events can be reused (avoids redundant TF inference).
+    _log_mem(f"[separate_stems] done ({len(refined)} stems)")
 
     # If backing vocals exist, promote "Vocals" → "Lead Vocals" for clarity
     has_backing = any(
