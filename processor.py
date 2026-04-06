@@ -1347,7 +1347,7 @@ def _separate_stems_replicate(audio_path: Path, out_dir: Path, progress_callback
     dl_items = [(k, v) for k, v in output.items()]
     if progress_callback:
         progress_callback(f"Downloading stems (0/{len(dl_items)})...")
-    with ThreadPoolExecutor(max_workers=2) as _pool:  # 2 parallel max — each stem is ~190MB in RAM during conversion
+    with ThreadPoolExecutor(max_workers=1) as _pool:  # Sequential — eliminates overlapping conversion memory
         futures = {_pool.submit(_dl_stem, k, v): k for k, v in dl_items}
         completed_count = 0
         for fut in _as_completed(futures):
