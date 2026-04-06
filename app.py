@@ -23,7 +23,7 @@ Memory management:
   - Heavy imports (numpy, pandas, basic_pitch) deferred to first job
   - Jobs pruned from memory after 10 minutes
   - Job payloads trimmed after frontend polls the result
-  - MAX_CONCURRENT_JOBS (default 3) limits concurrent deep analysis; extras are queued
+  - MAX_CONCURRENT_JOBS (default 1) limits concurrent deep analysis; extras are queued
 """
 
 import os
@@ -139,7 +139,7 @@ _processing_lock = threading.Lock()
 _active_processing = 0
 # Stem separation runs on Replicate (cloud GPU), so local RAM is not the bottleneck.
 # Allow multiple concurrent jobs; tune via MAX_CONCURRENT_JOBS env var if needed.
-MAX_CONCURRENT_JOBS = int(os.getenv("MAX_CONCURRENT_JOBS", "2"))
+MAX_CONCURRENT_JOBS = int(os.getenv("MAX_CONCURRENT_JOBS", "1"))
 
 # TensorFlow inference lock — only one job runs Basic Pitch at a time.
 # TF loads ~1.2GB and is not safely reentrant across threads. Two concurrent
@@ -156,15 +156,54 @@ _bg_lock = threading.Lock()
 
 
 def _log_memory(label=""):
-    """Log current process RSS memory usage."""
+    """Log current + peak RSS memory usage with detailed breakdown.
+
+    Reads /proc/self/status on Linux to get *current* RSS (VmRSS) rather than
+    the peak-only value from getrusage (ru_maxrss), which never decreases and
+    hides whether gc.collect() actually freed anything.
+    """
     try:
-        import resource
-        rss_mb = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / (1024 * 1024)  # macOS returns bytes
-        # Linux returns KB
         import sys
+        current_mb = None
+        peak_mb = None
+        vm_size_mb = None
+
         if sys.platform == "linux":
-            rss_mb = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024
-        print(f"[mem] {label} RSS={rss_mb:.0f}MB")
+            # /proc/self/status gives us current RSS, peak RSS, and virtual size
+            try:
+                with open("/proc/self/status") as f:
+                    for line in f:
+                        if line.startswith("VmRSS:"):
+                            current_mb = int(line.split()[1]) / 1024  # kB → MB
+                        elif line.startswith("VmHWM:"):
+                            peak_mb = int(line.split()[1]) / 1024
+                        elif line.startswith("VmSize:"):
+                            vm_size_mb = int(line.split()[1]) / 1024
+            except Exception:
+                pass
+
+        # Fallback: getrusage (peak only, but better than nothing on macOS)
+        if current_mb is None:
+            import resource
+            peak_mb = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
+            if sys.platform == "linux":
+                peak_mb /= 1024  # KB → MB
+            else:
+                peak_mb /= (1024 * 1024)  # bytes → MB (macOS)
+            print(f"[mem] {label} peak_RSS={peak_mb:.0f}MB")
+            return
+
+        parts = [f"RSS={current_mb:.0f}MB", f"peak={peak_mb:.0f}MB"]
+        if vm_size_mb is not None:
+            parts.append(f"virt={vm_size_mb:.0f}MB")
+
+        # Count active jobs + threads for context
+        active = _active_processing
+        thread_count = threading.active_count()
+        parts.append(f"jobs={active}")
+        parts.append(f"threads={thread_count}")
+
+        print(f"[mem] {label} {' | '.join(parts)}")
     except Exception:
         pass
 
@@ -197,6 +236,7 @@ def _prune_old_jobs():
         del jobs[jid]
     if stale:
         print(f"[mem] pruned {len(stale)} stale jobs: {stale}")
+        _log_memory("post-prune")
 
     # Also prune stale prefetch entries (older than 15 minutes)
     with _bg_lock:
@@ -237,7 +277,7 @@ def _prune_old_disk_dirs():
         return
     _last_disk_prune = now
 
-    _retention_hours = int(os.getenv("DISK_RETENTION_HOURS", "6"))  # default 6 hours — Render ephemeral disk fills fast
+    _retention_hours = int(os.getenv("DISK_RETENTION_HOURS", "24"))  # default 24 hours — short enough for Render, long enough for overnight users
     max_age = _retention_hours * 3600
     pruned = 0
     for parent in (OUTPUT_DIR, UPLOAD_DIR):
@@ -1214,6 +1254,7 @@ def process_audio(job_id):
                             print(f"[job {job_id}] post-inference MP3 convert warning ({stem_key}): {_mp3_e}")
 
                     gc.collect()
+                    _log_memory(f"[job {job_id}] post-stem-inference ({stem_key})")
                     print(f"[job {job_id}] [{_elapsed()}] Basic Pitch → {stem_key} done ({len(ne) if ne is not None else 0} notes)")
                     return stem_key, ne
 
