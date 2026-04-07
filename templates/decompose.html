@@ -1745,12 +1745,15 @@ async function startProcessing(){
       _fullErrorCleanup();
       showCapacity(
         "Riffd is at capacity",
-        "We\u2019re processing other tracks right now. Give it a moment and try again.",
-        "Try Again"
+        "The queue is full right now. Try again in a moment.",
+        "Try Again",
+        { autoRetry: true }
       );
       return;
     }
     if (d.error) throw new Error(d.error);
+    // If queued (202), go straight to polling — the poll loop already
+    // handles status=queued and shows "You're in queue" messaging.
     pollStatus();
   } catch(e) {
     _fullErrorCleanup();

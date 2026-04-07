@@ -1534,16 +1534,27 @@ with open({_result_path!r}, "wb") as f:
             _log_memory(f"[job {job_id}] PROCESS END")
             print(f"[mem] active processing jobs: {_active_processing}")
 
-    # Either start immediately or reject gracefully if at capacity
+    # Either start immediately or enqueue if at capacity
     with _processing_lock:
         if _active_processing >= MAX_CONCURRENT_JOBS:
-            print(f"[job {job_id}] REJECTED: {_active_processing} jobs active (max {MAX_CONCURRENT_JOBS})")
-            # Clean up the job entry so it doesn't linger
-            jobs.pop(job_id, None)
-            return jsonify({
-                "status": "busy",
-                "error": "Riffd is at capacity right now. Try again in a moment.",
-            }), 503
+            # ── Queue instead of reject ──
+            # Cap the queue to prevent unbounded growth
+            MAX_QUEUE_SIZE = 10
+            if len(_job_queue) >= MAX_QUEUE_SIZE:
+                print(f"[job {job_id}] REJECTED: queue full ({len(_job_queue)} waiting)")
+                jobs.pop(job_id, None)
+                return jsonify({
+                    "status": "busy",
+                    "error": "Riffd is at capacity right now. Try again in a moment.",
+                }), 503
+
+            jobs[job_id]["status"] = "queued"
+            jobs[job_id]["progress"] = "Waiting for a processing slot..."
+            queue_pos = len(_job_queue) + 1
+            _job_queue.append((job_id, run))
+            upsert_job_checkpoint(job_id, "queued", progress="Waiting for a processing slot...")
+            print(f"[job {job_id}] QUEUED: {_active_processing} active, {queue_pos} in queue")
+            return jsonify({"status": "queued", "job_id": job_id, "queue_position": queue_pos}), 202
 
     threading.Thread(target=run, daemon=True).start()
     return jsonify({"status": "processing", "job_id": job_id})
