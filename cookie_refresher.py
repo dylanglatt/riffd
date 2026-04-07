@@ -21,9 +21,13 @@ from datetime import datetime
 _COOKIES_PATH = Path("cookies.txt")
 _LOCK = threading.Lock()
 
-# Minimum seconds between refresh attempts (avoid hammering YouTube)
-_MIN_REFRESH_INTERVAL = 300  # 5 minutes
+# Rate-limiting: prevent hammering YouTube while still allowing unrelated jobs
+# to trigger a refresh. Global minimum is 60s; per-job dedup prevents the same
+# job chain from refreshing twice.
+_MIN_REFRESH_INTERVAL = 60  # seconds — global floor between any two attempts
 _last_refresh_attempt: float = 0.0
+_recent_job_refreshes: set[str] = set()  # job_ids that already triggered a refresh
+_recent_job_lock = threading.Lock()
 
 
 def _to_netscape(cookies: list[dict], domain: str = ".youtube.com") -> str:
@@ -53,13 +57,24 @@ def _to_netscape(cookies: list[dict], domain: str = ".youtube.com") -> str:
     return "\n".join(lines) + "\n"
 
 
-def _is_rate_limited() -> bool:
-    """Prevent refresh spam — enforce minimum interval between attempts."""
+def _is_rate_limited(job_id: str | None = None) -> bool:
+    """Prevent refresh spam. Two checks:
+    1. Global floor: no two refreshes within _MIN_REFRESH_INTERVAL (60s)
+    2. Per-job dedup: same job_id never triggers more than one refresh
+    A new, unrelated job can refresh even if a previous job just did — this
+    prevents a burst of different jobs from all being blocked by one stale attempt.
+    """
     global _last_refresh_attempt
-    return (time.time() - _last_refresh_attempt) < _MIN_REFRESH_INTERVAL
+    if (time.time() - _last_refresh_attempt) < _MIN_REFRESH_INTERVAL:
+        return True
+    if job_id:
+        with _recent_job_lock:
+            if job_id in _recent_job_refreshes:
+                return True
+    return False
 
 
-def refresh_cookies(timeout: int = 60) -> bool:
+def refresh_cookies(timeout: int = 60, job_id: str | None = None) -> bool:
     """
     Launch headless Chromium, visit YouTube, and export fresh cookies.
     Thread-safe. Returns True on success, False on failure.
@@ -68,12 +83,16 @@ def refresh_cookies(timeout: int = 60) -> bool:
     (CONSENT, VISITOR_INFO1_LIVE, YSC, PREF, GPS) on any normal visit.
     These cookies are what yt-dlp needs to avoid "Sign in to confirm you're
     not a bot" blocks.
+
+    Pass job_id to enable per-job dedup — the same job won't trigger more
+    than one refresh, but unrelated jobs can still trigger their own.
     """
     global _last_refresh_attempt
 
-    if _is_rate_limited():
+    if _is_rate_limited(job_id):
         elapsed = int(time.time() - _last_refresh_attempt)
-        print(f"[cookie_refresher] rate limited — last attempt {elapsed}s ago (min {_MIN_REFRESH_INTERVAL}s)")
+        reason = f"job {job_id} already refreshed" if job_id and job_id in _recent_job_refreshes else f"last attempt {elapsed}s ago (min {_MIN_REFRESH_INTERVAL}s)"
+        print(f"[cookie_refresher] rate limited — {reason}")
         return False
 
     if not _LOCK.acquire(blocking=False):
@@ -82,6 +101,12 @@ def refresh_cookies(timeout: int = 60) -> bool:
 
     try:
         _last_refresh_attempt = time.time()
+        if job_id:
+            with _recent_job_lock:
+                _recent_job_refreshes.add(job_id)
+                # Prune set if it grows too large (keep last 50)
+                if len(_recent_job_refreshes) > 50:
+                    _recent_job_refreshes.clear()
         print("[cookie_refresher] starting Playwright cookie extraction...")
 
         from playwright.sync_api import sync_playwright
@@ -225,3 +250,39 @@ def is_stale_cookie_error(error: str | Exception) -> bool:
         "use --cookies-from-browser",
         "unable to extract initial player response",
     ))
+
+
+# ---------------------------------------------------------------------------
+# Proactive background cookie refresh
+# Runs every _BG_REFRESH_INTERVAL seconds (default 3 hours) so cookies stay
+# fresh without waiting for a request to fail first.
+# ---------------------------------------------------------------------------
+_BG_REFRESH_INTERVAL = int(os.environ.get("COOKIE_REFRESH_INTERVAL", 3 * 3600))
+
+
+def _background_refresh_loop():
+    """Daemon loop: refresh cookies on a fixed schedule."""
+    # Wait a bit on startup to avoid slowing down boot
+    time.sleep(30)
+    while True:
+        try:
+            print(f"[cookie_refresher] ⏰ scheduled background refresh starting...")
+            # Bypass the per-job rate limit — this is a proactive refresh
+            success = refresh_cookies(job_id="__scheduled__")
+            status = "✓ success" if success else "✗ skipped/failed"
+            print(f"[cookie_refresher] ⏰ background refresh: {status}")
+        except Exception as e:
+            print(f"[cookie_refresher] ⏰ background refresh error: {e}")
+        time.sleep(_BG_REFRESH_INTERVAL)
+
+
+def start_background_refresh():
+    """Start the proactive cookie refresh daemon. Safe to call multiple times."""
+    t = threading.Thread(target=_background_refresh_loop, name="cookie-bg-refresh", daemon=True)
+    t.start()
+    print(f"[cookie_refresher] background refresh scheduled every {_BG_REFRESH_INTERVAL // 3600}h {(_BG_REFRESH_INTERVAL % 3600) // 60}m")
+    return t
+
+
+# Auto-start when this module is imported
+start_background_refresh()

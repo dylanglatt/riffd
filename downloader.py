@@ -19,6 +19,7 @@ Failure modes:
 
 import os
 import re
+import time
 import base64
 import subprocess
 import shutil
@@ -118,22 +119,88 @@ def _simplify_query(query: str) -> str | None:
     return q if q and q.lower() != query.strip().lower() else None
 
 
-def _is_proxy_error(err: Exception) -> bool:
-    """Return True if the error is clearly a proxy connectivity failure."""
+# ---------------------------------------------------------------------------
+# Error classification — smarter retry decisions
+# ---------------------------------------------------------------------------
+
+class _ErrorKind:
+    BOT_DETECTION = "bot_detection"       # worth retrying with different client / fresh cookies
+    CONTENT_UNAVAILABLE = "content_unavailable"  # don't retry same URL, try search fallback
+    NETWORK = "network"                   # mark instance degraded, skip for N minutes
+    PROXY = "proxy"                       # retry without proxy
+    UNKNOWN = "unknown"
+
+
+def _classify_error(err: Exception) -> str:
+    """Classify a download error to drive smarter retry logic."""
     msg = str(err).lower()
-    return any(k in msg for k in (
+
+    # Bot detection — retriable with different client args or fresh cookies
+    if any(k in msg for k in (
+        "sign in to confirm",
+        "this helps protect our community",
+        "cookies are no longer valid",
+        "cookies have expired",
+        "use --cookies-from-browser",
+        "unable to extract initial player response",
+        "login required",
+    )):
+        return _ErrorKind.BOT_DETECTION
+
+    # Content unavailable — don't retry with same URL
+    if any(k in msg for k in (
+        "video unavailable",
+        "private video",
+        "this video is not available",
+        "content is not available",
+        "this video has been removed",
+        "geo restriction",
+        "geo-restricted",
+        "blocked in your country",
+        "age-restricted",
+        "this video requires payment",
+        "premiere will begin",
+        "no video formats found",
+    )):
+        return _ErrorKind.CONTENT_UNAVAILABLE
+
+    # Proxy errors
+    if any(k in msg for k in (
         "tunnel connection failed",
         "unable to connect to proxy",
         "proxy error",
         "502 bad gateway",
         "proxyerror",
-    ))
+    )):
+        return _ErrorKind.PROXY
+
+    # Network / DNS / SSL errors — instance-level failures
+    if any(k in msg for k in (
+        "nameresolutionerror",
+        "name resolution",
+        "name or service not known",
+        "ssl",
+        "certificate",
+        "connection refused",
+        "connection reset",
+        "connection aborted",
+        "timeout",
+        "timed out",
+        "unreachable",
+    )):
+        return _ErrorKind.NETWORK
+
+    return _ErrorKind.UNKNOWN
+
+
+def _is_proxy_error(err: Exception) -> bool:
+    """Return True if the error is clearly a proxy connectivity failure."""
+    return _classify_error(err) == _ErrorKind.PROXY
 
 
 def _is_stale_cookie_error(err: Exception) -> bool:
     """Return True if the error is about expired/invalid YouTube cookies."""
-    from cookie_refresher import is_stale_cookie_error
-    return is_stale_cookie_error(err)
+    return _classify_error(err) == _ErrorKind.BOT_DETECTION
 
 
 def _run_ytdlp(source: str, job_id: str, use_proxy: bool = True, _cookie_retried: bool = False) -> Path:
@@ -151,20 +218,28 @@ def _run_ytdlp(source: str, job_id: str, use_proxy: bool = True, _cookie_retried
     last_error = None
     all_proxy_errors = True
     any_stale_cookie = False
+    content_unavailable = False
     for binary in binaries:
         try:
             result = _run_ytdlp_with_binary(binary, source, out_template, out_dir, job_id, use_proxy=use_proxy)
             return result
         except Exception as e:
             last_error = e
-            if not _is_proxy_error(e):
+            kind = _classify_error(e)
+            if kind != _ErrorKind.PROXY:
                 all_proxy_errors = False
-            if _is_stale_cookie_error(e):
+            if kind == _ErrorKind.BOT_DETECTION:
                 any_stale_cookie = True
-            print(f"[downloader] {binary} failed: {e}")
+            if kind == _ErrorKind.CONTENT_UNAVAILABLE:
+                content_unavailable = True
+            print(f"[downloader] {binary} failed ({kind}): {e}")
             for f in out_dir.glob("*.part"):
                 f.unlink(missing_ok=True)
             continue
+
+    # Content unavailable — don't retry, move straight to fallbacks
+    if content_unavailable:
+        raise last_error or RuntimeError("Content unavailable")
 
     # If every failure was a proxy error and we haven't already tried without proxy, retry direct
     if use_proxy and all_proxy_errors and os.environ.get("YT_PROXY_URL"):
@@ -176,7 +251,7 @@ def _run_ytdlp(source: str, job_id: str, use_proxy: bool = True, _cookie_retried
         print(f"[downloader] 🍪 stale cookies detected — attempting Playwright refresh...")
         try:
             from cookie_refresher import refresh_cookies
-            success = refresh_cookies()
+            success = refresh_cookies(job_id=job_id)
             if success:
                 print(f"[downloader] 🍪 cookies refreshed — retrying yt-dlp")
                 return _run_ytdlp(source, job_id, use_proxy=use_proxy, _cookie_retried=True)
@@ -207,11 +282,12 @@ def _run_ytdlp_with_binary(binary: str, source: str, out_template: str, out_dir:
     ]
 
     # Build extractor args — player_client selection + optional PO token
-    # As of 2026.03: 'default' uses the web client, 'android' often works without PO tokens,
-    # 'web' requires PO tokens on many videos. Use 'default,android' as the safest combo.
-    # The 'formats=missing_pot' flag requests formats even when PO token is missing.
+    # As of 2026.04: 'ios' and 'android' clients bypass YouTube's server-side bot
+    # detection without requiring valid cookies or PO tokens. Try ios first (most
+    # reliable), then android, then web as last resort. The 'formats=missing_pot'
+    # flag requests formats even when PO token is missing.
     po_token = os.environ.get("YT_PO_TOKEN", "").strip()
-    extractor_args = "youtube:player_client=default,android;formats=missing_pot;lang=en"
+    extractor_args = "youtube:player_client=ios,android,web;formats=missing_pot;lang=en"
     if po_token:
         extractor_args += f";po_token={po_token}"
         print(f"[downloader] using PO token ({len(po_token)} chars)")
@@ -282,6 +358,10 @@ def download_audio_from_youtube(query_or_url: str, job_id: str) -> Path:
 
         # Only retry with simplified query for search queries, not direct URLs
         if is_url:
+            raise
+
+        # Content unavailable — no point retrying with different query
+        if _classify_error(first_err) == _ErrorKind.CONTENT_UNAVAILABLE:
             raise
 
         simplified = _simplify_query(query_or_url)
@@ -435,40 +515,73 @@ def _download_via_cobalt(query: str, job_id: str) -> Path:
     raise RuntimeError("All Cobalt API endpoints failed")
 
 
-def _get_piped_instances() -> list[str]:
-    """
-    Fetch live Piped API instances dynamically, merged with a hardcoded fallback list.
-    Always returns the full fallback list even if the registry returns results — this
-    ensures we have plenty of candidates even when the registry only returns a few entries.
-    """
-    FALLBACK = [
-        "https://pipedapi.kavin.rocks",
-        "https://pipedapi.leptons.xyz",
-        "https://pipedapi-libre.kavin.rocks",
-        "https://pipedapi.adminforge.de",
-        "https://api.piped.yt",
-        "https://pipedapi.drgns.space",
-        "https://pipedapi.nosebs.ru",
-        "https://piped-api.osphost.fi",
-        "https://pipedapi.tokhmi.xyz",
-        "https://api.piped.private.coffee",
-    ]
+# ---------------------------------------------------------------------------
+# Piped instance management — cached dynamic fetch with health tracking
+# ---------------------------------------------------------------------------
+_piped_cache: list[str] = []
+_piped_cache_time: float = 0.0
+_PIPED_CACHE_TTL = 3600  # re-fetch from registry every hour
+_piped_degraded: dict[str, float] = {}  # instance_url → timestamp when marked degraded
+_PIPED_DEGRADED_TTL = 600  # skip degraded instances for 10 minutes
+
+
+def mark_piped_degraded(instance_url: str):
+    """Mark a Piped instance as degraded — it will be skipped for _PIPED_DEGRADED_TTL seconds."""
+    _piped_degraded[instance_url] = time.time()
+
+
+def _fetch_piped_registry() -> list[str]:
+    """Fetch live instances from the official Piped registry."""
     try:
         r = requests.get("https://piped-instances.kavin.rocks/", timeout=8,
                          headers={"User-Agent": "Mozilla/5.0"})
         if r.ok:
             instances = r.json()
-            # Each entry has "api_url" — collect all with a valid API URL
             api_urls = [inst["api_url"].rstrip("/") for inst in instances
                         if inst.get("api_url")]
-            # Merge registry results with fallback — registry entries go first,
-            # dict.fromkeys preserves order and deduplicates
-            merged = list(dict.fromkeys(api_urls + FALLBACK))[:15]
-            print(f"[piped] fetched {len(api_urls)} instances from registry, using {len(merged)} total")
-            return merged
+            print(f"[piped] fetched {len(api_urls)} instances from registry")
+            return api_urls
     except Exception as e:
-        print(f"[piped] instance registry failed: {e} — using fallback list")
-    return FALLBACK
+        print(f"[piped] instance registry failed: {e}")
+    return []
+
+
+def _get_piped_instances() -> list[str]:
+    """
+    Return working Piped API instances. Uses a cached registry fetch (refreshed
+    every hour) merged with a minimal fallback list of historically reliable instances.
+    Filters out instances currently marked as degraded.
+    """
+    global _piped_cache, _piped_cache_time
+
+    # Minimal fallback — only instances with strong uptime history.
+    # The registry fetch is the primary source; these are last-resort only.
+    FALLBACK = [
+        "https://pipedapi.kavin.rocks",
+        "https://pipedapi.adminforge.de",
+    ]
+
+    now = time.time()
+    if not _piped_cache or (now - _piped_cache_time) > _PIPED_CACHE_TTL:
+        registry = _fetch_piped_registry()
+        if registry:
+            _piped_cache = list(dict.fromkeys(registry + FALLBACK))[:20]
+            _piped_cache_time = now
+        elif not _piped_cache:
+            _piped_cache = FALLBACK
+
+    # Filter out degraded instances
+    active = [
+        url for url in _piped_cache
+        if url not in _piped_degraded or (now - _piped_degraded[url]) > _PIPED_DEGRADED_TTL
+    ]
+    if not active:
+        # All degraded — clear degraded map and return full list
+        _piped_degraded.clear()
+        active = _piped_cache
+
+    print(f"[piped] using {len(active)} instances ({len(_piped_degraded)} degraded, skipped)")
+    return active
 
 
 def _download_via_piped(query: str, job_id: str) -> Path:
@@ -495,6 +608,8 @@ def _download_via_piped(query: str, job_id: str) -> Path:
             )
             if not search_resp.ok:
                 print(f"[piped] {base_url} search failed: {search_resp.status_code}")
+                if search_resp.status_code >= 500:
+                    mark_piped_degraded(base_url)
                 continue
 
             items = search_resp.json().get("items", [])
@@ -536,6 +651,8 @@ def _download_via_piped(query: str, job_id: str) -> Path:
             )
             if not streams_resp.ok:
                 print(f"[piped] {base_url} streams failed: {streams_resp.status_code}")
+                if streams_resp.status_code >= 500:
+                    mark_piped_degraded(base_url)
                 continue
 
             data = streams_resp.json()
@@ -577,7 +694,13 @@ def _download_via_piped(query: str, job_id: str) -> Path:
             return out_path
 
         except Exception as e:
-            print(f"[piped] {base_url} error: {e}")
+            kind = _classify_error(e)
+            print(f"[piped] {base_url} error ({kind}): {e}")
+            if kind == _ErrorKind.NETWORK:
+                mark_piped_degraded(base_url)
+            elif kind == _ErrorKind.CONTENT_UNAVAILABLE:
+                print(f"[piped] content unavailable — skipping remaining instances")
+                break
             continue
 
     raise RuntimeError("All Piped instances failed — YouTube audio unavailable")
