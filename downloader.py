@@ -135,7 +135,10 @@ def _classify_error(err: Exception) -> str:
     """Classify a download error to drive smarter retry logic."""
     msg = str(err).lower()
 
-    # Bot detection — retriable with different client args or fresh cookies
+    # Bot detection — retriable with different client args or fresh cookies.
+    # HTTP 403 is included because expired/invalid cookies cause YouTube to
+    # reject the download request with 403 even when the ios player client
+    # successfully retrieves format URLs.
     if any(k in msg for k in (
         "sign in to confirm",
         "this helps protect our community",
@@ -144,6 +147,8 @@ def _classify_error(err: Exception) -> str:
         "use --cookies-from-browser",
         "unable to extract initial player response",
         "login required",
+        "http error 403",
+        "403: forbidden",
     )):
         return _ErrorKind.BOT_DETECTION
 
@@ -203,10 +208,11 @@ def _is_stale_cookie_error(err: Exception) -> bool:
     return _classify_error(err) == _ErrorKind.BOT_DETECTION
 
 
-def _run_ytdlp(source: str, job_id: str, use_proxy: bool = True, _cookie_retried: bool = False) -> Path:
+def _run_ytdlp(source: str, job_id: str, use_proxy: bool = True, _cookie_retried: bool = False, _no_cookies: bool = False) -> Path:
     """Run yt-dlp with hardened flags. Tries yt-dlp first, falls back to yt-dlp-ejs.
     If use_proxy=True and every attempt fails with a proxy error, retries once without proxy.
-    If cookies are stale, refreshes them via Playwright and retries once."""
+    If cookies are stale, refreshes them via Playwright and retries once.
+    If cookie refresh fails, retries once without cookies (ios/android clients don't need them)."""
     out_dir = UPLOAD_DIR / job_id
     out_dir.mkdir(parents=True, exist_ok=True)
     out_template = str(out_dir / "%(title)s.%(ext)s")
@@ -221,7 +227,7 @@ def _run_ytdlp(source: str, job_id: str, use_proxy: bool = True, _cookie_retried
     content_unavailable = False
     for binary in binaries:
         try:
-            result = _run_ytdlp_with_binary(binary, source, out_template, out_dir, job_id, use_proxy=use_proxy)
+            result = _run_ytdlp_with_binary(binary, source, out_template, out_dir, job_id, use_proxy=use_proxy, skip_cookies=_no_cookies)
             return result
         except Exception as e:
             last_error = e
@@ -263,7 +269,7 @@ def _run_ytdlp(source: str, job_id: str, use_proxy: bool = True, _cookie_retried
     raise last_error or RuntimeError("All yt-dlp binaries failed")
 
 
-def _run_ytdlp_with_binary(binary: str, source: str, out_template: str, out_dir: Path, job_id: str, use_proxy: bool = True) -> Path:
+def _run_ytdlp_with_binary(binary: str, source: str, out_template: str, out_dir: Path, job_id: str, use_proxy: bool = True, skip_cookies: bool = False) -> Path:
     """Execute a specific yt-dlp binary with full hardened flags."""
     cmd = [
         binary,
@@ -282,21 +288,22 @@ def _run_ytdlp_with_binary(binary: str, source: str, out_template: str, out_dir:
     ]
 
     # Build extractor args — player_client selection + optional PO token
-    # As of 2026.04: 'ios' and 'android' clients bypass YouTube's server-side bot
-    # detection without requiring valid cookies or PO tokens. Try ios first (most
-    # reliable), then android, then web as last resort. The 'formats=missing_pot'
-    # flag requests formats even when PO token is missing.
+    # ios and android clients bypass YouTube's server-side bot detection without
+    # requiring valid cookies or PO tokens. Try ios first (most reliable), then
+    # android, then web as last resort.
     po_token = os.environ.get("YT_PO_TOKEN", "").strip()
-    extractor_args = "youtube:player_client=ios,android,web;formats=missing_pot;lang=en"
+    extractor_args = "youtube:player_client=ios,android,web;lang=en"
     if po_token:
         extractor_args += f";po_token={po_token}"
         print(f"[downloader] using PO token ({len(po_token)} chars)")
     cmd.extend(["--extractor-args", extractor_args])
 
-    # Add cookies FIRST — yt-dlp uses them for auth + bot bypass
-    if _COOKIES_PATH.exists():
+    # Add cookies — skipped on no-cookie retry pass
+    if not skip_cookies and _COOKIES_PATH.exists():
         cmd[1:1] = ["--cookies", str(_COOKIES_PATH)]
         print(f"[downloader] using cookies.txt ({_COOKIES_PATH.stat().st_size:,} bytes)")
+    elif skip_cookies:
+        print(f"[downloader] cookies skipped (no-cookie retry)")
 
     # Add proxy if configured and not bypassed
     proxy_url = os.environ.get("YT_PROXY_URL")
