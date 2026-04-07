@@ -146,9 +146,24 @@
     .skeleton-bar.skeleton-btn { width:28px; height:28px; }
     @keyframes skeletonShimmer { 0%,100%{opacity:0.3} 50%{opacity:0.7} }
     .skeleton-waveform .player-wv-bar { background:rgba(245,245,245,0.06) !important; animation:skeletonShimmer 2s ease-in-out infinite; }
+    .mixer-channels.stems-loading .channel { opacity:0.35; pointer-events:none; transition:opacity 0.5s ease; }
+    .mixer-channels.stems-loading .channel .vol-slider { filter:saturate(0.2); }
+    .mixer-channels.stems-loading .skeleton-channel { opacity:0.5; }
+    .waveform-analyzing .player-wv-bar { opacity:0.3; transition:opacity 0.6s ease; }
+    .waveform-analyzing #waveform-progress-fill { background:rgba(212,105,31,0.06); }
+    .phase-stepper { display:flex; align-items:center; gap:0; padding:0 0 4px; justify-content:center; transition:opacity 0.35s ease; }
+    .phase-step { display:flex; align-items:center; gap:4px; font-size:0.6875rem; color:rgba(245,245,245,0.18); letter-spacing:-0.01em; transition:color 0.4s ease, opacity 0.4s ease; white-space:nowrap; }
+    .phase-step.active { color:rgba(245,245,245,0.5); }
+    .phase-step.done { color:rgba(245,245,245,0.3); }
+    .phase-step.done::before { content:'✓'; font-size:0.5rem; margin-right:1px; color:rgba(212,105,31,0.5); }
+    .phase-step-dot { width:2px; height:2px; background:rgba(245,245,245,0.08); border-radius:50%; margin:0 10px; flex-shrink:0; }
+    .phase-step.active .phase-pulse { display:inline-block; width:4px; height:4px; background:#D4691F; border-radius:50%; margin-right:3px; animation:stemDotPulse 1.5s ease-in-out infinite; }
+    .mix-wrapper.reveal-ready .channel { transition:opacity 0.5s ease 0.1s, transform 0.5s ease 0.1s; }
+    .transport-btn.transport-pulse { animation:transportPulse 0.6s ease; }
+    @keyframes transportPulse { 0%{opacity:0.5} 50%{opacity:1} 100%{opacity:1} }
     .transport-disabled { opacity:0.3 !important; pointer-events:none; }
-    .mix-status-bar { min-height:40px; display:flex; align-items:center; justify-content:center; }
-    .mix-loading-status { text-align:center; font-size:0.8125rem; color:rgba(245,245,245,0.38); padding:10px 0; transition:opacity 0.3s ease; letter-spacing:-0.01em; display:flex; align-items:center; gap:0; }
+    .mix-status-bar { min-height:40px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; padding:8px 0 4px; }
+    .mix-loading-status { text-align:center; font-size:0.75rem; color:rgba(245,245,245,0.3); padding:0; transition:opacity 0.3s ease; letter-spacing:-0.01em; display:flex; align-items:center; gap:0; }
     .loading-dots { display:inline-flex; }
     .loading-dots span { opacity:0; animation:dotFade 1.4s ease-in-out infinite; }
     .loading-dots span:nth-child(1) { animation-delay:0s; }
@@ -720,16 +735,8 @@ const _topBar = (() => {
   }
 
   function _setLabel(text) {
-    // Stage label lives in the time display during load — meaningful vs "--:-- / --:--"
-    if (!_loading) return;
-    const el = document.getElementById('time-display');
-    if (!el) return;
-    el.textContent = text ? _cleanProgressMsg(text) : '';
-    // Switch to proportional font for readable prose; monospace is restored on complete
-    el.style.fontFamily = 'inherit';
-    el.style.letterSpacing = '-0.01em';
-    el.style.color = 'rgba(245,245,245,0.4)';
-    el.style.fontSize = '0.75rem';
+    // No-op during loading — status messages only appear in #mix-loading-status now
+    return;
   }
 
   function _clearCreep() {
@@ -749,7 +756,6 @@ const _topBar = (() => {
         if (bar)  { bar.style.transition  = 'width 0.8s ease'; }
         if (wrap) wrap.classList.add('active');
         _setFill(5);
-        _setLabel('Starting...');
       });
     },
     advance(pct, label) {
@@ -783,7 +789,6 @@ const _topBar = (() => {
     onStemLoaded(count) {
       _clearCreep();
       _setFill(Math.min(88, 55 + count * 5));
-      if (count === 1) _setLabel('Isolating stems...');
     },
     complete() {
       _clearCreep(); _loading = false;
@@ -1047,6 +1052,7 @@ async function _loadSingleStemAudio(stemName, jobId, _attempt = 0) {
     const g = audioCtx.createGain(); g.connect(audioCtx.destination); stemGains[stemName] = g;
     if (buf.duration > duration) { duration = buf.duration; document.getElementById("seek-bar").max = duration; updateTimeDisplay(); _buildPlayerWaveform(); }
     console.log(`[audio] stem loaded: ${stemName} (${buf.duration.toFixed(1)}s)`);
+    _tryEnableEarlyPlayback();
   } catch (e) { console.warn(`[audio] failed to load stem ${stemName}:`, e); }
 }
 
@@ -1433,16 +1439,42 @@ function startLoadingMessages(stage) {
   _currentStage = stage || "download";
   _stageUsed = {};
   _lastShownMsg = "";
-  _setLT(_pickMsg(_currentStage));
+  const firstMsg = _pickMsg(_currentStage);
+  _setLT(firstMsg);
+  _updateMixLoadingStatus(firstMsg);
   _loadingInterval = setInterval(() => {
-    _fadeLT(_pickMsg(_currentStage));
+    const msg = _pickMsg(_currentStage);
+    _fadeLT(msg);
+    _updateMixLoadingStatus(msg);
   }, 3200);
+}
+
+function _advancePhaseStepper(stage) {
+  const stepper = document.getElementById('phase-stepper');
+  if (!stepper) return;
+  const order = ['download', 'stems', 'analysis', 'enrich'];
+  const idx = order.indexOf(stage);
+  if (idx === -1) return;
+  stepper.querySelectorAll('.phase-step').forEach(el => {
+    const elIdx = order.indexOf(el.dataset.phase);
+    const label = el.dataset.label || el.textContent.replace('✓', '').trim();
+    if (!el.dataset.label) el.dataset.label = label; // cache original label
+    el.classList.remove('active', 'done');
+    el.innerHTML = label; // reset to plain text
+    if (elIdx < idx) {
+      el.classList.add('done');
+    } else if (elIdx === idx) {
+      el.classList.add('active');
+      el.innerHTML = '<span class="phase-pulse"></span>' + label;
+    }
+  });
 }
 
 function setLoadingStage(stage) {
   if (stage && stage !== _currentStage) {
     _currentStage = stage;
     _setProcessingStep(stage);
+    _advancePhaseStepper(stage);
   }
 }
 
@@ -1453,6 +1485,7 @@ function stopLoadingMessages() {
 function _setLT(t){const e=document.getElementById("progress-label");e.classList.remove("fading");e.textContent=t;}
 function _fadeLT(t){const e=document.getElementById("progress-label");e.classList.add("fading");setTimeout(()=>{e.textContent=t;e.classList.remove("fading");},300);}
 let _waveformBuilt = false;
+let _earlyWaveformBuilt = false;
 
 function _populateHero() {
   if (!selectedTrack) return;
@@ -1596,11 +1629,18 @@ function _fullErrorCleanup() {
   _resetLoadingUI();
   _topBar.reset();
   clearTimeout(pollInterval);
+  _earlyWaveformBuilt = false;
   // Tear down skeleton channels and loading status
   const mixerEl = document.getElementById("mixer-channels");
-  if (mixerEl) mixerEl.innerHTML = '';
+  if (mixerEl) { mixerEl.innerHTML = ''; mixerEl.classList.remove('stems-loading'); }
   const statusBar = document.getElementById("mix-status-bar");
   if (statusBar) statusBar.innerHTML = '';
+  const wrapEl = document.getElementById('player-waveform-wrap');
+  if (wrapEl) wrapEl.classList.remove('waveform-analyzing');
+  const mwEl = document.querySelector('.mix-wrapper');
+  if (mwEl) mwEl.classList.remove('reveal-ready');
+  const stepperEl = document.getElementById('phase-stepper');
+  if (stepperEl) stepperEl.remove();
   // Reset processing steps
   document.querySelectorAll('.proc-step').forEach(s => {
     s.classList.remove('active', 'done');
@@ -1891,6 +1931,13 @@ function pollStatus(){
           const count = Object.keys(_loadedStems).length;
           _updateMixLoadingStatus(`${count} instrument${count > 1 ? 's' : ''} isolated...`);
           _topBar.onStemLoaded(count);
+          // Build dimmed waveform early if we have buffers
+          if (Object.keys(stemBuffers).length > 0 && !_earlyWaveformBuilt) {
+            _earlyWaveformBuilt = true;
+            const wrapEl = document.getElementById('player-waveform-wrap');
+            if (wrapEl) wrapEl.classList.add('waveform-analyzing');
+            _buildPlayerWaveform();
+          }
         }
       }
 
@@ -1904,6 +1951,13 @@ function pollStatus(){
           console.log(`[audio] stems_ready — preloading ${preloadNames.length} stems`);
           loadStemAudio(preloadNames).then(() => {
             console.log(`[audio] preload complete`);
+            if (!_earlyWaveformBuilt) {
+              _earlyWaveformBuilt = true;
+              const wrapEl = document.getElementById('player-waveform-wrap');
+              if (wrapEl) wrapEl.classList.add('waveform-analyzing');
+              _buildPlayerWaveform();
+            }
+            _tryEnableEarlyPlayback();
           }).catch(e => {
             console.warn("[audio] preload failed, fallback will retry:", e);
             _stemsPreloading = false;
@@ -1914,7 +1968,7 @@ function pollStatus(){
 
       // Update loading status — skip mixer status update if stems just loaded (avoid clobbering count)
       if (d.progress) {
-        if (!_stemsJustLoaded) _updateMixLoadingStatus(d.progress);
+        if (!_stemsJustLoaded && !_loadingInterval) _updateMixLoadingStatus(d.progress);
         _topBar.onProgress(d.progress);
         const detected = _detectStage(d.progress);
         if (detected) setLoadingStage(detected);
@@ -1961,22 +2015,53 @@ function pollStatus(){
         });
         stopLoadingMessages();
 
-        _reorganizeStemGroups();
-        _removeSkeletonChannels();
-        _enableTransport();
-        _unlockTabs();
-        _topBar.complete();
-        const statusEl = document.getElementById('mix-loading-status');
-        if (statusEl) {
-          statusEl.style.opacity = '0';
+        // ── Choreographed reveal ──
+        const mixWrapper = document.querySelector('.mix-wrapper');
+        if (mixWrapper) mixWrapper.classList.add('reveal-ready');
+
+        // Phase 1 (0ms): Remove analyzing dim from waveform, mark phases done
+        const wrapEl = document.getElementById('player-waveform-wrap');
+        if (wrapEl) wrapEl.classList.remove('waveform-analyzing');
+        document.querySelectorAll('.phase-step').forEach(el => {
+          el.classList.remove('active');
+          el.classList.add('done');
+        });
+
+        // Phase 2 (100ms): Clean up skeletons and enable interaction
+        setTimeout(() => {
+          _reorganizeStemGroups();
+          _removeSkeletonChannels();
+          _enableTransport();
+          _unlockTabs();
+
+          // Pulse the play button to signal "ready"
+          const playBtn = document.querySelector('.transport-btn');
+          if (playBtn) {
+            playBtn.classList.add('transport-pulse');
+            setTimeout(() => playBtn.classList.remove('transport-pulse'), 600);
+          }
+        }, 100);
+
+        // Phase 3 (200ms): Build final waveform and fade out status
+        setTimeout(() => {
+          if (!_earlyWaveformBuilt) _buildPlayerWaveform();
+          updateTimeDisplay();
+
+          // Fade out status bar
+          const statusEl = document.getElementById('mix-loading-status');
+          const stepperEl = document.getElementById('phase-stepper');
+          if (statusEl) statusEl.style.opacity = '0';
+          if (stepperEl) stepperEl.style.opacity = '0';
+
           setTimeout(() => {
-            statusEl.remove();
+            if (statusEl) statusEl.remove();
+            if (stepperEl) stepperEl.remove();
             const statusBar = document.getElementById('mix-status-bar');
             if (statusBar) statusBar.innerHTML = '';
-          }, 300);
-        }
-        _buildPlayerWaveform();
-        updateTimeDisplay();
+          }, 350);
+        }, 200);
+
+        _topBar.complete();
         if (selectedTrack && selectedTrack.id) _addShareButton();
 
         console.log(`[poll] complete \u2014 ${Object.keys(_loadedStems).length} stems loaded`);
@@ -2122,9 +2207,22 @@ function _showMixLoading() {
     html += '<div class="channel skeleton-channel"><div class="skeleton-bar skeleton-name"></div><div class="channel-volume"><div class="skeleton-bar skeleton-slider"></div></div><div class="skeleton-bar skeleton-btn"></div><div class="skeleton-bar skeleton-btn"></div></div>';
   }
   mixerEl.innerHTML = html;
+  mixerEl.classList.add('stems-loading');
   // Status lives outside the mixer so it never appears sandwiched between stem rows
   const statusBar = document.getElementById('mix-status-bar');
-  if (statusBar) statusBar.innerHTML = '<div class="mix-loading-status" id="mix-loading-status">Preparing analysis<span class="loading-dots"><span>.</span><span>.</span><span>.</span></span></div>';
+  if (statusBar) {
+    statusBar.innerHTML =
+      '<div class="phase-stepper" id="phase-stepper">' +
+        '<div class="phase-step active" data-phase="download" data-label="Audio"><span class="phase-pulse"></span>Audio</div>' +
+        '<div class="phase-step-dot"></div>' +
+        '<div class="phase-step" data-phase="stems" data-label="Stems">Stems</div>' +
+        '<div class="phase-step-dot"></div>' +
+        '<div class="phase-step" data-phase="analysis" data-label="Structure">Structure</div>' +
+        '<div class="phase-step-dot"></div>' +
+        '<div class="phase-step" data-phase="enrich" data-label="Metadata">Metadata</div>' +
+      '</div>' +
+      '<div class="mix-loading-status" id="mix-loading-status">Preparing analysis<span class="loading-dots"><span>.</span><span>.</span><span>.</span></span></div>';
+  }
   document.getElementById("lyrics-content").innerHTML = '';
   document.getElementById("smart-recs-content").innerHTML = '<div class="smart-recs-empty">Theory-based recommendations will appear here once analysis completes.</div>';
   const keyCtxEl = document.getElementById("key-context");
@@ -2209,8 +2307,20 @@ function _updateMixLoadingStatus(text) {
   }, 200);
 }
 
+function _tryEnableEarlyPlayback() {
+  // Enable transport as soon as we have decoded audio, even if analysis isn't done
+  if (Object.keys(stemBuffers).length > 0 && document.querySelector('.transport-btn.transport-disabled')) {
+    _enableTransport();
+    // Also un-ghost the mixer channels
+    const mixerEl = document.getElementById('mixer-channels');
+    if (mixerEl) mixerEl.classList.remove('stems-loading');
+  }
+}
+
 function _enableTransport() {
   document.querySelectorAll(".transport-btn").forEach(b => { b.classList.remove('transport-disabled'); });
+  const mixerEl = document.getElementById('mixer-channels');
+  if (mixerEl) mixerEl.classList.remove('stems-loading');
 }
 
 function _unlockTabs() {
@@ -2525,6 +2635,11 @@ function resetApp(){
   searchResults=[];lastQuery="";loopActive=false;transposeAmount=0;songKey=null;clearTimeout(pollInterval);
   _loadedStems={};_karaokeActive=false;_stemGroupBaselines={};
   _prefetchId=null;_prefetchReady=false;
+  _earlyWaveformBuilt=false;
+  const _mixerReset=document.getElementById('mixer-channels');if(_mixerReset)_mixerReset.classList.remove('stems-loading');
+  const _wrapReset=document.getElementById('player-waveform-wrap');if(_wrapReset)_wrapReset.classList.remove('waveform-analyzing');
+  const _mwReset=document.querySelector('.mix-wrapper');if(_mwReset)_mwReset.classList.remove('reveal-ready');
+  const _stepperReset=document.getElementById('phase-stepper');if(_stepperReset)_stepperReset.remove();
   if(_prefetchPollTimer){clearInterval(_prefetchPollTimer);_prefetchPollTimer=null;}
   const confirmUpload=document.getElementById("confirm-upload-area");if(confirmUpload)confirmUpload.style.display="none";
   document.getElementById("process-btn").style.display="";
