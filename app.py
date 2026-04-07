@@ -1002,6 +1002,28 @@ def process_audio(job_id):
                 except Exception as e:
                     print(f"[job {job_id}] [{_elapsed()}] save error: {e}")
 
+        # ── Transcode webm → wav before any processing ──────────────────────────
+        # Piped downloads arrive as .webm. librosa's audioread backend
+        # triggers a C-level heap corruption (SIGABRT) when decoding webm,
+        # killing the entire worker. Transcode early so all downstream
+        # consumers (music_intelligence + Demucs) get a safe wav file.
+        _audio_path_obj = Path(audio_path)
+        if _audio_path_obj.suffix.lower() in (".webm", ".opus", ".ogg"):
+            _wav_path = _audio_path_obj.with_suffix(".wav")
+            try:
+                import subprocess as _tc_sp
+                _tc = _tc_sp.run(
+                    ["ffmpeg", "-y", "-i", str(_audio_path_obj), "-ac", "2", "-ar", "44100", str(_wav_path)],
+                    capture_output=True, timeout=120,
+                )
+                if _tc.returncode == 0 and _wav_path.exists() and _wav_path.stat().st_size > 0:
+                    print(f"[job {job_id}] transcoded {_audio_path_obj.suffix} → .wav ({_wav_path.stat().st_size:,} bytes)")
+                    audio_path = str(_wav_path)
+                else:
+                    print(f"[job {job_id}] webm transcode failed (rc={_tc.returncode}) — proceeding with original")
+            except Exception as _tc_err:
+                print(f"[job {job_id}] webm transcode error: {_tc_err} — proceeding with original")
+
         try:
             from concurrent.futures import ThreadPoolExecutor as _TPE, as_completed as _as_completed
 
