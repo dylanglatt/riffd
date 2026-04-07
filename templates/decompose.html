@@ -1921,7 +1921,7 @@ function pollStatus(){
       }
       if (d.tags && d.tags.length) { jobData = jobData || {}; jobData.tags = d.tags; }
 
-      // Progressive stem loading — transport stays disabled until status=complete
+      // Progressive stem loading — transport enabled by _tryEnableEarlyPlayback once buffers are decoded
       let _stemsJustLoaded = false;
       if (d.stems && (d.status === 'complete' || d.status === 'partial' || d.status === 'processing')) {
         const newStems = Object.keys(d.stems).filter(k => !_loadedStems[k]);
@@ -2406,6 +2406,7 @@ async function loadStemAudio(names){
 
   document.getElementById("seek-bar").max=duration;updateTimeDisplay();
   _buildPlayerWaveform();
+  _tryEnableEarlyPlayback();
 }
 
 function _buildPlayerWaveform() {

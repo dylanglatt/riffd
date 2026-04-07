@@ -6,6 +6,7 @@ compat.py — Shared compatibility patches.
 def patch_lzma():
     """Stub out _lzma if missing — pandas imports it but we never use lzma compression."""
     import importlib
+    import importlib.util
     import sys
     if importlib.util.find_spec("_lzma") is None:
         import types
