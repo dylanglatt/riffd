@@ -26,10 +26,8 @@ pip install --upgrade pip
 pip install -r requirements.txt
 
 # Install Playwright Chromium for cookie refresh
-# Pin browser path to project dir — Render's home-dir cache may not persist between deploys
-export PLAYWRIGHT_BROWSERS_PATH=/opt/render/project/.playwright-browsers
-echo "[build] Installing Playwright Chromium browser (path: $PLAYWRIGHT_BROWSERS_PATH)..."
-playwright install chromium --with-deps || {
+echo "[build] Installing Playwright Chromium browser..."
+playwright install chromium --with-deps 2>/dev/null || {
     echo "[build] WARNING: Playwright browser install failed — cookie refresh will be unavailable"
     echo "[build] This is non-critical; yt-dlp will fall back to Cobalt/Piped APIs"
 }

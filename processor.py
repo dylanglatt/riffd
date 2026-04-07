@@ -1243,7 +1243,7 @@ def _separate_stems_replicate(audio_path: Path, out_dir: Path, progress_callback
     REPLICATE_API = "https://api.replicate.com/v1"
     VERSION = "25a173108cff36ef9f80f854c162d01df9e6528be175794b81158fa03836d953"
     POLL_INTERVAL = 3  # seconds between status checks (reduced from 5)
-    MAX_WAIT = 600     # 10 minutes max for separation
+    MAX_WAIT = 420     # 7 minutes max — balances Replicate cold-start with queue UX
 
     # Expected stems from the model output
     EXPECTED_STEMS = {"vocals", "drums", "bass", "guitar", "piano", "other"}
@@ -1342,6 +1342,15 @@ def _separate_stems_replicate(audio_path: Path, out_dir: Path, progress_callback
     while True:
         elapsed_poll = _time.time() - poll_start
         if elapsed_poll > MAX_WAIT:
+            # Cancel the prediction so Replicate doesn't keep burning credits on a job we've given up on
+            try:
+                _requests.post(
+                    f"{REPLICATE_API}/predictions/{pred_id}/cancel",
+                    headers=headers, timeout=5,
+                )
+                print(f"[replicate] prediction {pred_id} cancelled after timeout")
+            except Exception:
+                pass
             raise RuntimeError(f"Replicate prediction timed out after {int(elapsed_poll)}s")
 
         _time.sleep(POLL_INTERVAL)

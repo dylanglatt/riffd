@@ -1002,23 +1002,27 @@ def process_audio(job_id):
                 except Exception as e:
                     print(f"[job {job_id}] [{_elapsed()}] save error: {e}")
 
-        # ── Transcode webm → wav before any processing ──────────────────────────
-        # Piped downloads arrive as .webm. librosa's audioread backend
-        # triggers a C-level heap corruption (SIGABRT) when decoding webm,
-        # killing the entire worker. Transcode early so all downstream
-        # consumers (music_intelligence + Demucs) get a safe wav file.
-        _audio_path_obj = Path(audio_path)
-        if _audio_path_obj.suffix.lower() in (".webm", ".opus", ".ogg"):
-            _wav_path = _audio_path_obj.with_suffix(".wav")
+        # ── Transcode webm/opus/ogg → wav before any processing ─────────────────
+        # Piped downloads arrive as .webm. librosa's audioread backend triggers a
+        # C-level heap corruption (SIGABRT) when decoding webm, killing the entire
+        # worker. Transcode early so all downstream consumers get a safe wav file.
+        #
+        # IMPORTANT: we use _safe_audio_path (not reassigning audio_path) because
+        # assigning to audio_path inside run() would make Python treat it as a local
+        # variable throughout the closure, causing UnboundLocalError on first read.
+        _safe_audio_path = audio_path
+        _audio_ext = Path(audio_path).suffix.lower()
+        if _audio_ext in (".webm", ".opus", ".ogg"):
+            _wav_target = Path(audio_path).with_suffix(".wav")
             try:
                 import subprocess as _tc_sp
                 _tc = _tc_sp.run(
-                    ["ffmpeg", "-y", "-i", str(_audio_path_obj), "-ac", "2", "-ar", "44100", str(_wav_path)],
+                    ["ffmpeg", "-y", "-i", audio_path, "-ac", "2", "-ar", "44100", str(_wav_target)],
                     capture_output=True, timeout=120,
                 )
-                if _tc.returncode == 0 and _wav_path.exists() and _wav_path.stat().st_size > 0:
-                    print(f"[job {job_id}] transcoded {_audio_path_obj.suffix} → .wav ({_wav_path.stat().st_size:,} bytes)")
-                    audio_path = str(_wav_path)
+                if _tc.returncode == 0 and _wav_target.exists() and _wav_target.stat().st_size > 0:
+                    print(f"[job {job_id}] transcoded {_audio_ext} → .wav ({_wav_target.stat().st_size:,} bytes)")
+                    _safe_audio_path = str(_wav_target)
                 else:
                     print(f"[job {job_id}] webm transcode failed (rc={_tc.returncode}) — proceeding with original")
             except Exception as _tc_err:
@@ -1057,15 +1061,15 @@ def process_audio(job_id):
                     hints = fut_hints.result(timeout=10)
                 except Exception:
                     pass  # Hints are optional — proceed without them
-                return separate_stems(audio_path, job_id, progress_callback=on_progress, instrument_hints=hints)
+                return separate_stems(_safe_audio_path, job_id, progress_callback=on_progress, instrument_hints=hints)
 
             def _run_early_key():
                 """Key + BPM on the original audio — runs concurrently with Demucs.
                 Publishes intelligence within ~10s so Key tab populates early."""
                 try:
                     from music_intelligence import detect_key_from_audio, detect_bpm_from_audio, format_key
-                    key_num, mode_num, key_conf = detect_key_from_audio(audio_path)
-                    bpm, bpm_conf = detect_bpm_from_audio(audio_path)
+                    key_num, mode_num, key_conf = detect_key_from_audio(_safe_audio_path)
+                    bpm, bpm_conf = detect_bpm_from_audio(_safe_audio_path)
                     return key_num, mode_num, key_conf, bpm, bpm_conf
                 except Exception as e:
                     print(f"[job {job_id}] early key/BPM failed: {e}")

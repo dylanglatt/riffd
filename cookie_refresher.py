@@ -109,9 +109,6 @@ def refresh_cookies(timeout: int = 60, job_id: str | None = None) -> bool:
                     _recent_job_refreshes.clear()
         print("[cookie_refresher] starting Playwright cookie extraction...")
 
-        # Match the browser path pinned during build (Render's home-dir cache doesn't persist)
-        os.environ.setdefault("PLAYWRIGHT_BROWSERS_PATH", "/opt/render/project/.playwright-browsers")
-
         from playwright.sync_api import sync_playwright
 
         with sync_playwright() as p:
