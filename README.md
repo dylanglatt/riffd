@@ -48,7 +48,7 @@ The insight you get from hearing an isolated bass line is different when you can
 
 **Key panel** — detected key with its full diatonic chord set, common progressions, relative and parallel key relationships, and a tonality map. Links into the Theory Studio for deeper reference.
 
-**Smart recommendations** — song discovery based on musical DNA: matching chord progressions, shared key and tempo, or specific harmonic techniques. Not listening history, not genre, not mood.
+**Smart recommendations** — song discovery driven by musical DNA: matching chord progressions, shared key and tempo, or specific harmonic techniques. Built on harmonic analysis, not collaborative filtering or listening history.
 
 **Lyrics** — full text with section structure.
 
@@ -58,19 +58,21 @@ The insight you get from hearing an isolated bass line is different when you can
 
 **Per-stem download** — any separated stem is available as an audio file.
 
+**Demo mode** — three pre-baked analyses (Queen, John Mayer, Eagles) available instantly, no processing required.
+
 ---
 
 ## Technical Highlights
 
-**Audio acquisition.** Full-track download via yt-dlp with dual-binary retry, bot detection bypass, and proxy support. When YouTube fails, the app surfaces an upload prompt rather than silently degrading to a short preview. Background prefetch fires on song selection so the download is usually complete before the user starts analysis.
+**Audio acquisition.** Full-track download via yt-dlp with dual-binary retry, bot detection bypass, and proxy support. Falls back through Cobalt and Piped APIs before surfacing an upload prompt — no silent degradation to a short preview. Background prefetch fires on song selection so the download is usually complete before the user starts analysis.
 
 **GPU stem separation.** Demucs (htdemucs_6stems) runs on cloud GPU via Replicate's file API. Separation completes in ~20 seconds. STFT-domain panning analysis then refines each stem by stereo position — center, left-panned, right-panned — with RMS energy gating to suppress ghost components below threshold.
 
-**ML pipeline with progressive delivery.** Stem separation (Demucs), pitch extraction (Basic Pitch / TensorFlow), and key/BPM detection (Essentia) run as one end-to-end pipeline with per-stage error isolation. Key and BPM results are pushed to the frontend as they complete, so the user sees them before stems finish loading.
+**ML pipeline with progressive delivery.** Stem separation (Demucs), pitch extraction (Basic Pitch / TensorFlow), and key/BPM detection (Essentia) run as one end-to-end pipeline with per-stage error isolation. Key and BPM results are pushed to the frontend as they complete, so the user sees them before stems finish loading. Basic Pitch output is further decomposed into lead and accompaniment layers per stem, reusing pre-computed note events to avoid redundant inference passes.
 
 **Mixer and audio engine.** Faders initialize proportional to each stem's RMS energy so the starting mix is balanced without manual adjustment. Real-time pitch transposition applies `AudioBufferSourceNode.detune` across all active stems simultaneously, keeping them phase-coherent.
 
-**LLM-powered insight.** Claude Haiku generates named progressions, key context, and theory-based recommendations from detected key, tempo, and lyrics. Output is constrained to strict JSON. Recommendations regenerate independently — no need to re-run the full analysis pipeline.
+**LLM-powered insight.** Claude Haiku generates named progressions, key context, and theory-based recommendations from detected key, tempo, and lyrics. It also predicts likely instrumentation before analysis starts — the output is used to guide stem label assignment in Demucs. The Theory Studio's natural language search routes through the same model. All outputs are constrained to strict JSON. Recommendations regenerate independently — no need to re-run the full analysis pipeline.
 
 **Performance.** Audio downloads as MP3 to skip transcoding (10x smaller than WAV). Stems are re-encoded to 192kbps MP3 post-analysis before being served (20x reduction). Heavy Python imports — numpy, TensorFlow, Basic Pitch — are deferred to first job execution, keeping startup RSS around 40MB instead of 300MB.
 
@@ -85,9 +87,12 @@ The insight you get from hearing an isolated bass line is different when you can
 | Backend | Python / Flask / Gunicorn |
 | Stem separation | Demucs (htdemucs_6stems) via Replicate |
 | Pitch detection | Basic Pitch (Spotify) / TensorFlow |
-| Audio analysis | Essentia |
-| LLM | Claude API (Anthropic) |
-| Audio acquisition | yt-dlp, Spotify API |
+| Audio analysis | Essentia / librosa |
+| LLM | Claude Haiku (Anthropic) |
+| Audio acquisition | yt-dlp / Cobalt / Piped |
+| Search & metadata | Spotify API |
+| Lyrics | Genius API |
+| Recommendations | Last.fm API |
 | Frontend | Vanilla JS / Web Audio API |
 | Database | SQLite |
 | Deployment | Render (Standard, 2GB) |
