@@ -330,9 +330,6 @@ threading.Thread(target=_prune_old_disk_dirs, daemon=True).start()
 
 # ─── Authentication ───────────────────────────────────────────────────────────
 
-# Path-based allowlist — explicit and auditable
-AUTH_PUBLIC_PATHS = ("/login", "/static/", "/", "/favicon.ico", "/s/")
-
 @app.before_request
 def require_login():
     # Open-access mode: no password required
