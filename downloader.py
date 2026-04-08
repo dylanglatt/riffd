@@ -139,6 +139,8 @@ def _classify_error(err: Exception) -> str:
     # HTTP 403 is included because expired/invalid cookies cause YouTube to
     # reject the download request with 403 even when the ios player client
     # successfully retrieves format URLs.
+    # HTTP 429 = rate limited from this IP — treat as bot detection (fresh
+    # cookies or a working proxy may resolve it).
     if any(k in msg for k in (
         "sign in to confirm",
         "this helps protect our community",
@@ -149,6 +151,9 @@ def _classify_error(err: Exception) -> str:
         "login required",
         "http error 403",
         "403: forbidden",
+        "http error 429",
+        "429: too many requests",
+        "too many requests",
     )):
         return _ErrorKind.BOT_DETECTION
 
@@ -169,13 +174,15 @@ def _classify_error(err: Exception) -> str:
     )):
         return _ErrorKind.CONTENT_UNAVAILABLE
 
-    # Proxy errors
+    # Proxy errors — includes 407 (bad credentials) and 502 (proxy gateway down)
     if any(k in msg for k in (
         "tunnel connection failed",
         "unable to connect to proxy",
         "proxy error",
         "502 bad gateway",
         "proxyerror",
+        "407 proxy authentication",
+        "proxy authentication required",
     )):
         return _ErrorKind.PROXY
 
@@ -288,11 +295,11 @@ def _run_ytdlp_with_binary(binary: str, source: str, out_template: str, out_dir:
     ]
 
     # Build extractor args — player_client selection + optional PO token
-    # ios and android clients bypass YouTube's server-side bot detection without
-    # requiring valid cookies or PO tokens. Try ios first (most reliable), then
-    # android, then web as last resort.
+    # Client order matters: tv_embedded avoids GVS PO token requirements entirely
+    # and works well from datacenter IPs. ios/android require GVS PO tokens to
+    # avoid HTTP 403 on HLS/https formats but still attempt. web is last resort.
     po_token = os.environ.get("YT_PO_TOKEN", "").strip()
-    extractor_args = "youtube:player_client=ios,android,web;lang=en"
+    extractor_args = "youtube:player_client=tv_embedded,ios,android,web;lang=en"
     if po_token:
         extractor_args += f";po_token={po_token}"
         print(f"[downloader] using PO token ({len(po_token)} chars)")
@@ -422,6 +429,67 @@ def _get_cobalt_instances() -> list[str]:
     return FALLBACK
 
 
+def _resolve_youtube_id(query: str) -> str | None:
+    """
+    Resolve a search query to a YouTube video ID.
+
+    Strategy (in order):
+    1. Extract from URL directly if query is already a YouTube URL.
+    2. yt-dlp --get-id with cookies (avoids bot detection better than raw call).
+    3. Piped search (works even when yt-dlp is fully rate-limited — Piped proxies YouTube).
+    """
+    # Already a URL — extract ID from it
+    if query.startswith("http"):
+        if "v=" in query:
+            return query.split("v=")[-1].split("&")[0]
+        if "youtu.be/" in query:
+            return query.split("youtu.be/")[-1].split("?")[0]
+        return None
+
+    search_source = f"ytsearch1:{query}" if not query.startswith("ytsearch") else query
+
+    # Attempt 1: yt-dlp --get-id with cookies (no download, fast)
+    try:
+        cookies_args = ["--cookies", str(_COOKIES_PATH)] if _COOKIES_PATH.exists() else []
+        id_result = subprocess.run(
+            ["yt-dlp", "--get-id", "--no-playlist", "--force-ipv4"] + cookies_args + [search_source],
+            capture_output=True, text=True, timeout=30,
+        )
+        vid_id = id_result.stdout.strip().splitlines()[0] if id_result.stdout.strip() else ""
+        if vid_id and len(vid_id) == 11:  # YouTube IDs are exactly 11 chars
+            print(f"[cobalt] resolved ID via yt-dlp: {vid_id}")
+            return vid_id
+    except Exception as e:
+        print(f"[cobalt] yt-dlp --get-id failed: {e}")
+
+    # Attempt 2: Piped search as fallback (works when yt-dlp is rate-limited)
+    try:
+        instances = _get_piped_instances()
+        for base_url in instances[:4]:  # Only hit first 4 for speed
+            try:
+                r = requests.get(
+                    f"{base_url}/search",
+                    params={"q": query, "filter": "music_songs"},
+                    timeout=10,
+                    headers={"User-Agent": "Mozilla/5.0"},
+                )
+                if r.ok:
+                    items = r.json().get("items", [])
+                    if items:
+                        video_path = items[0].get("url", "")  # e.g. "/watch?v=abc123xyz01"
+                        if "/watch?v=" in video_path:
+                            vid_id = video_path.split("/watch?v=")[-1].split("&")[0]
+                            if vid_id and len(vid_id) == 11:
+                                print(f"[cobalt] resolved ID via Piped ({base_url}): {vid_id}")
+                                return vid_id
+            except Exception:
+                continue
+    except Exception as e:
+        print(f"[cobalt] Piped ID resolution failed: {e}")
+
+    return None
+
+
 def _download_via_cobalt(query: str, job_id: str) -> Path:
     """
     Fallback YouTube download via Cobalt API (community self-hosted instances).
@@ -432,28 +500,14 @@ def _download_via_cobalt(query: str, job_id: str) -> Path:
     out_dir.mkdir(parents=True, exist_ok=True)
 
     # Cobalt needs a direct YouTube URL, not a search query.
-    # First, resolve the search query to a video URL using yt-dlp --get-url (fast, no download)
+    # Resolve via yt-dlp --get-id (with cookies) or Piped search as fallback.
     video_url = None
-    if query.startswith("http"):
+    if query.startswith("http") and ("youtube.com" in query or "youtu.be" in query):
         video_url = query
     else:
-        search_source = f"ytsearch1:{query}" if not query.startswith("ytsearch") else query
-        try:
-            result = subprocess.run(
-                ["yt-dlp", "--get-url", "--no-playlist", search_source],
-                capture_output=True, text=True, timeout=30,
-            )
-            # yt-dlp --get-url returns the direct media URL, but we need the watch URL
-            # Use --get-id instead to get the video ID
-            id_result = subprocess.run(
-                ["yt-dlp", "--get-id", "--no-playlist", search_source],
-                capture_output=True, text=True, timeout=30,
-            )
-            vid_id = id_result.stdout.strip()
-            if vid_id:
-                video_url = f"https://www.youtube.com/watch?v={vid_id}"
-        except Exception as e:
-            print(f"[cobalt] could not resolve search to URL: {e}")
+        vid_id = _resolve_youtube_id(query)
+        if vid_id:
+            video_url = f"https://www.youtube.com/watch?v={vid_id}"
 
     if not video_url:
         raise RuntimeError("Cobalt: could not resolve search query to YouTube URL")
@@ -537,6 +591,22 @@ def mark_piped_degraded(instance_url: str):
     _piped_degraded[instance_url] = time.time()
 
 
+def _is_valid_api_url(url: str) -> bool:
+    """Sanity-check a URL from the registry before trusting it."""
+    try:
+        from urllib.parse import urlparse
+        p = urlparse(url)
+        # Must have https/http scheme, a hostname with at least one dot, and no path weirdness
+        return (
+            p.scheme in ("http", "https")
+            and "." in p.netloc
+            and len(p.netloc) > 4
+            and " " not in p.netloc
+        )
+    except Exception:
+        return False
+
+
 def _fetch_piped_registry() -> list[str]:
     """Fetch live instances from the official Piped registry."""
     try:
@@ -544,9 +614,11 @@ def _fetch_piped_registry() -> list[str]:
                          headers={"User-Agent": "Mozilla/5.0"})
         if r.ok:
             instances = r.json()
-            api_urls = [inst["api_url"].rstrip("/") for inst in instances
-                        if inst.get("api_url")]
-            print(f"[piped] fetched {len(api_urls)} instances from registry")
+            api_urls = [
+                inst["api_url"].rstrip("/") for inst in instances
+                if inst.get("api_url") and _is_valid_api_url(inst["api_url"])
+            ]
+            print(f"[piped] fetched {len(api_urls)} valid instances from registry")
             return api_urls
     except Exception as e:
         print(f"[piped] instance registry failed: {e}")
@@ -561,10 +633,19 @@ def _get_piped_instances() -> list[str]:
     """
     global _piped_cache, _piped_cache_time
 
-    # Minimal fallback — only instances with strong uptime history.
-    # The registry fetch is the primary source; these are last-resort only.
+    # Fallback instances — used when the registry fetch fails or returns too few results.
+    # Ordered roughly by historical reliability. The registry is the primary source;
+    # these are a last-resort backstop. Refresh periodically as availability shifts.
+    # Validated 2026-04: kavin.rocks and adminforge.de are currently unreliable.
     FALLBACK = [
+        "https://api.piped.private.coffee",
+        "https://api.piped.projectsegfau.lt",
+        "https://piped-api.garudalinux.org",
+        "https://api.piped.yt",
+        "https://piped.syncpundit.io/api",
         "https://pipedapi.kavin.rocks",
+        "https://watchapi.whatever.social",
+        "https://api.piped.privacydev.net",
         "https://pipedapi.adminforge.de",
     ]
 
@@ -615,7 +696,8 @@ def _download_via_piped(query: str, job_id: str) -> Path:
             )
             if not search_resp.ok:
                 print(f"[piped] {base_url} search failed: {search_resp.status_code}")
-                if search_resp.status_code >= 500:
+                # Mark degraded on any server/gateway error (500, 502, 521, etc.)
+                if search_resp.status_code >= 500 or search_resp.status_code == 521:
                     mark_piped_degraded(base_url)
                 continue
 
@@ -658,7 +740,7 @@ def _download_via_piped(query: str, job_id: str) -> Path:
             )
             if not streams_resp.ok:
                 print(f"[piped] {base_url} streams failed: {streams_resp.status_code}")
-                if streams_resp.status_code >= 500:
+                if streams_resp.status_code >= 500 or streams_resp.status_code == 521:
                     mark_piped_degraded(base_url)
                 continue
 

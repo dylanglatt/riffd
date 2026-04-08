@@ -69,7 +69,12 @@ def predict_instruments(song_name: str, artist: str, tags: list[str] | None = No
         '"has_piano": false, "has_guitar": false, "has_synth": true, '
         '"has_strings": false, "has_brass": false, "has_acoustic_guitar": false, '
         '"has_sub_bass": true, "has_808": false, "has_sampled_elements": true, '
-        '"notable": "short note about production techniques, tuning, sound design, or unusual elements"}'
+        '"vocal_arrangement": "solo|harmonized|multi_vocalist", '
+        '"notable": "short note about production techniques, tuning, sound design, or unusual elements"}\n\n'
+        "vocal_arrangement values:\n"
+        '- "solo": single lead vocalist, no distinct harmony or backing vocal parts (most songs)\n'
+        '- "harmonized": lead vocal + backing harmonies or layered vocals from same artist\n'
+        '- "multi_vocalist": genuinely multiple distinct vocalists (e.g. duets, call-and-response, choir, band harmonies like Queen or Crosby Stills Nash)'
     )
 
     try:

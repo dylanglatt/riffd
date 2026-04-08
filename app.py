@@ -1418,7 +1418,8 @@ with open({_result_path!r}, "wb") as f:
                     stems_dir = OUTPUT_DIR / job_id / "stems"
                     stems = _melodic_split_pass(stems, stems_dir,
                                                 progress_callback=on_progress,
-                                                note_events_dict=note_events_all)
+                                                note_events_dict=note_events_all,
+                                                instrument_hints=instrument_hints)
                     # Update the stems info published to frontend
                     jobs[job_id]["stems"] = {k: {"label": v.get("label", k), "energy": v.get("energy", 0), "active": v.get("active", True)} for k, v in stems.items()}
                     gc.collect()

@@ -170,6 +170,14 @@
     .loading-dots span:nth-child(2) { animation-delay:0.2s; }
     .loading-dots span:nth-child(3) { animation-delay:0.4s; }
     @keyframes dotFade { 0%,80%,100%{opacity:0} 40%{opacity:1} }
+    /* Scanning state: waveform fill sweeps across full width instead of sitting at a fixed position,
+       preventing visual confusion with the playback cursor */
+    #waveform-progress-fill.scanning { width:100% !important; transition:width 0.6s ease !important; }
+    #waveform-progress-fill.scanning::before { background:rgba(212,105,31,0.04); }
+    #waveform-progress-fill.scanning::after { animation:fillScan 2s ease-in-out infinite; }
+    @keyframes fillScan { 0%,100%{opacity:0.25; box-shadow:0 0 4px rgba(212,105,31,0.2);} 50%{opacity:0.9; box-shadow:0 0 14px rgba(212,105,31,0.7), 0 0 28px rgba(212,105,31,0.3);} }
+    /* Elapsed time counter */
+    .loading-elapsed { font-size:0.625rem; color:rgba(245,245,245,0.18); letter-spacing:-0.01em; }
     .stem-channel-enter { opacity:0; transform:translateY(8px); transition:opacity .4s ease, transform .4s ease; }
     .stem-channel-enter.visible { opacity:1; transform:translateY(0); }
     .stem-dot { width:6px; height:6px; background:#4ade80; display:inline-block; margin-left:6px; animation:stemDotPulse 1.5s ease-in-out infinite; }
@@ -790,9 +798,19 @@ const _topBar = (() => {
       _clearCreep();
       _setFill(Math.min(88, 55 + count * 5));
     },
+    // Called when the waveform is first rendered (stems loaded, still analyzing).
+    // Switches the fill from a "position cursor" look (misleading) to a full-width
+    // scanning pulse that clearly reads as "processing" rather than "playing at X%".
+    setScanning() {
+      _clearCreep();
+      _pct = 100;
+      const fill = document.getElementById('waveform-progress-fill');
+      if (fill) { fill.style.transition = 'width 0.6s ease, opacity 0.35s ease'; fill.style.width = '100%'; fill.classList.add('scanning'); }
+    },
     complete() {
       _clearCreep(); _loading = false;
       const fill = document.getElementById('waveform-progress-fill');
+      if (fill) fill.classList.remove('scanning');
       const bar  = document.getElementById('riffd-progress-bar');
       if (fill) { fill.style.transition = 'width 0.4s ease, opacity 0.35s ease'; fill.style.width = '100%'; }
       if (bar)  { bar.style.transition  = 'width 0.4s ease'; bar.style.width = '100%'; }
@@ -815,6 +833,7 @@ const _topBar = (() => {
     reset() {
       _clearCreep(); _pct = 0; _loading = false;
       const fill = document.getElementById('waveform-progress-fill');
+      if (fill) fill.classList.remove('scanning');
       const wrap = document.getElementById('riffd-progress-wrap');
       const bar  = document.getElementById('riffd-progress-bar');
       if (fill) { fill.classList.remove('active'); fill.style.transition = 'none'; fill.style.width = '0%'; }
@@ -825,6 +844,28 @@ const _topBar = (() => {
     },
   };
 })();
+// ─── Elapsed loading timer ─────────────────────────────────────────────────
+const _elapsedTimer = (() => {
+  let _t = null;
+  let _start = null;
+  function _fmt(s) { return s < 60 ? `${s}s` : `${Math.floor(s/60)}m ${s % 60}s`; }
+  return {
+    start() {
+      if (_t) return; // already running
+      _start = Date.now();
+      _t = setInterval(() => {
+        const el = document.getElementById('loading-elapsed');
+        if (el) el.textContent = _fmt(Math.floor((Date.now() - _start) / 1000));
+      }, 1000);
+    },
+    stop() {
+      if (_t) { clearInterval(_t); _t = null; }
+      const el = document.getElementById('loading-elapsed');
+      if (el) el.textContent = '';
+    },
+  };
+})();
+
 let _prefetchId = null;
 let _prefetchReady = false;
 let _prefetchPollTimer = null;
@@ -891,7 +932,7 @@ function _addStemChannel(stemName, stemData, jobId) {
   const mixerEl = document.getElementById('mixer-channels');
   if (!mixerEl) return;
   // Drop near-silent stems — they add mixer clutter without musical value
-  if (stemData && stemData.energy != null && stemData.energy < 0.008) {
+  if (stemData && stemData.energy != null && stemData.energy < 0.015) {
     console.log(`[mixer] skipping ${stemName} — energy too low (${stemData.energy.toFixed(4)})`);
     return;
   }
@@ -940,11 +981,20 @@ function _reorganizeStemGroups() {
     return '5';
   }
 
-  // Within a family, lead/main comes before backing/rhythm; otherwise alphabetical
+  // Within a family, named/specific variants beat the generic unsplit parent.
+  // Priority: lead/main (0) → specific supporting parts (1) → generic fallback (2)
+  // This ensures e.g. "Lead Guitar + Rhythm Guitar" wins over "Guitar + Lead Guitar",
+  // and "Lead Vocals + Vocals Accompaniment" wins over "Lead Vocals + Vocals".
   function _stemSortKey(name) {
     const r = _getStemRoot(name);
-    if (r.startsWith('lead') || r === 'vocals' || r === 'guitar' || r === 'piano') return '0_' + name;
-    if (r.startsWith('backing') || r.startsWith('rhythm') || r.includes('harmony') || r.includes('accompaniment')) return '2_' + name;
+    // Named lead/main variants — highest priority
+    if (r.startsWith('lead') || r === 'piano') return '0_' + name;
+    // Specific supporting parts — preferred over the generic unsplit stem
+    if (r.includes('accompaniment') || r.startsWith('backing') || r.startsWith('rhythm') ||
+        r.includes('harmony') || r.includes('choir') ||
+        r === 'acoustic_guitar' || r === 'electric_guitar') return '1_' + name;
+    // Generic unqualified stems (vocals, guitar) — only used when no named variants exist
+    if (r === 'vocals' || r === 'guitar') return '2_' + name;
     return '1_' + name;
   }
   channels.sort((a, b) => {
@@ -953,6 +1003,27 @@ function _reorganizeStemGroups() {
     if (fa !== fb) return fa.localeCompare(fb);
     return _stemSortKey(na).localeCompare(_stemSortKey(nb));
   });
+
+  // Per-family stem limits — after sorting, highest-priority stems are first,
+  // so we simply drop anything beyond the cap. Vocals get 2 to handle songs
+  // with genuine multi-part vocal arrangements (e.g. harmony, choir).
+  const _familyLimits = { '0': 1, '1': 2, '2': 1, '3': 2, '4': 1, '5': 2 };
+  const _familyCount = {};
+  const pruned = [];
+  for (const ch of channels) {
+    const name = ch.id.replace('ch-', '');
+    const fam = _stemFamily(name);
+    _familyCount[fam] = (_familyCount[fam] || 0) + 1;
+    if (_familyCount[fam] > (_familyLimits[fam] ?? 2)) {
+      console.log(`[mixer] pruning ${name} — exceeds family limit for family ${fam}`);
+      _removeStemChannel(name);
+    } else {
+      pruned.push(ch);
+    }
+  }
+  // Work with only the kept channels from here on
+  channels.length = 0;
+  pruned.forEach(c => channels.push(c));
 
   // Re-append in sorted order with lightweight family dividers
   let lastFamily = null;
@@ -1003,20 +1074,27 @@ function resetFullMix() {
 }
 
 function _removeStemChannel(stemName) {
-  // Called when audio fails to load — silently removes the dead channel from the mixer
+  // Removes a stem from the mixer — called on audio load failure or when the
+  // backend replaces a parent stem with its split children.
   const ch = document.getElementById(`ch-${stemName}`);
-  if (!ch) return;
-  ch.style.transition = 'opacity 0.3s ease';
-  ch.style.opacity = '0';
-  setTimeout(() => {
-    ch.remove();
-    // Re-run grouping in case a family divider is now orphaned
-    _reorganizeStemGroups();
-  }, 300);
-  // Clean up state
+  if (ch) {
+    ch.style.transition = 'opacity 0.3s ease';
+    ch.style.opacity = '0';
+    setTimeout(() => {
+      ch.remove();
+      // Re-run grouping in case a family divider is now orphaned
+      _reorganizeStemGroups();
+    }, 300);
+  }
+  // Clean up all audio and UI state for this stem
   delete stemVolumes[stemName];
   delete stemMuted[stemName];
   delete stemSoloed[stemName];
+  delete stemBuffers[stemName];
+  if (stemGains[stemName]) {
+    try { stemGains[stemName].disconnect(); } catch (_) {}
+    delete stemGains[stemName];
+  }
 }
 
 async function _loadSingleStemAudio(stemName, jobId, _attempt = 0) {
@@ -1475,6 +1553,7 @@ function setLoadingStage(stage) {
     _currentStage = stage;
     _setProcessingStep(stage);
     _advancePhaseStepper(stage);
+    startLoadingMessages(stage); // rotate messages for the new stage
   }
 }
 
@@ -1924,6 +2003,14 @@ function pollStatus(){
       // Progressive stem loading — transport enabled by _tryEnableEarlyPlayback once buffers are decoded
       let _stemsJustLoaded = false;
       if (d.stems && (d.status === 'complete' || d.status === 'partial' || d.status === 'processing')) {
+        // Evict stems that the backend has replaced (e.g. parent stem replaced by
+        // lead + accompaniment children after melodic split).  Without this, old
+        // parent channels linger in the mixer alongside their children.
+        Object.keys(_loadedStems).filter(k => !d.stems[k]).forEach(stemName => {
+          _removeStemChannel(stemName);
+          delete _loadedStems[stemName];
+        });
+
         const newStems = Object.keys(d.stems).filter(k => !_loadedStems[k]);
         if (newStems.length > 0) {
           _stemsJustLoaded = true;
@@ -1940,6 +2027,7 @@ function pollStatus(){
             const wrapEl = document.getElementById('player-waveform-wrap');
             if (wrapEl) wrapEl.classList.add('waveform-analyzing');
             _buildPlayerWaveform();
+            _topBar.setScanning(); // waveform is visible — switch fill to scanning pulse
           }
         }
       }
@@ -1959,6 +2047,7 @@ function pollStatus(){
               const wrapEl = document.getElementById('player-waveform-wrap');
               if (wrapEl) wrapEl.classList.add('waveform-analyzing');
               _buildPlayerWaveform();
+              _topBar.setScanning(); // waveform is visible — switch fill to scanning pulse
             }
             _tryEnableEarlyPlayback();
           }).catch(e => {
@@ -1971,10 +2060,11 @@ function pollStatus(){
 
       // Update loading status — skip mixer status update if stems just loaded (avoid clobbering count)
       if (d.progress) {
+        // Only show raw backend strings when the rotator isn't running yet (early boot)
         if (!_stemsJustLoaded && !_loadingInterval) _updateMixLoadingStatus(d.progress);
         _topBar.onProgress(d.progress);
         const detected = _detectStage(d.progress);
-        if (detected) setLoadingStage(detected);
+        if (detected) setLoadingStage(detected); // also restarts message rotation for the new stage
       }
 
       if (d.status === 'queued') {
@@ -1983,8 +2073,12 @@ function pollStatus(){
 
       } else if (d.status === 'complete' || d.status === 'partial') {
         jobData = d;
-        // Final stem loading
+        // Final stem loading — evict any parent stems that were replaced, then add children
         if (d.stems) {
+          Object.keys(_loadedStems).filter(k => !d.stems[k]).forEach(stemName => {
+            _removeStemChannel(stemName);
+            delete _loadedStems[stemName];
+          });
           Object.keys(d.stems).filter(k => !_loadedStems[k]).forEach(k => {
             if (Object.keys(_loadedStems).length === 0) { _removeSkeletonChannels(); }
             _addStemChannel(k, d.stems[k], currentJobId); _loadedStems[k] = true;
@@ -2051,10 +2145,14 @@ function pollStatus(){
           updateTimeDisplay();
 
           // Fade out status bar
+          stopLoadingMessages();
+          _elapsedTimer.stop();
           const statusEl = document.getElementById('mix-loading-status');
           const stepperEl = document.getElementById('phase-stepper');
+          const elapsedEl = document.getElementById('loading-elapsed');
           if (statusEl) statusEl.style.opacity = '0';
           if (stepperEl) stepperEl.style.opacity = '0';
+          if (elapsedEl) elapsedEl.style.opacity = '0';
 
           setTimeout(() => {
             if (statusEl) statusEl.remove();
@@ -2224,8 +2322,11 @@ function _showMixLoading() {
         '<div class="phase-step-dot"></div>' +
         '<div class="phase-step" data-phase="enrich" data-label="Metadata">Metadata</div>' +
       '</div>' +
-      '<div class="mix-loading-status" id="mix-loading-status">Preparing analysis<span class="loading-dots"><span>.</span><span>.</span><span>.</span></span></div>';
+      '<div class="mix-loading-status" id="mix-loading-status">Preparing analysis<span class="loading-dots"><span>.</span><span>.</span><span>.</span></span></div>' +
+      '<span class="loading-elapsed" id="loading-elapsed"></span>';
   }
+  startLoadingMessages('download'); // kick off message rotation immediately
+  _elapsedTimer.start();            // start elapsed counter
   document.getElementById("lyrics-content").innerHTML = '';
   document.getElementById("smart-recs-content").innerHTML = '<div class="smart-recs-empty">Theory-based recommendations will appear here once analysis completes.</div>';
   const keyCtxEl = document.getElementById("key-context");
@@ -2635,6 +2736,7 @@ function dismissCapacity() {
 }
 function resetApp(){
   _topBar.reset();
+  _elapsedTimer.stop();
   cleanupAudio();stopLoadingMessages();pauseOffset=0;duration=0;currentJobId=null;selectedTrack=null;jobData=null;
   searchResults=[];lastQuery="";loopActive=false;transposeAmount=0;songKey=null;clearTimeout(pollInterval);
   _loadedStems={};_karaokeActive=false;_stemGroupBaselines={};

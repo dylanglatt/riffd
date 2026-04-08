@@ -84,6 +84,14 @@ STEM_NAMES_4 = ["vocals", "drums", "bass", "other"]
 # RMS threshold — below this a component is considered silent
 SILENCE_THRESHOLD = 0.003
 
+# Absolute RMS floor for each child produced by a melodic split.
+# If either the lead or accompaniment child falls below this, the split is
+# rejected and the parent stem is kept intact.  Set at 10× SILENCE_THRESHOLD
+# so that near-silent splits (e.g. a synth stem with E≈0.004) don't produce
+# inaudible tracks.  Songs with genuine lead/rhythm content will have child
+# energies well above this level.
+MIN_CHILD_ENERGY = 0.03
+
 # Minimum component energy relative to the stem's total energy
 # to be included (avoids showing ghost components).
 # 0.25 = component must be at least 25% as loud as the stem — filters quiet bleed artifacts.
@@ -838,6 +846,13 @@ def _split_melodic_stem(left, right, sr: int, melodic_mask,
         del lead_l, lead_r, acc_l, acc_r
         return None
 
+    # Absolute floor — relative ratios can look healthy even when the stem
+    # itself is near-silent (e.g. a synth with E≈0.011 split into two
+    # inaudible children).  Reject if either child is below MIN_CHILD_ENERGY.
+    if lead_energy < MIN_CHILD_ENERGY or acc_energy < MIN_CHILD_ENERGY:
+        del lead_l, lead_r, acc_l, acc_r
+        return None
+
     return (lead_l, lead_r), (acc_l, acc_r)
 
 
@@ -871,13 +886,22 @@ _ALREADY_SPLIT_KEYWORDS = {"lead", "backing", "rhythm", "solo", "pad", "accompan
 
 
 def _melodic_split_pass(refined: dict, out_dir: "Path", sr: int = 44100,
-                        progress_callback=None, note_events_dict: dict | None = None) -> dict:
+                        progress_callback=None, note_events_dict: dict | None = None,
+                        instrument_hints: dict | None = None) -> dict:
     """
     Post-processing pass: attempt to split non-drum/bass stems into
     lead (melodic) and accompaniment components using pitch detection.
 
     Modifies `refined` in place and returns it.
     """
+    # Respect LLM vocal arrangement prediction — only split vocals when there
+    # are genuinely distinct vocal parts (harmonies, multiple vocalists).
+    # For solo singers the split produces a thin "accompaniment" artifact that
+    # sounds bad and clutters the mixer.
+    _vocal_arrangement = (instrument_hints or {}).get("vocal_arrangement", "solo")
+    _split_vocals = _vocal_arrangement in ("harmonized", "multi_vocalist")
+    if not _split_vocals:
+        print(f"[melodic_split] vocal split suppressed (vocal_arrangement={_vocal_arrangement!r})")
     import gc as _gc
 
     # Snapshot keys — we'll modify the dict during iteration
@@ -888,6 +912,10 @@ def _melodic_split_pass(refined: dict, out_dir: "Path", sr: int = 44100,
 
         # Skip drums/bass
         if "drum" in label_lower or "bass" in label_lower:
+            continue
+        # Skip vocal stems unless Haiku confirmed distinct vocal parts exist
+        is_vocal = any(w in label_lower for w in ("vocal", "voice", "choir", "singing"))
+        if is_vocal and not _split_vocals:
             continue
         # Skip already-split stems
         if any(kw in label_lower for kw in _ALREADY_SPLIT_KEYWORDS):
