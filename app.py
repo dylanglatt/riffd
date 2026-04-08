@@ -895,11 +895,19 @@ def process_audio(job_id):
                 return 0  # Non-Linux (macOS dev) — skip guard
 
         _current_rss = _get_current_rss_mb()
-        if _current_rss > 1400:  # Leave 600MB headroom for TF + STFT
+        if _current_rss > 1500:  # Leave ~500MB headroom for TF + STFT (TF runtime baseline is ~1470MB after clear)
+            # gc.collect() alone doesn't free TF memory — mirror the post-job cleanup pattern
             gc.collect()
+            try:
+                import tensorflow as _tf
+                _tf.keras.backend.clear_session()
+                del _tf
+                gc.collect()
+            except Exception:
+                pass
             _current_rss = _get_current_rss_mb()
-            if _current_rss > 1400:
-                print(f"[job {job_id}] MEMORY GUARD: RSS={_current_rss:.0f}MB > 1400MB — rejecting")
+            if _current_rss > 1500:
+                print(f"[job {job_id}] MEMORY GUARD: RSS={_current_rss:.0f}MB > 1500MB — rejecting")
                 jobs[job_id].update({
                     "status": "error",
                     "error": "Server memory too high — try again in a moment.",
