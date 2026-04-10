@@ -787,7 +787,16 @@ const _topBar = (() => {
       if (m.includes('download') || m.includes('fetch') || m.includes('preparing')) {
         this.startCreep(15, 28, msg);
       } else if (m.includes('separat') || m.includes('starting')) {
-        _clearCreep(); _setFill(32);
+        _clearCreep();
+        // Parse elapsed seconds from Replicate messages like "Separating stems (81s)..."
+        // and map to fake progress 32% → 68% so the bar visibly advances during the wait.
+        const elapsedMatch = msg.match(/\((\d+)s\)/);
+        if (elapsedMatch) {
+          const elapsed = parseInt(elapsedMatch[1], 10);
+          _setFill(Math.min(68, 32 + (elapsed / 120) * 36));
+        } else {
+          _setFill(32);
+        }
       } else if (m.includes('analyz') || m.includes('key') || m.includes('structure')) {
         _clearCreep(); _setFill(75);
       } else if (m.includes('insight') || m.includes('generating')) {
@@ -1339,6 +1348,7 @@ async function selectTrack(t){
       if (d.analysis_status === 'available' && d.analysis) {
         console.log(`[ui] cache hit → loading saved analysis`);
         currentJobId = d.job_id;
+        _persistJobId(currentJobId);
         jobData = { status:"complete", stems:d.analysis.stems||{}, intelligence:d.analysis.intelligence||{}, lyrics:d.analysis.lyrics||null, tags:d.analysis.tags||[], insight:d.analysis.insight||null, audio_source:d.analysis.audio_source||null, audio_mode:d.analysis.audio_mode||null };
         renderResults(jobData);
         _topBar.complete();
@@ -1407,6 +1417,7 @@ async function uploadFile(file){
     const d=await r.json();
     if(d.error) throw new Error(d.error);
     currentJobId=d.job_id;
+    _persistJobId(currentJobId);
 
     // Silently upgrade to Spotify metadata if a confident match was found
     if(d.track_meta){
@@ -1774,6 +1785,7 @@ async function _uploadFromConfirm(file) {
     const d = await r.json();
     if (d.error) throw new Error(d.error);
     currentJobId = d.job_id;
+    _persistJobId(currentJobId);
     _showMixLoading();
     const procR = await fetch(`/api/process/${currentJobId}`, {
       method:"POST", headers:{"Content-Type":"application/json"},
@@ -1888,6 +1900,7 @@ async function downloadTrack(){
 
     await waitForReady(d.job_id, 180);
     currentJobId = d.job_id;
+    _persistJobId(currentJobId);
   } catch(e) {
     _fullErrorCleanup();
     if (e.message === "upload_required") {
@@ -2723,7 +2736,7 @@ function showCapacity(heading, body, ctaText, opts) {
   const cta = document.getElementById("capacity-cta");
   cta.textContent = ctaText || "Try Again";
   // If the job is dead, clear the stale ID so "Try Again" re-downloads
-  if (opts && opts.clearJob) currentJobId = null;
+  if (opts && opts.clearJob) { currentJobId = null; _clearJobId(); }
   if (opts && opts.autoRetry) {
     cta.onclick = () => { dismissCapacity(); startProcessing(); };
   } else {
@@ -2737,7 +2750,7 @@ function dismissCapacity() {
 function resetApp(){
   _topBar.reset();
   _elapsedTimer.stop();
-  cleanupAudio();stopLoadingMessages();pauseOffset=0;duration=0;currentJobId=null;selectedTrack=null;jobData=null;
+  cleanupAudio();stopLoadingMessages();pauseOffset=0;duration=0;currentJobId=null;_clearJobId();selectedTrack=null;jobData=null;
   searchResults=[];lastQuery="";loopActive=false;transposeAmount=0;songKey=null;clearTimeout(pollInterval);
   _loadedStems={};_karaokeActive=false;_stemGroupBaselines={};
   _prefetchId=null;_prefetchReady=false;
@@ -3074,6 +3087,60 @@ function _initSongRow(gridId, trackId, thumbId) {
 }
 
 // ─── History UI removed (privacy) — backend cache still active for fast reloads ───
+
+// ─── Job ID URL persistence ───────────────────────────────────────────────────
+// Keeps ?job=<id> in the URL so a user who closes or refreshes the tab mid-analysis
+// can reconnect to their in-flight job instead of starting from scratch.
+
+function _persistJobId(id) {
+  if (!id) return;
+  const url = new URL(window.location);
+  url.searchParams.set('job', id);
+  window.history.replaceState({ jobId: id }, '', url);
+}
+
+function _clearJobId() {
+  const url = new URL(window.location);
+  if (!url.searchParams.has('job')) return;
+  url.searchParams.delete('job');
+  window.history.replaceState({}, '', url);
+}
+
+// On page load: if a ?job= param is present, attempt to reconnect to that job.
+(async function _maybeResumeJob() {
+  const savedJobId = new URLSearchParams(window.location.search).get('job');
+  if (!savedJobId) return;
+  try {
+    const r = await fetch(`/api/status/${savedJobId}`);
+    if (!r.ok) { _clearJobId(); return; }
+    const d = await r.json();
+    if (!d.status || d.error === 'Unknown job ID') { _clearJobId(); return; }
+
+    if (d.status === 'complete' || d.status === 'partial') {
+      // Job already finished — render results directly without re-downloading
+      currentJobId = savedJobId;
+      jobData = d;
+      _showMixLoading();
+      _topBar.show();
+      showView('results');
+      await renderResults(d);
+      _topBar.complete();
+      return;
+    }
+
+    if (d.status === 'error') { _clearJobId(); return; }
+
+    // Job is still in progress (processing / queued / ready / downloading) — resume polling
+    currentJobId = savedJobId;
+    _showMixLoading();
+    _topBar.show();
+    showView('results');
+    _elapsedTimer.start();
+    pollStatus();
+  } catch(e) {
+    _clearJobId();
+  }
+})();
 
 // ─── Tonality Map (Key tab) ──────────────────────────────────────────────────
 let _cofMap = null;
