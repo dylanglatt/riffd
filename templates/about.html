@@ -206,11 +206,38 @@
   </div>
 
 
+  <!-- Engineering & Product Decisions -->
+  <div class="about-section">
+    <div class="about-section-label">Decisions Worth Explaining</div>
+    <div class="principles-list">
+      <div class="principle">
+        <div class="pr-title">Build for failure, not the happy path</div>
+        <div class="pr-desc">YouTube blocks requests. Replicate times out. The Claude API returns malformed JSON. The app only became genuinely usable once every external dependency had an explicit fallback — yt-dlp falls through to Cobalt, then Piped, then a user upload prompt. Partial results always surface rather than a blank screen.</div>
+      </div>
+      <div class="principle">
+        <div class="pr-title">Silent queue promotion</div>
+        <div class="pr-desc">When the concurrent job limit is hit, users are queued and promoted automatically when a slot opens — no error message, no manual retry. The degraded state is invisible to the user.</div>
+      </div>
+      <div class="principle">
+        <div class="pr-title">Progressive delivery</div>
+        <div class="pr-desc">The pipeline has five stages. Key and BPM results are pushed to the frontend as soon as Essentia finishes — before GPU stem separation completes. Users see meaningful output within seconds of triggering analysis, not at the end of a 10-minute wait.</div>
+      </div>
+      <div class="principle">
+        <div class="pr-title">Prefetch on selection</div>
+        <div class="pr-desc">Full-track download starts the moment a user selects a song, before they click Analyze. By the time they trigger processing, the audio is usually already on the server — shaving a meaningful chunk off perceived latency.</div>
+      </div>
+      <div class="principle">
+        <div class="pr-title">Memory-efficient startup</div>
+        <div class="pr-desc">Heavy Python imports — numpy, TensorFlow, Basic Pitch — are deferred to first job execution. Boot time stays around 40MB RSS instead of 300MB, which matters on a 2GB Render instance shared with Gunicorn workers.</div>
+      </div>
+    </div>
+  </div>
+
   <div style="text-align:center; padding:80px 0 0;">
     <a href="/demo" style="display:inline-flex; align-items:center; padding:14px 32px; font-size:0.9375rem; font-weight:500; background:#FAFAF9; color:black; border:none; cursor:pointer; text-decoration:none; font-family:inherit; letter-spacing:-0.01em; transition:transform .1s;" onmouseover="this.style.transform='translateY(-0.5px)'" onmouseout="this.style.transform='none'">Open the Demo</a>
   </div>
 
-  <div class="creator-credit">Built by Dylan Glatt &mdash; New York, NY<div class="credit-links"><a href="https://linkedin.com/in/dylanjglatt" target="_blank" rel="noopener">LinkedIn</a><span class="credit-sep">&middot;</span><a href="https://github.com/djglatt" target="_blank" rel="noopener">GitHub</a></div></div>
+  <div class="creator-credit">Built by Dylan Glatt &mdash; New York, NY<div class="credit-links"><a href="https://linkedin.com/in/dylanjglatt" target="_blank" rel="noopener">LinkedIn</a><span class="credit-sep">&middot;</span><a href="https://github.com/dylanglatt" target="_blank" rel="noopener">GitHub</a></div></div>
   <div class="site-footer-custom">&copy; 2026 Riffd</div>
 </div>
 {% endblock %}

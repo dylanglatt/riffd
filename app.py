@@ -188,6 +188,16 @@ _SEED_DEMOS = [
      "cover_path": "/static/demo/one_more_time/cover.jpg",
      "analysis_path": "static/demo/one_more_time/analysis.json",
      "stems_dir": "static/demo/one_more_time/stems"},
+    {"slug": "this_love", "title": "This Love", "artist": "Maroon 5", "year": "2004",
+     "genre": "Pop Rock", "key_display": "D# Major", "bpm": 96, "display_order": 15,
+     "cover_path": "/static/demo/this_love/cover.jpg",
+     "analysis_path": "static/demo/this_love/analysis.json",
+     "stems_dir": "static/demo/this_love/stems"},
+    {"slug": "when_it_rains", "title": "When It Rains It Pours", "artist": "Luke Combs", "year": "2017",
+     "genre": "Country", "key_display": "F# Major", "bpm": 129, "display_order": 16,
+     "cover_path": "/static/demo/when_it_rains/cover.jpg",
+     "analysis_path": "static/demo/when_it_rains/analysis.json",
+     "stems_dir": "static/demo/when_it_rains/stems"},
 ]
 for _demo in _SEED_DEMOS:
     _slug = _demo.pop("slug")

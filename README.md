@@ -16,6 +16,8 @@
 
 Riffd takes any song and breaks it into its components — isolated stems, detected key and tempo, lyrics, and theory context — in one place. Search a track, trigger an analysis, and within a few minutes you can hear the individual parts, explore what key it's in, and discover other songs built on the same harmonic logic.
 
+The [Demo Library](https://www.riffdlabs.com/demo) has pre-analyzed tracks available instantly if you want to skip the wait.
+
 Solo-built and deployed. Real infrastructure, real users.
 
 ---
@@ -58,7 +60,7 @@ The insight you get from hearing an isolated bass line is different when you can
 
 **Per-stem download** — any separated stem is available as an audio file.
 
-**Demo mode** — three pre-baked analyses (Queen, John Mayer, Eagles) available instantly, no processing required.
+**Demo mode** — pre-analyzed tracks across multiple genres, available instantly with no processing required. Filterable by genre.
 
 ---
 
@@ -109,4 +111,4 @@ Live and in public beta. The full pipeline runs end-to-end — search, acquire, 
 
 Solo project by **Dylan Glatt** — New York, NY.
 
-<a href="https://www.linkedin.com/in/dylanjglatt/">LinkedIn</a> · <a href="https://github.com/djglatt">GitHub</a> · <a href="mailto:dylanglatt@gmail.com">dylanglatt@gmail.com</a>
+<a href="https://www.linkedin.com/in/dylanjglatt/">LinkedIn</a> · <a href="https://github.com/dylanglatt">GitHub</a> · <a href="mailto:dylanglatt@gmail.com">dylanglatt@gmail.com</a>
