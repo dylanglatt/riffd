@@ -1,0 +1,211 @@
+{
+  "stems": {
+    "bass": {
+      "label": "Bass",
+      "energy": 0.031526,
+      "active": true
+    },
+    "drums": {
+      "label": "Drums",
+      "energy": 0.104443,
+      "active": true
+    },
+    "vocals": {
+      "label": "Vocals",
+      "energy": 0.074505,
+      "active": true
+    },
+    "synth": {
+      "label": "Synth",
+      "energy": 0.045593,
+      "active": true
+    }
+  },
+  "intelligence": {
+    "key": "G Major",
+    "key_num": 7,
+    "mode_num": 1,
+    "bpm": 123.0,
+    "bpm_confidence": 1.0,
+    "progression": null,
+    "key_confidence": 0.901
+  },
+  "lyrics": "[Intro: Romanthony]\nOne more time\nOne more time\n\n[Chorus: Romanthony]\nOne more time\nWe're gonna celebrate\nOh yeah, all right\nDon't stop the dancing\nOne more time\nWe're gonna celebrate\nOh yeah, all right\nDon't stop the dancing\nOne more time\nWe're gonna celebrate\nOh yeah, all right\nDon't stop the dancing\nOne more time\nWe're gonna celebrate\nOh yeah\nOne more time\n\n[Instrumental Break]\n\n[Chorus: Romanthony]\nOne more time\nWe're gonna celebrate\nOh yeah, all right\nDon't stop the dancing\nOne more time\nWe're gonna celebrate\nOh yeah\nDon't stop the dancing\nOne more time\n\n[Breakdown: Romanthony]\nMmm, you know I'm just feeling\nCelebration tonight\nCelebrate\nDon't wait too late\nMmm, no\nWe don't stop\nYou can't stop\nWe're gonna celebrate\nOne more time\nOne more time\nOne more time\nA celebration\nYou know we're gonna do it right, tonight\nHey! Just feeling\nMusic's got me feeling the need\nNeed, yeah\nCome on, all right\nWe're gonna celebrate\nOne more time\nCelebrate and dance so free\nMusic's got me feeling so free\nCelebrate and dance so free\nOne more time\nMusic's got me feeling so free\nWe're gonna celebrate\nCelebrate and dance so free\nOne more time\nMusic's got me feeling so free\nWe're gonna celebrate\nCelebrate and dance so free\nOne more time\nMusic's got me feeling so free\nWe're gonna celebrate\nCelebrate and dance so free\nOne more time\nMusic's got me feeling so free\nWe're gonna celebrate\nCelebrate and dance so free\nOne more time\nMusic's got me feeling so free\nWe're gonna celebrate\nCelebrate and dance so free\n\n[Chorus: Romanthony]\nOne more time\nMusic's got me feeling so free\nWe're gonna celebrate\nCelebrate and dance so free\nOne more time\nMusic's got me feeling so free\nWe're gonna celebrate\nCelebrate and dance so free\nOne more time\nMusic's got me feeling so free\nWe're gonna celebrate\nCelebrate and dance so free\nOne more time\nMusic's got me feeling so free\nWe're gonna celebrate\nOne more time\nMusic's got me feeling so free\nWe're gonna celebrate\nCelebrate and dance so free\nOne more time\nMusic's got me feeling so free\nWe're gonna celebrate\nCelebrate and dance so free\nOne more time\nMusic's got me feeling so free\nWe're gonna celebrate\nCelebrate and dance so free\nOne more time\nMusic's got me feeling so free\nWe're gonna celebrate\nCelebrate and dance so free",
+  "tags": [
+    "electronic",
+    "dance",
+    "House",
+    "electronica",
+    "techno",
+    "Daft Punk",
+    "party",
+    "french"
+  ],
+  "insight": {
+    "progression_names": {},
+    "smart_recs": {
+      "same_progression": [
+        {
+          "title": "Around the World",
+          "artist": "Daft Punk",
+          "reason": "Same I-IV-V chord loop foundation",
+          "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Features115/v4/34/8d/c7/348dc71c-d75e-9baf-671a-994e9e74b018/dj.pimdxdmf.jpg/300x300bb.jpg"
+        },
+        {
+          "title": "Get Lucky",
+          "artist": "Daft Punk featuring Pharrell Williams",
+          "reason": "Identical I-IV-V-I progression pattern",
+          "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/e8/43/5f/e8435ffa-b6b9-b171-40ab-4ff3959ab661/886443919266.jpg/300x300bb.jpg"
+        }
+      ],
+      "same_key_tempo": [
+        {
+          "title": "Music Sounds Better with You",
+          "artist": "Stardust",
+          "reason": "G Major at 123 BPM, house foundation",
+          "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/62/b0/62/62b062de-ce8f-e00c-38f2-a723ea00941f/5060686501241_cover.jpg/300x300bb.jpg"
+        },
+        {
+          "title": "Le Knight Club",
+          "artist": "Disclosure",
+          "reason": "G Major, 120 BPM, electronic dance"
+        }
+      ],
+      "similar_harmony": [
+        {
+          "title": "Nile Rodgers \u2014 Good Times",
+          "artist": "Chic",
+          "reason": "I-IV-V-I funk loop, four-chord foundation",
+          "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music118/v4/35/b8/b7/35b8b7d8-788b-07ab-1280-18f4880d2e92/603497855070_05.jpg/300x300bb.jpg"
+        },
+        {
+          "title": "Superstition",
+          "artist": "Stevie Wonder",
+          "reason": "I chord pedal point with minimal harmony",
+          "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music114/v4/62/61/61/626161c0-f4d7-e6ff-8586-768340ef278f/00602537002382.rgb.jpg/300x300bb.jpg"
+        }
+      ],
+      "more_by_artist": [
+        {
+          "title": "Digital Love",
+          "artist": "Daft Punk",
+          "reason": "Extended seven-chord progression, jazzy harmony",
+          "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music221/v4/fd/4a/77/fd4a77db-0ebc-d043-41a2-f32fa1bb0fb4/dj.qrikkdwj.jpg/300x300bb.jpg"
+        },
+        {
+          "title": "Something About Us",
+          "artist": "Daft Punk",
+          "reason": "Waltz-like 3/4 time, rare for them",
+          "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music221/v4/fd/4a/77/fd4a77db-0ebc-d043-41a2-f32fa1bb0fb4/dj.qrikkdwj.jpg/300x300bb.jpg"
+        },
+        {
+          "title": "Harder, Better, Faster, Stronger",
+          "artist": "Daft Punk",
+          "reason": "Minor key, syncopated rhythmic foundation",
+          "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Features124/v4/ac/e1/07/ace10786-a064-0ed0-17ff-ba0cebecefe9/dj.mpdjtkyu.jpg/300x300bb.jpg"
+        },
+        {
+          "title": "Homework",
+          "artist": "Daft Punk",
+          "reason": "Dark, minimal, early house influence",
+          "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Features115/v4/34/8d/c7/348dc71c-d75e-9baf-671a-994e9e74b018/dj.pimdxdmf.jpg/300x300bb.jpg"
+        }
+      ]
+    },
+    "key_context": "G Major is bright and energetic\u2014a natural house music home for uplifting dance tracks."
+  },
+  "recommendations": {
+    "more_like_this": [],
+    "same_style": [
+      {
+        "id": "lastfm_Aerodynamic_Daft_Punk",
+        "name": "Aerodynamic",
+        "artist": "Daft Punk",
+        "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music221/v4/fd/4a/77/fd4a77db-0ebc-d043-41a2-f32fa1bb0fb4/dj.qrikkdwj.jpg/300x300bb.jpg",
+        "year": "",
+        "duration_ms": 0,
+        "album": "",
+        "yt_query": "Daft Punk - Aerodynamic official audio",
+        "_source": "lastfm"
+      },
+      {
+        "id": "lastfm_Digital_Love_Daft_Punk",
+        "name": "Digital Love",
+        "artist": "Daft Punk",
+        "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music221/v4/fd/4a/77/fd4a77db-0ebc-d043-41a2-f32fa1bb0fb4/dj.qrikkdwj.jpg/300x300bb.jpg",
+        "year": "",
+        "duration_ms": 0,
+        "album": "",
+        "yt_query": "Daft Punk - Digital Love official audio",
+        "_source": "lastfm"
+      },
+      {
+        "id": "lastfm_Music_Sounds_Better__Stardust",
+        "name": "Music Sounds Better With You",
+        "artist": "Stardust",
+        "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/62/b0/62/62b062de-ce8f-e00c-38f2-a723ea00941f/5060686501241_cover.jpg/300x300bb.jpg",
+        "year": "",
+        "duration_ms": 0,
+        "album": "",
+        "yt_query": "Stardust - Music Sounds Better With You official audio",
+        "_source": "lastfm"
+      },
+      {
+        "id": "lastfm_Lady_(Hear_Me_Tonigh_Modjo",
+        "name": "Lady (Hear Me Tonight)",
+        "artist": "Modjo",
+        "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/f5/25/2b/f5252b6e-0659-890b-7e9d-0e691944b95b/cover.jpg/300x300bb.jpg",
+        "year": "",
+        "duration_ms": 0,
+        "album": "",
+        "yt_query": "Modjo - Lady (Hear Me Tonight) official audio",
+        "_source": "lastfm"
+      },
+      {
+        "id": "lastfm_Genesis_Justice",
+        "name": "Genesis",
+        "artist": "Justice",
+        "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/62/e4/01/62e40187-e672-17e5-f31f-9aee262703a3/mzi.bifzeufu.jpg/300x300bb.jpg",
+        "year": "",
+        "duration_ms": 0,
+        "album": "",
+        "yt_query": "Justice - Genesis official audio",
+        "_source": "lastfm"
+      },
+      {
+        "id": "lastfm_Newjack_Justice",
+        "name": "Newjack",
+        "artist": "Justice",
+        "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/62/e4/01/62e40187-e672-17e5-f31f-9aee262703a3/mzi.bifzeufu.jpg/300x300bb.jpg",
+        "year": "",
+        "duration_ms": 0,
+        "album": "",
+        "yt_query": "Justice - Newjack official audio",
+        "_source": "lastfm"
+      },
+      {
+        "id": "lastfm_Better_Off_Alone_Alice_Deejay",
+        "name": "Better Off Alone",
+        "artist": "Alice Deejay",
+        "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music112/v4/e4/fe/72/e4fe72dc-453e-0ec4-ddfa-f797375c1bd2/22UMGIM63672.rgb.jpg/300x300bb.jpg",
+        "year": "",
+        "duration_ms": 0,
+        "album": "",
+        "yt_query": "Alice Deejay - Better Off Alone official audio",
+        "_source": "lastfm"
+      },
+      {
+        "id": "lastfm_Memories_(feat._Kid__David_Guetta",
+        "name": "Memories (feat. Kid Cudi)",
+        "artist": "David Guetta",
+        "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/ab/a4/c8/aba4c8c1-551f-875e-c2a9-86ed815ba606/5099963244755.jpg/300x300bb.jpg",
+        "year": "",
+        "duration_ms": 0,
+        "album": "",
+        "yt_query": "David Guetta - Memories (feat. Kid Cudi) official audio",
+        "_source": "lastfm"
+      }
+    ],
+    "around_this_time": []
+  }
+}

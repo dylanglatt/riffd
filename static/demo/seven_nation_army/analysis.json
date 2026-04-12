@@ -1,0 +1,205 @@
+{
+  "stems": {
+    "bass": {
+      "label": "Bass",
+      "energy": 0.111869,
+      "active": true
+    },
+    "drums": {
+      "label": "Drums",
+      "energy": 0.104893,
+      "active": true
+    },
+    "synth": {
+      "label": "Synth",
+      "energy": 0.010571,
+      "active": true
+    },
+    "vocals": {
+      "label": "Vocals",
+      "energy": 0.042586,
+      "active": true
+    },
+    "guitar": {
+      "label": "Guitar",
+      "energy": 0.052308,
+      "active": true
+    }
+  },
+  "intelligence": {
+    "key": "E Minor",
+    "key_num": 4,
+    "mode_num": 0,
+    "bpm": 123.3,
+    "bpm_confidence": 1.0,
+    "progression": null,
+    "key_confidence": 0.846
+  },
+  "lyrics": "I'm gonna fight 'em off\nA seven-nation army couldn't hold me back\nThey're gonna rip it off\nTakin' their time right behind my back\nAnd I'm talkin' to myself at night because I can't forget\nBack and forth through my mind, behind a cigarette\nAnd the message comin' from my eyes says, \"Leave it alone\"\n\n[Instrumental Break]\n\n[Verse 2]\nDon't wanna hear about it\nEvery single one's got a story to tell\nEveryone knows about it\nFrom the Queen of England to the Hounds of Hell\nAnd if I catch it comin' back my way, I'm gonna serve it to you\nAnd that ain't what you want to hear, but that's what I'll do\nAnd the feelin' comin' from my bones says, \"Find a home\"\n\n[Guitar Solo]\n\n[Verse 3]\nI'm goin' to Wichita\nFar from this opera forevermore\nI'm gonna work the straw\nMake the sweat drip out of every pore\nAnd I'm bleedin' and I'm bleedin' and I'm bleedin' right before the Lord\nAll the words are gonna bleed from me and I will think no more\nAnd the stains comin' from my blood tell me, \"Go back home\"",
+  "tags": [
+    "rock",
+    "alternative rock",
+    "alternative",
+    "indie rock",
+    "indie",
+    "Garage Rock",
+    "00s",
+    "The White Stripes"
+  ],
+  "insight": {
+    "progression_names": {},
+    "smart_recs": {
+      "same_progression": [
+        {
+          "title": "Sunshine of Your Love",
+          "artist": "Cream",
+          "reason": "Repeating i-VII-VI power chord loop",
+          "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/9f/3f/da/9f3fdaab-98af-bec1-633c-212a2705ccf3/00602537802913.rgb.jpg/300x300bb.jpg"
+        },
+        {
+          "title": "Whole Lotta Love",
+          "artist": "Led Zeppelin",
+          "reason": "Similar minor pentatonic riff-based progression",
+          "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music125/v4/1a/3d/bb/1a3dbb86-c1f8-737e-571f-d6b647a230be/dj.rhubuvkd.jpg/300x300bb.jpg"
+        }
+      ],
+      "same_key_tempo": [
+        {
+          "title": "Nothing Else Matters",
+          "artist": "Metallica",
+          "reason": "E Minor, 120-125 BPM range",
+          "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music125/v4/9e/80/1b/9e801b06-67fa-0990-2d15-85480ad3cd46/850007452025.png/300x300bb.jpg"
+        }
+      ],
+      "similar_harmony": [
+        {
+          "title": "Black",
+          "artist": "Pearl Jam",
+          "reason": "Minimal harmonic movement, sustained minor drone",
+          "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music221/v4/e0/e1/7c/e0e17cf0-62e5-6312-f3df-2462960cc8f1/884977724745.jpg/300x300bb.jpg"
+        },
+        {
+          "title": "Come Together",
+          "artist": "The Beatles",
+          "reason": "Dominant minor riff with chromatic bass movement",
+          "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music112/v4/df/db/61/dfdb615d-47f8-06e9-9533-b96daccc029f/18UMGIM31076.rgb.jpg/300x300bb.jpg"
+        }
+      ],
+      "more_by_artist": [
+        {
+          "title": "Ball and Biscuit",
+          "artist": "The White Stripes",
+          "reason": "Minor pentatonic blues structure throughout",
+          "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music114/v4/07/25/09/0725098a-09f4-f240-e551-94384a590371/886448799009.jpg/300x300bb.jpg"
+        },
+        {
+          "title": "Fell in Love with a Girl",
+          "artist": "The White Stripes",
+          "reason": "I-IV progression, similar raw production",
+          "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/1c/fb/1d/1cfb1dec-aa4c-1cd7-da73-9d8b27e0ac41/886448798040.jpg/300x300bb.jpg"
+        },
+        {
+          "title": "Hotel Yorba",
+          "artist": "The White Stripes",
+          "reason": "Waltz time 3/4, rare arrangement choice",
+          "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/1c/fb/1d/1cfb1dec-aa4c-1cd7-da73-9d8b27e0ac41/886448798040.jpg/300x300bb.jpg"
+        }
+      ]
+    },
+    "key_context": "E Minor is dark and intense\u2014perfect for driving rock anthems with aggressive energy."
+  },
+  "recommendations": {
+    "more_like_this": [],
+    "same_style": [
+      {
+        "id": "lastfm_The_Hardest_Button_t_The_White_Stripes",
+        "name": "The Hardest Button to Button",
+        "artist": "The White Stripes",
+        "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music114/v4/07/25/09/0725098a-09f4-f240-e551-94384a590371/886448799009.jpg/300x300bb.jpg",
+        "year": "",
+        "duration_ms": 0,
+        "album": "",
+        "yt_query": "The White Stripes - The Hardest Button to Button official audio",
+        "_source": "lastfm"
+      },
+      {
+        "id": "lastfm_Can't_Stop_Red_Hot_Chili_Pepper",
+        "name": "Can't Stop",
+        "artist": "Red Hot Chili Peppers",
+        "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/c1/7f/25/c17f25d9-c5fa-5a70-5e76-122caf132bc1/093624931966.jpg/300x300bb.jpg",
+        "year": "",
+        "duration_ms": 0,
+        "album": "",
+        "yt_query": "Red Hot Chili Peppers - Can't Stop official audio",
+        "_source": "lastfm"
+      },
+      {
+        "id": "lastfm_Take_Me_Out_Franz_Ferdinand",
+        "name": "Take Me Out",
+        "artist": "Franz Ferdinand",
+        "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music112/v4/83/c6/54/83c6541f-3b90-b46a-b46a-17bf8fd9af16/5034202113645.png/300x300bb.jpg",
+        "year": "",
+        "duration_ms": 0,
+        "album": "",
+        "yt_query": "Franz Ferdinand - Take Me Out official audio",
+        "_source": "lastfm"
+      },
+      {
+        "id": "lastfm_Are_You_Gonna_Be_My__Jet",
+        "name": "Are You Gonna Be My Girl",
+        "artist": "Jet",
+        "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/b8/ec/96/b8ec96fd-6b42-eb84-b5b8-1a787b72ff57/0603497869336.jpg/300x300bb.jpg",
+        "year": "",
+        "duration_ms": 0,
+        "album": "",
+        "yt_query": "Jet - Are You Gonna Be My Girl official audio",
+        "_source": "lastfm"
+      },
+      {
+        "id": "lastfm_Black_Math_The_White_Stripes",
+        "name": "Black Math",
+        "artist": "The White Stripes",
+        "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music114/v4/07/25/09/0725098a-09f4-f240-e551-94384a590371/886448799009.jpg/300x300bb.jpg",
+        "year": "",
+        "duration_ms": 0,
+        "album": "",
+        "yt_query": "The White Stripes - Black Math official audio",
+        "_source": "lastfm"
+      },
+      {
+        "id": "lastfm_Mr._Brightside_The_Killers",
+        "name": "Mr. Brightside",
+        "artist": "The Killers",
+        "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music126/v4/11/64/9c/11649c80-2066-dba8-77a9-df7eecae26c1/17UM1IM06937.rgb.jpg/300x300bb.jpg",
+        "year": "",
+        "duration_ms": 0,
+        "album": "",
+        "yt_query": "The Killers - Mr. Brightside official audio",
+        "_source": "lastfm"
+      },
+      {
+        "id": "lastfm_Californication_Red_Hot_Chili_Pepper",
+        "name": "Californication",
+        "artist": "Red Hot Chili Peppers",
+        "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music124/v4/4c/86/1d/4c861dab-5428-f3b7-8068-82bb69db5e89/093624932130.jpg/300x300bb.jpg",
+        "year": "",
+        "duration_ms": 0,
+        "album": "",
+        "yt_query": "Red Hot Chili Peppers - Californication official audio",
+        "_source": "lastfm"
+      },
+      {
+        "id": "lastfm_The_Pretender_Foo_Fighters",
+        "name": "The Pretender",
+        "artist": "Foo Fighters",
+        "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/1a/a8/d2/1aa8d22d-f1ab-0462-e6f0-4f19b2594383/886971151626.jpg/300x300bb.jpg",
+        "year": "",
+        "duration_ms": 0,
+        "album": "",
+        "yt_query": "Foo Fighters - The Pretender official audio",
+        "_source": "lastfm"
+      }
+    ],
+    "around_this_time": []
+  }
+}

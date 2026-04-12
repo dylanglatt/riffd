@@ -53,7 +53,9 @@ from external_apis import get_lyrics, get_track_tags, enrich_recommendations_wit
 from downloader import download_audio_from_youtube, resolve_audio, AudioUnavailableError
 from analytics import log_event
 from history import add_to_history, get_recent, get_cached_result, save_cached_result, touch_history
-from db import init_db, migrate_from_history_json, get_track, upsert_track, set_track_status, touch_track, get_recent_tracks, get_analysis_for_track, upsert_job_checkpoint, recover_orphaned_jobs
+from db import (init_db, migrate_from_history_json, get_track, upsert_track, set_track_status,
+                touch_track, get_recent_tracks, get_analysis_for_track, upsert_job_checkpoint,
+                recover_orphaned_jobs, get_visible_demo_tracks, get_demo_track, upsert_demo_track)
 
 load_dotenv()
 
@@ -112,6 +114,31 @@ OUTPUT_DIR.mkdir(exist_ok=True)
 # Initialize database on startup
 init_db()
 migrate_from_history_json()
+
+# Seed existing static demo tracks into DB (idempotent)
+_SEED_DEMOS = [
+    {"slug": "take_it_easy", "title": "Take It Easy", "artist": "Eagles", "year": "1972",
+     "genre": "Classic Rock", "key_display": "G Major", "display_order": 1,
+     "cover_path": "/static/demo/take_it_easy/cover.jpg",
+     "analysis_path": "static/demo/take_it_easy/analysis.json",
+     "stems_dir": "static/demo/take_it_easy/stems"},
+    {"slug": "gravity", "title": "Gravity", "artist": "John Mayer", "year": "2006",
+     "genre": "Blues / Singer-Songwriter", "key_display": "C Major", "display_order": 2,
+     "cover_path": "/static/demo/gravity/cover.jpg",
+     "analysis_path": "static/demo/gravity/analysis.json",
+     "stems_dir": "static/demo/gravity/stems"},
+    {"slug": "bohemian_rhapsody", "title": "Bohemian Rhapsody", "artist": "Queen", "year": "1975",
+     "genre": "Classic Rock", "key_display": "Bb Major", "display_order": 3,
+     "cover_path": "/static/demo/bohemian_rhapsody/cover.jpg",
+     "analysis_path": "static/demo/bohemian_rhapsody/analysis.json",
+     "stems_dir": "static/demo/bohemian_rhapsody/stems"},
+]
+for _demo in _SEED_DEMOS:
+    _slug = _demo.pop("slug")
+    _title = _demo.pop("title")
+    _artist = _demo.pop("artist")
+    upsert_demo_track(_slug, _title, _artist, **_demo)
+print(f"[db] seeded {len(_SEED_DEMOS)} demo tracks")
 
 ALLOWED_EXTENSIONS = {".mp3", ".wav", ".flac", ".m4a", ".ogg", ".aac"}
 
@@ -1703,34 +1730,19 @@ def admin_refresh_cookies():
 
 @app.route("/demo")
 def demo():
+    rows = get_visible_demo_tracks()
     demo_tracks = [
         {
-            "id": "take_it_easy",
-            "name": "Take It Easy",
-            "artist": "Eagles",
-            "year": "1972",
-            "cover": "/static/demo/take_it_easy/cover.jpg",
-            "key": "G Major",
-            "bpm": 0,
-        },
-        {
-            "id": "gravity",
-            "name": "Gravity",
-            "artist": "John Mayer",
-            "year": "2006",
-            "cover": "/static/demo/gravity/cover.jpg",
-            "key": "C Major",
-            "bpm": 0,
-        },
-        {
-            "id": "bohemian_rhapsody",
-            "name": "Bohemian Rhapsody",
-            "artist": "Queen",
-            "year": "1975",
-            "cover": "/static/demo/bohemian_rhapsody/cover.jpg",
-            "key": "Bb Major",
-            "bpm": 0,
-        },
+            "id": r["slug"],
+            "name": r["title"],
+            "artist": r["artist"],
+            "year": r["year"] or "",
+            "cover": r["cover_path"] or "",
+            "key": r["key_display"] or "",
+            "bpm": r["bpm"] or 0,
+            "genre": r["genre"] or "",
+        }
+        for r in rows
     ]
     return render_template("demo.html", active_page="demo", demo_tracks=demo_tracks)
 
@@ -1739,7 +1751,12 @@ def demo():
 def get_demo_analysis(demo_id):
     """Serve pre-baked analysis for a demo track. Identical shape to /api/status/<job_id>."""
     safe_id = demo_id.replace("/", "").replace("..", "")
-    analysis_path = os.path.join("static", "demo", safe_id, "analysis.json")
+    row = get_demo_track(safe_id)
+    if row and row.get("analysis_path"):
+        analysis_path = row["analysis_path"]
+    else:
+        # Fallback to convention-based path for backwards compat
+        analysis_path = os.path.join("static", "demo", safe_id, "analysis.json")
     if not os.path.exists(analysis_path):
         return jsonify({"error": "Demo track not found"}), 404
     with open(analysis_path) as f:
@@ -1753,7 +1770,11 @@ def serve_demo_stem(demo_id, stem_name):
     """Serve pre-baked stem audio for a demo track. Supports range requests for seeking."""
     safe_id = demo_id.replace("/", "").replace("..", "")
     safe_stem = stem_name.replace("/", "").replace("..", "").replace(".mp3", "")
-    stems_dir = os.path.join("static", "demo", safe_id, "stems")
+    row = get_demo_track(safe_id)
+    if row and row.get("stems_dir"):
+        stems_dir = row["stems_dir"]
+    else:
+        stems_dir = os.path.join("static", "demo", safe_id, "stems")
     mp3_path = os.path.join(stems_dir, f"{safe_stem}.mp3")
     if not os.path.exists(mp3_path):
         return jsonify({"error": "Stem not found"}), 404

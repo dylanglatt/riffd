@@ -1,0 +1,198 @@
+{
+  "stems": {
+    "bass": {
+      "label": "Bass",
+      "energy": 0.172548,
+      "active": true
+    },
+    "drums": {
+      "label": "Drums",
+      "energy": 0.146356,
+      "active": true
+    },
+    "guitar": {
+      "label": "Guitar",
+      "energy": 0.03946,
+      "active": true
+    },
+    "vocals": {
+      "label": "Vocals",
+      "energy": 0.119316,
+      "active": true
+    },
+    "synth_lead": {
+      "label": "Synth Lead",
+      "energy": 0.036434,
+      "active": true
+    }
+  },
+  "intelligence": {
+    "key": "D# Major",
+    "key_num": 3,
+    "mode_num": 1,
+    "bpm": 88.9,
+    "bpm_confidence": 1.0,
+    "progression": null,
+    "key_confidence": 0.824
+  },
+  "lyrics": "\u2026 Read More\u00a0[Verse 1]\nI'm still a fan even though I was salty\nHate to see you with some other broad, know you happy\nHate to see you happy if I'm not the one drivin'\n\n[Pre-Chorus]\nI'm so mature, I'm so mature\nI'm so mature, I got me a therapist to tell me there's other men\nI don't want none, I just want you\nIf I can't have you, no one should\n\n[Chorus]\nI might\nI might kill my ex, not the best idea\nHis new girlfriend's next, how'd I get here?\nI might kill my ex, I still love him though\nRather be in jail than alone\n\n[Verse 2]\nI get the sense that it's a lost cause\nI get the sense that you might really love her\nThis text gon' be evidence, this text is evidence\nI tried to ration with you, no murders or crime of passion, but damn\nYou was out of reach\nYou was at the farmer's market with your perfect peach\nNow I'm in the basement plannin' home invasion\nNow you layin' face-down, got me singin' over a beat\n\n[Pre-Chorus]\nI'm so mature, I'm so mature\nI'm so mature, I got me a therapist to tell me there's other men\nI don't want none, I just want you\nIf I can't have you, no one will\n\n[Chorus]\nI might (I)\nI might kill my ex, not the best idea\nHis new girlfriend's next, how'd I get here?\nI might kill my ex, I still love him though\nRather be in jail than alone\n\n[Bridge]\nI did it all for love (Love)\nI did it all on no drugs (Drugs)\nI did all of this sober\nI did it all for us, oh\nI did it all for love (Love)\nI did all of this on no drugs (Drugs)\nI did all of this sober\nDon't you know I did it all for us? (I'm gon' kill your ass tonight)\n\n[Chorus]\nOh, I just killed my ex (My ex, oops), not the best idea (Idea)\nKilled his girlfriend next, how'd I get here? (He left me no choice)\nI just killed my ex (My ex), I still love him though (I do)\nRather be in Hell than alone",
+  "tags": [
+    "pop",
+    "trip hop",
+    "bedroom pop",
+    "psychedelic pop",
+    "Neo-Soul",
+    "Neo-Psychedelia",
+    "rnb",
+    "alt-pop"
+  ],
+  "insight": {
+    "progression_names": {},
+    "smart_recs": {
+      "same_progression": [
+        {
+          "title": "Good as Hell",
+          "artist": "Lizzo",
+          "reason": "I-V-vi-IV progression, pop arrangement",
+          "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music125/v4/7f/d4/43/7fd443a8-861d-dd70-27a1-f23e221883dc/075679905956.jpg/300x300bb.jpg"
+        },
+        {
+          "title": "Levitating",
+          "artist": "Dua Lipa",
+          "reason": "I-V-vi-IV loop, contemporary pop structure",
+          "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music116/v4/6c/11/d6/6c11d681-aa3a-d59e-4c2e-f77e181026ab/190295092665.jpg/300x300bb.jpg"
+        }
+      ],
+      "same_key_tempo": [],
+      "similar_harmony": [
+        {
+          "title": "Liability",
+          "artist": "Lorde",
+          "reason": "Descending harmonic movement, introspective major key",
+          "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/8d/0d/15/8d0d1532-493b-52ec-6a29-a239ced6931b/17UMGIM81023.rgb.jpg/300x300bb.jpg"
+        }
+      ],
+      "more_by_artist": [
+        {
+          "title": "Drew Barrymore",
+          "artist": "SZA",
+          "reason": "Same trip-hop influenced bedroom pop production",
+          "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music124/v4/a2/bc/ad/a2bcad46-b389-4be1-8bac-5a0959b0b8e4/886446548449.jpg/300x300bb.jpg"
+        },
+        {
+          "title": "The Weekend",
+          "artist": "SZA",
+          "reason": "Sparse arrangement, melancholic major tonality",
+          "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music124/v4/75/73/39/75733929-5ce0-234e-6861-0e3932fa342a/886446852157.jpg/300x300bb.jpg"
+        },
+        {
+          "title": "Good Days",
+          "artist": "SZA",
+          "reason": "Contemplative pop with minimal harmonic movement",
+          "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/0e/5c/6e/0e5c6e76-928a-bb8c-ec7d-b323f6079f67/886449007394.jpg/300x300bb.jpg"
+        },
+        {
+          "title": "Ctrl",
+          "artist": "SZA",
+          "reason": "Vulnerable narrative song, atmospheric production",
+          "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music124/v4/a2/bc/ad/a2bcad46-b389-4be1-8bac-5a0959b0b8e4/886446548449.jpg/300x300bb.jpg"
+        }
+      ]
+    },
+    "key_context": "D# Major is bright yet unconventional \u2014 rarely used in commercial pop, lending distinctiveness."
+  },
+  "recommendations": {
+    "more_like_this": [],
+    "same_style": [
+      {
+        "id": "lastfm_Snooze_SZA",
+        "name": "Snooze",
+        "artist": "SZA",
+        "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music122/v4/62/93/13/6293132e-20ff-67ab-3d1f-96bb6797a6ba/196589564955.jpg/300x300bb.jpg",
+        "year": "",
+        "duration_ms": 0,
+        "album": "",
+        "yt_query": "SZA - Snooze official audio",
+        "_source": "lastfm"
+      },
+      {
+        "id": "lastfm_Seek_&_Destroy_SZA",
+        "name": "Seek & Destroy",
+        "artist": "SZA",
+        "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music122/v4/62/93/13/6293132e-20ff-67ab-3d1f-96bb6797a6ba/196589564955.jpg/300x300bb.jpg",
+        "year": "",
+        "duration_ms": 0,
+        "album": "",
+        "yt_query": "SZA - Seek & Destroy official audio",
+        "_source": "lastfm"
+      },
+      {
+        "id": "lastfm_Bad_Habit_Steve_Lacy",
+        "name": "Bad Habit",
+        "artist": "Steve Lacy",
+        "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music122/v4/f4/b4/c4/f4b4c458-e52c-859b-fdef-2600dd4fe768/196589380630.jpg/300x300bb.jpg",
+        "year": "",
+        "duration_ms": 0,
+        "album": "",
+        "yt_query": "Steve Lacy - Bad Habit official audio",
+        "_source": "lastfm"
+      },
+      {
+        "id": "lastfm_Never_Getting_Laid_Sabrina_Carpenter",
+        "name": "Never Getting Laid",
+        "artist": "Sabrina Carpenter",
+        "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/1f/60/6e/1f606e12-c37f-4218-5e20-602286429c31/25UMGIM81699.rgb.jpg/300x300bb.jpg",
+        "year": "",
+        "duration_ms": 0,
+        "album": "",
+        "yt_query": "Sabrina Carpenter - Never Getting Laid official audio",
+        "_source": "lastfm"
+      },
+      {
+        "id": "lastfm_Dark_Red_Steve_Lacy",
+        "name": "Dark Red",
+        "artist": "Steve Lacy",
+        "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/b0/a8/e7/b0a8e748-8210-a4a5-79d3-d3449e51381a/5054526102712_1.jpg/300x300bb.jpg",
+        "year": "",
+        "duration_ms": 0,
+        "album": "",
+        "yt_query": "Steve Lacy - Dark Red official audio",
+        "_source": "lastfm"
+      },
+      {
+        "id": "lastfm_Pain_PinkPantheress",
+        "name": "Pain",
+        "artist": "PinkPantheress",
+        "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music125/v4/d4/a0/88/d4a08817-fb26-3b28-71ed-0e8ff8d52f33/190296648670.jpg/300x300bb.jpg",
+        "year": "",
+        "duration_ms": 0,
+        "album": "",
+        "yt_query": "PinkPantheress - Pain official audio",
+        "_source": "lastfm"
+      },
+      {
+        "id": "lastfm_For:_You_Kali_Uchis",
+        "name": "For: You",
+        "artist": "Kali Uchis",
+        "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music221/v4/32/cb/cd/32cbcd1f-ca12-df86-e3ed-8ef0f7ac09e9/25UMGIM43974.rgb.jpg/300x300bb.jpg",
+        "year": "",
+        "duration_ms": 0,
+        "album": "",
+        "yt_query": "Kali Uchis - For: You official audio",
+        "_source": "lastfm"
+      },
+      {
+        "id": "lastfm_Sunshine_&_Rain..._Kali_Uchis",
+        "name": "Sunshine & Rain...",
+        "artist": "Kali Uchis",
+        "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/b6/cd/1a/b6cd1a5b-83af-a1e2-0ad7-ea530fcf2522/859722261219.jpg/300x300bb.jpg",
+        "year": "",
+        "duration_ms": 0,
+        "album": "",
+        "yt_query": "Kali Uchis - Sunshine & Rain... official audio",
+        "_source": "lastfm"
+      }
+    ],
+    "around_this_time": []
+  }
+}

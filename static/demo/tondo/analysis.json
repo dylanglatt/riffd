@@ -1,0 +1,175 @@
+{
+  "stems": {
+    "bass": {
+      "label": "Bass",
+      "energy": 0.081553,
+      "active": true
+    },
+    "drums": {
+      "label": "Drums",
+      "energy": 0.17925,
+      "active": true
+    },
+    "guitar": {
+      "label": "Guitar",
+      "energy": 0.029996,
+      "active": true
+    },
+    "synth": {
+      "label": "Synth Lead",
+      "energy": 0.044439,
+      "active": true
+    },
+    "vocals": {
+      "label": "Vocals",
+      "energy": 0.060192,
+      "active": true
+    }
+  },
+  "intelligence": {
+    "key": "C Minor",
+    "key_num": 0,
+    "mode_num": 0,
+    "bpm": 130.6,
+    "bpm_confidence": 1.0,
+    "progression": null,
+    "key_confidence": 0.811
+  },
+  "lyrics": "Tondoho mba \u00e9, tondoho mba \u00e9\nMbwiya ami a l\u00e9ma o (Tondoho mba \u00e9)\nTondoho mba \u00e9,\u2005tondoho\u2005mba \u00e9\nMbwiya ami\u2005a l\u00e9ma o\nTondoho mba \u00e9, tondoho\u2005mba \u00e9\nMbwiya ami a l\u00e9ma o\nTondoho mba \u00e9, tondoho mba\u205f\u00e9\nMbwiya\u205fami\u205fa l\u00e9ma o\n\n[Build: Eko Roosevelt]\n[?]\n\n[Drop]\nTondoho\u205fmba \u00e9, tondoho\u205fmba \u00e9\nMbwiya ami a l\u00e9ma o (Tondoho mba \u00e9)\nTondoho mba \u00e9, tondoho mba \u00e9\nMbwiya ami a l\u00e9ma o\nTondoho mba \u00e9, tondoho mba \u00e9\nMbwiya ami a l\u00e9ma o\nTondoho mba \u00e9, tondoho mba \u00e9\nMbwiya ami a l\u00e9ma o\n\n[Instrumental Build]\n\n[Drop]\nTondoho mba \u00e9, tondoho mba \u00e9\nMbwiya ami a l\u00e9ma o (Tondoho mba \u00e9)\nTondoho mba \u00e9, tondoho mba \u00e9\nMbwiya ami a l\u00e9ma o\nTondoho mba \u00e9, tondoho mba \u00e9\nMbwiya ami a l\u00e9ma o\nTondoho mba \u00e9, tondoho mba \u00e9\nMbwiya ami a l\u00e9ma o\n\n[Build: Eko Roosevelt]\n[?]",
+  "tags": [],
+  "insight": {
+    "progression_names": {},
+    "smart_recs": {
+      "same_progression": [],
+      "same_key_tempo": [
+        {
+          "title": "Teardrop",
+          "artist": "Massive Attack",
+          "reason": "C Minor, ~131 BPM electronic production",
+          "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/0a/98/55/0a98555b-8d9d-3b46-660a-b91261557d17/00724384559953.rgb.jpg/300x300bb.jpg"
+        },
+        {
+          "title": "Angel",
+          "artist": "Massive Attack",
+          "reason": "C Minor, 130 BPM dark electronic atmosphere",
+          "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/0a/98/55/0a98555b-8d9d-3b46-660a-b91261557d17/00724384559953.rgb.jpg/300x300bb.jpg"
+        }
+      ],
+      "similar_harmony": [],
+      "more_by_artist": [
+        {
+          "title": "Latch",
+          "artist": "Disclosure",
+          "reason": "Vocal-driven electronic production, build-drop structure",
+          "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/57/93/e0/5793e0d6-4877-e015-ef54-3fd4eff87344/14UMGIM12348.rgb.jpg/300x300bb.jpg"
+        },
+        {
+          "title": "White Noise",
+          "artist": "Disclosure",
+          "reason": "Collaborative featuring vocal samples, house foundation",
+          "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/57/93/e0/5793e0d6-4877-e015-ef54-3fd4eff87344/14UMGIM12348.rgb.jpg/300x300bb.jpg"
+        },
+        {
+          "title": "Midnight City",
+          "artist": "Eko Roosevelt",
+          "reason": "Energetic tempo, Afrobeat-electronic fusion approach"
+        }
+      ]
+    },
+    "key_context": "C Minor carries darkness and intensity \u2014 common in electronic and contemporary urban music."
+  },
+  "recommendations": {
+    "more_like_this": [],
+    "same_style": [
+      {
+        "id": "lastfm_Ask_Me_Duck_Sauce",
+        "name": "Ask Me",
+        "artist": "Duck Sauce",
+        "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music221/v4/d5/27/c5/d527c528-b40a-26c9-e943-d08a9b62a797/840401713242.png/300x300bb.jpg",
+        "year": "",
+        "duration_ms": 0,
+        "album": "",
+        "yt_query": "Duck Sauce - Ask Me official audio",
+        "_source": "lastfm"
+      },
+      {
+        "id": "lastfm_How_It_Feels_Barry_Can't_Swim",
+        "name": "How It Feels",
+        "artist": "Barry Can't Swim",
+        "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music221/v4/15/82/e7/1582e713-dd5e-b383-10e6-3890e76c5e12/5054429173154.png/300x300bb.jpg",
+        "year": "",
+        "duration_ms": 0,
+        "album": "",
+        "yt_query": "Barry Can't Swim - How It Feels official audio",
+        "_source": "lastfm"
+      },
+      {
+        "id": "lastfm_Serotonin_Moonbeams_The_Blessed_Madonna",
+        "name": "Serotonin Moonbeams",
+        "artist": "The Blessed Madonna",
+        "image_url": null,
+        "year": "",
+        "duration_ms": 0,
+        "album": "",
+        "yt_query": "The Blessed Madonna - Serotonin Moonbeams official audio",
+        "_source": "lastfm"
+      },
+      {
+        "id": "lastfm_Lola's_Theme_-_Radio_Shapeshifters",
+        "name": "Lola's Theme - Radio Edit",
+        "artist": "Shapeshifters",
+        "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/27/02/78/27027890-1ed0-c8f9-a989-d29e241e7fcb/826194616199.png/300x300bb.jpg",
+        "year": "",
+        "duration_ms": 0,
+        "album": "",
+        "yt_query": "Shapeshifters - Lola's Theme - Radio Edit official audio",
+        "_source": "lastfm"
+      },
+      {
+        "id": "lastfm_Like_The_Old_Days_Barry_Can't_Swim",
+        "name": "Like The Old Days",
+        "artist": "Barry Can't Swim",
+        "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music112/v4/9c/3b/73/9c3b73d1-1c8a-2da2-05ea-66ddf0e979b1/5054429172041.png/300x300bb.jpg",
+        "year": "",
+        "duration_ms": 0,
+        "album": "",
+        "yt_query": "Barry Can't Swim - Like The Old Days official audio",
+        "_source": "lastfm"
+      },
+      {
+        "id": "lastfm_Holding_On_(feat._Gr_Disclosure",
+        "name": "Holding On (feat. Gregory Porter)",
+        "artist": "Disclosure",
+        "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music116/v4/b7/88/5a/b7885ad6-a44a-3c41-77dd-7837669012bf/15UMGIM29141.rgb.jpg/300x300bb.jpg",
+        "year": "",
+        "duration_ms": 0,
+        "album": "",
+        "yt_query": "Disclosure - Holding On (feat. Gregory Porter) official audio",
+        "_source": "lastfm"
+      },
+      {
+        "id": "lastfm_You_Don't_Know_Me_(F_Armand_van_Helden",
+        "name": "You Don't Know Me (Feat. Duane Harden) - Radio Edit",
+        "artist": "Armand van Helden",
+        "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music124/v4/b9/18/4d/b9184d19-d977-c416-cfd1-95b9a685d3b7/190295499457.jpg/300x300bb.jpg",
+        "year": "",
+        "duration_ms": 0,
+        "album": "",
+        "yt_query": "Armand van Helden - You Don't Know Me (Feat. Duane Harden) - Radio Edit official audio",
+        "_source": "lastfm"
+      },
+      {
+        "id": "lastfm_It_Makes_You_Forget__Peggy_Gou",
+        "name": "It Makes You Forget (Itgehane) - Edit",
+        "artist": "Peggy Gou",
+        "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/d7/eb/93/d7eb931d-6dab-a0d7-aa89-4a729f10d11b/5054429132472.png/300x300bb.jpg",
+        "year": "",
+        "duration_ms": 0,
+        "album": "",
+        "yt_query": "Peggy Gou - It Makes You Forget (Itgehane) - Edit official audio",
+        "_source": "lastfm"
+      }
+    ],
+    "around_this_time": []
+  }
+}

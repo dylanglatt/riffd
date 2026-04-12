@@ -1,0 +1,199 @@
+{
+  "stems": {
+    "bass": {
+      "label": "Bass",
+      "energy": 0.120154,
+      "active": true
+    },
+    "drums": {
+      "label": "Drums",
+      "energy": 0.019981,
+      "active": true
+    },
+    "guitar": {
+      "label": "Guitar",
+      "energy": 0.065713,
+      "active": true
+    },
+    "synth": {
+      "label": "Pedal Steel",
+      "energy": 0.031853,
+      "active": true
+    },
+    "vocals": {
+      "label": "Vocals",
+      "energy": 0.139252,
+      "active": true
+    }
+  },
+  "intelligence": {
+    "key": "F# Major",
+    "key_num": 6,
+    "mode_num": 1,
+    "bpm": 101.9,
+    "bpm_confidence": 1.0,
+    "progression": null,
+    "key_confidence": 0.931
+  },
+  "lyrics": "Last night, we let the liquor talk\nI can't remember everything we said, but we said it all\nYou told me that you wish I was somebody you never met\nBut, baby, baby, something's tellin' me this ain't over yet\n\n[Verse 1]\nNo way it was our last night I kissed your lips\nMake you grip the sheets with your fingertips\nLast bottle of Jack, we split a fifth\nJust talkin' 'bout life, goin' sip for sip\nYeah, you, you know you love to fight\nAnd I say shit I don't mean\nBut I'm still gon' wake up wantin' you and me\n\n[Chorus]\nI know that last night, we let the liquor talk\nI can't remember everything we said, but we said it all\nYou told me that you wish I was somebody you never met\nBut, baby, baby, something's tellin' me this ain't over yet\nNo way it was our last night (Last night)\nNo way it was our last night (Last night)\n\n[Verse 2]\nNo way it was the last night that we break up\nI see your tail lights in the dust\nYou call your mama, I call your bluff\nIn the middle of the night, pull it right back up\nYeah, my, my friends say, \"Let her go\"\nYour friends say, \"What the hell?\"\nI wouldn't trade your kind of love for nothin' else\n\n[Chorus]\nOh, baby, last night, we let the liquor talk\nI can't remember everything we said, but we said it all\nYou told me that you wish I was somebody you never met\nBut, baby, baby, something's tellin' me this ain't over yet\nNo way it was our last night, we said we'd had enough\nI can't remember everything we said, but we said too much\nI know you packed your shit and slammed the door right before you left\nBut, baby, baby, something's tellin' me this ain't over yet\nNo way it was our last night (Last night)\nNo way it was our last night (Last night)\n\n[Outro]\nI know you said this time you really weren't comin' back again\nBut, baby, baby, something's tellin' me this ain't over yet\nNo way it was our last night (Last night)\nNo way it was our last night (Last night)",
+  "tags": [
+    "country",
+    "country pop",
+    "bro-country",
+    "us number one",
+    "2023",
+    "2020s",
+    "pop",
+    "american"
+  ],
+  "insight": {
+    "progression_names": {},
+    "smart_recs": {
+      "same_progression": [
+        {
+          "title": "Meant to Be",
+          "artist": "Bebe Rexha ft. Florida Georgia Line",
+          "reason": "I-V-vi-IV progression, country-pop crossover",
+          "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music125/v4/4a/3b/65/4a3b65ee-a5c6-51e1-8476-e6501a98efa5/093624910763.jpg/300x300bb.jpg"
+        },
+        {
+          "title": "Cruise",
+          "artist": "Florida Georgia Line",
+          "reason": "I-V-vi-IV loop, bro-country foundation",
+          "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music221/v4/18/37/69/18376949-c4f9-18bd-0adf-7a473df55a7b/12UMGIM58533.rgb.jpg/300x300bb.jpg"
+        }
+      ],
+      "same_key_tempo": [
+        {
+          "title": "Take Me Home, Country Roads",
+          "artist": "John Denver",
+          "reason": "F# Major, ~102 BPM acoustic country",
+          "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/52/ed/f3/52edf3b6-5b73-c52d-e3f6-4473412eec7c/886443406193.jpg/300x300bb.jpg"
+        }
+      ],
+      "similar_harmony": [
+        {
+          "title": "Whiskey Glasses",
+          "artist": "Morgan Wallen",
+          "reason": "Major key with iv borrowed chord movement",
+          "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/80/bb/18/80bb1895-326f-e618-9aa8-d2338bb35f0c/842812106569_Cover.jpg/300x300bb.jpg"
+        }
+      ],
+      "more_by_artist": [
+        {
+          "title": "Whiskey Glasses",
+          "artist": "Morgan Wallen",
+          "reason": "Extended major key exploration, signature style",
+          "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/80/bb/18/80bb1895-326f-e618-9aa8-d2338bb35f0c/842812106569_Cover.jpg/300x300bb.jpg"
+        },
+        {
+          "title": "7 Summers",
+          "artist": "Morgan Wallen",
+          "reason": "Storytelling narrative, relationship introspection",
+          "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music221/v4/c7/e4/b5/c7e4b540-65fa-3673-25a0-b8749a600738/00602435791388_Cover.jpg/300x300bb.jpg"
+        },
+        {
+          "title": "Somebody's Problem",
+          "artist": "Morgan Wallen",
+          "reason": "Duet arrangement, romantic relationship tension",
+          "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music221/v4/68/05/ab/6805abb2-10d1-35cb-aa84-71386b285b7d/00602435514642_Cover.jpg/300x300bb.jpg"
+        }
+      ]
+    },
+    "key_context": "F# Major is bright and open\u2014a favored key for contemporary country and pop songwriting."
+  },
+  "recommendations": {
+    "more_like_this": [],
+    "same_style": [
+      {
+        "id": "lastfm_Thinkin\u2019_Bout_Me_Morgan_Wallen",
+        "name": "Thinkin\u2019 Bout Me",
+        "artist": "Morgan Wallen",
+        "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/82/eb/b3/82ebb3c6-2bd4-31fd-0eb9-57667f3590e1/00602455239419_Cover.jpg/300x300bb.jpg",
+        "year": "",
+        "duration_ms": 0,
+        "album": "",
+        "yt_query": "Morgan Wallen - Thinkin\u2019 Bout Me official audio",
+        "_source": "lastfm"
+      },
+      {
+        "id": "lastfm_You_Proof_Morgan_Wallen",
+        "name": "You Proof",
+        "artist": "Morgan Wallen",
+        "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/82/eb/b3/82ebb3c6-2bd4-31fd-0eb9-57667f3590e1/00602455239419_Cover.jpg/300x300bb.jpg",
+        "year": "",
+        "duration_ms": 0,
+        "album": "",
+        "yt_query": "Morgan Wallen - You Proof official audio",
+        "_source": "lastfm"
+      },
+      {
+        "id": "lastfm_Where_the_Wild_Thing_Luke_Combs",
+        "name": "Where the Wild Things Are",
+        "artist": "Luke Combs",
+        "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music113/v4/7d/24/14/7d241439-671a-d957-9613-2f738f43a064/196589485991.jpg/300x300bb.jpg",
+        "year": "",
+        "duration_ms": 0,
+        "album": "",
+        "yt_query": "Luke Combs - Where the Wild Things Are official audio",
+        "_source": "lastfm"
+      },
+      {
+        "id": "lastfm_Fast_Car_Luke_Combs",
+        "name": "Fast Car",
+        "artist": "Luke Combs",
+        "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music113/v4/7d/24/14/7d241439-671a-d957-9613-2f738f43a064/196589485991.jpg/300x300bb.jpg",
+        "year": "",
+        "duration_ms": 0,
+        "album": "",
+        "yt_query": "Luke Combs - Fast Car official audio",
+        "_source": "lastfm"
+      },
+      {
+        "id": "lastfm_Rock_and_a_Hard_Plac_Bailey_Zimmerman",
+        "name": "Rock and a Hard Place",
+        "artist": "Bailey Zimmerman",
+        "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music122/v4/30/17/1b/30171b77-7d87-bf60-49f1-fa0d6376f193/093624864899.jpg/300x300bb.jpg",
+        "year": "",
+        "duration_ms": 0,
+        "album": "",
+        "yt_query": "Bailey Zimmerman - Rock and a Hard Place official audio",
+        "_source": "lastfm"
+      },
+      {
+        "id": "lastfm_Religiously_Bailey_Zimmerman",
+        "name": "Religiously",
+        "artist": "Bailey Zimmerman",
+        "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music116/v4/1d/a3/55/1da35509-ea85-d568-d29d-83e464f53ff9/093624856498.jpg/300x300bb.jpg",
+        "year": "",
+        "duration_ms": 0,
+        "album": "",
+        "yt_query": "Bailey Zimmerman - Religiously official audio",
+        "_source": "lastfm"
+      },
+      {
+        "id": "lastfm_She_Had_Me_at_Heads__Cole_Swindell",
+        "name": "She Had Me at Heads Carolina",
+        "artist": "Cole Swindell",
+        "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music126/v4/cb/c9/c3/cbc9c308-49d1-93b5-c4c7-4decf0e87310/093624872115.jpg/300x300bb.jpg",
+        "year": "",
+        "duration_ms": 0,
+        "album": "",
+        "yt_query": "Cole Swindell - She Had Me at Heads Carolina official audio",
+        "_source": "lastfm"
+      },
+      {
+        "id": "lastfm_TRUCK_BED_HARDY",
+        "name": "TRUCK BED",
+        "artist": "HARDY",
+        "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music221/v4/c1/97/c5/c197c5fa-3d82-f6af-c8ee-040fe35f8284/193436329187_Cover.jpg/300x300bb.jpg",
+        "year": "",
+        "duration_ms": 0,
+        "album": "",
+        "yt_query": "HARDY - TRUCK BED official audio",
+        "_source": "lastfm"
+      }
+    ],
+    "around_this_time": []
+  }
+}

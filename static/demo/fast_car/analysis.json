@@ -1,0 +1,194 @@
+{
+  "stems": {
+    "bass": {
+      "label": "Bass",
+      "energy": 0.119572,
+      "active": true
+    },
+    "drums": {
+      "label": "Drums",
+      "energy": 0.058171,
+      "active": true
+    },
+    "guitar": {
+      "label": "Guitar",
+      "energy": 0.069156,
+      "active": true
+    },
+    "vocals": {
+      "label": "Vocals",
+      "energy": 0.092169,
+      "active": true
+    }
+  },
+  "intelligence": {
+    "key": "A Major",
+    "key_num": 9,
+    "mode_num": 1,
+    "bpm": 104.1,
+    "bpm_confidence": 1.0,
+    "progression": null,
+    "key_confidence": 0.914
+  },
+  "lyrics": "You got a fast car\nI want a ticket to anywhere\nMaybe we make a deal\nMaybe together we can get somewhere\nAny place is better\nStarting from zero, got nothing to lose\nMaybe we'll make somethin'\nMe, myself, I got nothing to prove\n\n[Verse 2]\nYou got a fast car\nI got a plan to get us outta here\nI been working at the convenience store\nManaged to save just a little bit of money\nWon't have to drive too far\nJust across the border and into the city\nYou and I can both get jobs\nFinally see what it means to be living\n\n[Verse 3]\nSee, my old man's got a problem\nHe lives with a bottle, that's the way it is\nHe says his body's too old for workin'\nHis body's too young to look like his\nWhen mama went off and left him\nShe wanted more from life than he could give\nI said, \"Somebody's gotta take care of him\"\nI quit school and that's what I did\n\n[Pre-Chorus]\nYou got a fast car\nIs it fast enough so we can fly away?\nWe gotta make a decision\nLeave tonight or live and die this way\n\n[Chorus]\nSo I remember when we were drivin', drivin' in your car\nSpeed so fast, I felt like I was drunk\nCity lights lay out before us\nAnd your arm felt nice wrapped 'round my shoulder\nAnd I had a feeling that I belonged\nI had a feelin' I could be someone\nBe someone, be someone\n\n[Verse 4]\nYou got a fast car\nWe go cruisin', entertain ourselves\nYou still ain't got a job\nAnd I work in a market as a checkout girl\nI know things will get better\nYou'll find work and I'll get promoted\nAnd we'll move out of the shelter\nBuy a bigger house and live in the suburbs\n\n[Chorus]\nSo I remember when we were drivin', drivin' in your car\nSpeed so fast, I felt like I was drunk\nCity lights lay out before us\nAnd your arm felt nice wrapped 'round my shoulder\nAnd I had a feeling that I belonged\nI had a feelin' I could be someone\nBe someone, be someone\n\n[Verse 5]\nYou got a fast car\nI got a job that pays all our bills\nYou stay out drinkin' late at the bar\nSee more of your friends than you do of your kids\nI'd always hoped for better\nThought maybe together, you and me'd find it\nI got no plans, I ain't going nowhere\nSo take your fast car and keep on drivin'\n\n[Chorus]\nSo I remember when we were drivin', drivin' in your car\nSpeed so fast, I felt like I was drunk\nCity lights lay out before us\nAnd your arm felt nice wrapped 'round my shoulder\nAnd I had a feeling that I belonged\nI had a feelin' I could be someone\nBe someone, be someone\n\n[Outro]\nYou got a fast car\nIs it fast enough so you can fly away?\nYou gotta make a decision\nLeave tonight or live and die this way",
+  "tags": [
+    "folk",
+    "acoustic",
+    "female vocalists",
+    "80s",
+    "singer-songwriter",
+    "folk rock",
+    "soul",
+    "pop"
+  ],
+  "insight": {
+    "progression_names": {},
+    "smart_recs": {
+      "same_progression": [
+        {
+          "title": "Black Hole Sun",
+          "artist": "Soundgarden",
+          "reason": "I-V-vi-IV progression, open major key feel",
+          "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music221/v4/ae/b6/d6/aeb6d672-2004-41eb-ccba-e2964643a2bc/06UMGIM18607.rgb.jpg/300x300bb.jpg"
+        }
+      ],
+      "same_key_tempo": [
+        {
+          "title": "Wonderwall",
+          "artist": "Oasis",
+          "reason": "A Major, 104 BPM, acoustic folk-rock",
+          "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music113/v4/04/92/e0/0492e08b-cbcc-9969-9ad6-8f5a0888068c/5051961007107.jpg/300x300bb.jpg"
+        },
+        {
+          "title": "Champagne Supernova",
+          "artist": "Oasis",
+          "reason": "A Major, ~100 BPM, similar tempo range",
+          "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music113/v4/04/92/e0/0492e08b-cbcc-9969-9ad6-8f5a0888068c/5051961007107.jpg/300x300bb.jpg"
+        }
+      ],
+      "similar_harmony": [
+        {
+          "title": "The Boxer",
+          "artist": "Simon & Garfunkel",
+          "reason": "Diatonic major key with descending bass patterns",
+          "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music125/v4/a3/84/0a/a3840a6d-44e8-0afe-fc3e-316c517dddfe/5099749521421.jpg/300x300bb.jpg"
+        }
+      ],
+      "more_by_artist": [
+        {
+          "title": "Give Me One Reason",
+          "artist": "Tracy Chapman",
+          "reason": "Similar fingerpicking acoustic guitar technique",
+          "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music114/v4/38/fe/e5/38fee58f-6ba6-c51b-2718-7cf0a38007bf/mzi.dtywsjpm.jpg/300x300bb.jpg"
+        },
+        {
+          "title": "Behind the Wheel",
+          "artist": "Tracy Chapman",
+          "reason": "Narrative storytelling, folk acoustic arrangement",
+          "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music126/v4/b8/c4/31/b8c431e9-a67d-3917-72e5-be9f5a1ebc46/075596077460.jpg/300x300bb.jpg"
+        },
+        {
+          "title": "Crossroads",
+          "artist": "Tracy Chapman",
+          "reason": "Open-tuned acoustic guitar, introspective narrative",
+          "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music125/v4/37/b3/eb/37b3ebb9-1973-8cc3-a790-74bce6d086da/mzi.derclzjc.jpg/300x300bb.jpg"
+        }
+      ]
+    },
+    "key_context": "A Major offers bright, accessible resonance\u2014natural for acoustic guitar and folk storytelling traditions."
+  },
+  "recommendations": {
+    "more_like_this": [],
+    "same_style": [
+      {
+        "id": "lastfm_Across_the_Lines_Tracy_Chapman",
+        "name": "Across the Lines",
+        "artist": "Tracy Chapman",
+        "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music126/v4/b8/c4/31/b8c431e9-a67d-3917-72e5-be9f5a1ebc46/075596077460.jpg/300x300bb.jpg",
+        "year": "",
+        "duration_ms": 0,
+        "album": "",
+        "yt_query": "Tracy Chapman - Across the Lines official audio",
+        "_source": "lastfm"
+      },
+      {
+        "id": "lastfm_Talkin'_Bout_a_Revol_Tracy_Chapman",
+        "name": "Talkin' Bout a Revolution",
+        "artist": "Tracy Chapman",
+        "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music126/v4/b8/c4/31/b8c431e9-a67d-3917-72e5-be9f5a1ebc46/075596077460.jpg/300x300bb.jpg",
+        "year": "",
+        "duration_ms": 0,
+        "album": "",
+        "yt_query": "Tracy Chapman - Talkin' Bout a Revolution official audio",
+        "_source": "lastfm"
+      },
+      {
+        "id": "lastfm_A_Case_of_You_Joni_Mitchell",
+        "name": "A Case of You",
+        "artist": "Joni Mitchell",
+        "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music125/v4/00/a2/43/00a24363-cf69-bfd2-a26a-a042d57ab141/075992719926.jpg/300x300bb.jpg",
+        "year": "",
+        "duration_ms": 0,
+        "album": "",
+        "yt_query": "Joni Mitchell - A Case of You official audio",
+        "_source": "lastfm"
+      },
+      {
+        "id": "lastfm_Skinny_Love_Bon_Iver",
+        "name": "Skinny Love",
+        "artist": "Bon Iver",
+        "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music114/v4/21/2f/ea/212fea18-5fdc-ba4d-5dd7-1b07aaa88b67/656605211565.tif/300x300bb.jpg",
+        "year": "",
+        "duration_ms": 0,
+        "album": "",
+        "yt_query": "Bon Iver - Skinny Love official audio",
+        "_source": "lastfm"
+      },
+      {
+        "id": "lastfm_Let_Her_Go_Passenger",
+        "name": "Let Her Go",
+        "artist": "Passenger",
+        "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music126/v4/9b/7e/28/9b7e2896-e049-1663-6791-e0111690ffc1/067003051361.png/300x300bb.jpg",
+        "year": "",
+        "duration_ms": 0,
+        "album": "",
+        "yt_query": "Passenger - Let Her Go official audio",
+        "_source": "lastfm"
+      },
+      {
+        "id": "lastfm_Blowin'_in_the_Wind_Bob_Dylan",
+        "name": "Blowin' in the Wind",
+        "artist": "Bob Dylan",
+        "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music124/v4/63/3c/98/633c98ab-b4f3-3f40-798b-bdb49d923468/074640878626.jpg/300x300bb.jpg",
+        "year": "",
+        "duration_ms": 0,
+        "album": "",
+        "yt_query": "Bob Dylan - Blowin' in the Wind official audio",
+        "_source": "lastfm"
+      },
+      {
+        "id": "lastfm_Don't_Think_Twice,_I_Bob_Dylan",
+        "name": "Don't Think Twice, It's All Right",
+        "artist": "Bob Dylan",
+        "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music124/v4/63/3c/98/633c98ab-b4f3-3f40-798b-bdb49d923468/074640878626.jpg/300x300bb.jpg",
+        "year": "",
+        "duration_ms": 0,
+        "album": "",
+        "yt_query": "Bob Dylan - Don't Think Twice, It's All Right official audio",
+        "_source": "lastfm"
+      },
+      {
+        "id": "lastfm_Closer_to_Fine_Indigo_Girls",
+        "name": "Closer to Fine",
+        "artist": "Indigo Girls",
+        "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Features125/v4/ea/2c/9b/ea2c9baa-8472-56ba-f66c-0413f38b8e4a/dj.rlheljbi.jpg/300x300bb.jpg",
+        "year": "",
+        "duration_ms": 0,
+        "album": "",
+        "yt_query": "Indigo Girls - Closer to Fine official audio",
+        "_source": "lastfm"
+      }
+    ],
+    "around_this_time": []
+  }
+}

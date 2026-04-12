@@ -1,0 +1,205 @@
+{
+  "stems": {
+    "bass": {
+      "label": "Bass",
+      "energy": 0.094275,
+      "active": true
+    },
+    "drums": {
+      "label": "Drums",
+      "energy": 0.115173,
+      "active": true
+    },
+    "pad": {
+      "label": "Synth Pad",
+      "energy": 0.081966,
+      "active": true
+    },
+    "piano": {
+      "label": "Piano",
+      "energy": 0.004841,
+      "active": true
+    },
+    "vocals": {
+      "label": "Vocals",
+      "energy": 0.054974,
+      "active": true
+    }
+  },
+  "intelligence": {
+    "key": "B Major",
+    "key_num": 11,
+    "mode_num": 1,
+    "bpm": 111.9,
+    "bpm_confidence": 1.0,
+    "progression": null,
+    "key_confidence": 0.816
+  },
+  "lyrics": "Hold on, hold on, fuck that\nFuck that shit\nHold on, I got to start this motherfuckin' record over again, wait a minute\nFuck that shit\nStill on this motherfuckin\u2019 record\nI'ma play this motherfucker for y'all\nAyy, y\u2019all get some more drinks goin' on\nI'll sound a whole lot better\n\n[Verse 1]\nListen\nSeein' you got ritualistic\nCleansin' my soul of addiction for now\n'Cause I'm fallin' apart, yeah\nTension\nBetween us just like picket fences\nYou got issues that I won\u2019t mention for now\n\u2019Cause we're fallin\u2019 apart\n\n[Chorus]\nPassionate from miles away\nPassive with the things you say\nPassin' up on my old ways\nI can't blame you, no, no\nPassionate from miles away\nPassive with the things you say\nPassin' up on my old ways\nI can\u2019t blame you, no, no\n\n[Verse 2]\nListen\nHarder buildin' trust from a distance\nI think we should rule out commitment for now\n'Cause we're fallin' apart\nLeavin'\nYou're just doing that to get even\nDon't pick up the pieces, just leave it for now\nThey keep fallin' apart\n\n[Chorus]\nPassionate from miles away\nPassive with the things you say\nPassin' up on my old ways\nI can't blame you, no, no\nPassionate from miles away\nPassive with the things you say\nPassin' up on my old ways\nI can't blame you, no, no\n\n[Outro: Zo\u00eb Kravitz]\nUm, trying to think of the right thing to say",
+  "tags": [
+    "tropical house",
+    "rnb",
+    "House",
+    "2017",
+    "chill",
+    "dancehall",
+    "dance",
+    "Drake"
+  ],
+  "insight": {
+    "progression_names": {},
+    "smart_recs": {
+      "same_progression": [
+        {
+          "title": "Tropical House",
+          "artist": "Kygo",
+          "reason": "Tropical house pioneer, similar harmonic palette",
+          "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/bd/da/4d/bdda4db8-9628-3aaa-e14e-c6e30457bcc0/00602557442908.rgb.jpg/300x300bb.jpg"
+        }
+      ],
+      "same_key_tempo": [
+        {
+          "title": "Needed Me",
+          "artist": "Rihanna",
+          "reason": "B Major, approximately 112 BPM",
+          "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music126/v4/9c/da/90/9cda90c9-df1a-078b-319c-bdf2801e8d1f/16UMGIM03373.rgb.jpg/300x300bb.jpg"
+        },
+        {
+          "title": "Work",
+          "artist": "Rihanna",
+          "reason": "B Major, mid-tempo tropical production",
+          "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music116/v4/13/27/57/132757ba-42e6-9584-7390-ca694292a20e/16UMGIM03372.rgb.jpg/300x300bb.jpg"
+        }
+      ],
+      "similar_harmony": [
+        {
+          "title": "Controlla",
+          "artist": "Drake",
+          "reason": "Suspended chord resolutions in tropical context",
+          "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/95/f5/87/95f587f7-21c3-d5f9-d81a-4350f9caa020/16UMGIM27643.rgb.jpg/300x300bb.jpg"
+        }
+      ],
+      "more_by_artist": [
+        {
+          "title": "One Dance",
+          "artist": "Drake",
+          "reason": "Tropical house production with minimalist harmony",
+          "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/f2/0d/8b/f20d8bff-a927-ae98-6784-20a1f51cb23e/16UMGIM27642.rgb.jpg/300x300bb.jpg"
+        },
+        {
+          "title": "Controlla",
+          "artist": "Drake",
+          "reason": "Extended tropical house arrangement",
+          "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/95/f5/87/95f587f7-21c3-d5f9-d81a-4350f9caa020/16UMGIM27643.rgb.jpg/300x300bb.jpg"
+        },
+        {
+          "title": "Too Good at Goodbyes",
+          "artist": "Drake",
+          "reason": "Slow-tempo R&B with introspective lyrics",
+          "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/a2/5c/4d/a25c4d3b-1ee2-8097-1b27-28cf9d3261d7/24UM1IM09185.rgb.jpg/300x300bb.jpg"
+        },
+        {
+          "title": "Marvin's Room",
+          "artist": "Drake",
+          "reason": "Vulnerable introspective R&B production",
+          "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music124/v4/d2/53/62/d2536245-b94c-b3fd-7168-9512f655f6d4/00602527899091.rgb.jpg/300x300bb.jpg"
+        }
+      ]
+    },
+    "key_context": "B Major is bright and open, favored in contemporary tropical and electronic production."
+  },
+  "recommendations": {
+    "more_like_this": [],
+    "same_style": [
+      {
+        "id": "lastfm_Blem_Drake",
+        "name": "Blem",
+        "artist": "Drake",
+        "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music125/v4/71/97/d0/7197d021-de0f-9548-3f31-40b8294d3242/17UMGIM85032.rgb.jpg/300x300bb.jpg",
+        "year": "",
+        "duration_ms": 0,
+        "album": "",
+        "yt_query": "Drake - Blem official audio",
+        "_source": "lastfm"
+      },
+      {
+        "id": "lastfm_Solo_Future",
+        "name": "Solo",
+        "artist": "Future",
+        "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music126/v4/17/e0/ba/17e0ba58-4d11-a4df-7502-d4479b179c0a/886446604046.jpg/300x300bb.jpg",
+        "year": "",
+        "duration_ms": 0,
+        "album": "",
+        "yt_query": "Future - Solo official audio",
+        "_source": "lastfm"
+      },
+      {
+        "id": "lastfm_Sky_Walker_(feat._Tr_Miguel",
+        "name": "Sky Walker (feat. Travis Scott)",
+        "artist": "Miguel",
+        "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music128/v4/26/56/cd/2656cd50-73a3-998f-2204-9342b805f517/886446846255.jpg/300x300bb.jpg",
+        "year": "",
+        "duration_ms": 0,
+        "album": "",
+        "yt_query": "Miguel - Sky Walker (feat. Travis Scott) official audio",
+        "_source": "lastfm"
+      },
+      {
+        "id": "lastfm_Teenage_Fever_Drake",
+        "name": "Teenage Fever",
+        "artist": "Drake",
+        "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music124/v4/18/9d/b8/189db80b-bfa8-89d1-1514-5fcb7e5cf8f4/00602557611526.rgb.jpg/300x300bb.jpg",
+        "year": "",
+        "duration_ms": 0,
+        "album": "",
+        "yt_query": "Drake - Teenage Fever official audio",
+        "_source": "lastfm"
+      },
+      {
+        "id": "lastfm_Pink_+_White_Frank_Ocean",
+        "name": "Pink + White",
+        "artist": "Frank Ocean",
+        "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/bb/45/68/bb4568f3-68cd-619d-fbcb-4e179916545d/BlondCover-Final.jpg/300x300bb.jpg",
+        "year": "",
+        "duration_ms": 0,
+        "album": "",
+        "yt_query": "Frank Ocean - Pink + White official audio",
+        "_source": "lastfm"
+      },
+      {
+        "id": "lastfm_No_Pole_Don_Toliver",
+        "name": "No Pole",
+        "artist": "Don Toliver",
+        "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/a5/c2/a5/a5c2a541-9f56-7c98-eb01-3c3198267851/075679823908.jpg/300x300bb.jpg",
+        "year": "",
+        "duration_ms": 0,
+        "album": "",
+        "yt_query": "Don Toliver - No Pole official audio",
+        "_source": "lastfm"
+      },
+      {
+        "id": "lastfm_No_Role_Modelz_J._Cole",
+        "name": "No Role Modelz",
+        "artist": "J. Cole",
+        "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music116/v4/ee/28/67/ee286794-6c33-a8c2-5c37-c04f1cb5e8a6/21UM1IM54415.rgb.jpg/300x300bb.jpg",
+        "year": "",
+        "duration_ms": 0,
+        "album": "",
+        "yt_query": "J. Cole - No Role Modelz official audio",
+        "_source": "lastfm"
+      },
+      {
+        "id": "lastfm_Nights_Frank_Ocean",
+        "name": "Nights",
+        "artist": "Frank Ocean",
+        "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/bb/45/68/bb4568f3-68cd-619d-fbcb-4e179916545d/BlondCover-Final.jpg/300x300bb.jpg",
+        "year": "",
+        "duration_ms": 0,
+        "album": "",
+        "yt_query": "Frank Ocean - Nights official audio",
+        "_source": "lastfm"
+      }
+    ],
+    "around_this_time": []
+  }
+}

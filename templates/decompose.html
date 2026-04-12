@@ -983,11 +983,15 @@ function _reorganizeStemGroups() {
 
   function _stemFamily(stemName) {
     const r = _getStemRoot(stemName);
-    if (r.includes('vocal') || r.includes('voice') || r.includes('choir')) return '0';
-    if (r.includes('bass'))   return '2';  // must come before guitar — 'bass_guitar' contains 'guitar'
-    if (r.includes('guitar')) return '1';
-    if (r === 'piano' || r.includes('key') || r.includes('organ') || r.includes('synth') || r.includes('pad')) return '3';
-    if (r.includes('drum') || r.includes('perc')) return '4';
+    // Also check the display label for stems with opaque keys like 'atmosphere'
+    const chEl = document.getElementById('ch-' + stemName);
+    const label = chEl ? (chEl.querySelector('.channel-name')?.textContent || '').toLowerCase() : '';
+    const check = r + ' ' + label;
+    if (check.includes('vocal') || check.includes('voice') || check.includes('choir')) return '0';
+    if (check.includes('bass'))   return '2';  // must come before guitar — 'bass_guitar' contains 'guitar'
+    if (check.includes('guitar')) return '1';
+    if (r === 'piano' || check.includes('key') || check.includes('organ') || check.includes('synth') || check.includes('pad') || check.includes('atmosphere')) return '3';
+    if (check.includes('drum') || check.includes('perc')) return '4';
     return '5';
   }
 
@@ -997,8 +1001,11 @@ function _reorganizeStemGroups() {
   // and "Lead Vocals + Vocals Accompaniment" wins over "Lead Vocals + Vocals".
   function _stemSortKey(name) {
     const r = _getStemRoot(name);
+    const chEl = document.getElementById('ch-' + name);
+    const label = chEl ? (chEl.querySelector('.channel-name')?.textContent || '').toLowerCase() : '';
+    const check = r + ' ' + label;
     // Named lead/main variants — highest priority
-    if (r.startsWith('lead') || r === 'piano') return '0_' + name;
+    if (check.includes('lead') || r === 'piano') return '0_' + name;
     // Specific supporting parts — preferred over the generic unsplit stem
     if (r.includes('accompaniment') || r.startsWith('backing') || r.startsWith('rhythm') ||
         r.includes('harmony') || r.includes('choir') ||

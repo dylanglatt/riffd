@@ -1,0 +1,204 @@
+{
+  "stems": {
+    "bass": {
+      "label": "Bass",
+      "energy": 0.191108,
+      "active": true
+    },
+    "drums": {
+      "label": "Drums",
+      "energy": 0.128304,
+      "active": true
+    },
+    "guitar": {
+      "label": "Guitar",
+      "energy": 0.062333,
+      "active": true
+    },
+    "synth": {
+      "label": "Synth Lead",
+      "energy": 0.044318,
+      "active": true
+    },
+    "vocals": {
+      "label": "Vocals",
+      "energy": 0.124607,
+      "active": true
+    }
+  },
+  "intelligence": {
+    "key": "C Major",
+    "key_num": 0,
+    "mode_num": 1,
+    "bpm": 120.0,
+    "bpm_confidence": 1.0,
+    "progression": null,
+    "key_confidence": 0.924
+  },
+  "lyrics": "Oh, oh, oh\nOh,\u200a oh, oh\nOh,\u200a oh, oh, oh, oh\n\n[Verse 1]\nWe couldn't turn around 'til we were upside down\nI'll be the bad guy now, but know I ain't too proud\nI\u200a couldn't be there even when I tried\nYou\u200a don't believe it, we do this every time\n\n[Chorus]\nSeasons change and our love went cold\nFeed\u200a the flame 'cause we can't let go\nRun away, but we're running in circles\nRun away, run away\nI dare you to do something\nI'm\u200a waiting on you again, so I don't take the blame\nRun away, but we're running in circles\nRun away, run away, run away\n\n[Verse 2]\nLet go, I got a feeling that it's time to let go\nI said so, I knew that this was doomed from the get-go\nYou thought that it was special, special\nBut it was just the sex, though, the sex, though\nAnd I still hear the echoes (The echoes)\nI got a feeling that it's time to let it go, let it go\n\n[Chorus]\nSeasons change and our love went cold\nFeed the flame 'cause we can't let go\nRun away, but we're running in circles\nRun away, run away\nI dare you to do something\nI'm waiting on you again, so I don't take the blame\nRun away, but we're running in circles\nRun away, run away, run away\n\n[Bridge]\nMaybe you don't understand what I'm going through\nIt's only me, what you got to lose?\nMake up your mind, tell me, what are you gonna do?\nIt's only me, let it go\n\n[Chorus]\nSeasons change and our love went cold\nFeed the flame 'cause we can't let go\nRun away, but we're running in circles\nRun away, run away\nI dare you to do something\nI'm waiting on you again, so I don't take the blame\nRun away, but we're running in circles\nRun away, run away, run away",
+  "tags": [
+    "pop",
+    "indie pop",
+    "Hip-Hop",
+    "pop rock",
+    "post malone",
+    "2010s",
+    "2019",
+    "rock"
+  ],
+  "insight": {
+    "progression_names": {},
+    "smart_recs": {
+      "same_progression": [
+        {
+          "title": "Blinding Lights",
+          "artist": "The Weeknd",
+          "reason": "Same I-V-vi-IV looping progression",
+          "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music125/v4/a6/6e/bf/a66ebf79-5008-8948-b352-a790fc87446b/19UM1IM04638.rgb.jpg/300x300bb.jpg"
+        },
+        {
+          "title": "Someone You Loved",
+          "artist": "Lewis Capaldi",
+          "reason": "Identical vi-IV-I-V chord cycle",
+          "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music116/v4/92/d7/8f/92d78fb1-df3d-049e-c81d-7022808b151f/19UMGIM02973.rgb.jpg/300x300bb.jpg"
+        }
+      ],
+      "same_key_tempo": [
+        {
+          "title": "Levitating",
+          "artist": "Dua Lipa",
+          "reason": "C Major at ~103 BPM, adjacent tempo range",
+          "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music116/v4/6c/11/d6/6c11d681-aa3a-d59e-4c2e-f77e181026ab/190295092665.jpg/300x300bb.jpg"
+        }
+      ],
+      "similar_harmony": [
+        {
+          "title": "The Night We Met",
+          "artist": "Lord Huron",
+          "reason": "Pedal tone under shifting harmonic progression",
+          "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music221/v4/55/41/4a/55414a18-861a-79d1-e575-5bf8cf205dbe/886445056839_Cover.jpg/300x300bb.jpg"
+        },
+        {
+          "title": "Midnight City",
+          "artist": "M83",
+          "reason": "Synth pedal tone anchoring harmonic movement",
+          "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/cb/7b/a9/cb7ba903-b5f1-cc21-90db-7a81b7aa0997/724596951057.jpg/300x300bb.jpg"
+        }
+      ],
+      "more_by_artist": [
+        {
+          "title": "Sunroof",
+          "artist": "Post Malone",
+          "reason": "Major-key uplifting production, similar BPM"
+        },
+        {
+          "title": "Congratulations",
+          "artist": "Post Malone",
+          "reason": "Hip-hop foundation with major-key harmonic blend",
+          "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music122/v4/94/09/25/9409251c-ea9e-040c-7649-52a66ac533ac/16UMGIM76041.rgb.jpg/300x300bb.jpg"
+        },
+        {
+          "title": "Psycho",
+          "artist": "Post Malone",
+          "reason": "Pop-rap hybrid with repetitive melodic hook",
+          "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music124/v4/55/9f/fb/559ffb75-3c00-abd6-7b1f-8b6b1518b173/18UMGIM22101.rgb.jpg/300x300bb.jpg"
+        }
+      ]
+    },
+    "key_context": "C Major is bright and accessible\u2014a foundational key across pop, hip-hop, and contemporary songwriting."
+  },
+  "recommendations": {
+    "more_like_this": [],
+    "same_style": [
+      {
+        "id": "lastfm_Wow._Post_Malone",
+        "name": "Wow.",
+        "artist": "Post Malone",
+        "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/6c/13/27/6c13279a-399b-2631-3cb2-6233a91d7a53/19UMGIM78325.rgb.jpg/300x300bb.jpg",
+        "year": "",
+        "duration_ms": 0,
+        "album": "",
+        "yt_query": "Post Malone - Wow. official audio",
+        "_source": "lastfm"
+      },
+      {
+        "id": "lastfm_Chemical_Post_Malone",
+        "name": "Chemical",
+        "artist": "Post Malone",
+        "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music126/v4/e5/8e/50/e58e5094-0413-c936-1dd3-c905297198a0/23UMGIM38555.rgb.jpg/300x300bb.jpg",
+        "year": "",
+        "duration_ms": 0,
+        "album": "",
+        "yt_query": "Post Malone - Chemical official audio",
+        "_source": "lastfm"
+      },
+      {
+        "id": "lastfm_Falling_Trevor_Daniel",
+        "name": "Falling",
+        "artist": "Trevor Daniel",
+        "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/fe/66/14/fe66145c-430e-f7a0-e5ce-8e8e5be19c89/888915747841.jpg/300x300bb.jpg",
+        "year": "",
+        "duration_ms": 0,
+        "album": "",
+        "yt_query": "Trevor Daniel - Falling official audio",
+        "_source": "lastfm"
+      },
+      {
+        "id": "lastfm_No_Pole_Don_Toliver",
+        "name": "No Pole",
+        "artist": "Don Toliver",
+        "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/a5/c2/a5/a5c2a541-9f56-7c98-eb01-3c3198267851/075679823908.jpg/300x300bb.jpg",
+        "year": "",
+        "duration_ms": 0,
+        "album": "",
+        "yt_query": "Don Toliver - No Pole official audio",
+        "_source": "lastfm"
+      },
+      {
+        "id": "lastfm_Hotline_Bling_Drake",
+        "name": "Hotline Bling",
+        "artist": "Drake",
+        "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/f2/0d/8b/f20d8bff-a927-ae98-6784-20a1f51cb23e/16UMGIM27642.rgb.jpg/300x300bb.jpg",
+        "year": "",
+        "duration_ms": 0,
+        "album": "",
+        "yt_query": "Drake - Hotline Bling official audio",
+        "_source": "lastfm"
+      },
+      {
+        "id": "lastfm_Stereo_Hearts_(feat._Gym_Class_Heroes",
+        "name": "Stereo Hearts (feat. Adam Levine)",
+        "artist": "Gym Class Heroes",
+        "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music/dc/f0/93/mzi.stzaqjgi.jpg/300x300bb.jpg",
+        "year": "",
+        "duration_ms": 0,
+        "album": "",
+        "yt_query": "Gym Class Heroes - Stereo Hearts (feat. Adam Levine) official audio",
+        "_source": "lastfm"
+      },
+      {
+        "id": "lastfm_Ransom_Lil_Tecca",
+        "name": "Ransom",
+        "artist": "Lil Tecca",
+        "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music112/v4/02/88/84/02888430-47ff-d97d-418c-3211d7890741/19UMGIM54321.rgb.jpg/300x300bb.jpg",
+        "year": "",
+        "duration_ms": 0,
+        "album": "",
+        "yt_query": "Lil Tecca - Ransom official audio",
+        "_source": "lastfm"
+      },
+      {
+        "id": "lastfm_Heartbeat_Childish_Gambino",
+        "name": "Heartbeat",
+        "artist": "Childish Gambino",
+        "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music221/v4/8f/23/b8/8f23b822-dd02-573a-60d7-b20226819fd1/0892038002411_Cover.jpg/300x300bb.jpg",
+        "year": "",
+        "duration_ms": 0,
+        "album": "",
+        "yt_query": "Childish Gambino - Heartbeat official audio",
+        "_source": "lastfm"
+      }
+    ],
+    "around_this_time": []
+  }
+}

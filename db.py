@@ -77,6 +77,31 @@ def init_db():
                 updated_at REAL
             )
         """)
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS demo_tracks (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                slug TEXT UNIQUE NOT NULL,
+                spotify_track_id TEXT,
+                title TEXT NOT NULL,
+                artist TEXT NOT NULL,
+                album TEXT DEFAULT '',
+                year TEXT DEFAULT '',
+                genre TEXT DEFAULT '',
+                key_display TEXT DEFAULT '',
+                bpm INTEGER DEFAULT 0,
+                cover_path TEXT DEFAULT '',
+                analysis_path TEXT DEFAULT '',
+                stems_dir TEXT DEFAULT '',
+                display_order INTEGER DEFAULT 0,
+                description TEXT DEFAULT '',
+                is_visible INTEGER DEFAULT 1,
+                added_at REAL
+            )
+        """)
+        conn.execute("""
+            CREATE INDEX IF NOT EXISTS idx_demo_visible_order
+            ON demo_tracks(is_visible, display_order)
+        """)
     print(f"[db] initialized at {DB_PATH}")
 
 
@@ -259,6 +284,58 @@ def upsert_job_checkpoint(job_id, status, progress=None, result_cache_path=None,
                 error = excluded.error,
                 updated_at = excluded.updated_at
         """, (job_id, status, progress, result_cache_path, error, now))
+
+
+# ─── Demo tracks API ────────────────────────────────────────────────────────
+
+def get_visible_demo_tracks() -> list[dict]:
+    """Return all visible demo tracks ordered by display_order."""
+    with _db() as conn:
+        rows = conn.execute(
+            "SELECT * FROM demo_tracks WHERE is_visible = 1 ORDER BY display_order ASC, added_at ASC"
+        ).fetchall()
+        return [dict(r) for r in rows]
+
+
+def get_demo_track(slug: str) -> dict | None:
+    """Look up a demo track by slug."""
+    with _db() as conn:
+        row = conn.execute(
+            "SELECT * FROM demo_tracks WHERE slug = ?", (slug,)
+        ).fetchone()
+        return dict(row) if row else None
+
+
+def upsert_demo_track(slug: str, title: str, artist: str, **kwargs):
+    """Insert or update a demo track by slug."""
+    now = time.time()
+    existing = get_demo_track(slug)
+
+    with _db() as conn:
+        if existing:
+            sets = ["title = ?", "artist = ?"]
+            vals = [title, artist]
+            for k, v in kwargs.items():
+                if v is not None:
+                    sets.append(f"{k} = ?")
+                    vals.append(v)
+            vals.append(slug)
+            conn.execute(f"UPDATE demo_tracks SET {', '.join(sets)} WHERE slug = ?", vals)
+        else:
+            cols = ["slug", "title", "artist", "added_at"]
+            vals = [slug, title, artist, now]
+            for k, v in kwargs.items():
+                if v is not None:
+                    cols.append(k)
+                    vals.append(v)
+            placeholders = ", ".join(["?"] * len(vals))
+            conn.execute(f"INSERT INTO demo_tracks ({', '.join(cols)}) VALUES ({placeholders})", vals)
+
+
+def delete_demo_track(slug: str):
+    """Remove a demo track by slug."""
+    with _db() as conn:
+        conn.execute("DELETE FROM demo_tracks WHERE slug = ?", (slug,))
 
 
 def recover_orphaned_jobs():
