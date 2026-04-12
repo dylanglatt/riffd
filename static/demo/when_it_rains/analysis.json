@@ -1,0 +1,215 @@
+{
+  "stems": {
+    "bass": {
+      "label": "Bass",
+      "energy": 0.115306,
+      "active": true
+    },
+    "drums": {
+      "label": "Drums",
+      "energy": 0.108199,
+      "active": true
+    },
+    "other": {
+      "label": "Pedal Steel",
+      "energy": 0.00985,
+      "active": true
+    },
+    "vocals": {
+      "label": "Vocals",
+      "energy": 0.129119,
+      "active": true
+    },
+    "lead_guitar": {
+      "label": "Lead Guitar",
+      "energy": 0.065638,
+      "active": true
+    },
+    "rhythm_guitar": {
+      "label": "Rhythm Guitar",
+      "energy": 0.052304,
+      "active": true
+    }
+  },
+  "intelligence": {
+    "key": "F# Major",
+    "key_num": 6,
+    "mode_num": 1,
+    "bpm": 129.2,
+    "bpm_confidence": 0.5,
+    "progression": "I \u2013 IV \u2013 I",
+    "progression_confidence": 0.4,
+    "progression_source": "audio",
+    "confidence": 0.93,
+    "harmonic_sections": []
+  },
+  "lyrics": "Sunday morning\nMan, she woke up fightin' mad\nBitchin' and moanin' on and on\n'Bout the time I had\nAnd by Tuesday you could say\nThat girl was good as gone\nThen when Thursday came around I was all alone\nSo I went for a drive to clear my mind\nEnded up at a Shell on I-65\n\n[Chorus 1]\nThen I won a hundred bucks on a scratch-off ticket\nI bought two 12-packs and a tank of gas with it\nShe swore they were a waste of time\nOh, but she was wrong\nI was caller number five on a radio station\nWon a four day, three night beach vacation\nDeep sea se\u00f1orita fishing down in Panama\nAnd I ain't gotta see my\nEx-future-mother-in-law anymore\nOh Lord, when it rains it pours\n\n[Verse 2]\nNow she was sure real quick to up and apologize\nWhen she heard about my newfound luck\nOn that FM dial\nAnd it's crazy how lately now\nIt just seems to come in waves\nWhat I thought was gonna be the death of me\nWas my saving grace\nIt's got me thinking that her leaving\nIs the only logical reason\n\n[Chorus 2]\nThat I got the last spot in the Hooters' parking lot\nAnd the waitress left her number on my check with a heart\nShe picked up on the first ring when I gave her a call\nAnd I only spent five bucks at the Moose Club raffle\nWon a used 4-wheeler and three free passes\nFor me and two of my buddies to play a round of golf\nAnd I ain't gotta see my\nEx-future-mother-in-law anymore\nOh Lord, when it rains it pours\nWhen it rains it pours\n\n[Bridge]\nWell I've been on one hell of a redneck roll\nFor three weeks now\nAnd it all started on the day that she walked out\n\n[Chorus 1]\nThen I won a hundred bucks on a scratch-off ticket\nBought two 12-packs and a tank of gas with it\nShe swore they were a waste of time\nOh, but she was wrong\nAnd I was caller number five on a radio station\nWon a four day, three night beach vacation\nDeep sea se\u00f1orita fishing down in Panama\nAnd I ain't gotta see my\nEx-future-mother-in-law anymore\nOh Lord, when it rains it pours\nWhen it rains it pours",
+  "tags": [
+    "country",
+    "country pop",
+    "contemporary country",
+    "male vocalists",
+    "linedance catalan",
+    "2010s",
+    "2017",
+    "linedance 2017"
+  ],
+  "insight": {
+    "progression_names": {
+      "main": "Plagal cadence"
+    },
+    "smart_recs": {
+      "same_progression": [
+        {
+          "title": "Amazed",
+          "artist": "Lonestar",
+          "reason": "I-IV plagal movement throughout",
+          "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Features125/v4/6f/0e/ea/6f0eea99-e8f4-1e0d-f5de-ffc990c8da92/dj.bquaoulm.jpg/300x300bb.jpg"
+        },
+        {
+          "title": "Need You Now",
+          "artist": "Lady Antebellum",
+          "reason": "I-IV plagal cadence anchors progression",
+          "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music116/v4/8f/60/92/8f6092a6-8efb-c71b-20d1-81da6be2a716/13UABIM57670.rgb.jpg/300x300bb.jpg"
+        }
+      ],
+      "same_key_tempo": [
+        {
+          "title": "Meant to Be",
+          "artist": "Bebe Rexha ft. Florida Georgia Line",
+          "reason": "F# Major, ~128 BPM country-pop",
+          "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music125/v4/4a/3b/65/4a3b65ee-a5c6-51e1-8476-e6501a98efa5/093624910763.jpg/300x300bb.jpg"
+        }
+      ],
+      "similar_harmony": [
+        {
+          "title": "Chicken Fried",
+          "artist": "Zac Brown Band",
+          "reason": "I-IV plagal resolution in country context",
+          "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music116/v4/c8/12/38/c8123827-453b-b1e3-b568-f3c8d506065e/075679987525.png/300x300bb.jpg"
+        }
+      ],
+      "more_by_artist": [
+        {
+          "title": "Hurricane",
+          "artist": "Luke Combs",
+          "reason": "Minor key departure, orchestral arrangement",
+          "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music125/v4/3c/83/bf/3c83bf3e-bf4a-7e69-5668-d55f5a8e38e0/886446460840.jpg/300x300bb.jpg"
+        },
+        {
+          "title": "Lovin' on You",
+          "artist": "Luke Combs",
+          "reason": "Extended major key with IV emphasis",
+          "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music124/v4/9a/d3/ea/9ad3eab9-1aab-204b-da70-0006dcdba6c9/886448390374.jpg/300x300bb.jpg"
+        },
+        {
+          "title": "Fast Car",
+          "artist": "Luke Combs",
+          "reason": "Cover: fingerpicked acoustic arrangement",
+          "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music113/v4/7d/24/14/7d241439-671a-d957-9613-2f738f43a064/196589485991.jpg/300x300bb.jpg"
+        },
+        {
+          "title": "She Got the Best of Me",
+          "artist": "Luke Combs",
+          "reason": "Minor-key ballad, rare introspective tone",
+          "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music125/v4/f4/4b/59/f44b59a2-62c7-e9c7-df8b-4b8e7d772b41/886447048443.jpg/300x300bb.jpg"
+        }
+      ]
+    },
+    "key_context": "F# Major is bright and open\u2014a natural home for contemporary country storytelling and celebration."
+  },
+  "recommendations": {
+    "more_like_this": [],
+    "same_style": [
+      {
+        "id": "lastfm_Beer_Never_Broke_My__Luke_Combs",
+        "name": "Beer Never Broke My Heart",
+        "artist": "Luke Combs",
+        "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/81/55/08/8155084d-26e7-e914-35b0-8bbe6edf2668/886448691341.jpg/300x300bb.jpg",
+        "year": "",
+        "duration_ms": 0,
+        "album": "",
+        "yt_query": "Luke Combs - Beer Never Broke My Heart official audio",
+        "_source": "lastfm"
+      },
+      {
+        "id": "lastfm_Hurricane_Luke_Combs",
+        "name": "Hurricane",
+        "artist": "Luke Combs",
+        "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music125/v4/3c/83/bf/3c83bf3e-bf4a-7e69-5668-d55f5a8e38e0/886446460840.jpg/300x300bb.jpg",
+        "year": "",
+        "duration_ms": 0,
+        "album": "",
+        "yt_query": "Luke Combs - Hurricane official audio",
+        "_source": "lastfm"
+      },
+      {
+        "id": "lastfm_Whiskey_Glasses_Morgan_Wallen",
+        "name": "Whiskey Glasses",
+        "artist": "Morgan Wallen",
+        "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/80/bb/18/80bb1895-326f-e618-9aa8-d2338bb35f0c/842812106569_Cover.jpg/300x300bb.jpg",
+        "year": "",
+        "duration_ms": 0,
+        "album": "",
+        "yt_query": "Morgan Wallen - Whiskey Glasses official audio",
+        "_source": "lastfm"
+      },
+      {
+        "id": "lastfm_'Til_You_Can't_Cody_Johnson",
+        "name": "'Til You Can't",
+        "artist": "Cody Johnson",
+        "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/8b/4d/54/8b4d545d-feee-c91c-992c-cecd16677f6e/093624879381.jpg/300x300bb.jpg",
+        "year": "",
+        "duration_ms": 0,
+        "album": "",
+        "yt_query": "Cody Johnson - 'Til You Can't official audio",
+        "_source": "lastfm"
+      },
+      {
+        "id": "lastfm_Chasin'_You_Morgan_Wallen",
+        "name": "Chasin' You",
+        "artist": "Morgan Wallen",
+        "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/80/bb/18/80bb1895-326f-e618-9aa8-d2338bb35f0c/842812106569_Cover.jpg/300x300bb.jpg",
+        "year": "",
+        "duration_ms": 0,
+        "album": "",
+        "yt_query": "Morgan Wallen - Chasin' You official audio",
+        "_source": "lastfm"
+      },
+      {
+        "id": "lastfm_Dirt_Road_Anthem_Jason_Aldean",
+        "name": "Dirt Road Anthem",
+        "artist": "Jason Aldean",
+        "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music126/v4/4e/0d/4d/4e0d4da8-151e-73be-10e0-1ea4fa76446d/0884977769418.jpg/300x300bb.jpg",
+        "year": "",
+        "duration_ms": 0,
+        "album": "",
+        "yt_query": "Jason Aldean - Dirt Road Anthem official audio",
+        "_source": "lastfm"
+      },
+      {
+        "id": "lastfm_Rock_and_a_Hard_Plac_Bailey_Zimmerman",
+        "name": "Rock and a Hard Place",
+        "artist": "Bailey Zimmerman",
+        "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music122/v4/30/17/1b/30171b77-7d87-bf60-49f1-fa0d6376f193/093624864899.jpg/300x300bb.jpg",
+        "year": "",
+        "duration_ms": 0,
+        "album": "",
+        "yt_query": "Bailey Zimmerman - Rock and a Hard Place official audio",
+        "_source": "lastfm"
+      },
+      {
+        "id": "lastfm_Where_It_Ends_Bailey_Zimmerman",
+        "name": "Where It Ends",
+        "artist": "Bailey Zimmerman",
+        "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music122/v4/30/17/1b/30171b77-7d87-bf60-49f1-fa0d6376f193/093624864899.jpg/300x300bb.jpg",
+        "year": "",
+        "duration_ms": 0,
+        "album": "",
+        "yt_query": "Bailey Zimmerman - Where It Ends official audio",
+        "_source": "lastfm"
+      }
+    ],
+    "around_this_time": []
+  }
+}

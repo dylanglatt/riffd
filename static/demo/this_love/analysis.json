@@ -1,0 +1,219 @@
+{
+  "stems": {
+    "bass": {
+      "label": "Bass",
+      "energy": 0.127482,
+      "active": true
+    },
+    "drums": {
+      "label": "Drums",
+      "energy": 0.127329,
+      "active": true
+    },
+    "guitar": {
+      "label": "Guitar",
+      "energy": 0.055024,
+      "active": true
+    },
+    "synth": {
+      "label": "Synth Pad",
+      "energy": 0.017551,
+      "active": true
+    },
+    "piano": {
+      "label": "Piano",
+      "energy": 0.027068,
+      "active": true
+    },
+    "vocals": {
+      "label": "Vocals",
+      "energy": 0.142682,
+      "active": true
+    }
+  },
+  "intelligence": {
+    "key": "D# Major",
+    "key_num": 3,
+    "mode_num": 1,
+    "bpm": 95.7,
+    "bpm_confidence": 0.5,
+    "progression": "iii \u2013 ii \u2013 vii\u00b0",
+    "progression_confidence": 0.4,
+    "progression_source": "audio",
+    "confidence": 0.65,
+    "harmonic_sections": []
+  },
+  "lyrics": "I was so high, I did not recognize\nThe fire burning in her eyes\nThe chaos that controlled my mind\nWhispered goodbye, she got on a plane\nNever to return again, but always in my heart, oh\n\n[Chorus]\nThis love has taken its toll on me\nShe said goodbye too many times before\nAnd her heart is breakin' in front of me\nAnd I have no choice\n'Cause I won't say goodbye anymore\n\n[Post-Chorus]\nWoah-oh-oh\nWoah-oh-oh\nWoah-oh-oh-ooh\n\n[Verse 2]\nI tried my best to feed her appetite\nKeep her coming every night\nSo hard to keep her satisfied, oh\nKept playin' love like it was just a game\nPretending to feel the same\nThen turn around and leave again\nUh, but uh-oh\n\n[Chorus]\nThis love has taken its toll on me\nShe said goodbye too many times before\nAnd her heart is breakin' in front of me\nAnd I have no choice\n'Cause I won't say goodbye anymore\n\n[Post-Chorus]\nWoah-oh-oh\nWoah-oh-oh\nWoah-oh-oh-ooh\n\n[Bridge]\nI'll fix these broken things, repair your broken wings\nAnd make sure everything's alright (It's alright, it's alright, oh-oh)\nMy pressure on your hips, uh, sinkin' my fingertips\nInto every inch of you\nBecause I know that's what you want me to do\n\n[Chorus]\nThis love has taken its toll on me\nShe said goodbye too many times before\nHer heart is breakin' in front of me\nAnd I have no choice\n'Cause I won't say goodbye anymore\nThis love has taken its toll on me\nShe said goodbye too many times before (She said bye)\nAnd my heart is breakin' in front of me\nShe said goodbye too many times before\nThis love has taken its toll on me (Oh, yeah, yeah)\nShe said goodbye too many times before (Yeah)\nAnd her heart is breakin' in front of me (Yeah, oh)\nAnd I have no choice, 'cause I won't say goodbye anymore (Yeah)\nThis love has taken its toll on me",
+  "tags": [
+    "pop",
+    "rock",
+    "pop rock",
+    "maroon 5",
+    "alternative",
+    "Love",
+    "alternative rock",
+    "00s"
+  ],
+  "insight": {
+    "progression_names": {},
+    "smart_recs": {
+      "same_progression": [
+        {
+          "title": "Bitter Sweet Symphony",
+          "artist": "The Verve",
+          "reason": "iii-ii-vii\u00b0 descending chromatic bass pattern",
+          "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/5c/b1/85/5cb18512-9cbd-7b84-4042-37f23bc2ae45/17UMGIM89555.rgb.jpg/300x300bb.jpg"
+        },
+        {
+          "title": "No Scrubs",
+          "artist": "TLC",
+          "reason": "Similar iii-ii movement with diminished seventh resolution",
+          "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/2d/19/0c/2d190ce6-a157-6364-b5b4-e9b00265d313/mzi.ucefobwj.jpg/300x300bb.jpg"
+        }
+      ],
+      "same_key_tempo": [
+        {
+          "title": "Toxic",
+          "artist": "Britney Spears",
+          "reason": "D# Major at approximately 96 BPM",
+          "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music125/v4/38/8b/7a/388b7a8f-10ff-a4e0-7624-65e29ac6a793/828765374828.jpg/300x300bb.jpg"
+        }
+      ],
+      "similar_harmony": [
+        {
+          "title": "Teardrop",
+          "artist": "Massive Attack",
+          "reason": "Chromatic bass descent with sustained harmonic tension",
+          "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/0a/98/55/0a98555b-8d9d-3b46-660a-b91261557d17/00724384559953.rgb.jpg/300x300bb.jpg"
+        },
+        {
+          "title": "The Night We Met",
+          "artist": "Lord Huron",
+          "reason": "Descending chromatic progression creates melancholic movement",
+          "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music221/v4/55/41/4a/55414a18-861a-79d1-e575-5bf8cf205dbe/886445056839_Cover.jpg/300x300bb.jpg"
+        }
+      ],
+      "more_by_artist": [
+        {
+          "title": "She Will Be Loved",
+          "artist": "Maroon 5",
+          "reason": "Chorus features I-V-vi-IV progression, major key",
+          "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/d0/3e/25/d03e255d-e205-0e66-20f6-01e251896c25/14UMGIM27076.rgb.jpg/300x300bb.jpg"
+        },
+        {
+          "title": "Sunday Morning",
+          "artist": "Maroon 5",
+          "reason": "Rare 3/4 waltz time signature for the band",
+          "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/d0/3e/25/d03e255d-e205-0e66-20f6-01e251896c25/14UMGIM27076.rgb.jpg/300x300bb.jpg"
+        },
+        {
+          "title": "Memories",
+          "artist": "Maroon 5",
+          "reason": "Minor-key single with descending chord movement",
+          "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music125/v4/22/58/58/225858c4-ef47-2b91-723a-47af3e99699a/19UMGIM64502.rgb.jpg/300x300bb.jpg"
+        },
+        {
+          "title": "Moves Like Jagger",
+          "artist": "Maroon 5",
+          "reason": "Prominent seventh chords with rhythmic syncopation",
+          "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music122/v4/61/53/15/61531592-3e8b-1e85-b434-73a991d8143c/14UMGIM27067.rgb.jpg/300x300bb.jpg"
+        }
+      ]
+    },
+    "key_context": "D# Major is bright and piercing\u2014preferred for uplifting pop and rock anthems."
+  },
+  "recommendations": {
+    "more_like_this": [],
+    "same_style": [
+      {
+        "id": "lastfm_Sunday_Morning_Maroon_5",
+        "name": "Sunday Morning",
+        "artist": "Maroon 5",
+        "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/d0/3e/25/d03e255d-e205-0e66-20f6-01e251896c25/14UMGIM27076.rgb.jpg/300x300bb.jpg",
+        "year": "",
+        "duration_ms": 0,
+        "album": "",
+        "yt_query": "Maroon 5 - Sunday Morning official audio",
+        "_source": "lastfm"
+      },
+      {
+        "id": "lastfm_Harder_to_Breathe_Maroon_5",
+        "name": "Harder to Breathe",
+        "artist": "Maroon 5",
+        "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music128/v4/11/04/db/1104dbe5-e6b3-056c-4e17-56a399709f86/00602517430693.rgb.jpg/300x300bb.jpg",
+        "year": "",
+        "duration_ms": 0,
+        "album": "",
+        "yt_query": "Maroon 5 - Harder to Breathe official audio",
+        "_source": "lastfm"
+      },
+      {
+        "id": "lastfm_Counting_Stars_OneRepublic",
+        "name": "Counting Stars",
+        "artist": "OneRepublic",
+        "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music126/v4/25/46/a7/2546a71a-b2bb-b4c9-4c52-a4daa3ae23ca/13UMGIM15076.rgb.jpg/300x300bb.jpg",
+        "year": "",
+        "duration_ms": 0,
+        "album": "",
+        "yt_query": "OneRepublic - Counting Stars official audio",
+        "_source": "lastfm"
+      },
+      {
+        "id": "lastfm_Adventure_of_a_Lifet_Coldplay",
+        "name": "Adventure of a Lifetime",
+        "artist": "Coldplay",
+        "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/c8/0a/6d/c80a6df9-e55a-fb83-0311-f4776984ac67/mzm.lasidxkv.jpg/300x300bb.jpg",
+        "year": "",
+        "duration_ms": 0,
+        "album": "",
+        "yt_query": "Coldplay - Adventure of a Lifetime official audio",
+        "_source": "lastfm"
+      },
+      {
+        "id": "lastfm_Complicated_Avril_Lavigne",
+        "name": "Complicated",
+        "artist": "Avril Lavigne",
+        "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/32/2c/f3/322cf324-9ea1-3962-865a-f4f9bf83764d/888880191069.jpg/300x300bb.jpg",
+        "year": "",
+        "duration_ms": 0,
+        "album": "",
+        "yt_query": "Avril Lavigne - Complicated official audio",
+        "_source": "lastfm"
+      },
+      {
+        "id": "lastfm_Kiss_Me_Sixpence_None_the_Ri",
+        "name": "Kiss Me",
+        "artist": "Sixpence None the Richer",
+        "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music221/v4/0f/6b/92/0f6b92f7-52e1-67e4-6a7b-7196ef793cdc/080688551261.png/300x300bb.jpg",
+        "year": "",
+        "duration_ms": 0,
+        "album": "",
+        "yt_query": "Sixpence None the Richer - Kiss Me official audio",
+        "_source": "lastfm"
+      },
+      {
+        "id": "lastfm_Hey,_Soul_Sister_Train",
+        "name": "Hey, Soul Sister",
+        "artist": "Train",
+        "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music124/v4/fa/e8/28/fae8283a-ad10-a642-1d41-a4b3402da4ba/884977817027.jpg/300x300bb.jpg",
+        "year": "",
+        "duration_ms": 0,
+        "album": "",
+        "yt_query": "Train - Hey, Soul Sister official audio",
+        "_source": "lastfm"
+      },
+      {
+        "id": "lastfm_Drive_By_Train",
+        "name": "Drive By",
+        "artist": "Train",
+        "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music124/v4/08/a0/0e/08a00ef4-fa4d-8338-77cf-b6d82f66e4f4/886443385948.jpg/300x300bb.jpg",
+        "year": "",
+        "duration_ms": 0,
+        "album": "",
+        "yt_query": "Train - Drive By official audio",
+        "_source": "lastfm"
+      }
+    ],
+    "around_this_time": []
+  }
+}
