@@ -86,6 +86,7 @@ def _format_track(t) -> dict:
         "duration_ms": t.get("duration_ms", 0),
         "image_url": images[0]["url"] if images else None,
         "yt_query": f"{', '.join(a['name'] for a in artists)} - {t.get('name', '')} official audio",
+        "explicit": t.get("explicit", False),
     }
 
 

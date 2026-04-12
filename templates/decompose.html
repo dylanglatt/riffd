@@ -24,6 +24,7 @@
     .track-name { font-weight:500; font-size:0.875rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:#F5F5F5; letter-spacing:-0.01em; }
     .track-artist { color:rgba(245,245,245,0.5); font-size:0.8125rem; margin-top:2px; }
     .track-meta { color:rgba(245,245,245,0.35); font-size:0.75rem; text-align:right; white-space:nowrap; flex-shrink:0; }
+    .explicit-badge { display:inline-flex; align-items:center; justify-content:center; width:15px; height:15px; border-radius:2px; background:rgba(245,245,245,0.25); color:rgba(245,245,245,0.7); font-size:0.5rem; font-weight:700; letter-spacing:0; flex-shrink:0; vertical-align:middle; margin-left:5px; line-height:1; position:relative; top:-1px; }
     .divider { display:flex; align-items:center; gap:16px; color:rgba(245,245,245,0.35); font-size:0.8125rem; margin:48px 0; font-weight:400; }
     .divider::before,.divider::after { content:""; flex:1; height:1px; background:rgba(255,255,255,0.08); }
     .upload-area { border:1px dashed rgba(255,255,255,0.12); padding:48px 14px; text-align:center; color:rgba(245,245,245,0.4); cursor:pointer; transition:border-color .25s, background .25s, color .25s; font-size:0.875rem; font-weight:400; letter-spacing:-0.01em; background:rgba(255,255,255,0.015); }
@@ -1303,7 +1304,8 @@ function renderSearchResults() {
   if(!searchResults.length){c.innerHTML='<div class="empty-state">No results found.</div>';return;}
   c.innerHTML=searchResults.map((t,i)=>{
     const img = t.image_url ? `<img src="${esc(t.image_url)}" alt="" style="width:44px;height:44px;border-radius:8px;object-fit:cover;flex-shrink:0;background:var(--surface-3)" onerror="_artFailSm(this)">` : '<div style="width:44px;height:44px;border-radius:8px;background:var(--surface-3);flex-shrink:0"></div>';
-    return `<div class="track-result" onclick="selectByIndex(${i})">${img}<div class="track-info"><div class="track-name">${esc(t.name||"")}</div><div class="track-artist">${esc(t.artist||"")}</div></div><div class="track-meta">${esc(String(t.year||""))}<br>${fmtMs(t.duration_ms)}</div></div>`;
+    const explicitBadge = t.explicit ? '<span class="explicit-badge">E</span>' : '';
+    return `<div class="track-result" onclick="selectByIndex(${i})">${img}<div class="track-info"><div class="track-name">${esc(t.name||"")}${explicitBadge}</div><div class="track-artist">${esc(t.artist||"")}</div></div><div class="track-meta">${esc(String(t.year||""))}<br>${fmtMs(t.duration_ms)}</div></div>`;
   }).join("");
 }
 
@@ -1385,7 +1387,7 @@ function cleanTitle(name) {
     .trim();
 }
 
-function buildBanner(id,t,audioSource,audioMode){const el=document.getElementById(id);if(!el)return;const img=t.image_url?`<img src="${esc(t.image_url)}" alt="" crossorigin="anonymous" onload="_applyBannerGlow(this,'${id}')" onerror="_artFailBanner(this)">`:'<div class="cover-placeholder"><svg viewBox="0 0 24 24" width="20" height="20" style="opacity:.3"><path d="M12 3v10.55A4 4 0 1 0 14 17V7h4V3h-6Z" fill="currentColor"/></svg></div>';const subParts=[t.artist||"Unknown"];if(t.year)subParts.push(esc(String(t.year)));if(t.album)subParts.push(esc(cleanTitle(t.album)));el.innerHTML=`${img}<div><div class="track-banner-title">${esc(cleanTitle(t.name||"Untitled"))}</div><div class="track-banner-sub">${subParts.join(" \u00b7 ")}</div></div>`;}
+function buildBanner(id,t,audioSource,audioMode){const el=document.getElementById(id);if(!el)return;const img=t.image_url?`<img src="${esc(t.image_url)}" alt="" crossorigin="anonymous" onload="_applyBannerGlow(this,'${id}')" onerror="_artFailBanner(this)">`:'<div class="cover-placeholder"><svg viewBox="0 0 24 24" width="20" height="20" style="opacity:.3"><path d="M12 3v10.55A4 4 0 1 0 14 17V7h4V3h-6Z" fill="currentColor"/></svg></div>';const subParts=[t.artist||"Unknown"];if(t.year)subParts.push(esc(String(t.year)));if(t.album)subParts.push(esc(cleanTitle(t.album)));const explicitBadge=t.explicit?'<span class="explicit-badge">E</span>':'';el.innerHTML=`${img}<div><div class="track-banner-title">${esc(cleanTitle(t.name||"Untitled"))}${explicitBadge}</div><div class="track-banner-sub">${subParts.join(" \u00b7 ")}</div></div>`;}
 
 // ─── Upload ─────────────────────────────────────────────────────────────────
 function handleDragOver(e){e.preventDefault();document.getElementById("upload-area").classList.add("drag-over");}
@@ -1589,7 +1591,8 @@ function _populateHero() {
     // Extract dominant color for glow
     _extractGlowColor(selectedTrack.image_url);
   } else { artWrap.innerHTML = glow + '<div class="proc-art-ph"><svg viewBox="0 0 24 24" width="36" height="36" style="opacity:.25"><path d="M12 3v10.55A4 4 0 1 0 14 17V7h4V3h-6Z" fill="currentColor"/></svg></div>'; }
-  document.getElementById("proc-title").textContent = cleanTitle(selectedTrack.name) || "Untitled";
+  const explicitBadge = selectedTrack.explicit ? '<span class="explicit-badge">E</span>' : '';
+  document.getElementById("proc-title").innerHTML = esc(cleanTitle(selectedTrack.name) || "Untitled") + explicitBadge;
   const subParts = [];
   if (selectedTrack.artist) subParts.push(selectedTrack.artist);
   if (selectedTrack.year) subParts.push(String(selectedTrack.year));
