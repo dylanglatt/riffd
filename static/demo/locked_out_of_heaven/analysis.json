@@ -20,11 +20,6 @@
       "energy": 0.019903,
       "active": true
     },
-    "acoustic_guitar": {
-      "label": "Acoustic Guitar",
-      "energy": 0.011642,
-      "active": true
-    },
     "vocals": {
       "label": "Vocals",
       "energy": 0.146037,
