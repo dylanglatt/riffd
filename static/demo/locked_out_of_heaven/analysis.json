@@ -1,0 +1,216 @@
+{
+  "stems": {
+    "bass": {
+      "label": "Bass",
+      "energy": 0.145848,
+      "active": true
+    },
+    "drums": {
+      "label": "Drums",
+      "energy": 0.15444,
+      "active": true
+    },
+    "guitar": {
+      "label": "Guitar",
+      "energy": 0.040872,
+      "active": true
+    },
+    "synth": {
+      "label": "Synth Pad",
+      "energy": 0.019903,
+      "active": true
+    },
+    "acoustic_guitar": {
+      "label": "Acoustic Guitar",
+      "energy": 0.011642,
+      "active": true
+    },
+    "vocals": {
+      "label": "Vocals",
+      "energy": 0.146037,
+      "active": true
+    }
+  },
+  "intelligence": {
+    "key": "C Major",
+    "key_num": 0,
+    "mode_num": 1,
+    "bpm": 143.6,
+    "bpm_confidence": 0.5,
+    "progression": null,
+    "key_confidence": 0.712
+  },
+  "lyrics": "(One, two, one, two, three)\nAw, yeah, yeah\nAw, yeah, yeah, yeah, yeah (Uh)\nAw, yeah, yeah\nAw, yeah, yeah, yeah, yeah (Uh)\n\n[Verse 1]\nNever had much faith in love or miracles (Uh)\nNever wanna put my heart on the line (Uh)\nBut swimmin' in your water's somethin' spiritual (Uh)\nI'm born again every time you spend the night, \u2014ight (Uh)\n\n[Pre-Chorus]\n'Cause your sex takes me to paradise\nYeah, your sex takes me to paradise\nAnd it shows\nYeah, yeah, yeah\n\n[Chorus]\n'Cause you make me feel like\nI've been locked outta heaven\nFor too long\nFor too long\nYeah, you make me feel like\nI've been locked outta heaven\nFor too long\nFor too long\n\n[Post-Chorus]\nAw, yeah, yeah, yeah, yeah (Uh)\nAw, yeah, yeah\nAw, yeah, yeah, yeah, yeah (Uh)\n\n[Verse 2]\nYou bring me to my knees, you make me testify (Uh)\nYou can make a sinner change his ways (Uh)\nOpen up your gates 'cause I can't wait to see the light (Uh)\nAnd right there is where I wanna stay, \u2014ay (Uh)\n\n[Pre-Chorus]\n'Cause your sex takes me to paradise\nYeah, your sex takes me to paradise\nAnd it shows\nYeah, yeah, yeah\n\n[Chorus]\n'Cause you make me feel like\nI've been locked outta heaven\nFor too long\nFor too long\nYeah, you make me feel like\nI've been locked outta heaven\nFor too long\nFor too long\n\n[Bridge]\nOh, woah, woah, woah\nYeah, yeah, yeah\nCan I just stay here?\nSpend the rest of my days here?\nOh, woah, woah, woah\nYeah, yeah, yeah\nCan I just stay here?\nSpend the rest of my days here?\n\n[Chorus]\n'Cause you make me feel like\nI've been locked outta heaven\nFor too long\nFor too long\nYeah, you make me feel like\nI've been locked outta heaven\nFor too long\nFor too long\n\n[Post-Chorus]\nAw, yeah, yeah, yeah, yeah (Uh)\nAw, yeah, yeah\nAw, yeah, yeah, yeah, yeah (Uh)",
+  "tags": [
+    "pop",
+    "rnb",
+    "Bruno Mars",
+    "10s",
+    "2012",
+    "male vocalists",
+    "american",
+    "2010s"
+  ],
+  "insight": {
+    "progression_names": {},
+    "smart_recs": {
+      "same_progression": [
+        {
+          "title": "Uptown Funk",
+          "artist": "Mark Ronson ft. Bruno Mars",
+          "reason": "I-V-vi-IV progression with funk groove",
+          "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/7e/30/c5/7e30c572-aa47-5f7b-c6fd-42d50cd2c56d/886444959797.jpg/300x300bb.jpg"
+        },
+        {
+          "title": "Treasure",
+          "artist": "Bruno Mars",
+          "reason": "Similar I-V-vi-IV loop in C Major",
+          "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music125/v4/15/63/53/156353b8-d45b-a17d-f553-2d125aeb3cb3/075679957474.jpg/300x300bb.jpg"
+        }
+      ],
+      "same_key_tempo": [
+        {
+          "title": "Billie Jean",
+          "artist": "Michael Jackson",
+          "reason": "C Major at approximately 144 BPM",
+          "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/32/4f/fd/324ffda2-9e51-8f6a-0c2d-c6fd2b41ac55/074643811224.jpg/300x300bb.jpg"
+        },
+        {
+          "title": "When Doves Cry",
+          "artist": "Prince",
+          "reason": "C Major, mid-140s BPM range",
+          "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music125/v4/9d/14/10/9d141037-6ad8-4847-6622-bcff54e8584e/886448962830.jpg/300x300bb.jpg"
+        }
+      ],
+      "similar_harmony": [
+        {
+          "title": "I Will Follow You Into the Dark",
+          "artist": "Death Cab for Cutie",
+          "reason": "Descending bass line under stable major harmony",
+          "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/03/0d/0c/030d0c02-4186-a22a-ada6-a13348069d8d/075679930491.jpg/300x300bb.jpg"
+        }
+      ],
+      "more_by_artist": [
+        {
+          "title": "Treasure",
+          "artist": "Bruno Mars",
+          "reason": "12-string acoustic, open tuning arrangement",
+          "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music125/v4/15/63/53/156353b8-d45b-a17d-f553-2d125aeb3cb3/075679957474.jpg/300x300bb.jpg"
+        },
+        {
+          "title": "When I Was Your Man",
+          "artist": "Bruno Mars",
+          "reason": "Only minor-key single from main catalog",
+          "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/e0/a4/7c/e0a47c6f-005a-9f9f-ce29-8e858e2bcfcb/075679957283.jpg/300x300bb.jpg"
+        },
+        {
+          "title": "Uptown Funk",
+          "artist": "Bruno Mars",
+          "reason": "Extended syncopation in off-beat rhythm",
+          "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/7e/30/c5/7e30c572-aa47-5f7b-c6fd-42d50cd2c56d/886444959797.jpg/300x300bb.jpg"
+        },
+        {
+          "title": "24K Magic",
+          "artist": "Bruno Mars",
+          "reason": "Rare 80s synth-funk production style",
+          "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music125/v4/e3/47/a0/e347a0cc-87ce-5d05-d560-176c7d48f66e/075679904119.jpg/300x300bb.jpg"
+        }
+      ]
+    },
+    "key_context": "C Major \u2014 bright, accessible key popular in pop and R&B vocal music."
+  },
+  "recommendations": {
+    "more_like_this": [],
+    "same_style": [
+      {
+        "id": "lastfm_Just_the_Way_You_Are_Bruno_Mars",
+        "name": "Just the Way You Are",
+        "artist": "Bruno Mars",
+        "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music114/v4/52/b1/45/52b1452b-229e-78db-231b-7b43fa0077cc/075679956491.jpg/300x300bb.jpg",
+        "year": "",
+        "duration_ms": 0,
+        "album": "",
+        "yt_query": "Bruno Mars - Just the Way You Are official audio",
+        "_source": "lastfm"
+      },
+      {
+        "id": "lastfm_Grenade_Bruno_Mars",
+        "name": "Grenade",
+        "artist": "Bruno Mars",
+        "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music114/v4/52/b1/45/52b1452b-229e-78db-231b-7b43fa0077cc/075679956491.jpg/300x300bb.jpg",
+        "year": "",
+        "duration_ms": 0,
+        "album": "",
+        "yt_query": "Bruno Mars - Grenade official audio",
+        "_source": "lastfm"
+      },
+      {
+        "id": "lastfm_Stitches_Shawn_Mendes",
+        "name": "Stitches",
+        "artist": "Shawn Mendes",
+        "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/e3/d4/de/e3d4def5-886e-da47-e1cf-568566510b53/15UMGIM62454.rgb.jpg/300x300bb.jpg",
+        "year": "",
+        "duration_ms": 0,
+        "album": "",
+        "yt_query": "Shawn Mendes - Stitches official audio",
+        "_source": "lastfm"
+      },
+      {
+        "id": "lastfm_There's_Nothing_Hold_Shawn_Mendes",
+        "name": "There's Nothing Holdin' Me Back",
+        "artist": "Shawn Mendes",
+        "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music124/v4/5c/57/e4/5c57e46a-0950-7ebd-8010-28453c1c0055/16UMGIM51723.rgb.jpg/300x300bb.jpg",
+        "year": "",
+        "duration_ms": 0,
+        "album": "",
+        "yt_query": "Shawn Mendes - There's Nothing Holdin' Me Back official audio",
+        "_source": "lastfm"
+      },
+      {
+        "id": "lastfm_One_More_Night_Maroon_5",
+        "name": "One More Night",
+        "artist": "Maroon 5",
+        "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music125/v4/1b/5b/95/1b5b95d1-b7f2-f2e9-acb2-22f558017056/12UMGIM26178.rgb.jpg/300x300bb.jpg",
+        "year": "",
+        "duration_ms": 0,
+        "album": "",
+        "yt_query": "Maroon 5 - One More Night official audio",
+        "_source": "lastfm"
+      },
+      {
+        "id": "lastfm_Diamonds_Rihanna",
+        "name": "Diamonds",
+        "artist": "Rihanna",
+        "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music116/v4/a0/1a/10/a01a1080-7b1d-e475-a03c-394e5cbba66c/12UMGIM53876.rgb.jpg/300x300bb.jpg",
+        "year": "",
+        "duration_ms": 0,
+        "album": "",
+        "yt_query": "Rihanna - Diamonds official audio",
+        "_source": "lastfm"
+      },
+      {
+        "id": "lastfm_Can't_Feel_My_Face_The_Weeknd",
+        "name": "Can't Feel My Face",
+        "artist": "The Weeknd",
+        "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music124/v4/30/05/1e/30051e57-a63a-3acc-4b30-42568293f5f7/15UMGIM36514.rgb.jpg/300x300bb.jpg",
+        "year": "",
+        "duration_ms": 0,
+        "album": "",
+        "yt_query": "The Weeknd - Can't Feel My Face official audio",
+        "_source": "lastfm"
+      },
+      {
+        "id": "lastfm_Attention_Charlie_Puth",
+        "name": "Attention",
+        "artist": "Charlie Puth",
+        "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music125/v4/a8/e2/1b/a8e21b3b-9c8d-2974-2318-6bcd4c9d2370/075679884336.jpg/300x300bb.jpg",
+        "year": "",
+        "duration_ms": 0,
+        "album": "",
+        "yt_query": "Charlie Puth - Attention official audio",
+        "_source": "lastfm"
+      }
+    ],
+    "around_this_time": []
+  }
+}

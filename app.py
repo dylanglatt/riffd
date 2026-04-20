@@ -119,7 +119,7 @@ migrate_from_history_json()
 # All demo tracks are listed here so Render's ephemeral DB is always fully populated on startup.
 _SEED_DEMOS = [
     {"slug": "take_it_easy", "title": "Take It Easy", "artist": "Eagles", "year": "1972",
-     "genre": "Classic Rock", "key_display": "G Major", "bpm": 0, "display_order": 1,
+     "genre": "Rock", "key_display": "G Major", "bpm": 0, "display_order": 1,
      "cover_path": "/static/demo/take_it_easy/cover.jpg",
      "analysis_path": "static/demo/take_it_easy/analysis.json",
      "stems_dir": "static/demo/take_it_easy/stems"},
@@ -129,7 +129,7 @@ _SEED_DEMOS = [
      "analysis_path": "static/demo/taste/analysis.json",
      "stems_dir": "static/demo/taste/stems"},
     {"slug": "bohemian_rhapsody", "title": "Bohemian Rhapsody", "artist": "Queen", "year": "1975",
-     "genre": "Classic Rock", "key_display": "Bb Major", "bpm": 0, "display_order": 3,
+     "genre": "Rock", "key_display": "Bb Major", "bpm": 0, "display_order": 3,
      "cover_path": "/static/demo/bohemian_rhapsody/cover.jpg",
      "analysis_path": "static/demo/bohemian_rhapsody/analysis.json",
      "stems_dir": "static/demo/bohemian_rhapsody/stems"},
@@ -144,7 +144,7 @@ _SEED_DEMOS = [
      "analysis_path": "static/demo/seven_nation_army/analysis.json",
      "stems_dir": "static/demo/seven_nation_army/stems"},
     {"slug": "gravity", "title": "Gravity", "artist": "John Mayer", "year": "2006",
-     "genre": "Soft Rock", "key_display": "C Major", "bpm": 0, "display_order": 6,
+     "genre": "Rock", "key_display": "C Major", "bpm": 0, "display_order": 6,
      "cover_path": "/static/demo/gravity/cover.jpg",
      "analysis_path": "static/demo/gravity/analysis.json",
      "stems_dir": "static/demo/gravity/stems"},
@@ -189,7 +189,7 @@ _SEED_DEMOS = [
      "analysis_path": "static/demo/one_more_time/analysis.json",
      "stems_dir": "static/demo/one_more_time/stems"},
     {"slug": "this_love", "title": "This Love", "artist": "Maroon 5", "year": "2004",
-     "genre": "Pop Rock", "key_display": "D# Major", "bpm": 96, "display_order": 15,
+     "genre": "Rock", "key_display": "D# Major", "bpm": 96, "display_order": 15,
      "cover_path": "/static/demo/this_love/cover.jpg",
      "analysis_path": "static/demo/this_love/analysis.json",
      "stems_dir": "static/demo/this_love/stems"},
@@ -198,6 +198,11 @@ _SEED_DEMOS = [
      "cover_path": "/static/demo/when_it_rains/cover.jpg",
      "analysis_path": "static/demo/when_it_rains/analysis.json",
      "stems_dir": "static/demo/when_it_rains/stems"},
+    {"slug": "locked_out_of_heaven", "title": "Locked out of Heaven", "artist": "Bruno Mars", "year": "2012",
+     "genre": "Pop", "key_display": "C Major", "bpm": 143, "display_order": 17,
+     "cover_path": "/static/demo/locked_out_of_heaven/cover.jpg",
+     "analysis_path": "static/demo/locked_out_of_heaven/analysis.json",
+     "stems_dir": "static/demo/locked_out_of_heaven/stems"},
 ]
 for _demo in _SEED_DEMOS:
     _slug = _demo.pop("slug")
