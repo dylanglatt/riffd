@@ -27,6 +27,7 @@ Downstream contract (must not change):
 import struct as _struct
 import shutil
 import subprocess
+import sys
 import wave
 from pathlib import Path
 
@@ -1199,7 +1200,7 @@ def _separate_stems_local(audio_path: Path, out_dir: Path, progress_callback=Non
     print(f"[separation] LOCAL starting: model={model}")
     try:
         result = subprocess.run(
-            ["python", "-m", "demucs", "--out", str(out_dir), "--name", model, str(audio_path)],
+            [sys.executable, "-m", "demucs", "--out", str(out_dir), "--name", model, str(audio_path)],
             capture_output=True, text=True, timeout=DEMUCS_TIMEOUT,
         )
     except subprocess.TimeoutExpired:
@@ -1212,7 +1213,7 @@ def _separate_stems_local(audio_path: Path, out_dir: Path, progress_callback=Non
         stem_names = STEM_NAMES_4
         try:
             result = subprocess.run(
-                ["python", "-m", "demucs", "--out", str(out_dir), "--name", model, str(audio_path)],
+                [sys.executable, "-m", "demucs", "--out", str(out_dir), "--name", model, str(audio_path)],
                 capture_output=True, text=True, timeout=DEMUCS_TIMEOUT,
             )
         except subprocess.TimeoutExpired:

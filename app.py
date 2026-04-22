@@ -28,12 +28,20 @@ Memory management:
 
 import os
 import re
+import sys
 import uuid
 import collections
 import threading
 import traceback
 from pathlib import Path
 from dotenv import load_dotenv
+
+# Ensure the venv's bin dir is on PATH for every subprocess call (yt-dlp, ffmpeg,
+# etc.). launchd strips PATH down to system defaults, which excludes venv/bin —
+# that's what breaks yt-dlp lookups in the download pipeline.
+_venv_bin = os.path.dirname(sys.executable)
+if _venv_bin and _venv_bin not in os.environ.get("PATH", "").split(os.pathsep):
+    os.environ["PATH"] = _venv_bin + os.pathsep + os.environ.get("PATH", "")
 from flask import Flask, render_template, request, jsonify, send_from_directory, session, redirect, url_for, make_response, send_file
 from werkzeug.utils import secure_filename
 
@@ -1426,8 +1434,9 @@ result = extract_note_events({infer_path!r}, {stem_key!r}, label={label!r}, bpm=
 with open({_result_path!r}, "wb") as f:
     pickle.dump(result, f)
 '''
+                        import sys as _sys_exec
                         _proc = _sp.run(
-                            ["python", "-c", _script],
+                            [_sys_exec.executable, "-c", _script],
                             capture_output=True, text=True, timeout=120,
                             cwd=str(Path(__file__).parent),
                         )
