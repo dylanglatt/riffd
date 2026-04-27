@@ -986,8 +986,13 @@ def process_audio(job_id):
         def _elapsed():
             return f"{_time.time()-_t0:.1f}s"
 
-        # Memory guard — reject early if RSS is already too high.
+        # Memory guard — reject only if RSS is dangerously high.
         # Prevents starting a job that will inevitably OOM and take down the service.
+        # Tunable via MEMORY_GUARD_MB env var. Default 2200MB: TF baseline is ~1470MB
+        # and a single job peaks around 1900MB, so 2200MB leaves real headroom while
+        # still catching runaway memory before it crashes the dyno.
+        MEMORY_GUARD_MB = int(os.getenv("MEMORY_GUARD_MB", "2200"))
+
         def _get_current_rss_mb():
             try:
                 with open("/proc/self/status") as f:
@@ -998,19 +1003,25 @@ def process_audio(job_id):
                 return 0  # Non-Linux (macOS dev) — skip guard
 
         _current_rss = _get_current_rss_mb()
-        if _current_rss > 1500:  # Leave ~500MB headroom for TF + STFT (TF runtime baseline is ~1470MB after clear)
-            # gc.collect() alone doesn't free TF memory — mirror the post-job cleanup pattern
-            gc.collect()
+        if _current_rss > MEMORY_GUARD_MB:
+            # Post-job cleanup from a prior request may still be settling.
+            # Try the same TF clear + GC the post-job path uses, then wait briefly
+            # and re-measure before giving up.
+            print(f"[job {job_id}] memory high (RSS={_current_rss:.1f}MB > {MEMORY_GUARD_MB}MB) — attempting cleanup")
             try:
                 import tensorflow as _tf
                 _tf.keras.backend.clear_session()
                 del _tf
-                gc.collect()
             except Exception:
                 pass
-            _current_rss = _get_current_rss_mb()
-            if _current_rss > 1500:
-                print(f"[job {job_id}] MEMORY GUARD: RSS={_current_rss:.0f}MB > 1500MB — rejecting")
+            for _ in range(3):
+                gc.collect()
+                _time.sleep(1.5)
+                _current_rss = _get_current_rss_mb()
+                if _current_rss <= MEMORY_GUARD_MB:
+                    break
+            if _current_rss > MEMORY_GUARD_MB:
+                print(f"[job {job_id}] MEMORY GUARD: RSS={_current_rss:.1f}MB > {MEMORY_GUARD_MB}MB — rejecting")
                 jobs[job_id].update({
                     "status": "error",
                     "error": "Server memory too high — try again in a moment.",
@@ -1021,6 +1032,7 @@ def process_audio(job_id):
                     _active_processing -= 1
                 _dequeue_next()
                 return
+            print(f"[job {job_id}] memory recovered (RSS={_current_rss:.1f}MB) — proceeding")
 
         # Load heavy processing modules on first job
         separate_stems, extract_note_events = _lazy_processor()
@@ -1779,20 +1791,29 @@ def serve_stem_audio(job_id, stem_name):
 
 # ── Admin routes ──────────────────────────────────────────────────────────────
 
+def _check_admin_auth():
+    """Shared admin auth gate. Returns None if OK, or a Flask response to short-circuit."""
+    admin_secret = os.environ.get("ADMIN_SECRET", "").strip()
+    if not admin_secret:
+        return None
+    provided = (
+        request.args.get("secret", "")
+        or request.headers.get("Authorization", "").removeprefix("Bearer ").strip()
+    )
+    if provided != admin_secret:
+        return jsonify({"error": "unauthorized"}), 401
+    return None
+
+
 @app.route("/api/admin/refresh-cookies", methods=["POST"])
 def admin_refresh_cookies():
     """
     Trigger a Playwright-based YouTube cookie refresh.
     Protected by ADMIN_SECRET env var (pass as ?secret= or Authorization header).
     """
-    admin_secret = os.environ.get("ADMIN_SECRET", "").strip()
-    if admin_secret:
-        provided = (
-            request.args.get("secret", "")
-            or request.headers.get("Authorization", "").removeprefix("Bearer ").strip()
-        )
-        if provided != admin_secret:
-            return jsonify({"error": "unauthorized"}), 401
+    auth_err = _check_admin_auth()
+    if auth_err:
+        return auth_err
 
     try:
         from cookie_refresher import refresh_cookies
@@ -1804,6 +1825,136 @@ def admin_refresh_cookies():
             return jsonify({"status": "failed", "message": "Cookie refresh failed — check logs"}), 500
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@app.route("/api/admin/cookie-status", methods=["GET"])
+def admin_cookie_status():
+    """
+    Inspect the current cookies.txt: size, count, whether it has login cookies,
+    and whether it was self-managed by cookie_refresher (anonymous-only) or
+    externally provided (likely authenticated).
+
+    Use this to tell at a glance why label-restricted tracks ("Sign in to confirm")
+    might be failing — anonymous-only cookies don't pass that bot wall.
+    """
+    auth_err = _check_admin_auth()
+    if auth_err:
+        return auth_err
+
+    cookies_path = Path("cookies.txt")
+    if not cookies_path.exists():
+        return jsonify({"exists": False, "message": "cookies.txt not found"})
+
+    try:
+        text = cookies_path.read_text(errors="replace")
+        lines = text.splitlines()
+        cookie_lines = [ln for ln in lines if ln and not ln.startswith("#")]
+        cookie_names = []
+        for ln in cookie_lines:
+            parts = ln.split("\t")
+            if len(parts) >= 6:
+                cookie_names.append(parts[5])
+
+        login_cookie_names = {"LOGIN_INFO", "SAPISID", "SID", "HSID", "SSID", "APISID",
+                              "__Secure-1PSID", "__Secure-3PSID", "__Secure-1PSIDTS"}
+        has_login_cookies = any(n in login_cookie_names for n in cookie_names)
+        self_managed = "# cookie_refresher.py managed: True" in text[:512]
+
+        if self_managed:
+            managed_by = "cookie_refresher (anonymous-only — won't pass 'Sign in to confirm' wall)"
+        elif has_login_cookies:
+            managed_by = "external + authenticated (good — should pass bot detection)"
+        else:
+            managed_by = "external (anonymous — likely insufficient for label-restricted content)"
+
+        stat = cookies_path.stat()
+        from datetime import datetime, timezone
+        return jsonify({
+            "exists": True,
+            "size_bytes": stat.st_size,
+            "num_cookies": len(cookie_lines),
+            "cookie_names": cookie_names,
+            "has_login_cookies": has_login_cookies,
+            "self_managed": self_managed,
+            "managed_by": managed_by,
+            "last_modified": datetime.fromtimestamp(stat.st_mtime, tz=timezone.utc).isoformat(),
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/admin/diag-audio", methods=["GET", "POST"])
+def admin_diag_audio():
+    """
+    Run the audio waterfall (yt-dlp → Cobalt → Piped) against a query and
+    return per-step success/error/timing as JSON. Lets you see exactly which
+    leg failed for any given track without digging through Render logs.
+
+    Usage: GET /api/admin/diag-audio?secret=...&q=Black+Magic+Woman+Santana
+    """
+    auth_err = _check_admin_auth()
+    if auth_err:
+        return auth_err
+
+    query = (request.args.get("q") or
+             (request.get_json(silent=True) or {}).get("q") or "").strip()
+    if not query:
+        return jsonify({"error": "missing 'q' query parameter"}), 400
+
+    import time
+    import shutil as _shutil
+    from downloader import (
+        download_audio_from_youtube,
+        _download_via_cobalt,
+        _download_via_piped,
+        UPLOAD_DIR,
+    )
+
+    diag_job_id = f"diag-{uuid.uuid4().hex[:8]}"
+    out_dir = UPLOAD_DIR / diag_job_id
+
+    def _run_step(name, fn):
+        t0 = time.time()
+        try:
+            path = fn()
+            return {
+                "step": name,
+                "success": True,
+                "duration_s": round(time.time() - t0, 2),
+                "audio_file": Path(path).name if path else None,
+                "size_bytes": Path(path).stat().st_size if path and Path(path).exists() else 0,
+            }
+        except Exception as e:
+            return {
+                "step": name,
+                "success": False,
+                "duration_s": round(time.time() - t0, 2),
+                "error": str(e)[:500],
+                "error_type": type(e).__name__,
+            }
+
+    results = []
+    try:
+        results.append(_run_step("yt-dlp", lambda: download_audio_from_youtube(query, diag_job_id)))
+        if not results[-1]["success"]:
+            results.append(_run_step("cobalt", lambda: _download_via_cobalt(query, diag_job_id)))
+        if not results[-1]["success"]:
+            results.append(_run_step("piped", lambda: _download_via_piped(query, diag_job_id)))
+    finally:
+        # Clean up the diag directory — we don't keep diagnostic downloads
+        if out_dir.exists():
+            try:
+                _shutil.rmtree(out_dir)
+            except Exception:
+                pass
+
+    first_success = next((r for r in results if r["success"]), None)
+    return jsonify({
+        "query": query,
+        "first_success": first_success["step"] if first_success else None,
+        "would_show_upload_required": first_success is None,
+        "steps": results,
+    })
 
 
 # ── Demo routes ────────────────────────────────────────────────────────────────
