@@ -7,7 +7,13 @@
 </p>
 
 <p align="center">
-  <a href="https://www.riffdlabs.com"><strong>Live Product →</strong></a>
+  <a href="https://www.riffdlabs.com"><strong>Live Product →</strong></a> · <a href="https://www.youtube.com/watch?v=k2qboWUzJxE"><strong>Demo Video →</strong></a>
+</p>
+
+<p align="center">
+  <a href="https://www.youtube.com/watch?v=k2qboWUzJxE">
+    <img src="https://img.youtube.com/vi/k2qboWUzJxE/maxresdefault.jpg" alt="Riffd demo video" width="640" />
+  </a>
 </p>
 
 ---
@@ -19,6 +25,20 @@ Riffd takes any song and breaks it into its components — isolated stems, detec
 The [Demo Library](https://www.riffdlabs.com/demo) has pre-analyzed tracks available instantly if you want to skip the wait.
 
 Solo-built and deployed. Real infrastructure, real users.
+
+---
+
+## How It Works
+
+<p align="center">
+  <a href="assets/workflow.pdf">
+    <img src="assets/workflow.png" alt="Riffd user journey and AI pipeline diagram" width="900" />
+  </a>
+</p>
+
+<p align="center">
+  <em>User journey and AI pipeline at a glance — <a href="assets/workflow.pdf">PDF version</a></em>
+</p>
 
 ---
 
