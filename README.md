@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  Break down real songs. See how they actually work.
+  Break down songs. Understand how they work.
 </p>
 
 <p align="center">
@@ -18,17 +18,17 @@
 
 ---
 
-## What It Is
+## Overview
 
-Riffd takes any song and breaks it into its components — isolated stems, detected key and tempo, lyrics, and theory context — in one place. Search a track, trigger an analysis, and within a few minutes you can hear the individual parts, explore what key it's in, and discover other songs built on the same harmonic logic.
+Riffd decomposes any song into its musical components — isolated stems, detected key and tempo, lyrics, and theory context — in a single interface. Users search a track, trigger an analysis, and within minutes can audition individual instruments, examine harmonic structure, and discover related songs built on similar musical foundations.
 
-The [Demo Library](https://www.riffdlabs.com/demo) has pre-analyzed tracks available instantly if you want to skip the wait.
+The [Demo Library](https://www.riffdlabs.com/demo) provides pre-analyzed tracks for immediate exploration.
 
-Solo-built and deployed. Real infrastructure, real users.
+Solo-built, deployed, and operating in production with real users.
 
 ---
 
-## How It Works
+## Architecture
 
 <p align="center">
   <img src="assets/workflow.png" alt="Riffd user journey and AI pipeline diagram" width="900" />
@@ -36,63 +36,63 @@ Solo-built and deployed. Real infrastructure, real users.
 
 ---
 
-## Why I Built It
+## Motivation
 
-The insight you get from hearing an isolated bass line is different when you can also see the key, the diatonic chords, and why the progression works — all at once. Those connections don't exist when the tools don't talk to each other. Riffd is the version where they do.
-
----
-
-## Product Decisions Worth Explaining
-
-**Build for failure, not the happy path.** YouTube blocks requests. Replicate times out. The Claude API returns malformed JSON. The app only became genuinely usable once every external dependency had an explicit fallback and every failure surfaced a clear next step rather than a broken state.
-
-**Silent queue promotion.** When the concurrent job limit is hit, users are queued and promoted automatically when a slot opens — no error message, no manual retry. The degraded state is invisible.
-
-**Partial results over nothing.** The pipeline has five stages. If one fails, the rest still render. A user always gets something rather than a blank screen.
-
-**Prefetch on selection.** Full-track download starts the moment a user selects a song, before they click anything. By the time they trigger analysis, the audio is usually already waiting.
+Hearing an isolated bass line is one form of musical insight. Seeing the key, the diatonic chords, and the underlying harmonic logic at the same time is another. Existing tools treat these as separate concerns. Riffd integrates them.
 
 ---
 
-## What It Does
+## Engineering Decisions
 
-**Stem separation** — GPU-accelerated neural source separation via Demucs, isolating vocals, bass, drums, guitar, piano, and other instruments in ~20 seconds on cloud GPU.
+**Resilience-first design.** External services fail routinely: YouTube blocks requests, Replicate times out, and the Claude API occasionally returns malformed JSON. Every external dependency in Riffd has an explicit fallback, and every failure surfaces a clear recovery path rather than a broken state.
 
-**Interactive mixer** — stems sorted by instrument family, with per-stem volume faders, mute, solo, real-time pitch transposition across all stems simultaneously (±12 semitones), loop controls, karaoke mode, and a Full Mix reset that restores energy-balanced defaults.
+**Silent queue promotion.** When concurrent job limits are reached, users are queued and promoted automatically as slots open. Riffd surfaces no error message and requires no manual retry — the degraded state is invisible to the user.
 
-**Key + tempo detection** — derived from the audio signal via Essentia, not pulled from metadata.
+**Graceful degradation.** The analysis pipeline has five stages with per-stage error isolation. If one stage fails, the remaining stages still render. Users receive whatever Riffd successfully produced rather than a blank screen.
 
-**Key panel** — detected key with its full diatonic chord set, common progressions, relative and parallel key relationships, and a tonality map. Links into the Theory Studio for deeper reference.
+**Prefetch on selection.** Full-track download begins the moment a user selects a song, before any explicit action is taken. By the time analysis is triggered, the audio is typically already cached.
 
-**Smart recommendations** — song discovery driven by musical DNA: matching chord progressions, shared key and tempo, or specific harmonic techniques. Built on harmonic analysis, not collaborative filtering or listening history.
+---
 
-**Lyrics** — full text with section structure.
+## Features
 
-**Theory Studio** — interactive reference for chords, scales, progressions, and keys across every root note, with LLM-powered natural language search.
+**Stem separation.** GPU-accelerated neural source separation via Demucs, isolating vocals, bass, drums, guitar, piano, and other instruments in approximately 20 seconds on cloud GPU.
 
-**Shareable analysis** — every completed analysis gets a permanent URL.
+**Interactive mixer.** Stems organized by instrument family, with per-stem volume faders, mute, solo, real-time pitch transposition across all stems simultaneously (±12 semitones), loop controls, karaoke mode, and a Full Mix reset that restores energy-balanced defaults.
 
-**Per-stem download** — any separated stem is available as an audio file.
+**Key and tempo detection.** Derived directly from the audio signal via Essentia, not pulled from metadata.
 
-**Demo mode** — pre-analyzed tracks across multiple genres, available instantly with no processing required. Filterable by genre.
+**Key panel.** Detected key with full diatonic chord set, common progressions, relative and parallel key relationships, and a tonality map. Links into the Theory Studio for deeper reference.
+
+**Smart recommendations.** Song discovery driven by musical structure: matching chord progressions, shared key and tempo, or specific harmonic techniques. Built on harmonic analysis rather than collaborative filtering or listening history.
+
+**Lyrics.** Full text with section structure.
+
+**Theory Studio.** Interactive reference for chords, scales, progressions, and keys across every root note, with LLM-powered natural language search.
+
+**Shareable analysis.** Every completed analysis receives a permanent URL.
+
+**Per-stem download.** Any separated stem is available as an audio file.
+
+**Demo mode.** Pre-analyzed tracks across multiple genres, available instantly with no processing required. Filterable by genre.
 
 ---
 
 ## Technical Highlights
 
-**Audio acquisition.** Full-track download via yt-dlp with dual-binary retry, bot detection bypass, and proxy support. Falls back through Cobalt and Piped APIs before surfacing an upload prompt — no silent degradation to a short preview. Background prefetch fires on song selection so the download is usually complete before the user starts analysis.
+**Audio acquisition.** Full-track download via yt-dlp with dual-binary retry, bot detection bypass, and proxy support. Riffd falls back through Cobalt and Piped APIs before surfacing an upload prompt, rather than silently degrading to a short preview. Background prefetch fires on song selection, so the download is typically complete before the user begins analysis.
 
-**GPU stem separation.** Demucs (htdemucs_6stems) runs on cloud GPU via Replicate's file API. Separation completes in ~20 seconds. STFT-domain panning analysis then refines each stem by stereo position — center, left-panned, right-panned — with RMS energy gating to suppress ghost components below threshold.
+**GPU stem separation.** Demucs (htdemucs_6stems) runs on cloud GPU via Replicate's file API, completing separation in approximately 20 seconds. STFT-domain panning analysis then refines each stem by stereo position — center, left-panned, right-panned — with RMS energy gating to suppress ghost components below threshold.
 
-**ML pipeline with progressive delivery.** Stem separation (Demucs), pitch extraction (Basic Pitch / TensorFlow), and key/BPM detection (Essentia) run as one end-to-end pipeline with per-stage error isolation. Key and BPM results are pushed to the frontend as they complete, so the user sees them before stems finish loading. Basic Pitch output is further decomposed into lead and accompaniment layers per stem, reusing pre-computed note events to avoid redundant inference passes.
+**ML pipeline with progressive delivery.** Stem separation (Demucs), pitch extraction (Basic Pitch / TensorFlow), and key/BPM detection (Essentia) run as one end-to-end pipeline with per-stage error isolation. Key and BPM results are pushed to the frontend as they complete, so users see them before stems finish loading. Basic Pitch output is further decomposed into lead and accompaniment layers per stem, reusing pre-computed note events to avoid redundant inference passes.
 
-**Mixer and audio engine.** Faders initialize proportional to each stem's RMS energy so the starting mix is balanced without manual adjustment. Real-time pitch transposition applies `AudioBufferSourceNode.detune` across all active stems simultaneously, keeping them phase-coherent.
+**Mixer and audio engine.** Faders initialize proportional to each stem's RMS energy, producing a balanced starting mix without manual adjustment. Real-time pitch transposition applies `AudioBufferSourceNode.detune` across all active stems simultaneously, maintaining phase coherence.
 
-**LLM-powered insight.** Claude Haiku generates named progressions, key context, and theory-based recommendations from detected key, tempo, and lyrics. It also predicts likely instrumentation before analysis starts — the output is used to guide stem label assignment in Demucs. The Theory Studio's natural language search routes through the same model. All outputs are constrained to strict JSON. Recommendations regenerate independently — no need to re-run the full analysis pipeline.
+**LLM-powered insight.** Claude Haiku generates named progressions, key context, and theory-based recommendations from detected key, tempo, and lyrics. The model also predicts likely instrumentation before analysis starts, guiding stem label assignment in Demucs. The Theory Studio's natural language search routes through the same model. All outputs are constrained to strict JSON. Recommendations regenerate independently, eliminating the need to re-run the full analysis pipeline.
 
-**Performance.** Audio downloads as MP3 to skip transcoding (10x smaller than WAV). Stems are re-encoded to 192kbps MP3 post-analysis before being served (20x reduction). Heavy Python imports — numpy, TensorFlow, Basic Pitch — are deferred to first job execution, keeping startup RSS around 40MB instead of 300MB.
+**Performance.** Audio downloads as MP3 to skip transcoding (10x smaller than WAV). Stems are re-encoded to 192 kbps MP3 post-analysis before being served (20x reduction). Heavy Python imports — numpy, TensorFlow, Basic Pitch — are deferred to first job execution, keeping startup RSS at approximately 40 MB instead of 300 MB.
 
-**Memory and cleanup.** TensorFlow sessions are explicitly cleared after each job via `keras.backend.clear_session()` to prevent memory compounding across sequential runs. Completed jobs are pruned from memory after 10 minutes; job directories from disk after 7 days.
+**Memory and cleanup.** TensorFlow sessions are explicitly cleared after each job via `keras.backend.clear_session()` to prevent memory compounding across sequential runs. Completed jobs are pruned from memory after 10 minutes; job directories are removed from disk after 7 days.
 
 ---
 
@@ -111,13 +111,13 @@ The insight you get from hearing an isolated bass line is different when you can
 | Recommendations | Last.fm API |
 | Frontend | Vanilla JS / Web Audio API |
 | Database | SQLite |
-| Deployment | Render (Standard, 2GB) |
+| Deployment | Render (Standard, 2 GB) |
 
 ---
 
 ## Status
 
-Live and in public beta. The full pipeline runs end-to-end — search, acquire, separate, analyze, recommend, display.
+Live and in public beta. The full pipeline runs end-to-end: search, acquire, separate, analyze, recommend, display.
 
 ---
 
