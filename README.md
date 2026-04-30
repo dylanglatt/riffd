@@ -31,13 +31,7 @@ Solo-built and deployed. Real infrastructure, real users.
 ## How It Works
 
 <p align="center">
-  <a href="assets/workflow.pdf">
-    <img src="assets/workflow.png" alt="Riffd user journey and AI pipeline diagram" width="900" />
-  </a>
-</p>
-
-<p align="center">
-  <em>User journey and AI pipeline at a glance — <a href="assets/workflow.pdf">PDF version</a></em>
+  <img src="assets/workflow.png" alt="Riffd user journey and AI pipeline diagram" width="900" />
 </p>
 
 ---
