@@ -28,6 +28,37 @@ Solo-built, deployed, and operating in production with real users.
 
 ---
 
+## Glossary
+
+A few terms used throughout this README that may not be familiar to all readers.
+
+**Music and audio**
+
+- **Stems** — Individual instrument tracks (vocals, drums, bass, guitar, etc.) extracted from a finished, mixed song.
+- **Stem separation** — The process of isolating those tracks from a single mixed recording, typically using a neural network.
+- **Key** — The tonal center of a song (e.g., C major, A minor); determines which notes and chords sound "in" or "out."
+- **BPM** — Beats per minute; the tempo of a song.
+- **Diatonic chords** — The seven chords that occur naturally within a given key.
+- **Pitch transposition** — Shifting audio up or down in pitch by a fixed amount.
+- **Semitone** — The smallest standard interval in Western music; one fret on a guitar, one key on a piano.
+- **Phase coherence** — The condition where multiple audio sources stay in correct timing alignment with each other; loss of coherence produces audible artifacts.
+- **RMS energy** — Root-mean-square level of an audio signal; a standard measure of perceived loudness.
+- **STFT** — Short-Time Fourier Transform; converts audio into a time-versus-frequency representation used for analysis.
+
+**Tools and services**
+
+- **Demucs** — Open-source neural source-separation model from Meta AI; used here to split a song into stems.
+- **Basic Pitch** — Spotify's open-source model for detecting individual notes in audio.
+- **Essentia** — Open-source audio analysis library; used here for key and tempo detection.
+- **librosa** — Python library for general-purpose audio analysis.
+- **Replicate** — Cloud platform that runs ML models on GPU and exposes them over an API.
+- **yt-dlp** — Open-source command-line tool for downloading audio from YouTube and similar sources.
+- **Cobalt / Piped** — Alternative open-source services for retrieving YouTube media when the primary path fails.
+- **LLM** — Large language model (e.g., Claude); a generative AI model that produces text from a prompt.
+- **Collaborative filtering** — Recommendation technique that suggests items based on what similar users have liked, rather than on the content itself.
+
+---
+
 ## Architecture
 
 <p align="center">
@@ -118,10 +149,6 @@ Hearing an isolated bass line is one form of musical insight. Seeing the key, th
 ## Status
 
 Live and in public beta. The full pipeline runs end-to-end: search, acquire, separate, analyze, recommend, display.
-
----
-
-## About
 
 Solo project by **Dylan Glatt** — New York, NY.
 
