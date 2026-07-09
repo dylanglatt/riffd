@@ -1,5 +1,6 @@
 flask>=3.0
 python-dotenv>=1.0
+sentry-sdk[flask]>=2.0
 requests>=2.31
 demucs>=4.0
 basic-pitch>=0.3

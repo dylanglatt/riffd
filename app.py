@@ -45,6 +45,16 @@ if _venv_bin and _venv_bin not in os.environ.get("PATH", "").split(os.pathsep):
 from flask import Flask, render_template, request, jsonify, send_from_directory, session, redirect, url_for, make_response, send_file
 from werkzeug.utils import secure_filename
 
+# Crash reporting → Sentry (alerts land in Discord #stem-tab-app).
+# Errors only — no performance tracing, no PII. Override DSN with SENTRY_DSN.
+import sentry_sdk
+sentry_sdk.init(
+    dsn=os.environ.get(
+        "SENTRY_DSN",
+        "https://1ac569b84e912bfa506052822e0197cc@o4511632555048960.ingest.us.sentry.io/4511702332538880",
+    ),
+)
+
 # Heavy processing modules deferred — loaded on first job, not at boot
 # processor.py pulls in numpy, pandas, basic_pitch (~200MB+)
 # music_intelligence.py pulls in numpy, pandas
