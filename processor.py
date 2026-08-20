@@ -534,26 +534,30 @@ def _stereo_separate(left, right):
     del left_p, right_p
     _log_mem("[stereo_separate] after STFT loop")
 
-    # Normalize overlap-add — upcast to float32 for division precision
-    norm = np.maximum(win_sq[:orig_len].astype(np.float32), 1e-8)
+    # Normalize overlap-add. The accumulators are already float32 (they were
+    # float16 when this was written), so copy=False makes each of these a view
+    # instead of a full-length copy — seven of them, ~50MB each on a 5-min track.
+    # The .astype in the STFT loop above is NOT redundant: np.fft.irfft returns
+    # float64, so that one is a real conversion.
+    norm = np.maximum(win_sq[:orig_len].astype(np.float32, copy=False), 1e-8)
     del win_sq
 
     components = {}
 
-    cl = c_l[:orig_len].astype(np.float32) / norm
-    cr = c_r[:orig_len].astype(np.float32) / norm
+    cl = c_l[:orig_len].astype(np.float32, copy=False) / norm
+    cr = c_r[:orig_len].astype(np.float32, copy=False) / norm
     del c_l, c_r
     if _rms((cl + cr) / 2) > SILENCE_THRESHOLD:
         components["center"] = (cl, cr)
 
-    ll = p_ll[:orig_len].astype(np.float32) / norm
-    lr = p_lr[:orig_len].astype(np.float32) / norm
+    ll = p_ll[:orig_len].astype(np.float32, copy=False) / norm
+    lr = p_lr[:orig_len].astype(np.float32, copy=False) / norm
     del p_ll, p_lr
     if _rms(ll) > SILENCE_THRESHOLD * 0.5:
         components["left"] = (ll, lr)
 
-    rl = p_rl[:orig_len].astype(np.float32) / norm
-    rr = p_rr[:orig_len].astype(np.float32) / norm
+    rl = p_rl[:orig_len].astype(np.float32, copy=False) / norm
+    rr = p_rr[:orig_len].astype(np.float32, copy=False) / norm
     del p_rl, p_rr, norm
     if _rms(rr) > SILENCE_THRESHOLD * 0.5:
         components["right"] = (rl, rr)
@@ -1493,8 +1497,6 @@ def separate_stems(audio_path: str, song_id: str, progress_callback=None,
           print(f"[processor] cleaned {_raw_cleaned} _raw_* intermediate files")
 
     _log_mem(f"[separate_stems] post-refine ({len(refined)} stems)")
-    # Melodic split pass is now called from app.py after note extraction,
-    # so pre-computed note events can be reused (avoids redundant TF inference).
     _log_mem(f"[separate_stems] done ({len(refined)} stems)")
 
     # If backing vocals exist, promote "Vocals" → "Lead Vocals" for clarity

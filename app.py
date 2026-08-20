@@ -1051,9 +1051,10 @@ def process_audio(job_id):
         # parent, so the parent must stay under roughly 2048-1200 = ~850MB at that
         # stage. A lean parent is ~40MB (heavy imports are deferred), so anything
         # above ~1400MB at job start means something has already leaked. The known
-        # offender — the in-process TensorFlow load in _melodic_split_pass — was
-        # deleted in the previous commit; if this guard still trips, look for a new
-        # path loading TF into the parent instead of a child.
+        # offender was the in-process TensorFlow load in _melodic_split_pass, since
+        # deleted; basic_pitch now loads only via _ensure_pitch_imports(), which
+        # only the inference child calls. If this guard trips, look for a new path
+        # pulling TF into the parent.
         # Instrument with _log_memory and tune from real data.
         MEMORY_GUARD_MB = int(os.getenv("MEMORY_GUARD_MB", "1400"))
 

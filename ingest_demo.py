@@ -63,8 +63,8 @@ def convert_stems(job_dir: Path, dest_stems: Path) -> list[str]:
     stem_names = []
 
     # Build a per-stem source map: prefer WAV over MP3 for each stem individually.
-    # This handles mixed directories where some stems landed as WAV (e.g. from a
-    # melodic split that was in-flight when the server restarted) and others as MP3.
+    # This handles mixed directories where some stems landed as WAV (e.g. a job
+    # interrupted before its WAV->MP3 conversion pass) and others as MP3.
     stem_sources: dict[str, Path] = {}
     for stem_file in sorted(stems_dir.iterdir()):
         if stem_file.suffix not in (".wav", ".mp3"):

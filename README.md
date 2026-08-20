@@ -115,9 +115,9 @@ Hearing an isolated bass line is one form of musical insight. Seeing the key, th
 
 **GPU stem separation.** Demucs (htdemucs_6s) runs on cloud GPU via Replicate's file API, completing separation in approximately 20 seconds. STFT-domain panning analysis then refines each stem by stereo position — center, left-panned, right-panned — with RMS energy gating to suppress ghost components below threshold.
 
-**ML pipeline with progressive delivery.** Stem separation (Demucs), pitch extraction (Basic Pitch / TensorFlow), and key/BPM detection (Essentia) run as one end-to-end pipeline with per-stage error isolation. Key and BPM results are pushed to the frontend as they complete, so users see them before stems finish loading. Basic Pitch output is further decomposed into lead and accompaniment layers per stem, reusing pre-computed note events to avoid redundant inference passes.
+**ML pipeline with progressive delivery.** Stem separation (Demucs), pitch extraction (Basic Pitch / TensorFlow), and key/BPM detection (Essentia) run as one end-to-end pipeline with per-stage error isolation. Key and BPM results are pushed to the frontend as they complete, so users see them before stems finish loading. Pitch inference runs in a child process so its memory is reclaimed on exit rather than accumulating in the worker.
 
-**Mixer and audio engine.** Faders initialize proportional to each stem's RMS energy, producing a balanced starting mix without manual adjustment. Real-time pitch transposition applies `AudioBufferSourceNode.detune` across all active stems simultaneously, maintaining phase coherence.
+**Mixer and audio engine.** Faders open at unity — Demucs stems sum back to the original mix, so that is the balanced starting point. Real-time pitch transposition applies `AudioBufferSourceNode.detune` across all active stems simultaneously, maintaining phase coherence.
 
 **LLM-powered insight.** Claude Haiku generates named progressions, key context, and theory-based recommendations from detected key, tempo, and lyrics. The model also predicts likely instrumentation before analysis starts, guiding stem label assignment in Demucs. The Theory Studio's natural language search routes through the same model. All outputs are constrained to strict JSON. Recommendations regenerate independently, eliminating the need to re-run the full analysis pipeline.
 
