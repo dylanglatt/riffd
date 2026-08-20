@@ -324,6 +324,47 @@ def _log_memory(label=""):
         pass
 
 
+# ─── Job watchdog ────────────────────────────────────────────────────────────
+#
+# Two independent bounds, because "stuck" and "slow" are different failures:
+#
+#   STALL_TIMEOUT_S   no heartbeat for this long → the job is genuinely wedged.
+#   JOB_MAX_SECONDS   absolute backstop for a job that heartbeats forever.
+#
+# The watchdog used to measure time SINCE START, which conflates the two — and
+# the slow path here is legitimate and recoverable. processor.MAX_RETRIES is 3
+# separation attempts, each bounded by MAX_WAIT (420s) with 10s/15s backoff, so
+# one retry can reach 850s and three 1285s, all of it making steady progress.
+#
+# From the local logs: a retry fired on 1 of 15 separations and that one
+# SUCCEEDED on attempt 2 (it had failed on a 15s socket timeout, not by
+# exhausting MAX_WAIT — the common retry is cheap). Three further failures
+# carried the old collapsed "no downloadable stems" message that never matched
+# the retry classifier, fixed in e445898, so the retry path is about to engage
+# roughly 4x more often than those logs show. A 600s since-start watchdog would
+# have turned every one of those recoverable blips into a hard failure.
+#
+# MAX_WAIT cannot come down to compensate either: a healthy separation in the
+# same logs took 376.5s of its 420s budget.
+STALL_TIMEOUT_S = 300    # 5 min of silence. The longest legitimately quiet
+                         # stretch is one Basic Pitch child (120s cap), and that
+                         # loop heartbeats per stem.
+JOB_MAX_SECONDS = 1800   # 30 min. Backstop only — the stall bound should always
+                         # fire first on a real failure.
+
+
+def _touch_job(job_id):
+    """Heartbeat: record that this job just made progress.
+
+    What the watchdog measures. Anything that can run for a while without
+    changing the progress string should call this.
+    """
+    import time as _touch_time
+    job = jobs.get(job_id)
+    if job is not None:
+        job["_last_progress_at"] = _touch_time.time()
+
+
 def _dequeue_next():
     """Called when a processing slot opens — start the next queued job if one exists."""
     global _active_processing
@@ -331,8 +372,14 @@ def _dequeue_next():
         if _job_queue and _active_processing < MAX_CONCURRENT_JOBS:
             job_id, run_fn = _job_queue.popleft()
             if job_id in jobs:
+                import time as _dq_time
                 jobs[job_id]["status"] = "processing"
                 jobs[job_id]["progress"] = "Separating stems..."
+                # Restamp both clocks. _started_at was set before the job was
+                # queued, so without this a job that waited 5 minutes for a slot
+                # arrives with 5 minutes already charged against the watchdog.
+                jobs[job_id]["_started_at"] = _dq_time.time()
+                jobs[job_id]["_last_progress_at"] = _dq_time.time()
                 upsert_job_checkpoint(job_id, "processing", progress="Separating stems...")
             threading.Thread(target=run_fn, daemon=True).start()
 
@@ -1009,6 +1056,7 @@ def process_audio(job_id):
     jobs[job_id]["progress"] = ("Separating stems... (long track — this may take a few extra minutes)"
                                 if _is_long_track else "Separating stems...")
     jobs[job_id]["_started_at"] = _time_mod.time()
+    jobs[job_id]["_last_progress_at"] = _time_mod.time()
     upsert_job_checkpoint(job_id, "processing", progress="Separating stems...")
     print(f"[job {job_id}] process start analysis_mode=deep audio={audio_path}")
     log_event("deep_analysis_start", {"job_id": job_id, "audio_source": job.get("audio_source")})
@@ -1124,6 +1172,7 @@ def process_audio(job_id):
 
         def on_progress(msg):
             jobs[job_id]["progress"] = msg
+            _touch_job(job_id)
             print(f"[job {job_id}] [{_elapsed()}] progress: {msg}")
 
         def _fail(step, e):
@@ -1414,6 +1463,7 @@ def process_audio(job_id):
             jobs[job_id]["stems"] = {k: {"label": v.get("label", k), "energy": v.get("energy", 0), "active": v.get("active", True)} for k, v in stems.items()}
             jobs[job_id]["stems_ready"] = True
             jobs[job_id]["progress"] = "Stems ready — analyzing..."
+            _touch_job(job_id)
 
             active_stems = {k: v for k, v in stems.items() if v.get("active", True)}
             detected_bpm = 120.0
@@ -1497,6 +1547,7 @@ def process_audio(job_id):
                 # Logged so we can see queue time in Render logs.
                 if not _tf_inference_lock.acquire(blocking=False):
                     jobs[job_id]["progress"] = "Waiting for inference slot..."
+                    _touch_job(job_id)
                     print(f"[job {job_id}] [{_elapsed()}] TF lock busy — waiting...")
                     _tf_inference_lock.acquire()
                 print(f"[job {job_id}] [{_elapsed()}] TF lock acquired")
@@ -1506,6 +1557,7 @@ def process_audio(job_id):
                     label = stem_info.get("label", stem_key)
                     full_path = stem_info["path"]
                     print(f"[job {job_id}] [{_elapsed()}] Basic Pitch → {stem_key}...")
+                    _touch_job(job_id)   # per-stem: the progress string doesn't change here
 
                     # Truncate to first 90s for inference only — full WAV stays for playback.
                     # Basic Pitch scales linearly with duration; 90s captures the full
@@ -1596,6 +1648,7 @@ with open({_result_path!r}, "wb") as f:
 
                     gc.collect()
                     _log_memory(f"[job {job_id}] post-stem-inference ({stem_key})")
+                    _touch_job(job_id)
                     print(f"[job {job_id}] [{_elapsed()}] Basic Pitch → {stem_key} done ({len(ne) if ne is not None else 0} notes)")
                     return stem_key, ne
 
@@ -1796,14 +1849,6 @@ with open({_result_path!r}, "wb") as f:
     return jsonify({"status": "processing", "job_id": job_id})
 
 
-# Watchdog ceiling for a whole job. MUST stay below the frontend's
-# POLL_TIMEOUT_MS (11 min) so this fires first and the user sees the real
-# error rather than a generic "taking a while" overlay. The old pairing —
-# 1200s here against a 1140s client timeout — had exactly the inversion its
-# own comment warned about, so this watchdog's message never reached anyone.
-# 600s is ~4x the measured p50 of ~147s and above one MAX_WAIT (420s).
-JOB_TIMEOUT = 600
-
 @app.route("/api/status/<job_id>")
 def job_status(job_id):
     import time as _t
@@ -1812,13 +1857,23 @@ def job_status(job_id):
         return jsonify({"error": "Unknown job ID"}), 404
     job = jobs[job_id]
 
-    # Watchdog: force-expire stuck jobs
+    # Watchdog: force-expire stuck jobs.
+    # Stall first, absolute ceiling second — see STALL_TIMEOUT_S above for why
+    # this measures silence rather than total elapsed time.
     if job.get("status") == "processing" and job.get("_started_at"):
-        elapsed = _t.time() - job["_started_at"]
-        if elapsed > JOB_TIMEOUT:
-            print(f"[job {job_id}] WATCHDOG: job stuck for {elapsed:.0f}s, forcing error")
-            job.update({"status": "error", "error": f"Processing timed out after {int(elapsed)}s", "error_step": "timeout"})
-            upsert_job_checkpoint(job_id, "error", error=f"Processing timed out after {int(elapsed)}s")
+        _now = _t.time()
+        stalled = _now - (job.get("_last_progress_at") or job["_started_at"])
+        elapsed = _now - job["_started_at"]
+        _expire = None
+        if stalled > STALL_TIMEOUT_S:
+            _expire = f"no progress for {int(stalled)}s (last: {job.get('progress', 'unknown')!r})"
+        elif elapsed > JOB_MAX_SECONDS:
+            _expire = f"exceeded the {JOB_MAX_SECONDS}s ceiling at {int(elapsed)}s"
+        if _expire:
+            print(f"[job {job_id}] WATCHDOG: {_expire}, forcing error")
+            _msg = f"Processing timed out after {int(elapsed)}s"
+            job.update({"status": "error", "error": _msg, "error_step": "timeout"})
+            upsert_job_checkpoint(job_id, "error", error=_msg)
 
     # Only log status polls for terminal states (avoid noise from repeated polling)
     status = job.get("status", "")

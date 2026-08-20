@@ -1718,15 +1718,24 @@ function _buildWaveform() {
 }
 
 // ─── Processing ─────────────────────────────────────────────────────────────
-// Client gives up last. The ladder, measured p50 ~147s end to end:
+// The ladder, measured p50 ~147s end to end:
 //   ~147s  typical run, and what the CTA promises ("about 2-3 minutes")
+//   300s   app.STALL_TIMEOUT_S — backend errors a job that goes silent
 //   420s   processor.MAX_WAIT — ceiling for ONE cloud separation attempt
-//   600s   app.JOB_TIMEOUT — backend watchdog marks the job errored
-//   660s   this — so the watchdog fires ~1 min FIRST and the user sees the
-//          real error instead of a generic "taking a while" overlay.
-// Was 19 min against a 20 min JOB_TIMEOUT, which had that backwards: the
-// client bailed first and the backend's message never reached anyone.
-const POLL_TIMEOUT_MS = 11 * 60 * 1000;
+//   ~850s  a separation that burns one full attempt then retries and succeeds
+//   1200s  this
+//   1800s  app.JOB_MAX_SECONDS — backend backstop for a job that heartbeats
+//          forever without finishing
+//
+// A WEDGED job is caught by the 300s stall bound, always far ahead of this, so
+// the user still gets the backend's real error rather than a generic "taking a
+// while" overlay. This bound only governs a job that is genuinely progressing,
+// and 20 min covers a full worst-case separation retry with room.
+//
+// Do NOT tighten this toward the p50. It was briefly 11 min, paired with a
+// 600s since-start watchdog, which made the separation retry path unreachable —
+// see the comment above STALL_TIMEOUT_S in app.py.
+const POLL_TIMEOUT_MS = 20 * 60 * 1000;
 let _pollStartTime = 0;
 
 function _resetLoadingUI() {
