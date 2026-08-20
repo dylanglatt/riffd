@@ -107,6 +107,102 @@ Bump `ANALYSIS_VERSION` in `cache_version.py` when the pipeline changes what get
 stored — removing stem types counts. `db.py` is the only consumer; a bump makes every
 older cache "unavailable" so tracks re-analyze once.
 
+## Timeouts — the watchdog measures stall, not elapsed
+
+Measured p50 for a full analysis is **~147 s** end to end. Every number below is
+positioned against that, and the ordering between them is load-bearing.
+
+| Bound | Where | Value | What it means |
+|---|---|---|---|
+| `STALL_TIMEOUT_S` | `app.py` | 300 s | No heartbeat for this long → the job is wedged, error it |
+| `MAX_WAIT` | `processor.py` | `min(420 + extra, 1500)` | Ceiling for **one** cloud separation attempt |
+| `JOB_MAX_SECONDS` | `app.py` | 1800 s | Absolute backstop for a job that heartbeats forever |
+| `POLL_TIMEOUT_MS` | `decompose.html` | 20 min | Client stops polling |
+
+**The watchdog in `job_status()` measures silence, not total elapsed time.** It
+used to do the latter, which conflates "stuck" with "slow" — and the slow path
+here is legitimate and recoverable. Measuring stall is strictly better on both
+axes: a wedged job dies in ~5 min instead of 20, and a slow-but-progressing job
+is no longer punished for being slow.
+
+### `_touch_job()` is the heartbeat — and the rule that follows
+
+`_touch_job(job_id)` stamps `_last_progress_at`. That timestamp is the only
+thing standing between a long phase and the watchdog. It is called from:
+
+- `on_progress()` — covers separation (which ticks every `POLL_INTERVAL` = 3 s
+  through its own Replicate poll loop), key/structure, and insight
+- the `"Stems ready — analyzing..."` transition
+- the `"Waiting for inference slot..."` branch
+- the Basic Pitch loop, **twice per stem** (before and after each child)
+
+That last one is the point of the rule:
+
+> **Any new phase that can run quiet for minutes must call `_touch_job()`, or
+> the watchdog will kill its jobs.** "Quiet" means not changing the progress
+> string — a stage can be working hard and still look dead from here.
+
+Basic Pitch is the live example: a child process per stem, up to 120 s each,
+with no progress-string change for the whole loop. Without its per-stem
+heartbeats a six-stem track would go silent for far longer than
+`STALL_TIMEOUT_S` and be killed mid-inference.
+
+There is one known gap, currently unreachable: the blocking
+`_tf_inference_lock.acquire()` heartbeats once and then waits indefinitely. Safe
+only because `MAX_CONCURRENT_JOBS` defaults to 1, so the lock is uncontended.
+Raising that env var without adding a heartbeat there reintroduces the bug.
+
+### `MAX_WAIT` is not a duration estimate — don't tune it down
+
+It bounds **one** separation attempt, and `separate_stems()` makes up to
+`MAX_RETRIES = 3` of them with 10 s/15 s backoff between. So one retry reaches
+~850 s and three ~1285 s on a normal track, all of it progressing normally.
+
+Two measurements from `logs/riffd.log` (15 separations) that fix the trade:
+
+- A **healthy separation took 376.5 s** of its 420 s base budget — 44 s of
+  headroom. Lowering `MAX_WAIT` kills legitimate separations.
+- A retry fired once and **succeeded on attempt 2**. It had failed on a 15 s
+  socket timeout, not by exhausting `MAX_WAIT`, so the common retry is cheap and
+  ~850 s is the pathological branch, not the typical one.
+
+Three further failures in those logs carried the old collapsed
+`"no downloadable stems"` message, which matched none of the retry classifier's
+patterns and so never retried at all. That is fixed, so the retry path now
+engages roughly 4× more often than those logs show.
+
+A watchdog short enough to cut a retry short converts a recoverable blip into a
+guaranteed failure. That regression has already been shipped once — don't
+re-derive it.
+
+**Known edge:** `MAX_WAIT` scales with track length (up to 1500 s, and
+`MAX_TRACK_MINUTES` allows 20-minute tracks), so a long track that retries can
+exceed `JOB_MAX_SECONDS` while still progressing and be cut off by the backstop.
+The stall bound governs every realistic failure, so this has not been tuned —
+but it is the first thing to revisit if long tracks start timing out.
+
+### Queue wait is not processing time
+
+`_started_at` is stamped when the request arrives, before the job may sit in
+`_job_queue` waiting for a slot. `_dequeue_next()` therefore **restamps both
+`_started_at` and `_last_progress_at`** when the job actually begins. Without
+that, a job that queued for five minutes arrives with five minutes already
+charged against the watchdog. Jobs with no `_last_progress_at` fall back to
+`_started_at`.
+
+### The ordering constraint
+
+A **wedged** job must be caught by `STALL_TIMEOUT_S` well before
+`POLL_TIMEOUT_MS`, so the user sees the backend's real error rather than the
+client's generic "taking a while" overlay. A **progressing** job must be allowed
+to outlive a successful separation retry (~850 s of separation plus ~150 s of
+pipeline), which is why the client sits at 20 min and not near the p50.
+
+Getting this backwards is a silent failure: the client gives up first and the
+backend's diagnosis never reaches anyone. It shipped that way once, with a
+19-minute client against a 20-minute server bound, and the comment on the server
+constant asserted the opposite of what the numbers did.
+
 ## State model
 
 Single gunicorn worker (`workers = 1`, sync). Everything is per-process: the `jobs`
@@ -123,7 +219,9 @@ silently frees another thread's lock. Track acquisition with an explicit flag.
 - **No test suite.** Verify by running the app and exercising the real path; don't
   claim something works because it compiles. `python -m py_compile` is a floor, not
   a check.
-- Work on a branch. `main` frequently has uncommitted changes.
+- `main` is the trunk and tracks `origin/main`; the `pipeline-fixes` work has
+  been merged and the branch deleted. It is currently clean, so check
+  `git status` before assuming otherwise rather than branching reflexively.
 - `app.py` is ~2,240 lines with a 734-line function (`process_audio`/`run()`).
   Several live bugs exist *only* because that control flow is too long to hold in
   one's head. Prefer extracting a stage over adding to it. Stage boundaries are
