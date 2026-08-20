@@ -386,21 +386,38 @@ def _read_wav(filepath):
 
 
 def _write_wav(filepath, left, right, sr):
-    """Write stereo 16-bit WAV."""
-    interleaved = np.column_stack([left, right])
-    # Round (not truncate) and apply 1-LSB TPDF dither. .astype(int16) alone
-    # truncates toward zero — ~6 dB worse than rounding, and the error is
-    # DC-correlated rather than a flat noise floor (audible grunge on fades).
-    _scaled = np.clip(interleaved, -1.0, 1.0) * 32767.0
-    _dither = (np.random.random(_scaled.shape) - np.random.random(_scaled.shape)).astype(np.float32)
-    data = np.clip(np.round(_scaled + _dither), -32768, 32767).astype(np.int16)
-    del interleaved
+    """
+    Write stereo 16-bit WAV with rounding + TPDF dither, streamed in chunks.
+
+    Chunked because the whole-track version allocated ~815MB of transient on a
+    5-minute track: np.random.random() returns FLOAT64 regardless of the audio's
+    dtype, so two full-length noise arrays plus their difference dwarfed the
+    float32 signal being dithered. On a 2GB instance that alone could OOM.
+
+    Peak transient is now a function of CHUNK, not track length.
+    """
+    n = min(len(left), len(right))
+    CHUNK = 1 << 20                      # ~1M frames ≈ 8MB of float32 work per pass
+    rng = np.random.default_rng()
+
     with wave.open(str(filepath), "wb") as wf:
         wf.setnchannels(2)
         wf.setsampwidth(2)
         wf.setframerate(sr)
-        wf.writeframes(data.tobytes())
-    del data
+        for s in range(0, n, CHUNK):
+            e = min(s + CHUNK, n)
+            blk = np.empty((e - s, 2), dtype=np.float32)
+            blk[:, 0] = left[s:e]
+            blk[:, 1] = right[s:e]
+            np.clip(blk, -1.0, 1.0, out=blk)
+            blk *= 32767.0
+            # TPDF dither, float32 end to end (Generator.random honours dtype)
+            d = rng.random((e - s, 2), dtype=np.float32)
+            d -= rng.random((e - s, 2), dtype=np.float32)
+            blk += d
+            np.round(blk, out=blk)
+            np.clip(blk, -32768.0, 32767.0, out=blk)   # clip AFTER dither — no wraparound
+            wf.writeframes(blk.astype(np.int16).tobytes())
 
 
 def _rms(samples):
