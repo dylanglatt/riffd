@@ -910,10 +910,12 @@ function _pollPrefetch(pfId) {
 }
 
 function _energyToVolume(energy) {
-  if (energy == null || energy === 0) return 85;
-  if (energy >= 0.15) return 100;
-  if (energy >= 0.05) return Math.round(60 + ((energy - 0.05) / 0.10) * 40);
-  return 40;
+  // Start every fader at unity. Demucs stems already sum back to the original
+  // mix, so unity IS the balanced starting point. The old curve pushed quiet
+  // stems DOWN (a lead guitar at RMS 0.04 opened at 40%), which is backwards —
+  // a low-RMS stem is already quiet in the mix, and attenuating it further is
+  // what makes users think the instrument was never separated out.
+  return 100;
 }
 
 function _getStemRoot(stemKey) {

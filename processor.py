@@ -6,7 +6,7 @@ Imports (numpy, pandas, basic_pitch) are deferred via _ensure_imports().
 
 Pipeline (called by app.py process_audio deep path):
   1. separate_stems()  — Demucs subprocess → stereo refinement → labeled WAV stems
-     - Tries htdemucs_6stems first, falls back to htdemucs 4-stem
+     - Tries htdemucs_6s first, falls back to htdemucs 4-stem
      - Can use Replicate hosted GPU via USE_HOSTED_SEPARATION env var
      - Output: {stem_key: {path, energy, active, label}} saved to outputs/<job_id>/stems/
      - Execution time: 2-5 min on CPU, ~20s on GPU (Replicate)
@@ -185,7 +185,7 @@ UPLOAD_DIR = Path("uploads")
 OUTPUT_DIR = Path("outputs")
 
 # ─── Demucs Configuration ────────────────────────────────────────────────────
-DEMUCS_MODEL = "htdemucs_6stems"
+DEMUCS_MODEL = "htdemucs_6s"  # was "htdemucs_6stems" — not a real model name, so the first run always failed
 STEM_NAMES_6 = ["vocals", "drums", "bass", "guitar", "piano", "other"]
 STEM_NAMES_4 = ["vocals", "drums", "bass", "other"]
 
@@ -388,7 +388,12 @@ def _read_wav(filepath):
 def _write_wav(filepath, left, right, sr):
     """Write stereo 16-bit WAV."""
     interleaved = np.column_stack([left, right])
-    data = (np.clip(interleaved, -1.0, 1.0) * 32767).astype(np.int16)
+    # Round (not truncate) and apply 1-LSB TPDF dither. .astype(int16) alone
+    # truncates toward zero — ~6 dB worse than rounding, and the error is
+    # DC-correlated rather than a flat noise floor (audible grunge on fades).
+    _scaled = np.clip(interleaved, -1.0, 1.0) * 32767.0
+    _dither = (np.random.random(_scaled.shape) - np.random.random(_scaled.shape)).astype(np.float32)
+    data = np.clip(np.round(_scaled + _dither), -32768, 32767).astype(np.int16)
     del interleaved
     with wave.open(str(filepath), "wb") as wf:
         wf.setnchannels(2)
@@ -427,17 +432,22 @@ def _stereo_separate(left, right):
 
     n_frames = (out_len - N) // hop + 1
 
-    # Output accumulators — float16 halves memory (~177MB savings for 5-min song).
-    # Per-frame STFT math stays float32; results are cast to float16 before accumulation.
-    # Final output is normalized and truncated to 16-bit PCM, so float16 precision suffices.
-    c_l = np.zeros(out_len, dtype=np.float16)
-    c_r = np.zeros(out_len, dtype=np.float16)
-    p_ll = np.zeros(out_len, dtype=np.float16)
-    p_lr = np.zeros(out_len, dtype=np.float16)
-    p_rl = np.zeros(out_len, dtype=np.float16)
-    p_rr = np.zeros(out_len, dtype=np.float16)
-    win_sq = np.zeros(out_len, dtype=np.float16)
-    win_f16 = win.astype(np.float16)
+    # Output accumulators — float32.
+    # NOTE: these were float16 to save ~177MB on a 5-min song. Measured cost of
+    # that: overlap-add reconstruction SNR drops from 141 dB to 66 dB — roughly
+    # 11-bit audio, i.e. 30 dB WORSE than the 16-bit PCM container it is written
+    # into. The error is signal-correlated, so it sounds like gritty distortion
+    # riding on the music (loudest in solo'd stems and decays), not like hiss.
+    # If memory becomes the constraint again, block-process in 30s chunks with
+    # N-sample overlap rather than reducing precision.
+    c_l = np.zeros(out_len, dtype=np.float32)
+    c_r = np.zeros(out_len, dtype=np.float32)
+    p_ll = np.zeros(out_len, dtype=np.float32)
+    p_lr = np.zeros(out_len, dtype=np.float32)
+    p_rl = np.zeros(out_len, dtype=np.float32)
+    p_rr = np.zeros(out_len, dtype=np.float32)
+    win_sq = np.zeros(out_len, dtype=np.float32)
+    win_f32 = win.astype(np.float32)
 
     # Gaussian mask parameters
     sigma_c = 0.12   # center width
@@ -470,14 +480,14 @@ def _stereo_separate(left, right):
         lm /= total
         rm /= total
 
-        # Reconstruct and overlap-add (compute in float32, accumulate in float16)
-        c_l[s:s + N] += (np.fft.irfft(L * cm, n=N) * win).astype(np.float16)
-        c_r[s:s + N] += (np.fft.irfft(R * cm, n=N) * win).astype(np.float16)
-        p_ll[s:s + N] += (np.fft.irfft(L * lm, n=N) * win).astype(np.float16)
-        p_lr[s:s + N] += (np.fft.irfft(R * lm, n=N) * win).astype(np.float16)
-        p_rl[s:s + N] += (np.fft.irfft(L * rm, n=N) * win).astype(np.float16)
-        p_rr[s:s + N] += (np.fft.irfft(R * rm, n=N) * win).astype(np.float16)
-        win_sq[s:s + N] += win_f16 ** 2
+        # Reconstruct and overlap-add (float32 throughout)
+        c_l[s:s + N] += (np.fft.irfft(L * cm, n=N) * win).astype(np.float32)
+        c_r[s:s + N] += (np.fft.irfft(R * cm, n=N) * win).astype(np.float32)
+        p_ll[s:s + N] += (np.fft.irfft(L * lm, n=N) * win).astype(np.float32)
+        p_lr[s:s + N] += (np.fft.irfft(R * lm, n=N) * win).astype(np.float32)
+        p_rl[s:s + N] += (np.fft.irfft(L * rm, n=N) * win).astype(np.float32)
+        p_rr[s:s + N] += (np.fft.irfft(R * rm, n=N) * win).astype(np.float32)
+        win_sq[s:s + N] += win_f32 ** 2
 
     # Release padded inputs
     del left_p, right_p
@@ -779,7 +789,7 @@ def _separate_stems_local(audio_path: Path, out_dir: Path, progress_callback=Non
         raise RuntimeError(f"Demucs timed out after {DEMUCS_TIMEOUT}s")
 
     # Fallback to 4-stem if 6-stem fails
-    if result.returncode != 0 and model == "htdemucs_6stems":
+    if result.returncode != 0 and model == "htdemucs_6s":
         print(f"[separation] 6-stem failed, trying 4-stem fallback. stderr: {result.stderr[-200:]}")
         model = "htdemucs"
         stem_names = STEM_NAMES_4
@@ -874,27 +884,16 @@ def _separate_stems_replicate(audio_path: Path, out_dir: Path, progress_callback
     print(f"[replicate] version = {VERSION[:16]}...")
 
     # ── Step 1: Upload audio file to Replicate ──
-    # Pre-transcode to 128kbps MP3 to halve upload size (Demucs doesn't need higher bitrate for separation)
+    # Upload the source as-is. This used to pre-transcode to 128kbps MP3 "to
+    # halve upload size". That was a bad trade on both axes:
+    #   quality — 128k CBR lowpasses ~16kHz AND applies intensity stereo above
+    #     ~6kHz, which collapses HF stereo imaging. Those are exactly the cues
+    #     Demucs uses to pull sources apart, and exactly the information
+    #     _stereo_separate() later tries to read back out of the panning field.
+    #   speed  — measured ~3s on a fast core (est. 8-15s on Render) to save
+    #     ~3.5MB of upload, i.e. well under 1s of transfer. Net slower.
     upload_path = audio_path
     _transcode_tmp = None
-    try:
-        import subprocess as _sp
-        _transcode_tmp = audio_path.parent / f"_upload_{audio_path.stem}_128k.mp3"
-        _tc = _sp.run(
-            ["ffmpeg", "-y", "-i", str(audio_path), "-b:a", "128k", "-ac", "2", str(_transcode_tmp)],
-            capture_output=True, timeout=60,
-        )
-        if _tc.returncode == 0 and _transcode_tmp.exists() and _transcode_tmp.stat().st_size > 0:
-            orig_size = audio_path.stat().st_size
-            new_size = _transcode_tmp.stat().st_size
-            print(f"[replicate] transcoded to 128kbps: {orig_size:,} → {new_size:,} bytes ({new_size*100//orig_size}%)")
-            upload_path = _transcode_tmp
-        else:
-            print(f"[replicate] transcode failed (rc={_tc.returncode}), uploading original")
-            _transcode_tmp = None
-    except Exception as _te:
-        print(f"[replicate] transcode skipped: {_te}")
-        _transcode_tmp = None
 
     file_size = upload_path.stat().st_size
     suffix = upload_path.suffix.lower().lstrip(".")
@@ -930,7 +929,11 @@ def _separate_stems_replicate(audio_path: Path, out_dir: Path, progress_callback
         "input": {
             "audio": file_url,
             "model": "htdemucs_6s",  # 6-stem: vocals/drums/bass/guitar/piano/other
-            "output_format": "mp3",  # mp3 is ~10x smaller than wav; we convert locally after download
+            # flac, not mp3: lossless and typically ~50-60% of WAV size. Separator
+            # output is full of residue/artifacts, which is exactly the signal MP3
+            # handles worst — and we were spending a whole lossy generation here
+            # to save a few MB per stem.
+            "output_format": "flac",
             "shifts": 1,
         },
     }
@@ -1012,7 +1015,8 @@ def _separate_stems_replicate(audio_path: Path, out_dir: Path, progress_callback
             print(f"[replicate] skipping stem '{stem_key}': no URL")
             continue
         stem_name = stem_key if stem_key in _KNOWN_STEMS else stem_key
-        mp3_tmp = out_dir / f"_raw_{stem_name}.mp3"
+        # extension follows output_format above; ffmpeg sniffs content either way
+        mp3_tmp = out_dir / f"_raw_{stem_name}.flac"
         wav_dest = out_dir / f"_raw_{stem_name}.wav"
         print(f"[replicate] downloading: {stem_name} → {mp3_tmp.name}")
         try:

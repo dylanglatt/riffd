@@ -47,12 +47,12 @@ from werkzeug.utils import secure_filename
 
 # Crash reporting → Sentry (alerts land in Discord #stem-tab-app).
 # Errors only — no performance tracing, no PII. Override DSN with SENTRY_DSN.
+import hmac
 import sentry_sdk
 sentry_sdk.init(
-    dsn=os.environ.get(
-        "SENTRY_DSN",
-        "https://1ac569b84e912bfa506052822e0197cc@o4511632555048960.ingest.us.sentry.io/4511702332538880",
-    ),
+    # No hardcoded fallback: a DSN is a write credential, and this one is in a
+    # public repo. init(dsn=None) is a valid no-op. ROTATE THE OLD DSN.
+    dsn=os.environ.get("SENTRY_DSN") or None,
 )
 
 # Heavy processing modules deferred — loaded on first job, not at boot
@@ -1041,10 +1041,21 @@ def process_audio(job_id):
 
         # Memory guard — reject only if RSS is dangerously high.
         # Prevents starting a job that will inevitably OOM and take down the service.
-        # Tunable via MEMORY_GUARD_MB env var. Default 2200MB: TF baseline is ~1470MB
-        # and a single job peaks around 1900MB, so 2200MB leaves real headroom while
-        # still catching runaway memory before it crashes the dyno.
-        MEMORY_GUARD_MB = int(os.getenv("MEMORY_GUARD_MB", "2200"))
+        #
+        # WAS 2200. Render Standard is a 2048MB instance, so a 2200MB threshold sits
+        # ABOVE the ceiling: the Linux OOM killer always fires first and this guard
+        # can never trigger. It has been inoperative, not lenient.
+        #
+        # 1400 is a starting value, not a tuned one. The binding constraint is the
+        # Basic Pitch CHILD process (~1.2GB, app.py:1505) running alongside the
+        # parent, so the parent must stay under roughly 2048-1200 = ~850MB at that
+        # stage. A lean parent is ~40MB (heavy imports are deferred), so anything
+        # above ~1400MB at job start means something has already leaked. The known
+        # offender — the in-process TensorFlow load in _melodic_split_pass — was
+        # deleted in the previous commit; if this guard still trips, look for a new
+        # path loading TF into the parent instead of a child.
+        # Instrument with _log_memory and tune from real data.
+        MEMORY_GUARD_MB = int(os.getenv("MEMORY_GUARD_MB", "1400"))
 
         def _get_current_rss_mb():
             try:
@@ -1322,6 +1333,9 @@ def process_audio(job_id):
                     print(f"[job {job_id}] [{_elapsed()}] instrument hints: none")
 
                 # Wait for Demucs (the slow one)
+                _demucs_exc = None  # bound here so the `if not stems` branch below
+                                    # can't NameError when Demucs returns empty
+                                    # without raising
                 try:
                     stems = fut_demucs.result()
                 except Exception as _demucs_err:
@@ -1827,12 +1841,16 @@ def _check_admin_auth():
     """Shared admin auth gate. Returns None if OK, or a Flask response to short-circuit."""
     admin_secret = os.environ.get("ADMIN_SECRET", "").strip()
     if not admin_secret:
-        return None
+        # Fail CLOSED. This used to `return None` (= everyone is admin) when the
+        # env var was missing, which left /api/admin/refresh-cookies (spawns
+        # Playwright), /cookie-status (dumps cookie names) and /diag-audio
+        # (arbitrary yt-dlp fetch, errors echoed back) open to the internet.
+        return jsonify({"error": "admin endpoints disabled (ADMIN_SECRET unset)"}), 403
     provided = (
         request.args.get("secret", "")
         or request.headers.get("Authorization", "").removeprefix("Bearer ").strip()
     )
-    if provided != admin_secret:
+    if not hmac.compare_digest(provided, admin_secret):
         return jsonify({"error": "unauthorized"}), 401
     return None
 
