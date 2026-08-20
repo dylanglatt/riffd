@@ -1115,6 +1115,11 @@ def process_audio(job_id):
         insight_text = None
         recs = {"more_like_this": [], "same_style": [], "around_this_time": []}
         failed_steps = []
+        # Stems the separator was told about but could not deliver (after its own
+        # retry). Kept separate from failed_steps because it gates caching — see
+        # _finalize below.
+        missing_stems = []
+        stem_report = {}
 
         def on_progress(msg):
             jobs[job_id]["progress"] = msg
@@ -1144,6 +1149,8 @@ def process_audio(job_id):
             if partial:
                 result["errors"] = failed_steps
                 result["error"] = f"{len(failed_steps)} step(s) failed: {', '.join(s['step'] for s in failed_steps)}"
+            if missing_stems:
+                result["missing_stems"] = sorted(missing_stems)
             jobs[job_id].update(result)
             import time as _t; _stem_last_accessed[job_id] = _t.time()
             cache_path = str(Path("outputs") / job_id / "result_cache.json") if spotify_track_id else None
@@ -1153,7 +1160,24 @@ def process_audio(job_id):
             log_event("analysis_complete", {"job_id": job_id, "status": result["status"], "elapsed": round(_time.time() - _t0, 1)})
 
             # Save to cache + history + DB
-            if spotify_track_id and (not partial or stems):
+            #
+            # Two kinds of "partial" have to be treated differently here:
+            #
+            #   a non-stem stage failed (lyrics, recs, insight) — cache as before.
+            #     The audio analysis is sound, the missing pieces degrade
+            #     gracefully, and re-running wouldn't reliably fix them anyway.
+            #
+            #   a required stem is missing — DO NOT cache. This block also calls
+            #     set_track_status(..., "available"), so caching here would pin a
+            #     mix that is permanently short an instrument and serve it to
+            #     everyone who opens the track later. One transient download blip
+            #     would become a permanent bad result. Skipping the cache costs
+            #     this user nothing (they still get the job as analyzed) and makes
+            #     the track re-analyze on the next visit.
+            if missing_stems:
+                print(f"[job {job_id}] [{_elapsed()}] NOT caching — missing stem(s): "
+                      f"{', '.join(sorted(missing_stems))}. Track will re-analyze next time.")
+            if spotify_track_id and (not partial or stems) and not missing_stems:
                 try:
                     save_cached_result(job_id, {
                         "stems": result["stems"],
@@ -1248,7 +1272,8 @@ def process_audio(job_id):
                     hints = fut_hints.result(timeout=10)
                 except Exception:
                     pass  # Hints are optional — proceed without them
-                return separate_stems(_safe_audio_path, job_id, progress_callback=on_progress, instrument_hints=hints)
+                return separate_stems(_safe_audio_path, job_id, progress_callback=on_progress,
+                                      instrument_hints=hints, report=stem_report)
 
             def _run_early_key():
                 """Key + BPM on the original audio — runs concurrently with Demucs.
@@ -1358,6 +1383,24 @@ def process_audio(job_id):
             gc.collect()
             print(f"[job {job_id}] [{_elapsed()}] DEMUCS finished → {len(stems)} stems: {list(stems.keys())}")
             _log_memory(f"[job {job_id}] post-demucs")
+
+            # Stems the separator was given a URL for but could not deliver, even
+            # after its own retry. The job continues — the user gets the stems that
+            # did arrive — but it must not report "complete", and _finalize must not
+            # cache it. A stem the model simply didn't return ("omitted") is not a
+            # failure and doesn't land here.
+            _stem_failures = stem_report.get("stem_failures") or {}
+            if _stem_failures:
+                missing_stems.extend(_stem_failures)
+                _names = ", ".join(sorted(_stem_failures))
+                print(f"[job {job_id}] [{_elapsed()}] STEMS INCOMPLETE — could not download: {_names}")
+                # Appended directly rather than via _fail(): there is no live
+                # exception here, so _fail's traceback.print_exc() would print a
+                # misleading "NoneType: None".
+                failed_steps.append({
+                    "step": "stem_download",
+                    "message": f"could not download stem(s) after retry: {_names}",
+                })
 
             # Apply instrument hints to improve stem classification
             if stems and instrument_hints:

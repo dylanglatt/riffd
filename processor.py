@@ -837,7 +837,8 @@ def _separate_stems_local(audio_path: Path, out_dir: Path, progress_callback=Non
     return raw_stems, model
 
 
-def _separate_stems_replicate(audio_path: Path, out_dir: Path, progress_callback=None) -> tuple[dict, str]:
+def _separate_stems_replicate(audio_path: Path, out_dir: Path, progress_callback=None,
+                              report: dict | None = None) -> tuple[dict, str]:
     """
     Run Demucs via Replicate REST API. Returns (raw_stems, model_name).
     raw_stems: {stem_name: path_to_raw_wav}
@@ -859,10 +860,20 @@ def _separate_stems_replicate(audio_path: Path, out_dir: Path, progress_callback
     Output (verified from openapi_schema):
       dict with keys: bass, drums, other, piano, guitar, vocals
       each value is a URI string pointing to the separated audio file
+
+    report: optional dict, populated with
+      "stem_failures" {stem: error} — model gave a URL, we could not fetch it
+                                      (after one retry). A missing instrument.
+      "omitted"       [stem, ...]   — model returned no URL. Not a failure.
     """
     import os
     import time as _time
     import requests as _requests
+
+    # Cleared per attempt: separate_stems() may call this up to 3 times, and a
+    # later attempt must not inherit an earlier one's failures.
+    if report is not None:
+        report.clear()
 
     token = os.getenv("REPLICATE_API_TOKEN", "").strip()
     if not token:
@@ -1035,19 +1046,35 @@ def _separate_stems_replicate(audio_path: Path, out_dir: Path, progress_callback
     if progress_callback:
         progress_callback(f"Downloading stems (0/{len(dl_items)})...")
 
-    def _fetch_stem(stem_key, url):
-        """Download one stem and convert it to WAV. Returns (name, path) or None.
+    # Two different things used to look identical from the outside:
+    #   omitted — the model returned no URL for this stem. Not our failure, and
+    #             not necessarily wrong (htdemucs 4-stem has no guitar/piano).
+    #   failed  — the model DID return a URL and we could not fetch or convert
+    #             it. That is a missing instrument the user was meant to get,
+    #             and the caller has to know about it.
+    omitted = []
+    stem_failures = {}
 
-        Swallows its own exceptions on purpose: one failed stem must not take
-        down the other five.
+    def _fetch_stem(stem_key, url):
+        """Download one stem and convert it to WAV.
+
+        Returns (stem_name, wav_path, error). Exactly one of wav_path/error is
+        set, except for an omitted stem, where both are None. Swallows its own
+        exceptions on purpose: one failed stem must not take down the other five.
         """
-        if not url or not isinstance(url, str):
-            print(f"[replicate] skipping stem '{stem_key}': no URL")
-            return None
         stem_name = stem_key if stem_key in _KNOWN_STEMS else stem_key
+        if not url or not isinstance(url, str):
+            print(f"[replicate] stem '{stem_key}': model returned no URL")
+            return stem_name, None, None
         # extension follows output_format above; ffmpeg sniffs content either way
         src_tmp = out_dir / f"_raw_{stem_name}.flac"
         wav_dest = out_dir / f"_raw_{stem_name}.wav"
+        # Convert to a .part file and rename only once the result is known good.
+        # ffmpeg cannot infer the muxer from ".part", hence the explicit -f wav.
+        # Without this, a failed or timed-out conversion left a partial
+        # _raw_*.wav behind: the later sweep only runs after Replicate returns
+        # successfully, so all-failure and pool-abort paths leaked it.
+        wav_tmp = out_dir / f"_raw_{stem_name}.wav.part"
         print(f"[replicate] downloading: {stem_name} → {src_tmp.name}")
         try:
             with _requests.get(url, stream=True, timeout=120) as dl_resp:
@@ -1064,42 +1091,88 @@ def _separate_stems_replicate(audio_path: Path, out_dir: Path, progress_callback
             # Timeout is 120s, not 60s: six ffmpegs sharing one core each take
             # correspondingly longer in wall-clock terms.
             _conv = subprocess.run(
-                ["ffmpeg", "-y", "-i", str(src_tmp), "-ar", "44100", "-ac", "2", str(wav_dest)],
+                ["ffmpeg", "-y", "-i", str(src_tmp), "-ar", "44100", "-ac", "2",
+                 "-f", "wav", str(wav_tmp)],
                 capture_output=True, timeout=120,
             )
             if _conv.returncode != 0:
                 raise RuntimeError(f"ffmpeg → WAV failed: {_conv.stderr[-300:]}")
+            if not wav_tmp.exists() or wav_tmp.stat().st_size <= 1000:
+                raise RuntimeError("ffmpeg produced an empty or truncated WAV")
+            os.replace(wav_tmp, wav_dest)   # atomic within the same directory
             print(f"[replicate] saved: {stem_name}")
-            return stem_name, str(wav_dest)
+            return stem_name, str(wav_dest), None
         except Exception as e:
-            print(f"[replicate] skipping stem '{stem_key}': {e}")
-            return None
+            print(f"[replicate] stem '{stem_key}' FAILED: {e}")
+            return stem_name, None, str(e)
         finally:
-            try:
-                src_tmp.unlink(missing_ok=True)
-            except Exception:
-                pass
+            for _tmp in (src_tmp, wav_tmp):
+                try:
+                    _tmp.unlink(missing_ok=True)
+                except Exception:
+                    pass
 
-    # raw_stems is only written from this thread (in the as_completed loop), so
-    # the workers never touch shared state.
-    with _TPE(max_workers=6) as _dl_pool:
-        _futs = [_dl_pool.submit(_fetch_stem, k, u) for k, u in dl_items]
-        for _done, _fut in enumerate(_as_done(_futs), start=1):
-            _res = _fut.result()
-            if _res:
-                raw_stems[_res[0]] = _res[1]
-            if progress_callback:
-                progress_callback(f"Downloading stems ({_done}/{len(dl_items)})...")
+    def _run_pass(items, label):
+        """Fetch `items` concurrently. Returns {stem: error} for the failures.
+
+        raw_stems is only written from this thread (in the as_completed loop),
+        so the workers never touch shared state.
+        """
+        failures = {}
+        with _TPE(max_workers=6) as _dl_pool:
+            _futs = [_dl_pool.submit(_fetch_stem, k, u) for k, u in items]
+            for _done, _fut in enumerate(_as_done(_futs), start=1):
+                _name, _path, _err = _fut.result()
+                if _path:
+                    raw_stems[_name] = _path
+                elif _err:
+                    failures[_name] = _err
+                else:
+                    omitted.append(_name)
+                if progress_callback:
+                    progress_callback(f"Downloading stems{label} ({_done}/{len(items)})...")
+        return failures
+
+    _failed = _run_pass(dl_items, "")
+
+    # One retry for anything that failed. These are transient by nature —
+    # a socket reset or a timed-out ffmpeg — and a stem lost here is an
+    # instrument missing from the mix, which is worth a few extra seconds.
+    if _failed:
+        _retry_items = [(k, u) for k, u in dl_items if k in _failed]
+        print(f"[replicate] retrying {len(_retry_items)} failed stem(s): {sorted(_failed)}")
+        if progress_callback:
+            progress_callback(f"Retrying {len(_retry_items)} stem(s)...")
+        stem_failures = _run_pass(_retry_items, " (retry)")
+        for _name in set(_failed) - set(stem_failures):
+            print(f"[replicate] {_name} recovered on retry")
+    if omitted:
+        print(f"[replicate] model returned no URL for: {sorted(set(omitted))}")
+
+    if report is not None:
+        report["stem_failures"] = dict(stem_failures)
+        report["omitted"] = sorted(set(omitted))
 
     if not raw_stems:
-        raise RuntimeError("Replicate returned no downloadable stems")
+        # Keep the underlying errors in the message. The retry classifier in
+        # separate_stems() matches on strings like "timed out" / "(E1001)", so
+        # collapsing everything into "no downloadable stems" made a wholly
+        # retryable failure look permanent.
+        detail = "; ".join(f"{k}: {v}" for k, v in sorted(stem_failures.items())) \
+            or "model returned no stem URLs"
+        raise RuntimeError(f"Replicate returned no downloadable stems ({detail})")
+
+    if stem_failures:
+        print(f"[replicate] INCOMPLETE — {len(stem_failures)} stem(s) missing after retry: "
+              f"{sorted(stem_failures)}")
 
     elapsed = _time.time() - _t0
     print(f"[replicate] COMPLETE in {elapsed:.1f}s → {len(raw_stems)} stems: {list(raw_stems.keys())}")
     return raw_stems, "replicate_htdemucs"
 
 
-def separate_stems(audio_path: str, song_id: str, progress_callback=None, instrument_hints: dict | None = None) -> dict:
+def separate_stems(audio_path: str, song_id: str, progress_callback=None,
+                   instrument_hints: dict | None = None, report: dict | None = None) -> dict:
     """
     Full pipeline:
       1. Run Demucs for initial separation (hosted or local)
@@ -1109,6 +1182,11 @@ def separate_stems(audio_path: str, song_id: str, progress_callback=None, instru
       5. Return only stems with meaningful audio content
 
     Returns dict: {stem_key: {path, energy, active, label}}
+
+    report: optional dict. Populated on the hosted path with "stem_failures" and
+      "omitted" (see _separate_stems_replicate). The caller needs this to tell a
+      genuinely 4-stem result apart from a 6-stem result that lost two stems to
+      transient download failures — the second must not be cached as complete.
     """
     import os
     _ensure_imports()
@@ -1141,7 +1219,8 @@ def separate_stems(audio_path: str, song_id: str, progress_callback=None, instru
                     if progress_callback:
                         progress_callback(f"Retrying stem separation (attempt {attempt})...")
                     _retry_time.sleep(wait)
-                raw_stems, model = _separate_stems_replicate(audio_path, out_dir, progress_callback)
+                raw_stems, model = _separate_stems_replicate(audio_path, out_dir, progress_callback,
+                                                             report=report)
                 if attempt > 1:
                     print(f"[separation] succeeded on attempt {attempt}")
                 last_error = None
@@ -1376,9 +1455,11 @@ def separate_stems(audio_path: str, song_id: str, progress_callback=None, instru
           except Exception as e:
               print(f"[processor] cleanup warning: {e}")
 
-      # Remove _raw_* intermediate files (refined stems are the final output)
+      # Remove _raw_* intermediate files (refined stems are the final output).
+      # ".wav.part" catches a conversion temp orphaned by a hard kill — the
+      # normal failure paths already unlink it in _fetch_stem's finally.
       _raw_cleaned = 0
-      for raw_file in out_dir.glob("_raw_*.wav"):
+      for raw_file in list(out_dir.glob("_raw_*.wav")) + list(out_dir.glob("_raw_*.wav.part")):
           try:
               raw_file.unlink()
               _raw_cleaned += 1
