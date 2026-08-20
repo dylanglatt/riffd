@@ -824,6 +824,19 @@ def prefetch_full_track():
             traceback.print_exc()
 
     threading.Thread(target=bg_download, daemon=True).start()
+
+    # Warm the Replicate GPU in parallel with the download. Cold-booting the
+    # Demucs container is the dominant cost of separation (1-4+ min vs ~20s of
+    # GPU time), so booting it while the user is still deciding means the real
+    # job usually lands on a warm instance. Cooldown-gated inside processor.
+    def _warm_gpu():
+        try:
+            from processor import warm_replicate_model
+            warm_replicate_model()
+        except Exception as _w_e:
+            print(f"[prefetch {prefetch_id}] warmup skipped: {_w_e}")
+    threading.Thread(target=_warm_gpu, daemon=True).start()
+
     return jsonify({"prefetch_id": prefetch_id, "status": "downloading"})
 
 
@@ -854,6 +867,15 @@ def upload_file():
     f.save(save_path)
     jobs[job_id] = {"status": "ready", "audio_path": str(save_path), "progress": "File uploaded"}
     upsert_job_checkpoint(job_id, "ready", progress="File uploaded")
+
+    # Warm the Replicate GPU — user will likely hit Analyze within seconds.
+    def _warm_gpu_upload():
+        try:
+            from processor import warm_replicate_model
+            warm_replicate_model()
+        except Exception as _w_e:
+            print(f"[upload {job_id}] warmup skipped: {_w_e}")
+    threading.Thread(target=_warm_gpu_upload, daemon=True).start()
 
     # Silently attempt to match Spotify metadata — never blocks or errors
     track_meta = _match_upload_metadata(filename, str(save_path))
@@ -962,9 +984,30 @@ def process_audio(job_id):
     spotify_artist_id = req_data.get("artist_id")
     track_meta = req_data.get("track_meta", {})
 
+    # ── Long-track guard ──
+    # Very long tracks used to fail mid-pipeline with an opaque Replicate
+    # timeout or memory-guard error. Reject upfront with a clear message
+    # instead. Duration from Spotify metadata; ffprobe fallback for uploads.
+    MAX_TRACK_MINUTES = int(os.getenv("MAX_TRACK_MINUTES", "20"))
+    _track_dur_s = (track_meta.get("duration_ms") or 0) / 1000.0
+    if not _track_dur_s:
+        try:
+            from processor import _probe_duration_s
+            _track_dur_s = _probe_duration_s(audio_path)
+        except Exception:
+            _track_dur_s = 0.0
+    _is_long_track = _track_dur_s > 8 * 60
+    if _track_dur_s > MAX_TRACK_MINUTES * 60:
+        _dur_min = int(_track_dur_s // 60)
+        print(f"[job {job_id}] REJECTED: track too long ({_track_dur_s:.0f}s > {MAX_TRACK_MINUTES}min cap)")
+        _msg = (f"This track is about {_dur_min} minutes long — Riffd currently supports "
+                f"songs up to {MAX_TRACK_MINUTES} minutes. Try a shorter track.")
+        return jsonify({"status": "error", "code": "track_too_long", "error": _msg}), 400
+
     import time as _time_mod
     jobs[job_id]["status"] = "processing"
-    jobs[job_id]["progress"] = "Separating stems..."
+    jobs[job_id]["progress"] = ("Separating stems... (long track — this may take a few extra minutes)"
+                                if _is_long_track else "Separating stems...")
     jobs[job_id]["_started_at"] = _time_mod.time()
     upsert_job_checkpoint(job_id, "processing", progress="Separating stems...")
     print(f"[job {job_id}] process start analysis_mode=deep audio={audio_path}")

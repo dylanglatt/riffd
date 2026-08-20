@@ -58,6 +58,113 @@ def _ensure_imports():
     print("[processor] heavy imports loaded (numpy, pandas, basic_pitch)")
 
 
+# ── Replicate constants (module-level so warm-up + separation share them) ──
+# Model: ryan5453/demucs (htdemucs_6s). Switched from cjwbw/demucs 2026-07-08:
+# that model began failing 100% of the time with Replicate-internal errors
+# ("Director: unexpected error handling prediction (E1001)") — its last version
+# was from 2023 and appears incompatible with Replicate's current runtime.
+# ryan5453/demucs is actively maintained (Dec 2024), has 1.6M+ runs, and
+# returns the same {stem_name: url} output dict, so downstream code is unchanged.
+# NOTE: its input field is "model" (cjwbw used "model_name").
+REPLICATE_API = "https://api.replicate.com/v1"
+REPLICATE_DEMUCS_VERSION = "5a7041cc9b82e5a558fea6b3d7b12dea89625e89da33f0447bd727c2d0ab9e77"
+
+# Warm-up state: one warm-up per cooldown window, process-wide.
+_warmup_last = 0.0
+WARMUP_COOLDOWN_S = 480  # Replicate keeps containers warm for a few minutes after a run
+
+
+def _probe_duration_s(path) -> float:
+    """Return audio duration in seconds via ffprobe, or 0.0 if unknown."""
+    try:
+        result = subprocess.run(
+            ["ffprobe", "-v", "error", "-show_entries", "format=duration",
+             "-of", "default=noprint_wrappers=1:nokey=1", str(path)],
+            capture_output=True, text=True, timeout=15,
+        )
+        return max(0.0, float(result.stdout.strip()))
+    except Exception:
+        return 0.0
+
+
+def warm_replicate_model() -> bool:
+    """
+    Fire a ~1-second silent clip at the Demucs model on Replicate so the
+    container boots BEFORE the user triggers a real analysis.
+
+    Cold-boot of cjwbw/demucs is the dominant cost of separation (1-4+ min
+    observed vs ~20s of actual GPU time). Calling this when a user selects
+    a song means the boot happens while they're still deciding, so the real
+    prediction usually lands on a warm instance.
+
+    Fire-and-forget: creates the prediction and returns without polling.
+    Costs ~1s of GPU time. Never raises. Returns True if a warm-up was sent.
+    """
+    global _warmup_last
+    import os as _os
+    import time as _time
+
+    if _os.getenv("USE_HOSTED_SEPARATION", "false").strip().lower() not in ("true", "1", "yes"):
+        return False
+    token = _os.getenv("REPLICATE_API_TOKEN", "").strip()
+    if not token:
+        return False
+
+    now = _time.time()
+    if now - _warmup_last < WARMUP_COOLDOWN_S:
+        return False
+    _warmup_last = now  # set optimistically — worst case a failed warm-up waits out the cooldown
+
+    try:
+        import base64 as _b64
+        import tempfile as _tmp
+        import requests as _requests
+
+        # 1s of silence at 32kbps ≈ 4KB — small enough for a data URI (no file upload needed)
+        with _tmp.NamedTemporaryFile(suffix=".mp3", delete=False) as _f:
+            silence_path = _f.name
+        try:
+            gen = subprocess.run(
+                ["ffmpeg", "-y", "-f", "lavfi", "-i", "anullsrc=r=44100:cl=stereo",
+                 "-t", "1", "-b:a", "32k", silence_path],
+                capture_output=True, timeout=15,
+            )
+            if gen.returncode != 0:
+                print(f"[warmup] silence generation failed (rc={gen.returncode}) — skipping")
+                return False
+            with open(silence_path, "rb") as _sf:
+                data_uri = "data:audio/mpeg;base64," + _b64.b64encode(_sf.read()).decode("ascii")
+        finally:
+            try:
+                Path(silence_path).unlink(missing_ok=True)
+            except Exception:
+                pass
+
+        payload = {
+            "version": REPLICATE_DEMUCS_VERSION,
+            "input": {
+                "audio": data_uri,
+                "model": "htdemucs_6s",  # must match the real job so the same container boots
+                "output_format": "mp3",
+                "shifts": 1,
+            },
+        }
+        resp = _requests.post(
+            f"{REPLICATE_API}/predictions",
+            headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json"},
+            json=payload, timeout=15,
+        )
+        if resp.ok:
+            pred_id = resp.json().get("id", "?")
+            print(f"[warmup] Replicate warm-up prediction sent (id={pred_id}) — model booting")
+            return True
+        print(f"[warmup] Replicate warm-up rejected (HTTP {resp.status_code}): {resp.text[:150]}")
+        return False
+    except Exception as e:
+        print(f"[warmup] skipped (non-fatal): {e}")
+        return False
+
+
 def _log_mem(label=""):
     """Log current RSS from /proc/self/status (Linux). Lightweight — no imports."""
     try:
@@ -1246,14 +1353,15 @@ def _separate_stems_replicate(audio_path: Path, out_dir: Path, progress_callback
     Uses the REST API directly (not the replicate Python client) for full control
     over the request/response lifecycle and transparent error handling.
 
-    Verified model: cjwbw/demucs
-    Verified version: 25a173108cff36ef9f80f854c162d01df9e6528be175794b81158fa03836d953
-    API schema confirmed via /v1/models/cjwbw/demucs — 2026-03-26
+    Verified model: ryan5453/demucs
+    Verified version: 5a7041cc9b82e5a558fea6b3d7b12dea89625e89da33f0447bd727c2d0ab9e77
+    API schema + live 2s test confirmed via /v1/models/ryan5453/demucs — 2026-07-08
+    (previous model cjwbw/demucs began failing 100% with Replicate E1001 errors)
 
     Input params (verified from openapi_schema):
       audio:         file URI or URL (required)
-      model_name:    "htdemucs" | "htdemucs_ft" | "htdemucs_6s" | etc.
-      output_format: "wav" | "mp3" (default mp3)
+      model:         "htdemucs" | "htdemucs_ft" | "htdemucs_6s" | etc.
+      output_format: "mp3" | "flac" | "wav" (default mp3)
       shifts:        int (default 1)
 
     Output (verified from openapi_schema):
@@ -1269,10 +1377,21 @@ def _separate_stems_replicate(audio_path: Path, out_dir: Path, progress_callback
         raise RuntimeError("REPLICATE_API_TOKEN not set")
 
     _t0 = _time.time()
-    REPLICATE_API = "https://api.replicate.com/v1"
-    VERSION = "25a173108cff36ef9f80f854c162d01df9e6528be175794b81158fa03836d953"
+    VERSION = REPLICATE_DEMUCS_VERSION
     POLL_INTERVAL = 3  # seconds between status checks (reduced from 5)
-    MAX_WAIT = 420     # 7 minutes max — balances Replicate cold-start with queue UX
+
+    # Duration-aware timeout. The old flat 420s ceiling caused long songs to
+    # fail: GPU time scales with track length, and a *normal* song was observed
+    # completing at 376s (cold start included). Base 420s covers cold start +
+    # a typical ~4-min song; add 90s of headroom per minute of audio beyond
+    # 4 minutes, capped at 25 min so a hung prediction can't stall the queue.
+    _track_dur_s = _probe_duration_s(audio_path)
+    _extra_wait = max(0.0, _track_dur_s - 240.0) / 60.0 * 90.0
+    MAX_WAIT = int(min(420 + _extra_wait, 1500))
+    if _track_dur_s > 0:
+        print(f"[replicate] track duration {_track_dur_s:.0f}s → MAX_WAIT={MAX_WAIT}s")
+    else:
+        print(f"[replicate] track duration unknown → MAX_WAIT={MAX_WAIT}s (default)")
 
     # Expected stems from the model output
     EXPECTED_STEMS = {"vocals", "drums", "bass", "guitar", "piano", "other"}
@@ -1286,7 +1405,7 @@ def _separate_stems_replicate(audio_path: Path, out_dir: Path, progress_callback
         progress_callback("Running stem separation (cloud)...")
 
     print(f"[replicate] starting: {audio_path.name}")
-    print(f"[replicate] model = cjwbw/demucs")
+    print(f"[replicate] model = ryan5453/demucs")
     print(f"[replicate] version = {VERSION[:16]}...")
 
     # ── Step 1: Upload audio file to Replicate ──
@@ -1345,7 +1464,7 @@ def _separate_stems_replicate(audio_path: Path, out_dir: Path, progress_callback
         "version": VERSION,
         "input": {
             "audio": file_url,
-            "model_name": "htdemucs_6s",  # 6-stem: vocals/drums/bass/guitar/piano/other
+            "model": "htdemucs_6s",  # 6-stem: vocals/drums/bass/guitar/piano/other
             "output_format": "mp3",  # mp3 is ~10x smaller than wav; we convert locally after download
             "shifts": 1,
         },
@@ -1499,7 +1618,7 @@ def separate_stems(audio_path: str, song_id: str, progress_callback=None, instru
 
     if use_hosted:
         print(f"[separation] path = replicate (hosted-only, no local fallback)")
-        MAX_RETRIES = 2
+        MAX_RETRIES = 3
         last_error = None
         for attempt in range(1, MAX_RETRIES + 1):
             try:
@@ -1518,8 +1637,12 @@ def separate_stems(audio_path: str, song_id: str, progress_callback=None, instru
             except Exception as e:
                 last_error = e
                 err_str = str(e)
-                # Retry on GPU preemption (code: PA), transient API failures, or network errors
-                # "timed out" / "connection aborted" cover socket write timeouts during upload
+                import re as _re
+                # Retry on GPU preemption (code: PA), transient API failures, or network errors.
+                # "timed out" / "connection aborted" cover socket write timeouts during upload.
+                # "director" / "(E####)" cover Replicate-internal worker crashes like
+                # "Director: unexpected error handling prediction (E1001)" — observed in
+                # production; a retry reschedules onto a different worker and usually succeeds.
                 is_retryable = (
                     "code: PA" in err_str
                     or "interrupted" in err_str.lower()
@@ -1529,6 +1652,9 @@ def separate_stems(audio_path: str, song_id: str, progress_callback=None, instru
                     or "connection aborted" in err_str.lower()
                     or "connectionerror" in err_str.lower()
                     or "remotedisconnected" in err_str.lower()
+                    or "director" in err_str.lower()
+                    or "unexpected error" in err_str.lower()
+                    or bool(_re.search(r"\(E\d{3,5}\)", err_str))
                 )
                 if is_retryable and attempt < MAX_RETRIES:
                     print(f"[separation] attempt {attempt} failed (retryable): {e}")

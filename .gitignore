@@ -30,6 +30,7 @@ design/
 *_PROMPT.md
 PROMPT_*.md
 *_FIX_PROMPT.md
+*_loom_script.md
 *.docx
 
 # Obsolete deployment (migrated to Render)

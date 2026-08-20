@@ -1855,6 +1855,17 @@ async function startProcessing(){
       );
       return;
     }
+    if (d.code === "track_too_long") {
+      // Clear upfront rejection — don't auto-retry, the track won't get shorter.
+      _fullErrorCleanup();
+      showCapacity(
+        "Track too long",
+        d.error,
+        "Choose Another Track",
+        { clearJob: true }
+      );
+      return;
+    }
     if (d.error) throw new Error(d.error);
     // If queued (202), go straight to polling — the poll loop already
     // handles status=queued and shows "You're in queue" messaging.
