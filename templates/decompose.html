@@ -1735,6 +1735,25 @@ function _fullErrorCleanup() {
   _topBar.reset();
   clearTimeout(pollInterval);
   _earlyWaveformBuilt = false;
+
+  // Reset the stem/audio state, not just the DOM.
+  //
+  // This lands the user back on the confirm view, where "Try Again" calls
+  // startProcessing() directly — it never goes through selectTrack() or
+  // resetApp(), which were the only places these got cleared. So without this
+  // block, wiping mixer-channels below left _loadedStems still populated with
+  // the previous attempt's stem names. The retry gets a fresh job ID but the
+  // same names, so pollStatus's `filter(k => !_loadedStems[k])` returns [] and
+  // adds no channels, while _stemsPreloading stuck at true suppressed the
+  // buffer preload — an empty mixer with a dead transport, recoverable only by
+  // reloading the page. It fired after every capacity, timeout and network
+  // error. Mirrors selectTrack()'s teardown.
+  cleanupAudio();
+  stemBuffers = {}; stemGains = {}; stemVolumes = {}; stemMuted = {}; stemSoloed = {};
+  pauseOffset = 0; duration = 0;
+  _loadedStems = {};
+  _stemsPreloading = false;
+
   // Tear down skeleton channels and loading status
   const mixerEl = document.getElementById("mixer-channels");
   if (mixerEl) { mixerEl.innerHTML = ''; mixerEl.classList.remove('stems-loading'); }
@@ -2778,7 +2797,7 @@ function resetApp(){
   _elapsedTimer.stop();
   cleanupAudio();stopLoadingMessages();pauseOffset=0;duration=0;currentJobId=null;_clearJobId();selectedTrack=null;jobData=null;
   searchResults=[];lastQuery="";loopActive=false;transposeAmount=0;songKey=null;clearTimeout(pollInterval);
-  _loadedStems={};_karaokeActive=false;_stemGroupBaselines={};
+  _loadedStems={};_stemsPreloading=false;_karaokeActive=false;_stemGroupBaselines={};
   _prefetchId=null;_prefetchReady=false;
   _earlyWaveformBuilt=false;
   const _mixerReset=document.getElementById('mixer-channels');if(_mixerReset)_mixerReset.classList.remove('stems-loading');
