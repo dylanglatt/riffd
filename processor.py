@@ -1001,52 +1001,78 @@ def _separate_stems_replicate(audio_path: Path, out_dir: Path, progress_callback
     # htdemucs_6s returns 6 (adds guitar, piano) but some may be missing.
     _KNOWN_STEMS = {"vocals", "drums", "bass", "guitar", "piano", "other"}
 
-    # Download stems sequentially on the main thread.
-    # Previously used ThreadPoolExecutor(max_workers=1) which was already sequential,
-    # but the executor is vulnerable to "cannot schedule new futures after interpreter
-    # shutdown" if gunicorn recycles the worker mid-job. A plain loop avoids this.
+    # Download + convert the stems in parallel. This is network wait time, which
+    # overlaps fine on 1 vCPU — while one stem's ffmpeg runs, the others are still
+    # streaming bytes. It is also what makes the FLAC output format affordable:
+    # ~32MB/stem vs ~5.6MB for MP3, so six sequential downloads cost ~25s.
+    #
+    # The pool is created and joined INSIDE this function. The previous comment
+    # here warned about "cannot schedule new futures after interpreter shutdown",
+    # but that only bites a pool that outlives the request and is submitted to
+    # after gunicorn has begun recycling the worker. A locally-scoped pool that
+    # the `with` block joins before returning cannot reach that state.
+    from concurrent.futures import ThreadPoolExecutor as _TPE, as_completed as _as_done
 
     raw_stems = {}
     dl_items = [(k, v) for k, v in output.items()]
     if progress_callback:
         progress_callback(f"Downloading stems (0/{len(dl_items)})...")
-    for idx, (stem_key, url) in enumerate(dl_items):
+
+    def _fetch_stem(stem_key, url):
+        """Download one stem and convert it to WAV. Returns (name, path) or None.
+
+        Swallows its own exceptions on purpose: one failed stem must not take
+        down the other five.
+        """
         if not url or not isinstance(url, str):
             print(f"[replicate] skipping stem '{stem_key}': no URL")
-            continue
+            return None
         stem_name = stem_key if stem_key in _KNOWN_STEMS else stem_key
         # extension follows output_format above; ffmpeg sniffs content either way
-        mp3_tmp = out_dir / f"_raw_{stem_name}.flac"
+        src_tmp = out_dir / f"_raw_{stem_name}.flac"
         wav_dest = out_dir / f"_raw_{stem_name}.wav"
-        print(f"[replicate] downloading: {stem_name} → {mp3_tmp.name}")
+        print(f"[replicate] downloading: {stem_name} → {src_tmp.name}")
         try:
             with _requests.get(url, stream=True, timeout=120) as dl_resp:
                 dl_resp.raise_for_status()
                 byte_count = 0
-                with open(mp3_tmp, "wb") as f:
+                with open(src_tmp, "wb") as f:
                     for chunk in dl_resp.iter_content(chunk_size=1024 * 1024):  # 1MB chunks
                         f.write(chunk)
                         byte_count += len(chunk)
             print(f"[replicate] downloaded: {stem_name} ({byte_count:,} bytes) — converting to wav")
-            # Convert MP3 → WAV via ffmpeg subprocess — avoids loading ~190MB float32
-            # array per stem into Python memory. ffmpeg streams the conversion.
+            # Convert → WAV via ffmpeg subprocess — avoids loading ~190MB float32
+            # array per stem into Python memory. ffmpeg streams the conversion and
+            # holds no GIL, so it overlaps with the other stems' downloads.
+            # Timeout is 120s, not 60s: six ffmpegs sharing one core each take
+            # correspondingly longer in wall-clock terms.
             _conv = subprocess.run(
-                ["ffmpeg", "-y", "-i", str(mp3_tmp), "-ar", "44100", "-ac", "2", str(wav_dest)],
-                capture_output=True, timeout=60,
+                ["ffmpeg", "-y", "-i", str(src_tmp), "-ar", "44100", "-ac", "2", str(wav_dest)],
+                capture_output=True, timeout=120,
             )
             if _conv.returncode != 0:
-                raise RuntimeError(f"ffmpeg MP3→WAV failed: {_conv.stderr[-300:]}")
+                raise RuntimeError(f"ffmpeg → WAV failed: {_conv.stderr[-300:]}")
             print(f"[replicate] saved: {stem_name}")
-            raw_stems[stem_name] = str(wav_dest)
+            return stem_name, str(wav_dest)
         except Exception as e:
             print(f"[replicate] skipping stem '{stem_key}': {e}")
+            return None
         finally:
             try:
-                mp3_tmp.unlink(missing_ok=True)
+                src_tmp.unlink(missing_ok=True)
             except Exception:
                 pass
-        if progress_callback:
-            progress_callback(f"Downloading stems ({idx + 1}/{len(dl_items)})...")
+
+    # raw_stems is only written from this thread (in the as_completed loop), so
+    # the workers never touch shared state.
+    with _TPE(max_workers=6) as _dl_pool:
+        _futs = [_dl_pool.submit(_fetch_stem, k, u) for k, u in dl_items]
+        for _done, _fut in enumerate(_as_done(_futs), start=1):
+            _res = _fut.result()
+            if _res:
+                raw_stems[_res[0]] = _res[1]
+            if progress_callback:
+                progress_callback(f"Downloading stems ({_done}/{len(dl_items)})...")
 
     if not raw_stems:
         raise RuntimeError("Replicate returned no downloadable stems")
