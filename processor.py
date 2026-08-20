@@ -2,7 +2,8 @@
 processor.py — Core audio processing pipeline for Riffd.
 
 Used ONLY in deep analysis mode (not instant). All functions here are heavy.
-Imports (numpy, pandas, basic_pitch) are deferred via _ensure_imports().
+Imports are deferred: numpy/pandas via _ensure_imports(), basic_pitch (and so
+TensorFlow) via _ensure_pitch_imports(), which only child processes should call.
 
 Pipeline (called by app.py process_audio deep path):
   1. separate_stems()  — Demucs subprocess → stereo refinement → labeled WAV stems
@@ -42,20 +43,43 @@ from compat import patch_lzma as _patch_lzma
 
 
 def _ensure_imports():
-    """Lazy-load numpy, pandas, and basic_pitch on first use."""
-    global np, pd, ICASSP_2022_MODEL_PATH, predict
+    """Lazy-load the DSP imports (numpy, pandas) on first use.
+
+    Deliberately does NOT import basic_pitch. `basic_pitch.inference` pulls in
+    TensorFlow, ~1.2GB that the process never gives back, and this function runs
+    in the parent gunicorn worker on every job. Pitch inference happens in a
+    child process (app.py spawns it) precisely so the OS reclaims that memory on
+    exit; see _ensure_pitch_imports below.
+    """
+    global np, pd
     if np is not None:
         return
     _patch_lzma()
     import numpy as _np
     import pandas as _pd
-    from basic_pitch import ICASSP_2022_MODEL_PATH as _model_path
-    from basic_pitch.inference import predict as _predict
     np = _np
     pd = _pd
+    print("[processor] DSP imports loaded (numpy, pandas)")
+
+
+def _ensure_pitch_imports():
+    """Lazy-load basic_pitch — and with it TensorFlow — on first use.
+
+    Call this ONLY from code that genuinely runs inference in the current
+    process. Today that is extract_note_events(), which app.py invokes in a
+    child process. Calling it in the parent puts ~1.2GB of TF into a worker
+    that has to stay under ~850MB while that child is alive, which is how the
+    OOMs happened.
+    """
+    global ICASSP_2022_MODEL_PATH, predict
+    if predict is not None:
+        return
+    _ensure_imports()
+    from basic_pitch import ICASSP_2022_MODEL_PATH as _model_path
+    from basic_pitch.inference import predict as _predict
     ICASSP_2022_MODEL_PATH = _model_path
     predict = _predict
-    print("[processor] heavy imports loaded (numpy, pandas, basic_pitch)")
+    print("[processor] pitch imports loaded (basic_pitch + TensorFlow)")
 
 
 # ── Replicate constants (module-level so warm-up + separation share them) ──
@@ -1596,7 +1620,7 @@ def extract_note_events(stem_path: str, stem_name: str, label: str = "", bpm: fl
         configs: Optional per-job INSTRUMENT_CONFIGS copy (from get_adjusted_configs).
                  Falls back to module-level INSTRUMENT_CONFIGS when None.
     """
-    _ensure_imports()
+    _ensure_pitch_imports()   # runs in a child process — TF is reclaimed on exit
     renderer = _get_tab_renderer(label or stem_name)
     config = _get_instrument_config(renderer, configs)
 
