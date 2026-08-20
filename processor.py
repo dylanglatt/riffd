@@ -916,6 +916,10 @@ def _separate_stems_replicate(audio_path: Path, out_dir: Path, progress_callback
     # completing at 376s (cold start included). Base 420s covers cold start +
     # a typical ~4-min song; add 90s of headroom per minute of audio beyond
     # 4 minutes, capped at 25 min so a hung prediction can't stall the queue.
+    # NOTE: this is the ceiling for ONE separation attempt, not an estimate of
+    # how long analysis takes (p50 is ~147s end to end). Up to MAX_RETRIES
+    # attempts can each spend this long, which is why the frontend's copy is
+    # driven by the p50 and not by this number.
     _track_dur_s = _probe_duration_s(audio_path)
     _extra_wait = max(0.0, _track_dur_s - 240.0) / 60.0 * 90.0
     MAX_WAIT = int(min(420 + _extra_wait, 1500))

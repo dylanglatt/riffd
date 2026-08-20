@@ -138,6 +138,9 @@
     .waveform-wrap { display:none; }
     .proc-status { display:none; }
     .proc-estimate { display:none; }
+    /* Duration disclosure next to the CTA. 0.6 alpha on --bg (#0B0B0B) is
+       6.74:1 — the old below-fold line was 0.35 alpha, i.e. 2.99:1, under AA. */
+    .hero-cta-note { margin-top:10px; font-size:0.8125rem; color:rgba(245,245,245,0.6); letter-spacing:-0.01em; }
 
     /* ═══ Mix Loading State ═══ */
     .skeleton-channel { pointer-events:none; opacity:0.6; }
@@ -564,8 +567,8 @@
           <div class="cap-desc">Loop sections, focus on parts, and learn faster.</div>
         </div>
       </div>
-      <div style="margin-top:32px; text-align:center; font-size:0.875rem; color:rgba(245,245,245,0.35); letter-spacing:-0.01em;">
-        Analysis takes 5–10 minutes. Want instant results? <a href="/demo" style="color:rgba(245,245,245,0.55); text-decoration:underline; text-underline-offset:3px; transition:color .15s;" onmouseover="this.style.color='rgba(245,245,245,0.8)'" onmouseout="this.style.color='rgba(245,245,245,0.55)'">Browse the demo library →</a>
+      <div style="margin-top:32px; text-align:center; font-size:0.875rem; color:rgba(245,245,245,0.55); letter-spacing:-0.01em;">
+        Analysis takes about 2–3 minutes. Want instant results? <a href="/demo" style="color:rgba(245,245,245,0.55); text-decoration:underline; text-underline-offset:3px; transition:color .15s;" onmouseover="this.style.color='rgba(245,245,245,0.8)'" onmouseout="this.style.color='rgba(245,245,245,0.55)'">Browse the demo library →</a>
       </div>
     </div>
   </div>
@@ -583,6 +586,7 @@
       <div class="proc-chips" id="proc-chips"></div>
       <div class="hero-actions" id="hero-actions">
         <button class="hero-cta" id="process-btn" onclick="startProcessing()">Dive In</button>
+        <div class="hero-cta-note" id="hero-cta-note">Takes about 2–3 minutes</div>
         <button class="hero-back" onclick="resetApp()">Pick another song</button>
         <div id="error-msg" class="error-msg" style="text-align:center;margin-top:10px"></div>
       </div>
@@ -1714,7 +1718,15 @@ function _buildWaveform() {
 }
 
 // ─── Processing ─────────────────────────────────────────────────────────────
-const POLL_TIMEOUT_MS = 19 * 60 * 1000; // 19 minutes max polling — matches backend JOB_TIMEOUT (20min) with 1min buffer
+// Client gives up last. The ladder, measured p50 ~147s end to end:
+//   ~147s  typical run, and what the CTA promises ("about 2-3 minutes")
+//   420s   processor.MAX_WAIT — ceiling for ONE cloud separation attempt
+//   600s   app.JOB_TIMEOUT — backend watchdog marks the job errored
+//   660s   this — so the watchdog fires ~1 min FIRST and the user sees the
+//          real error instead of a generic "taking a while" overlay.
+// Was 19 min against a 20 min JOB_TIMEOUT, which had that backwards: the
+// client bailed first and the backend's message never reached anyone.
+const POLL_TIMEOUT_MS = 11 * 60 * 1000;
 let _pollStartTime = 0;
 
 function _resetLoadingUI() {

@@ -1796,7 +1796,13 @@ with open({_result_path!r}, "wb") as f:
     return jsonify({"status": "processing", "job_id": job_id})
 
 
-JOB_TIMEOUT = 1200  # 20 minutes — must fire before frontend poll timeout (19 min) to ensure clean error
+# Watchdog ceiling for a whole job. MUST stay below the frontend's
+# POLL_TIMEOUT_MS (11 min) so this fires first and the user sees the real
+# error rather than a generic "taking a while" overlay. The old pairing —
+# 1200s here against a 1140s client timeout — had exactly the inversion its
+# own comment warned about, so this watchdog's message never reached anyone.
+# 600s is ~4x the measured p50 of ~147s and above one MAX_WAIT (420s).
+JOB_TIMEOUT = 600
 
 @app.route("/api/status/<job_id>")
 def job_status(job_id):

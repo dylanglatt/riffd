@@ -87,7 +87,7 @@ Hearing an isolated bass line is one form of musical insight. Seeing the key, th
 
 ## Features
 
-**Stem separation.** GPU-accelerated neural source separation via Demucs, isolating vocals, bass, drums, guitar, piano, and other instruments in approximately 20 seconds on cloud GPU.
+**Stem separation.** GPU-accelerated neural source separation via Demucs, isolating vocals, bass, drums, guitar, piano, and other instruments. Separation itself takes roughly 20 seconds on cloud GPU; a full analysis — download, separation, stereo refinement, pitch, key/BPM and enrichment — runs about 2–3 minutes end to end.
 
 **Interactive mixer.** Stems organized by instrument family, with per-stem volume faders, mute, solo, real-time pitch transposition across all stems simultaneously (±12 semitones), loop controls, karaoke mode, and a Full Mix reset that restores energy-balanced defaults.
 
@@ -113,7 +113,7 @@ Hearing an isolated bass line is one form of musical insight. Seeing the key, th
 
 **Audio acquisition.** Full-track download via yt-dlp with dual-binary retry, bot detection bypass, and proxy support. Riffd falls back through Cobalt and Piped APIs before surfacing an upload prompt, rather than silently degrading to a short preview. Background prefetch fires on song selection, so the download is typically complete before the user begins analysis.
 
-**GPU stem separation.** Demucs (htdemucs_6s) runs on cloud GPU via Replicate's file API, completing separation in approximately 20 seconds. STFT-domain panning analysis then refines each stem by stereo position — center, left-panned, right-panned — with RMS energy gating to suppress ghost components below threshold.
+**GPU stem separation.** Demucs (htdemucs_6s) runs on cloud GPU via Replicate's file API, completing separation in approximately 20 seconds — about a sixth of the ~2–3 minute end-to-end analysis. STFT-domain panning analysis then refines each stem by stereo position — center, left-panned, right-panned — with RMS energy gating to suppress ghost components below threshold.
 
 **ML pipeline with progressive delivery.** Stem separation (Demucs), pitch extraction (Basic Pitch / TensorFlow), and key/BPM detection (Essentia) run as one end-to-end pipeline with per-stage error isolation. Key and BPM results are pushed to the frontend as they complete, so users see them before stems finish loading. Pitch inference runs in a child process so its memory is reclaimed on exit rather than accumulating in the worker.
 
@@ -123,7 +123,7 @@ Hearing an isolated bass line is one form of musical insight. Seeing the key, th
 
 **Performance.** Audio downloads as MP3 to skip transcoding (10x smaller than WAV). Stems are re-encoded to 192 kbps MP3 post-analysis before being served (20x reduction). Heavy Python imports — numpy, TensorFlow, Basic Pitch — are deferred to first job execution, keeping startup RSS at approximately 40 MB instead of 300 MB.
 
-**Memory and cleanup.** TensorFlow sessions are explicitly cleared after each job via `keras.backend.clear_session()` to prevent memory compounding across sequential runs. Completed jobs are pruned from memory after 10 minutes; job directories are removed from disk after 7 days.
+**Memory and cleanup.** Pitch inference runs in a child process, so TensorFlow's memory is reclaimed by the OS on exit rather than compounding across sequential runs in the worker. Completed jobs are pruned from memory after 10 minutes; job directories are removed from disk after 7 days.
 
 ---
 
