@@ -2040,9 +2040,9 @@ function pollStatus(){
       // Progressive stem loading — transport enabled by _tryEnableEarlyPlayback once buffers are decoded
       let _stemsJustLoaded = false;
       if (d.stems && (d.status === 'complete' || d.status === 'partial' || d.status === 'processing')) {
-        // Evict stems that the backend has replaced (e.g. parent stem replaced by
-        // lead + accompaniment children after melodic split).  Without this, old
-        // parent channels linger in the mixer alongside their children.
+        // Evict stems that the backend has replaced (e.g. a parent stem replaced by
+        // its stereo sub-parts).  Without this, old parent channels linger in the
+        // mixer alongside their children.
         Object.keys(_loadedStems).filter(k => !d.stems[k]).forEach(stemName => {
           _removeStemChannel(stemName);
           delete _loadedStems[stemName];
