@@ -477,7 +477,7 @@ def _trim_job_result(job_id):
     job["_finished_at"] = time.time()
     # Keep only what the status endpoint needs
     kept = {"status", "progress", "audio_source", "audio_mode", "error", "errors",
-            "_started_at", "_finished_at", "_result_delivered", "_trimmed"}
+            "track_meta", "_started_at", "_finished_at", "_result_delivered", "_trimmed"}
     job["_trimmed"] = True
     for key in list(job.keys()):
         if key not in kept:
@@ -1060,6 +1060,16 @@ def process_audio(job_id):
                                 if _is_long_track else "Separating stems...")
     jobs[job_id]["_started_at"] = _time_mod.time()
     jobs[job_id]["_last_progress_at"] = _time_mod.time()
+    # Publish the track's identity on the job. A tab that reconnects via ?job=
+    # has no selectedTrack — it never ran the search — so without this the
+    # status payload cannot say WHAT is being analyzed and the banner falls
+    # back to "Result / Unknown". Small dict; name/artist/artwork only.
+    if track_meta:
+        jobs[job_id]["track_meta"] = {
+            k: track_meta.get(k) for k in
+            ("name", "artist", "image_url", "year", "id", "artist_id", "duration_ms")
+            if track_meta.get(k) is not None
+        }
     upsert_job_checkpoint(job_id, "processing", progress="Separating stems...")
     print(f"[job {job_id}] process start analysis_mode=deep audio={audio_path}")
     log_event("deep_analysis_start", {"job_id": job_id, "audio_source": job.get("audio_source")})
@@ -1243,6 +1253,7 @@ def process_audio(job_id):
                         "audio_mode": jobs[job_id].get("audio_mode", "full"),
                         "job_id": job_id,
                         "track_id": spotify_track_id,
+                        "track_meta": jobs[job_id].get("track_meta"),
                     })
                     add_to_history(spotify_track_id, track_meta, job_id)
 
@@ -1916,6 +1927,7 @@ def _rehydrate_job(job_id):
             "recommendations": cached.get("recommendations"),
             "audio_source": cached.get("audio_source"),
             "audio_mode": cached.get("audio_mode", "full"),
+            "track_meta": cached.get("track_meta"),
             "_rehydrated": True,
         }
     elif cached_result_path(job_id):

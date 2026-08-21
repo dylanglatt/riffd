@@ -3226,6 +3226,21 @@ function _clearJobId() {
     const d = await r.json();
     if (!d.status || d.error === 'Unknown job ID') { _clearJobId(); return; }
 
+    // Adopt the job's track before rendering anything. This tab never ran the
+    // search, so selectedTrack is null and every banner/hero falls back to
+    // "Result / Unknown" — which is what made a resumed in-flight job look
+    // broken rather than busy. The backend now publishes track_meta on the job.
+    if (d.track_meta && d.track_meta.name && !selectedTrack) {
+      selectedTrack = {
+        id: d.track_meta.id || null,
+        name: d.track_meta.name,
+        artist: d.track_meta.artist || "",
+        year: d.track_meta.year || "",
+        image_url: d.track_meta.image_url || null,
+        artist_id: d.track_meta.artist_id || null,
+      };
+    }
+
     if (d.status === 'complete' || d.status === 'partial') {
       // Job already finished — render results directly without re-downloading
       currentJobId = savedJobId;
@@ -3240,9 +3255,15 @@ function _clearJobId() {
 
     if (d.status === 'error') { _clearJobId(); return; }
 
-    // Job is still in progress (processing / queued / ready / downloading) — resume polling
+    // Job is still in progress (processing / queued / ready / downloading) —
+    // show the same loading UI the original tab is showing and resume polling.
+    // _showMixLoading() is that UI: phase stepper, skeleton channels, rotating
+    // status and elapsed timer, with the transport disabled until buffers
+    // decode. It only reads as a broken results page when the banner above it
+    // can't name the track, which the selectedTrack adoption above fixes.
     currentJobId = savedJobId;
     _showMixLoading();
+    _populateHero();
     _topBar.show();
     showView('results');
     _elapsedTimer.start();
