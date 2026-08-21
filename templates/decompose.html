@@ -2040,11 +2040,17 @@ function pollStatus(){
       const d = await r.json();
 
       if(r.status === 404 || d.error === "Unknown job ID" || !d.status) {
+        // Cause-neutral on purpose. A 404 here means the job isn't in the
+        // server's memory, which is almost never a restart \u2014 completed jobs are
+        // pruned after 10 minutes, and a shared or bookmarked ?job= link goes
+        // stale the same way. Say what's true in all of those cases. The restart
+        // wording belongs only to the case the backend can actually confirm,
+        // which arrives as error_step "orphaned" below.
         _fullErrorCleanup();
         showCapacity(
-          "Riffd had a hiccup",
-          "The server restarted while processing your track. Sorry about that \u2014 try again.",
-          "Try Again",
+          "That analysis has expired",
+          "This one\u2019s no longer available \u2014 run it again to get it back.",
+          "Analyze Again",
           {clearJob: true, autoRetry: true}
         );
         return;
