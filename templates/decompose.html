@@ -2158,8 +2158,9 @@ function pollStatus(){
 
       } else if (d.status === 'complete' || d.status === 'partial') {
         jobData = d;
+        if (d.stems_available === false) _applyStemsUnavailable();
         // Final stem loading — evict any parent stems that were replaced, then add children
-        if (d.stems) {
+        if (d.stems && d.stems_available !== false) {
           Object.keys(_loadedStems).filter(k => !d.stems[k]).forEach(stemName => {
             _removeStemChannel(stemName);
             delete _loadedStems[stemName];
@@ -2307,14 +2308,36 @@ function _hideResultWarning() {
   if (el) el.style.display = "none";
 }
 
+// The analysis outlives its audio: the backend deletes outputs/<job>/stems after
+// 30 minutes idle but deliberately keeps result_cache.json, so /api/status can
+// still serve key, BPM, chords, lyrics and recommendations with
+// stems_available:false. Hide the mixer rather than rendering a player whose
+// every stem 404s — everything below it is still real.
+function _clearStemsUnavailable() {
+  const wrap = document.querySelector(".mix-wrapper");
+  if (wrap) wrap.style.display = "";
+  _hideResultWarning();
+}
+
+function _applyStemsUnavailable() {
+  const wrap = document.querySelector(".mix-wrapper");
+  if (wrap) wrap.style.display = "none";
+  const mixerEl = document.getElementById("mixer-channels");
+  if (mixerEl) { mixerEl.innerHTML = ""; mixerEl.classList.remove("stems-loading"); }
+  document.querySelectorAll(".transport-btn").forEach(b => b.classList.add("transport-disabled"));
+  _showResultWarning("The isolated stems for this analysis have expired. Everything below is still here — analyze the track again to get the mixer back.");
+}
+
 // ─── Results ────────────────────────────────────────────────────────────────
 async function renderResults(data) {
-  _hideResultWarning();
+  _clearStemsUnavailable();
   buildBanner("results-banner", selectedTrack||{name:"Result",artist:""}, data.audio_source, data.audio_mode);
 
   const stems=data.stems||{}, intel=data.intelligence||{}, recs=data.recommendations||{}, lyrics=data.lyrics||null, tags=data.tags||[];
   const activeNames = Object.keys(stems).filter(n => {const i=stems[n]; return !i||i.active!==false;});
-  if(!activeNames.length){setError("No stems detected.");showView("search");return;}
+  // Explicit false only — a live job doesn't send the flag at all.
+  const _stemsGone = data.stems_available === false;
+  if(!activeNames.length && !_stemsGone){setError("No stems detected.");showView("search");return;}
   const metaEl=document.getElementById("results-meta-chips");
   let chips="";
 
@@ -2343,14 +2366,22 @@ async function renderResults(data) {
   // Smart recommendations
   _renderSmartRecs(_smartRecs);
 
-  document.getElementById("mixer-channels").innerHTML=activeNames.map(n=>{const l=formatStemLabel(n,(stems[n]&&stems[n].label)||"");const iv=_energyToVolume(stems[n]&&stems[n].energy);return`<div class="channel" id="ch-${n}"><div class="channel-name">${esc(l)}</div><div class="channel-volume"><input type="range" class="vol-slider" min="0" max="100" value="${iv}" oninput="setVolume('${n}',this.value)" id="vol-${n}"/><span class="vol-label" id="vol-label-${n}">${iv}</span></div><button class="ch-btn" id="mute-${n}" onclick="toggleMute('${n}')">M</button><button class="ch-btn" id="solo-${n}" onclick="toggleSolo('${n}')">S</button><button class="ch-btn stem-dl-btn" onclick="_downloadStem('${n}')" title="Download stem"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button></div>`;}).join("");
+  if(!_stemsGone) document.getElementById("mixer-channels").innerHTML=activeNames.map(n=>{const l=formatStemLabel(n,(stems[n]&&stems[n].label)||"");const iv=_energyToVolume(stems[n]&&stems[n].energy);return`<div class="channel" id="ch-${n}"><div class="channel-name">${esc(l)}</div><div class="channel-volume"><input type="range" class="vol-slider" min="0" max="100" value="${iv}" oninput="setVolume('${n}',this.value)" id="vol-${n}"/><span class="vol-label" id="vol-label-${n}">${iv}</span></div><button class="ch-btn" id="mute-${n}" onclick="toggleMute('${n}')">M</button><button class="ch-btn" id="solo-${n}" onclick="toggleSolo('${n}')">S</button><button class="ch-btn stem-dl-btn" onclick="_downloadStem('${n}')" title="Download stem"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button></div>`;}).join("");
   document.getElementById("loop-start").value="0:00";document.getElementById("loop-end").value="";loopActive=false;document.getElementById("loop-btn").classList.remove("active");
   transposeAmount=0;document.getElementById("transpose-display").textContent="0";document.getElementById("transposed-key").textContent="";
 
   const lyricsEl=document.getElementById("lyrics-content");
   if(lyrics&&lyrics.trim()){lyricsEl.innerHTML=_formatLyrics(lyrics);}
   else{lyricsEl.innerHTML='<div class="lyrics-empty">Lyrics not available for this track.</div>';}
-  switchPanel(_defaultTab || "mix");
+  // Unlock the side tabs. _unlockTabs() was only ever called from the poll
+  // loop's completion branch, so a job rendered through this path — a ?job=
+  // resume or a shared link — left Key/Lyrics/Recommended at
+  // opacity 0.25 with pointer-events:none, i.e. permanently unclickable.
+  // Rarely hit before, because this path used to require the job to still be
+  // in memory; rehydration makes it the normal way old links render.
+  _unlockTabs();
+  // Don't land on an empty Mix panel when there is no mixer to show.
+  switchPanel(_stemsGone ? "key" : (_defaultTab || "mix"));
   _defaultTab = "mix";
 
   // Show results immediately — don't wait for audio decode
@@ -2364,22 +2395,29 @@ async function renderResults(data) {
     _addShareButton();
   }
 
-  // Load audio in background (parallel decode, non-blocking)
-  // Skip if stems were already preloaded during processing poll loop
-  _reorganizeStemGroups();
-  if (_stemsPreloading || Object.keys(stemBuffers).length > 0) {
-    console.log("[audio] stems already preloaded, skipping loadStemAudio");
-    _buildPlayerWaveform();
+  if (_stemsGone) {
+    // No audio to decode and no waveform to build — do not call loadStemAudio,
+    // every request would 404.
+    _applyStemsUnavailable();
   } else {
-    loadStemAudio(activeNames).then(() => {
+    // Load audio in background (parallel decode, non-blocking)
+    // Skip if stems were already preloaded during processing poll loop
+    _reorganizeStemGroups();
+    if (_stemsPreloading || Object.keys(stemBuffers).length > 0) {
+      console.log("[audio] stems already preloaded, skipping loadStemAudio");
       _buildPlayerWaveform();
-    }).catch(e => console.warn("[audio] decode error:", e));
+    } else {
+      loadStemAudio(activeNames).then(() => {
+        _buildPlayerWaveform();
+      }).catch(e => console.warn("[audio] decode error:", e));
+    }
   }
 
 }
 
 // ─── Mix Loading State ─────────────────────────────────────────────────────
 function _showMixLoading() {
+  _clearStemsUnavailable();   // a previous expired render must not hide this one's mixer
   buildBanner("results-banner", selectedTrack || {name:"Result",artist:""}, null, null);
   const _rmc = document.getElementById("results-meta-chips"); if(_rmc) _rmc.innerHTML = '';
   const _rss = document.getElementById("share-action-slot"); if(_rss) _rss.innerHTML = '';
@@ -2844,7 +2882,7 @@ function resetApp(){
   document.getElementById("loop-btn").classList.remove("active");document.getElementById("transpose-display").textContent="0";document.getElementById("transposed-key").textContent="";
   document.getElementById("proc-estimate").classList.remove("visible");
   const _bgBlur = document.getElementById("proc-bg-blur"); if (_bgBlur) _bgBlur.style.backgroundImage = "";
-  _hideResultWarning();setError("");dismissCapacity();showView("search");
+  _clearStemsUnavailable();setError("");dismissCapacity();showView("search");
 }
 function fmtMs(ms){const s=Math.floor((ms||0)/1000);return`${Math.floor(s/60)}:${String(s%60).padStart(2,"0")}`;}
 function fmtSec(s){s=Math.max(0,Math.floor(s||0));return`${Math.floor(s/60)}:${String(s%60).padStart(2,"0")}`;}

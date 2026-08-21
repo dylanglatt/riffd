@@ -70,10 +70,12 @@ from spotify_search import search_spotify, get_recommendations_for_track, RateLi
 from external_apis import get_lyrics, get_track_tags, enrich_recommendations_with_lastfm, _get_art_for_track
 from downloader import download_audio_from_youtube, resolve_audio, AudioUnavailableError
 from analytics import log_event
-from history import add_to_history, get_recent, get_cached_result, save_cached_result, touch_history
+from history import (add_to_history, get_recent, get_cached_result, get_cached_result_by_job,
+                     cached_result_path, save_cached_result, touch_history)
 from db import (init_db, migrate_from_history_json, get_track, upsert_track, set_track_status,
                 touch_track, get_recent_tracks, get_analysis_for_track, upsert_job_checkpoint,
-                recover_orphaned_jobs, get_visible_demo_tracks, get_demo_track, upsert_demo_track)
+                get_job_checkpoint, recover_orphaned_jobs, get_visible_demo_tracks,
+                get_demo_track, upsert_demo_track)
 
 load_dotenv()
 
@@ -475,7 +477,8 @@ def _trim_job_result(job_id):
     job["_finished_at"] = time.time()
     # Keep only what the status endpoint needs
     kept = {"status", "progress", "audio_source", "audio_mode", "error", "errors",
-            "_started_at", "_finished_at", "_result_delivered"}
+            "_started_at", "_finished_at", "_result_delivered", "_trimmed"}
+    job["_trimmed"] = True
     for key in list(job.keys()):
         if key not in kept:
             del job[key]
@@ -1849,12 +1852,128 @@ with open({_result_path!r}, "wb") as f:
     return jsonify({"status": "processing", "job_id": job_id})
 
 
+def _stems_on_disk(job_id) -> list:
+    """Stem keys still present in outputs/<job_id>/stems, newest format first."""
+    stems_dir = OUTPUT_DIR / job_id / "stems"
+    if not stems_dir.exists():
+        return []
+    names = set()
+    for f in stems_dir.iterdir():
+        # _raw_* are separation intermediates, not deliverable stems
+        if f.suffix in (".mp3", ".wav") and not f.name.startswith("_raw_"):
+            names.add(f.stem)
+    return sorted(names)
+
+
+def _rehydrate_job(job_id):
+    """Rebuild a job from persisted state after it left the in-memory dict.
+
+    A miss in `jobs` is usually not a restart: _prune_old_jobs() evicts finished
+    jobs after 600s while result_cache.json and the stems are still on disk, and
+    a shared ?job= link goes stale the same way. Three durable sources already
+    exist, so consult them before giving up.
+
+    Returns a job dict (also inserted into `jobs`), or None to let the 404 stand.
+    """
+    import time as _rt
+    checkpoint = get_job_checkpoint(job_id)
+    if not checkpoint:
+        return None                      # we genuinely never had this job
+
+    status = (checkpoint.get("status") or "").strip()
+
+    # Still marked processing means the worker died mid-job — nothing resumed it,
+    # because job state is per-process. This is the ONLY case where "the server
+    # restarted" is an honest thing to tell the user.
+    if status in ("processing", "queued", "downloading", "ready"):
+        print(f"[job {job_id}] REHYDRATE → orphaned (checkpoint status={status!r})")
+        return {
+            "status": "error",
+            "error": "Processing was interrupted before it finished.",
+            "error_step": "orphaned",
+            "progress": checkpoint.get("progress") or "Interrupted",
+        }
+
+    if status not in ("complete", "partial"):
+        return None
+
+    cached = get_cached_result_by_job(job_id)   # None on a version mismatch too
+    stem_keys = _stems_on_disk(job_id)
+
+    if cached:
+        # The stems dict describes what the analysis produced; only serve it when
+        # the audio is actually still there, or every channel 404s on load.
+        job = {
+            "status": status,
+            "progress": "Done!" if status == "complete" else "Completed with errors",
+            "stems": cached.get("stems", {}) if stem_keys else {},
+            "stems_available": bool(stem_keys),
+            "stems_ready": bool(stem_keys),
+            "intelligence": cached.get("intelligence"),
+            "lyrics": cached.get("lyrics"),
+            "tags": cached.get("tags", []),
+            "insight": cached.get("insight"),
+            "recommendations": cached.get("recommendations"),
+            "audio_source": cached.get("audio_source"),
+            "audio_mode": cached.get("audio_mode", "full"),
+            "_rehydrated": True,
+        }
+    elif cached_result_path(job_id):
+        # A cache file exists but get_cached_result_by_job rejected it — stale
+        # ANALYSIS_VERSION. Do not fall through to the stems on disk: after the
+        # v5->v6 bump those may be stem types this pipeline no longer produces
+        # (lead_guitar, rhythm_guitar). Expire it and let the user re-analyze.
+        print(f"[job {job_id}] REHYDRATE → refused, cached analysis is a stale version")
+        return None
+    elif stem_keys:
+        # Uploads never write result_cache.json — save_cached_result is gated on
+        # spotify_track_id — so there is no analysis to restore. The stems are
+        # still on disk though, so hand back the multitrack rather than nothing.
+        # energy is None so _addStemChannel's <0.015 skip doesn't drop them.
+        print(f"[job {job_id}] REHYDRATE → stems only ({len(stem_keys)}), no cached analysis")
+        job = {
+            "status": status,
+            "progress": "Done!",
+            "stems": {k: {"label": "", "energy": None, "active": True} for k in stem_keys},
+            "stems_available": True,
+            "stems_ready": True,
+            "_rehydrated": True,
+            "_stems_only": True,
+        }
+    else:
+        return None                      # checkpoint survived, the data didn't
+
+    if checkpoint.get("error"):
+        job["error"] = checkpoint["error"]
+
+    now = _rt.time()
+    # _finished_at so _prune_old_jobs can evict this again on its normal cycle.
+    job["_finished_at"] = now
+    jobs[job_id] = job
+    if stem_keys:
+        # Without this the 1800s idle sweep could delete the stems moments after
+        # we handed the user a mixer built on them.
+        _stem_last_accessed[job_id] = now
+    print(f"[job {job_id}] REHYDRATE → {status} "
+          f"(stems={'yes' if stem_keys else 'expired'}, cache={'hit' if cached else 'miss'})")
+    return job
+
+
 @app.route("/api/status/<job_id>")
 def job_status(job_id):
     import time as _t
-    if job_id not in jobs:
-        print(f"[job {job_id}] STATUS POLL → unknown job")
-        return jsonify({"error": "Unknown job ID"}), 404
+    # A trimmed job is as empty as a missing one: _trim_job_result strips stems
+    # and intelligence once the original client has collected them, so a LATER
+    # poller — someone opening a shared ?job= link — would otherwise get a
+    # "complete" payload with nothing in it. Rehydrating restores the full result
+    # from disk; it gets trimmed again on the same cycle.
+    if job_id not in jobs or jobs[job_id].get("_trimmed"):
+        rehydrated = _rehydrate_job(job_id)
+        if rehydrated is None:
+            print(f"[job {job_id}] STATUS POLL → unknown job")
+            return jsonify({"error": "Unknown job ID"}), 404
+        if rehydrated.get("error_step") == "orphaned":
+            return jsonify(rehydrated)   # not stored in `jobs` — nothing to poll
     job = jobs[job_id]
 
     # Watchdog: force-expire stuck jobs.

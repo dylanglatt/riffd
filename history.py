@@ -153,7 +153,40 @@ def get_cached_result(track_id: str) -> dict | None:
     if not job_id:
         return None
 
-    # Load the cached result JSON
+    result = get_cached_result_by_job(job_id)
+    if result is not None:
+        print(f"[cache] HIT for {track_id} (job={job_id}, v={ANALYSIS_VERSION})")
+    return result
+
+
+def cached_result_path(job_id: str) -> "Path | None":
+    """Path to a job's cache file if it exists on disk, else None.
+
+    Lets a caller distinguish "this job never had a cached analysis" from "it has
+    one but the version is stale" — get_cached_result_by_job returns None for
+    both, and they warrant different answers.
+    """
+    if not job_id:
+        return None
+    p = CACHE_DIR / job_id / "result_cache.json"
+    return p if p.exists() else None
+
+
+def get_cached_result_by_job(job_id: str) -> dict | None:
+    """
+    Load a cached result straight from its job directory, bypassing history.
+
+    The cache file has always been job-keyed on disk; get_cached_result() just
+    reaches it via track_id -> history -> job_id. /api/status starts from the
+    job_id, so it needs this door instead.
+
+    Returns None on a version mismatch, same as the track-keyed path — after a
+    ANALYSIS_VERSION bump an old file describes stems this pipeline can no
+    longer produce.
+    """
+    if not job_id:
+        return None
+
     cache_file = CACHE_DIR / job_id / "result_cache.json"
     if not cache_file.exists():
         print(f"[cache] no cache file at {cache_file}")
@@ -161,12 +194,10 @@ def get_cached_result(track_id: str) -> dict | None:
 
     try:
         result = json.loads(cache_file.read_text())
-        # Verify version in the cache file itself
         if result.get("_analysis_version") != ANALYSIS_VERSION:
-            print(f"[cache] cache file version mismatch")
+            print(f"[cache] cache file version mismatch for job={job_id} "
+                  f"({result.get('_analysis_version')} != {ANALYSIS_VERSION})")
             return None
-
-        print(f"[cache] HIT for {track_id} (job={job_id}, v={ANALYSIS_VERSION})")
         return result
     except (json.JSONDecodeError, IOError) as e:
         print(f"[cache] load error: {e}")

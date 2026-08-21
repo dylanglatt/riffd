@@ -338,6 +338,22 @@ def delete_demo_track(slug: str):
         conn.execute("DELETE FROM demo_tracks WHERE slug = ?", (slug,))
 
 
+def get_job_checkpoint(job_id):
+    """Return one checkpoint row as a dict, or None.
+
+    The durable record of a job. Survives both the 600s in-memory prune and a
+    process restart, so /api/status can answer for a job the `jobs` dict has
+    long since dropped.
+    """
+    if not job_id:
+        return None
+    with _db() as conn:
+        row = conn.execute(
+            "SELECT * FROM job_checkpoints WHERE job_id = ?", (job_id,)
+        ).fetchone()
+        return dict(row) if row else None
+
+
 def recover_orphaned_jobs():
     """Return all checkpoint rows where status = 'processing' (orphaned by restart)."""
     with _db() as conn:
