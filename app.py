@@ -259,11 +259,12 @@ _active_processing = 0
 # Allow multiple concurrent jobs; tune via MAX_CONCURRENT_JOBS env var if needed.
 MAX_CONCURRENT_JOBS = int(os.getenv("MAX_CONCURRENT_JOBS", "1"))
 
-# TensorFlow inference lock — only one job runs Basic Pitch at a time.
-# TF loads ~1.2GB and is not safely reentrant across threads. Two concurrent
-# jobs hitting inference simultaneously would OOM a 2GB instance. Jobs still
-# run Demucs in parallel (cloud GPU, no local RAM); they only queue here.
-_tf_inference_lock = threading.Lock()
+# Basic Pitch inference lock — only one job runs inference at a time.
+# Each inference child holds ~360MB on the ONNX backend (it was ~820MB under
+# TensorFlow). Two concurrent jobs hitting inference simultaneously would still
+# crowd a 2GB instance, and there is only 1 vCPU to share anyway. Jobs still run
+# Demucs in parallel (cloud GPU, no local RAM); they only queue here.
+_inference_lock = threading.Lock()
 _job_queue: collections.deque = collections.deque()  # jobs waiting for a processing slot
 
 # ─── Background prefetch ─────────────────────────────────────────────────────
@@ -1108,14 +1109,19 @@ def process_audio(job_id):
         # can never trigger. It has been inoperative, not lenient.
         #
         # 1400 is a starting value, not a tuned one. The binding constraint is the
-        # Basic Pitch CHILD process (~1.2GB, app.py:1505) running alongside the
-        # parent, so the parent must stay under roughly 2048-1200 = ~850MB at that
-        # stage. A lean parent is ~40MB (heavy imports are deferred), so anything
-        # above ~1400MB at job start means something has already leaked. The known
-        # offender was the in-process TensorFlow load in _melodic_split_pass, since
-        # deleted; basic_pitch now loads only via _ensure_pitch_imports(), which
-        # only the inference child calls. If this guard trips, look for a new path
-        # pulling TF into the parent.
+        # Basic Pitch CHILD process running alongside the parent. On the ONNX
+        # backend that child peaks at ~360MB (measured), so the parent has
+        # roughly 2048-360 = ~1690MB at that stage and 1400 finally sits below
+        # the ceiling it is supposed to defend. Under TensorFlow the child was
+        # ~820MB+ and the real budget was ~1200MB, so this guard was already
+        # looser than the constraint — the ONNX switch is what made it sound.
+        #
+        # A lean parent is ~40MB (heavy imports are deferred), so anything above
+        # ~1400MB at job start means something has already leaked. The known
+        # offender was the in-process TensorFlow load in _melodic_split_pass,
+        # since deleted; basic_pitch now loads only via _ensure_pitch_imports(),
+        # which only the inference child calls. If this guard trips, look for a
+        # new path importing basic_pitch in the parent.
         # Instrument with _log_memory and tune from real data.
         MEMORY_GUARD_MB = int(os.getenv("MEMORY_GUARD_MB", "1400"))
 
@@ -1131,15 +1137,14 @@ def process_audio(job_id):
         _current_rss = _get_current_rss_mb()
         if _current_rss > MEMORY_GUARD_MB:
             # Post-job cleanup from a prior request may still be settling.
-            # Try the same TF clear + GC the post-job path uses, then wait briefly
-            # and re-measure before giving up.
+            # GC and re-measure a few times before giving up.
+            #
+            # This used to `import tensorflow` and call clear_session() first —
+            # in the parent, the one process that must stay lean, and one that
+            # has never run inference. It could only ever add memory to a path
+            # whose whole job is to free some. TF is no longer installed at all
+            # (see build.sh); do not reintroduce either the import or the call.
             print(f"[job {job_id}] memory high (RSS={_current_rss:.1f}MB > {MEMORY_GUARD_MB}MB) — attempting cleanup")
-            try:
-                import tensorflow as _tf
-                _tf.keras.backend.clear_session()
-                del _tf
-            except Exception:
-                pass
             for _ in range(3):
                 gc.collect()
                 _time.sleep(1.5)
@@ -1494,7 +1499,7 @@ def process_audio(job_id):
             # ── Stage 2.5: Early WAV→MP3 for non-inference stems ──
             # Stems that won't go through Basic Pitch (drums, low-priority pitched)
             # don't need their WAV files anymore. Converting now frees ~190MB per
-            # stem BEFORE TensorFlow loads, cutting peak memory significantly.
+            # stem BEFORE the inference children start, cutting peak memory.
             _DRUM_KEYS = {"drums", "drum", "kick", "snare", "percussion"}
             _SKIP_INFERENCE_KEYS = {
                 "harmony_vocal", "backing_vocal", "synth", "other",
@@ -1557,14 +1562,14 @@ def process_audio(job_id):
             try:
                 from compat import patch_lzma
                 patch_lzma()
-                # Wait for exclusive access to TF before loading the model.
+                # Wait for exclusive access to inference before loading the model.
                 # Logged so we can see queue time in Render logs.
-                if not _tf_inference_lock.acquire(blocking=False):
+                if not _inference_lock.acquire(blocking=False):
                     jobs[job_id]["progress"] = "Waiting for inference slot..."
                     _touch_job(job_id)
-                    print(f"[job {job_id}] [{_elapsed()}] TF lock busy — waiting...")
-                    _tf_inference_lock.acquire()
-                print(f"[job {job_id}] [{_elapsed()}] TF lock acquired")
+                    print(f"[job {job_id}] [{_elapsed()}] inference lock busy — waiting...")
+                    _inference_lock.acquire()
+                print(f"[job {job_id}] [{_elapsed()}] inference lock acquired")
 
                 def _extract_one_stem(stem_key, stem_info):
                     import tempfile as _tempfile, subprocess as _sp, os as _os
@@ -1593,9 +1598,11 @@ def process_audio(job_id):
                     except Exception as _trunc_e:
                         print(f"[job {job_id}] truncation warning ({stem_key}): {_trunc_e} — using full file")
 
-                    # Run Basic Pitch in a child process so TF memory (~1.2GB) is
-                    # fully reclaimed by the OS when the child exits.
-                    # The parent stays lean between stems.
+                    # Run Basic Pitch in a child process so its RSS (~360MB on
+                    # the ONNX backend; ~820MB when TF was installed) is fully
+                    # reclaimed by the OS when the child exits. The parent stays
+                    # lean between stems. Kept after the ONNX switch: 360MB per
+                    # stem retained in a 2048MB worker is still worth isolating.
                     import pickle as _pickle
                     _result_path = None
                     try:
@@ -1666,7 +1673,7 @@ with open({_result_path!r}, "wb") as f:
                     print(f"[job {job_id}] [{_elapsed()}] Basic Pitch → {stem_key} done ({len(ne) if ne is not None else 0} notes)")
                     return stem_key, ne
 
-                TAB_WORKERS = 1  # Sequential to avoid OOM — TF retains memory across parallel workers
+                TAB_WORKERS = 1  # Sequential to avoid OOM — 1 vCPU, and each child holds ~360MB
                 with _TPE(max_workers=TAB_WORKERS) as _tab_pool:
                     tab_futures = {
                         _tab_pool.submit(_extract_one_stem, k, v): k
@@ -1679,20 +1686,20 @@ with open({_result_path!r}, "wb") as f:
 
                 gc.collect()
                 _log_memory(f"[job {job_id}] post-basic-pitch")
-                # No TF clear_session() here. This block used to `import
+                # No clear_session() here. This block used to `import
                 # tensorflow` and call clear_session() on the parent — a parent
                 # that never ran inference. Inference happens in the child
-                # spawned above, and the child's ~1.2GB is already gone the
-                # moment it exits. All the import achieved was pulling TF into
-                # the one process that must stay lean.
+                # spawned above, and the child's RSS is already gone the moment
+                # it exits. All the import achieved was pulling TF into the one
+                # process that must stay lean. TF is no longer installed at all.
                 print(f"[job {job_id}] [{_elapsed()}] NOTE EXTRACTION finished → {len(note_events_all)} stems with notes")
             except Exception as e:
                 _fail("note_extraction", e)
             finally:
                 # Always release the lock — even if inference crashed — so the next job isn't stuck.
                 try:
-                    _tf_inference_lock.release()
-                    print(f"[job {job_id}] [{_elapsed()}] TF lock released")
+                    _inference_lock.release()
+                    print(f"[job {job_id}] [{_elapsed()}] inference lock released")
                 except RuntimeError:
                     pass  # Already released or never acquired (e.g. no pitched stems)
 

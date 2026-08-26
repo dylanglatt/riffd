@@ -14,29 +14,86 @@ The parent gunicorn worker must stay lean. Heavy imports are deferred to first j
 startup RSS is ~40 MB instead of ~300 MB. That is intentional; don't hoist them to
 module scope.
 
-**TensorFlow must never be loaded in the parent process.** Basic Pitch runs in a
-child process (`app.py` ~1505) specifically so the OS reclaims its ~1.2 GB on exit.
-The child is the binding memory constraint: while it runs, the parent must stay
-under roughly `2048 − 1200 ≈ 850 MB`. Any code path that calls `predict()` inline is
-a bug, not an optimization.
+**`basic_pitch` must never be imported in the parent process.** Basic Pitch runs
+in a child process (`app.py` ~1600) specifically so the OS reclaims its RSS on
+exit. The child is the binding memory constraint: while it runs, the parent must
+stay under roughly `2048 − 360 ≈ 1690 MB`. Any code path that calls `predict()`
+inline is a bug, not an optimization.
+
+That 360 MB used to be ~820 MB, and the difference was entirely TensorFlow — see
+"Basic Pitch runs on ONNX" below. The child boundary is *kept* anyway: 360 MB
+retained per stem in a 2048 MB worker is still worth handing back to the OS, and
+the isolation also contains a segfaulting native runtime.
 
 This rule was aspirational until the deferred imports were split in two, and the
 split is what enforces it:
 
 - `_ensure_imports()` — numpy + pandas only. Safe anywhere, called on every job.
-- `_ensure_pitch_imports()` — `basic_pitch.inference`, and therefore TensorFlow.
-  Only `extract_note_events()` calls it, and app.py only ever invokes that in a
-  child process.
+- `_ensure_pitch_imports()` — `basic_pitch.inference`, and with it librosa, numba
+  and onnxruntime. Only `extract_note_events()` calls it, and app.py only ever
+  invokes that in a child process.
 
-So: **a new parent-side caller of `_ensure_pitch_imports()` (or a bare
-`import tensorflow`) reintroduces the bug.** Before the split, `_ensure_imports()`
-pulled in `basic_pitch.inference` for everyone, and app.py separately imported
-TensorFlow just to call `clear_session()` on a parent that had never run inference —
-so the rule above was being violated by the very code that documented it.
+So: **a new parent-side caller of `_ensure_pitch_imports()` reintroduces the
+bug.** Before the split, `_ensure_imports()` pulled in `basic_pitch.inference`
+for everyone, and app.py separately imported TensorFlow just to call
+`clear_session()` on a parent that had never run inference — so the rule above
+was being violated by the very code that documented it. Both are gone.
 
 `MEMORY_GUARD_MB` gates new jobs on parent RSS. It must stay **below 2048** or the
 Linux OOM killer fires first and the guard never triggers. (It was 2200 for a while
-— inoperative, not lenient.)
+— inoperative, not lenient.) At 1400 it was still above the real TensorFlow-era
+budget of ~1200 MB; dropping the child to 360 MB is what made 1400 sound rather
+than merely non-fatal.
+
+### Basic Pitch runs on ONNX — do not let `tensorflow` back into the environment
+
+basic-pitch 0.4.0 ships four copies of the same ICASSP-2022 weights (all under
+300 KB, all in the wheel) and four runtimes to execute them: TensorFlow, CoreML,
+TFLite, ONNX. The weights are the same, so **the note events are identical** — the
+only thing that changes is what it costs to get them.
+
+Measured on one 90 s stem each, macOS arm64 / Python 3.11, same child-process path
+app.py uses (`tensorflow-macos` 2.15.0 vs `onnxruntime` 1.29.0):
+
+| stem | notes | wall (TF → ONNX) | child peak RSS (TF → ONNX) |
+|---|---|---|---|
+| vocals | 377 → 377 | 7.20 s → 1.85 s | 796 MB → 363 MB |
+| bass | 157 → 157 | 4.64 s → 1.79 s | 838 MB → 362 MB |
+| guitar | 382 → 382 | 4.53 s → 1.88 s | 831 MB → 362 MB |
+| **mean** | **0.0 % drift** | **5.46 s → 1.84 s (3.0×)** | **822 MB → 362 MB (−459 MB)** |
+
+Onset times, MIDI pitches and confidences matched exactly, not just in aggregate.
+(Render is Linux/x86, where TensorFlow's footprint is larger still, so the saving
+there is at least this. The ONNX side should transfer closely — the same 23 MB
+`manylinux_2_28_x86_64` cp311 wheel.)
+
+**The trap:** `basic_pitch/__init__.py` selects its backend by import probe, in the
+order TF → CoreML → TFLite → ONNX. Merely having `tensorflow` *importable* puts it
+back on the TF path. So the win is not "use ONNX", it is "**do not have TensorFlow
+installed**".
+
+Two things defend that, and both are load-bearing:
+
+1. **`--no-deps`.** basic-pitch's metadata carries
+   `Requires-Dist: tensorflow<2.15.1; platform_system != "Darwin" and python_version >= "3.11"`
+   — a *hard* requirement on Render's exact platform, not an extra. `pip install
+   basic-pitch[onnx]` therefore installs TensorFlow anyway. build.sh installs it
+   from `requirements-basic-pitch.txt` with `--no-deps`, and requirements.txt owns
+   its real runtime deps instead. Pin the version when bumping: `--no-deps` means
+   we are asserting we know that version's dependency list.
+2. **The build gate.** build.sh fails the build if `import tensorflow` succeeds or
+   if the resolved backend is not `onnx`. This exists because the regression is
+   otherwise silent — everything still works, just 3× slower and 460 MB fatter.
+
+`processor.py` also picks the model path explicitly (`_PITCH_BACKENDS`, ONNX →
+TFLite → CoreML) rather than inheriting `basic_pitch.ICASSP_2022_MODEL_PATH`, so
+the backend does not depend on what happens to be installed. That pins which
+*graph* runs; it does **not** save the memory if TF is present, because importing
+`basic_pitch` at all imports TensorFlow. Only absence does.
+
+Note also `setuptools<81` in requirements.txt: resampy 0.4.2 (a basic-pitch dep we
+now own) imports `pkg_resources`, which setuptools 81 removed. Without the pin a
+fresh build installs setuptools 82 and every inference child dies on import.
 
 ### 1 vCPU changes what "parallelize" means
 
@@ -86,6 +143,12 @@ These were removed on purpose. If you find yourself re-adding one, stop and ask.
    separation: it tiled a 90-second mask across the whole song (so >50% of a 4-min
    track was unrelated to the audio), kept only 4 harmonics in ±100 Hz windows
    (deleting everything above ~1.4 kHz), and loaded TensorFlow *in-process*.
+4. **The `tensorflow` package**, in any form — including as a transitive dependency,
+   including `basic-pitch[tf]`, including "just to call `clear_session()`". Basic
+   Pitch runs on ONNX for identical note output at a third of the wall clock and
+   460 MB less per child; `basic_pitch` reverts to TF the moment TF is importable,
+   so installing it *is* the regression, whatever the intent. build.sh fails the
+   build on it. See "Basic Pitch runs on ONNX" above.
 
 ## Caching a partial job
 

@@ -115,15 +115,15 @@ Hearing an isolated bass line is one form of musical insight. Seeing the key, th
 
 **GPU stem separation.** Demucs (htdemucs_6s) runs on cloud GPU via Replicate's file API, completing separation in approximately 20 seconds — about a sixth of the ~2–3 minute end-to-end analysis. STFT-domain panning analysis then refines each stem by stereo position — center, left-panned, right-panned — with RMS energy gating to suppress ghost components below threshold.
 
-**ML pipeline with progressive delivery.** Stem separation (Demucs), pitch extraction (Basic Pitch / TensorFlow), and key/BPM detection (Essentia) run as one end-to-end pipeline with per-stage error isolation. Key and BPM results are pushed to the frontend as they complete, so users see them before stems finish loading. Pitch inference runs in a child process so its memory is reclaimed on exit rather than accumulating in the worker.
+**ML pipeline with progressive delivery.** Stem separation (Demucs), pitch extraction (Basic Pitch, ONNX runtime), and key/BPM detection (Essentia) run as one end-to-end pipeline with per-stage error isolation. Key and BPM results are pushed to the frontend as they complete, so users see them before stems finish loading. Pitch inference runs in a child process so its memory is reclaimed on exit rather than accumulating in the worker.
 
 **Mixer and audio engine.** Faders open at unity — Demucs stems sum back to the original mix, so that is the balanced starting point. Real-time pitch transposition applies `AudioBufferSourceNode.detune` across all active stems simultaneously, maintaining phase coherence.
 
 **LLM-powered insight.** Claude Haiku generates named progressions, key context, and theory-based recommendations from detected key, tempo, and lyrics. The model also predicts likely instrumentation before analysis starts, guiding stem label assignment in Demucs. The Theory Studio's natural language search routes through the same model. All outputs are constrained to strict JSON. Recommendations regenerate independently, eliminating the need to re-run the full analysis pipeline.
 
-**Performance.** Audio downloads as MP3 to skip transcoding (10x smaller than WAV). Stems are re-encoded to 192 kbps MP3 post-analysis before being served (20x reduction). Heavy Python imports — numpy, TensorFlow, Basic Pitch — are deferred to first job execution, keeping startup RSS at approximately 40 MB instead of 300 MB.
+**Performance.** Audio downloads as MP3 to skip transcoding (10x smaller than WAV). Stems are re-encoded to 192 kbps MP3 post-analysis before being served (20x reduction). Heavy Python imports — numpy, pandas, Basic Pitch — are deferred to first job execution, keeping startup RSS at approximately 40 MB instead of 300 MB.
 
-**Memory and cleanup.** Pitch inference runs in a child process, so TensorFlow's memory is reclaimed by the OS on exit rather than compounding across sequential runs in the worker. Completed jobs are pruned from memory after 10 minutes; job directories are removed from disk after 7 days.
+**Memory and cleanup.** Pitch inference runs in a child process, so its ~360 MB is reclaimed by the OS on exit rather than compounding across sequential runs in the worker. Basic Pitch runs on the ONNX backend rather than TensorFlow: identical note output, ~3x faster, ~460 MB less per child. Completed jobs are pruned from memory after 10 minutes; job directories are removed from disk after 7 days.
 
 ---
 
@@ -133,7 +133,7 @@ Hearing an isolated bass line is one form of musical insight. Seeing the key, th
 |---|---|
 | Backend | Python / Flask / Gunicorn |
 | Stem separation | Demucs (htdemucs_6s) via Replicate |
-| Pitch detection | Basic Pitch (Spotify) / TensorFlow |
+| Pitch detection | Basic Pitch (Spotify) / ONNX Runtime |
 | Audio analysis | Essentia / librosa |
 | LLM | Claude Haiku (Anthropic) |
 | Audio acquisition | yt-dlp / Cobalt / Piped |

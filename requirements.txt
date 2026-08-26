@@ -3,7 +3,25 @@ python-dotenv>=1.0
 sentry-sdk[flask]>=2.0
 requests>=2.31
 demucs>=4.0
-basic-pitch>=0.3
+
+# ── Basic Pitch (note detection) ──────────────────────────────────────────────
+# basic-pitch is NOT installed from this file. On Linux + Python >= 3.11 its
+# metadata hard-requires `tensorflow<2.15.1` (not an extra — a plain
+# Requires-Dist), and basic_pitch's backend selection prefers TensorFlow the
+# moment it is importable. That costs ~460MB of RSS per inference child and
+# ~2.5x the wall clock for byte-identical note events.
+#
+# So build.sh installs it with --no-deps from requirements-basic-pitch.txt and
+# we own its runtime dependencies here. See CLAUDE.md "Basic Pitch runs on ONNX".
+onnxruntime>=1.17          # the backend basic_pitch actually uses
+librosa>=0.8.0
+mir_eval>=0.6
+pretty_midi>=0.2.9
+resampy>=0.2.2,<0.4.3
+scikit-learn
+scipy>=1.4.1
+typing-extensions
+setuptools<81              # resampy 0.4.2 imports pkg_resources, dropped in setuptools 81
 yt-dlp>=2026.3.17
 yt-dlp-ejs
 bgutil-ytdlp-pot-provider

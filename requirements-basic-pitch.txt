@@ -1,0 +1,9 @@
+# Installed with --no-deps (see build.sh). Its dependencies are listed in
+# requirements.txt instead, because basic-pitch's own metadata hard-requires
+# tensorflow on Linux + Python >= 3.11 and there is no way to exclude a
+# Requires-Dist from a requirements file.
+#
+# Pinned exactly: --no-deps means we are asserting we know this version's
+# dependency list. Re-read it before bumping:
+#   pip download --no-deps basic-pitch==<new> && unzip -p *.whl '*/METADATA' | grep Requires-Dist
+basic-pitch==0.4.0

@@ -2,8 +2,8 @@
 processor.py — Core audio processing pipeline for Riffd.
 
 Used ONLY in deep analysis mode (not instant). All functions here are heavy.
-Imports are deferred: numpy/pandas via _ensure_imports(), basic_pitch (and so
-TensorFlow) via _ensure_pitch_imports(), which only child processes should call.
+Imports are deferred: numpy/pandas via _ensure_imports(), basic_pitch via
+_ensure_pitch_imports(), which only child processes should call.
 
 Pipeline (called by app.py process_audio deep path):
   1. separate_stems()  — Demucs subprocess → stereo refinement → labeled WAV stems
@@ -37,6 +37,7 @@ np = None
 pd = None
 ICASSP_2022_MODEL_PATH = None
 predict = None
+PITCH_BACKEND = None
 
 
 from compat import patch_lzma as _patch_lzma
@@ -45,11 +46,11 @@ from compat import patch_lzma as _patch_lzma
 def _ensure_imports():
     """Lazy-load the DSP imports (numpy, pandas) on first use.
 
-    Deliberately does NOT import basic_pitch. `basic_pitch.inference` pulls in
-    TensorFlow, ~1.2GB that the process never gives back, and this function runs
-    in the parent gunicorn worker on every job. Pitch inference happens in a
-    child process (app.py spawns it) precisely so the OS reclaims that memory on
-    exit; see _ensure_pitch_imports below.
+    Deliberately does NOT import basic_pitch. Even on the ONNX backend that is
+    ~360MB of librosa/numba/scipy that the process never gives back, and this
+    function runs in the parent gunicorn worker on every job. Pitch inference
+    happens in a child process (app.py spawns it) precisely so the OS reclaims
+    that memory on exit; see _ensure_pitch_imports below.
     """
     global np, pd
     if np is not None:
@@ -62,24 +63,64 @@ def _ensure_imports():
     print("[processor] DSP imports loaded (numpy, pandas)")
 
 
+# Basic Pitch backend preference, most-preferred first.
+#
+# All four backends are the same ICASSP-2022 weights (<300KB each) and ship in
+# the basic-pitch wheel; they produce byte-identical note events. What differs
+# is the runtime behind them, and basic_pitch's own default picks the worst one:
+# its module-level ICASSP_2022_MODEL_PATH resolves TF -> CoreML -> TFLite -> ONNX,
+# so merely having `tensorflow` importable costs ~460MB of child RSS and ~2.5x
+# the wall clock for identical output. Choose explicitly instead of inheriting
+# whatever happens to be installed.
+_PITCH_BACKENDS = ("onnx", "tflite", "coreml")
+
+
 def _ensure_pitch_imports():
-    """Lazy-load basic_pitch — and with it TensorFlow — on first use.
+    """Lazy-load basic_pitch on first use and pin the inference backend.
 
     Call this ONLY from code that genuinely runs inference in the current
     process. Today that is extract_note_events(), which app.py invokes in a
-    child process. Calling it in the parent puts ~1.2GB of TF into a worker
-    that has to stay under ~850MB while that child is alive, which is how the
-    OOMs happened.
+    child process. Calling it in the parent puts ~360MB into a worker that has
+    to stay lean while that child is alive, which is how the OOMs happened —
+    and if `tensorflow` is ever reinstalled, importing basic_pitch alone drags
+    TF in on top of that.
     """
-    global ICASSP_2022_MODEL_PATH, predict
+    global ICASSP_2022_MODEL_PATH, predict, PITCH_BACKEND
     if predict is not None:
         return
     _ensure_imports()
-    from basic_pitch import ICASSP_2022_MODEL_PATH as _model_path
+    import basic_pitch as _bp
     from basic_pitch.inference import predict as _predict
-    ICASSP_2022_MODEL_PATH = _model_path
+
+    _available = {
+        "onnx": _bp.ONNX_PRESENT,
+        "tflite": _bp.TFLITE_PRESENT,
+        "coreml": _bp.CT_PRESENT,
+    }
+    for _name in _PITCH_BACKENDS:
+        if not _available[_name]:
+            continue
+        _path = _bp.build_icassp_2022_model_path(_bp.FilenameSuffix[_name])
+        if not _path.exists():
+            # Asset missing from this wheel — try the next backend rather than
+            # letting predict() fall through to whatever else is importable.
+            print(f"[processor] pitch backend {_name} unavailable: {_path} not found")
+            continue
+        ICASSP_2022_MODEL_PATH = _path
+        PITCH_BACKEND = _name
+        break
+    else:
+        # Nothing but TensorFlow. Still works, but it is the memory regression
+        # this preference list exists to avoid — say so loudly.
+        ICASSP_2022_MODEL_PATH = _bp.build_icassp_2022_model_path(_bp.FilenameSuffix.tf)
+        PITCH_BACKEND = "tensorflow"
+        print("[processor] WARNING: no ONNX/TFLite/CoreML backend for Basic Pitch — "
+              "falling back to TensorFlow (~460MB extra per inference child). "
+              "Install onnxruntime.")
+
     predict = _predict
-    print("[processor] pitch imports loaded (basic_pitch + TensorFlow)")
+    print(f"[processor] pitch imports loaded (basic_pitch, {PITCH_BACKEND} backend, "
+          f"model={ICASSP_2022_MODEL_PATH.name})")
 
 
 # ── Replicate constants (module-level so warm-up + separation share them) ──
@@ -1626,7 +1667,7 @@ def extract_note_events(stem_path: str, stem_name: str, label: str = "", bpm: fl
         configs: Optional per-job INSTRUMENT_CONFIGS copy (from get_adjusted_configs).
                  Falls back to module-level INSTRUMENT_CONFIGS when None.
     """
-    _ensure_pitch_imports()   # runs in a child process — TF is reclaimed on exit
+    _ensure_pitch_imports()   # runs in a child process — its RSS is reclaimed on exit
     renderer = _get_tab_renderer(label or stem_name)
     config = _get_instrument_config(renderer, configs)
 
