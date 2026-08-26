@@ -1,35 +1,118 @@
-# Pinned from working venv on 2026-07-06 — reproducible build
-# Basic Pitch backend pins added 2026-08-26 (TensorFlow removed; see CLAUDE.md).
-flask==3.1.3
-python-dotenv==1.2.2
-requests==2.33.1
+# requirements.lock — fully pinned, transitive deps included.
+# Frozen from the working venv (macOS arm64 / CPython 3.11.15).
+#
+# Regenerate with:  ./venv/bin/pip freeze   (then re-apply the exclusions below)
+#
+# ── basic-pitch is deliberately ABSENT from this file ─────────────────────────
+# On Linux + Python >= 3.11 basic-pitch 0.4.0's metadata carries a plain
+#   Requires-Dist: tensorflow>=2.4.1,<2.15.1
+# so a normal `pip install -r <anything listing basic-pitch>` resolves and
+# installs TensorFlow — which basic_pitch then prefers over ONNX on sight,
+# costing ~460MB per inference child and ~3x the wall clock for byte-identical
+# notes. Listing it here would have defeated the whole point of the lock.
+#
+# It is pinned in requirements-basic-pitch.txt instead and installed with
+# --no-deps by build.sh; the deps it actually needs at runtime (onnxruntime,
+# librosa, mir_eval, pretty_midi, resampy, scikit-learn, scipy,
+# typing-extensions, setuptools) are pinned below like any other dependency.
+# Do not "fix" this file by adding basic-pitch back.
+#
+# coremltools is also excluded: it is basic-pitch's macOS-only dependency, is
+# not used by this app, and installing it on Linux would make basic_pitch's
+# CoreML backend visible for no reason.
+#
+# Never add tensorflow. See CLAUDE.md "Basic Pitch runs on ONNX".
+annotated-types==0.7.0
+anthropic==0.96.0
+antlr4-python3-runtime==4.9.3
+anyio==4.13.0
+attrs==26.1.0
+audioread==3.1.0
+bgutil-ytdlp-pot-provider==1.3.1
+blinker==1.9.0
+cattrs==26.1.0
+certifi==2026.4.22
+cffi==2.0.0
+charset-normalizer==3.4.7
+click==8.3.3
+cloudpickle==3.1.2
+decorator==5.2.1
 demucs==4.0.1
-
-# basic-pitch is installed with --no-deps (build.sh / requirements-basic-pitch.txt)
-# because its metadata hard-requires tensorflow on Linux + Python >= 3.11.
-# Everything from onnxruntime through setuptools is a dependency we own as a
-# result. Do not add tensorflow: basic_pitch prefers it over ONNX on sight.
-basic-pitch==0.4.0
-onnxruntime==1.29.0
+distro==1.9.0
+docstring_parser==0.18.0
+dora_search==0.1.12
+einops==0.8.2
+essentia==2.1b6.dev1389
+filelock==3.29.0
+Flask==3.1.3
+flatbuffers==25.12.19
+fsspec==2026.3.0
+greenlet==3.4.0
+gunicorn==25.3.0
+h11==0.16.0
+httpcore==1.0.9
+httpx==0.28.1
+idna==3.13
+importlib_resources==7.1.0
+itsdangerous==2.2.0
+Jinja2==3.1.6
+jiter==0.14.0
+joblib==1.5.3
+julius==0.2.7
+lameenc==1.8.2
+lazy-loader==0.5
 librosa==0.11.0
+llvmlite==0.47.0
+MarkupSafe==3.0.3
+mido==1.3.3
 mir_eval==0.8.2
+mpmath==1.3.0
+msgpack==1.1.2
+mutagen==1.47.0
+networkx==3.6.1
+numba==0.65.0
+numpy==2.4.4
+omegaconf==2.3.0
+onnxruntime==1.29.0
+openunmix==1.3.0
+packaging==26.1
+pandas==3.0.2
+platformdirs==4.9.6
+playwright==1.58.0
+pooch==1.9.0
 pretty_midi==0.2.11
+protobuf==7.34.1
+pyaml==26.2.1
+pycparser==3.0
+pydantic==2.13.3
+pydantic_core==2.46.3
+pyee==13.0.1
+python-dateutil==2.9.0.post0
+python-dotenv==1.2.2
+PyYAML==6.0.3
+replicate==1.0.7
+requests==2.33.1
 resampy==0.4.2
+retrying==1.4.2
 scikit-learn==1.8.0
 scipy==1.17.1
-typing_extensions==4.15.0
+sentry-sdk==2.68.0
 setuptools==79.0.1
-
-yt-dlp==2026.3.17
-yt-dlp-ejs==0.8.0
-bgutil-ytdlp-pot-provider==1.3.1
-numpy==2.4.4
-pandas==3.0.2
-gunicorn==25.3.0
-torchcodec==0.11.1
-replicate==1.0.7
+six==1.17.0
+sniffio==1.3.1
 soundfile==0.13.1
-anthropic==0.96.0
-essentia==2.1b6.dev1389
-mutagen==1.47.0
-playwright==1.58.0
+soxr==1.0.0
+submitit==1.5.4
+sympy==1.14.0
+threadpoolctl==3.6.0
+torch==2.11.0
+torchaudio==2.11.0
+torchcodec==0.11.1
+tqdm==4.67.3
+treetable==0.2.6
+typing-inspection==0.4.2
+typing_extensions==4.15.0
+urllib3==2.6.3
+Werkzeug==3.1.8
+yt-dlp-ejs==0.8.0
+yt-dlp==2026.3.17

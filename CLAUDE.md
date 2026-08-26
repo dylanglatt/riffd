@@ -20,6 +20,12 @@ exit. The child is the binding memory constraint: while it runs, the parent must
 stay under roughly `2048 − 360 ≈ 1690 MB`. Any code path that calls `predict()`
 inline is a bug, not an optimization.
 
+⚠️ **Every child-RSS figure on this page (~360 MB, ~820 MB) is measured on
+macOS arm64, not on Render.** They are the right order of magnitude and the
+*relative* result is solid, but no Linux measurement exists yet — see the
+"Render verification checklist" below before treating them as production
+numbers.
+
 That 360 MB used to be ~820 MB, and the difference was entirely TensorFlow — see
 "Basic Pitch runs on ONNX" below. The child boundary is *kept* anyway: 360 MB
 retained per stem in a 2048 MB worker is still worth handing back to the OS, and
@@ -63,16 +69,45 @@ app.py uses (`tensorflow-macos` 2.15.0 vs `onnxruntime` 1.29.0):
 | **mean** | **0.0 % drift** | **5.46 s → 1.84 s (3.0×)** | **822 MB → 362 MB (−459 MB)** |
 
 Onset times, MIDI pitches and confidences matched exactly, not just in aggregate.
-(Render is Linux/x86, where TensorFlow's footprint is larger still, so the saving
-there is at least this. The ONNX side should transfer closely — the same 23 MB
-`manylinux_2_28_x86_64` cp311 wheel.)
+That part is platform-independent: identical weights, identical arithmetic.
+
+**The memory and timing numbers are not.** They are macOS arm64, and Render is
+Linux/x86 — a different TensorFlow build, a different allocator, and a slower
+core. The *expectation* is that the saving is at least as large there (Linux
+TensorFlow wheels are generally heavier than `tensorflow-macos`, and the ONNX
+side ships the same 23 MB `manylinux_2_28_x86_64` cp311 wheel), but that is a
+prediction, not a measurement. Nothing on Render has been measured. Do not quote
+these as production figures until the checklist below has been run.
+
+### Render verification checklist — run this before merging to `main`
+
+The Linux numbers are still unmeasured. To close that out:
+
+1. Deploy the `basic-pitch-onnx` branch to Render.
+2. Confirm the build gate ran: `[build] OK: no tensorflow; backend=onnx model=nmp.onnx`
+   in the build log. If build.sh did not run at all, the deploy is not using
+   `render.yaml` / the dashboard build command — stop and fix that first.
+3. Confirm the parent logged no `[startup] WARNING` banner about the
+   `tensorflow` package being installed.
+4. Analyse one real track end to end.
+5. From the job logs record, per stem: `Basic Pitch → <stem> done` wall time, and
+   the child's peak RSS from the `[mem] [extract_notes] post-predict` line. The
+   child's output is forwarded into the parent log prefixed `[bp:<stem>]`.
+6. Confirm `[bp:<stem>] [processor] pitch imports loaded (basic_pitch, onnx
+   backend, model=nmp.onnx)` appears for each stem.
+7. Replace the macOS table above with the Linux numbers, and delete the ⚠️ caveat
+   in the memory-architecture section.
+
+Until step 7 is done, `MEMORY_GUARD_MB` and the ~1690 MB parent budget are
+derived from macOS figures.
 
 **The trap:** `basic_pitch/__init__.py` selects its backend by import probe, in the
 order TF → CoreML → TFLite → ONNX. Merely having `tensorflow` *importable* puts it
 back on the TF path. So the win is not "use ONNX", it is "**do not have TensorFlow
 installed**".
 
-Two things defend that, and both are load-bearing:
+Five things defend that, in order from "keeps TF out of the image" to "survives
+TF being in the image anyway". All five are load-bearing:
 
 1. **`--no-deps`.** basic-pitch's metadata carries
    `Requires-Dist: tensorflow<2.15.1; platform_system != "Darwin" and python_version >= "3.11"`
@@ -81,15 +116,42 @@ Two things defend that, and both are load-bearing:
    from `requirements-basic-pitch.txt` with `--no-deps`, and requirements.txt owns
    its real runtime deps instead. Pin the version when bumping: `--no-deps` means
    we are asserting we know that version's dependency list.
-2. **The build gate.** build.sh fails the build if `import tensorflow` succeeds or
+2. **basic-pitch appears in no file that gets normal dependency resolution.**
+   Not requirements.txt, not requirements.lock — only requirements-basic-pitch.txt,
+   which is only ever installed `--no-deps`. A plain `basic-pitch==0.4.0` line in
+   a lockfile silently reinstalls TensorFlow on Linux and undoes everything above.
+   (It did, briefly. That is why the lock carries a warning header.)
+3. **`render.yaml`.** build.sh is where 1 and 4 live, so a deploy that runs a bare
+   `pip install -r requirements.txt` instead ships without basic-pitch at all and
+   dies at first inference — after separation has already succeeded. The build
+   command is source-controlled so that cannot happen by dashboard drift.
+4. **The build gate.** build.sh fails the build if `import tensorflow` succeeds or
    if the resolved backend is not `onnx`. This exists because the regression is
    otherwise silent — everything still works, just 3× slower and 460 MB fatter.
+5. **`_force_onnx_backend()` in processor.py.** The child installs a `sys.meta_path`
+   finder that makes `import tensorflow` raise ImportError, *before* basic_pitch is
+   imported. basic_pitch guards its TF probe with `except ImportError`, so this is
+   the same code path as TF genuinely being absent — it just takes it on demand.
+   It deliberately **declines to block** when no non-TF runtime is installed:
+   basic_pitch's `__init__` picks its default suffix with an if/elif chain and no
+   else, so with all four backends absent `import basic_pitch` dies on
+   `NameError: _default_model_type`. Blocking a TF-only environment would convert
+   a slow-but-working install into a hard failure with an error that names
+   nothing. It warns and lets TF through instead.
 
-`processor.py` also picks the model path explicitly (`_PITCH_BACKENDS`, ONNX →
-TFLite → CoreML) rather than inheriting `basic_pitch.ICASSP_2022_MODEL_PATH`, so
-the backend does not depend on what happens to be installed. That pins which
-*graph* runs; it does **not** save the memory if TF is present, because importing
-`basic_pitch` at all imports TensorFlow. Only absence does.
+Point 5 is the one that matters when 1–4 have failed, and it is not cosmetic.
+Selecting the `.onnx` model path is **not** sufficient on its own: `basic_pitch`
+decides `TF_PRESENT` by probing `import tensorflow` at module scope, so on an
+environment carrying both runtimes the old code ran ONNX *and still paid for
+TensorFlow*. Measured on a venv with both installed, same stem, same 382 notes:
+
+| | TF modules in `sys.modules` | child peak RSS |
+|---|---|---|
+| explicit `.onnx` path only | 1596 | 672 MB |
+| + `_force_onnx_backend()` | 0 | 418 MB |
+
+So `_PITCH_BACKENDS` pins which *graph* runs; the import block is what stops the
+memory being spent. Both are needed.
 
 Note also `setuptools<81` in requirements.txt: resampy 0.4.2 (a basic-pitch dep we
 now own) imports `pkg_resources`, which setuptools 81 removed. Without the pin a
@@ -211,9 +273,12 @@ heartbeats a six-stem track would go silent for far longer than
 `STALL_TIMEOUT_S` and be killed mid-inference.
 
 There is one known gap, currently unreachable: the blocking
-`_tf_inference_lock.acquire()` heartbeats once and then waits indefinitely. Safe
+`_inference_lock.acquire()` heartbeats once and then waits indefinitely. Safe
 only because `MAX_CONCURRENT_JOBS` defaults to 1, so the lock is uncontended.
 Raising that env var without adding a heartbeat there reintroduces the bug.
+(The lock was `_tf_inference_lock` until Basic Pitch moved to ONNX. It still
+serialises inference — one 1 vCPU core, ~360 MB per child — it just no longer
+serialises a TensorFlow load.)
 
 ### `MAX_WAIT` is not a duration estimate — don't tune it down
 
@@ -271,8 +336,13 @@ constant asserted the opposite of what the numbers did.
 Single gunicorn worker (`workers = 1`, sync). Everything is per-process: the `jobs`
 dict, `_bg_downloads`, `_job_queue`, `_active_processing`, the locks, the history
 cache. **The app cannot currently run more than one worker** — a second would double
-the concurrency limits, double TF memory, and 404 half the job IDs. Making job state
-external (the `job_checkpoints` table already exists) is the precondition for scaling.
+the concurrency limits and 404 half the job IDs. It would also double inference
+memory: each worker has its own `_inference_lock`, so two workers can run two
+Basic Pitch children at once (~360 MB each, measured on macOS — see below) on top
+of two parents. That is more survivable than it was under TensorFlow, where the
+same mistake meant two ~820 MB children, but the job-ID problem is fatal on its
+own. Making job state external (the `job_checkpoints` table already exists) is the
+precondition for scaling.
 
 `threading.Lock` has no ownership — `release()` from a thread that never acquired it
 silently frees another thread's lock. Track acquisition with an explicit flag.

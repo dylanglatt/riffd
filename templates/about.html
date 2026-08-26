@@ -228,7 +228,7 @@
       </div>
       <div class="principle">
         <div class="pr-title">Memory-efficient startup</div>
-        <div class="pr-desc">Heavy Python imports — numpy, TensorFlow, Basic Pitch — are deferred to first job execution. Boot time stays around 40MB RSS instead of 300MB, which matters on a 2GB Render instance shared with Gunicorn workers.</div>
+        <div class="pr-desc">Heavy Python imports — numpy, pandas, Basic Pitch — are deferred to first job execution. Boot time stays around 40MB RSS instead of 300MB, which matters on a 2GB Render instance shared with Gunicorn workers. Note detection runs on ONNX rather than TensorFlow: identical output, a fraction of the memory.</div>
       </div>
     </div>
   </div>

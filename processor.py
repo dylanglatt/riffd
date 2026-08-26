@@ -72,7 +72,90 @@ def _ensure_imports():
 # so merely having `tensorflow` importable costs ~460MB of child RSS and ~2.5x
 # the wall clock for identical output. Choose explicitly instead of inheriting
 # whatever happens to be installed.
+#
+# TensorFlow is absent from this list on purpose, and picking a path from it is
+# only half the job — see _BlockTensorFlowImport for the half that saves the
+# memory.
 _PITCH_BACKENDS = ("onnx", "tflite", "coreml")
+
+
+class _BlockTensorFlowImport:
+    """meta_path finder that makes `import tensorflow` fail in this process.
+
+    Not belt-and-braces — it is the only thing that actually forces the choice.
+    Selecting the .onnx model path is not enough on its own: `basic_pitch`
+    decides TF_PRESENT by probing `import tensorflow` at module scope, and
+    `basic_pitch.inference` imports TF at module scope too. So on an
+    environment that has both runtimes, merely *importing* basic_pitch pays
+    TensorFlow's full memory cost before we get a say in which graph runs.
+
+    basic_pitch guards both of those imports with `except ImportError`, so
+    raising ImportError from here is a supported outcome, not a crash: it takes
+    the same path as TF genuinely not being installed. That is what makes this
+    safe to leave installed for the child's lifetime.
+
+    Scope: installed by _ensure_pitch_imports(), which only ever runs in the
+    inference child (app.py spawns it). It does not affect the parent worker.
+    """
+
+    _BLOCKED = "tensorflow"
+
+    def find_spec(self, fullname, path=None, target=None):
+        if fullname == self._BLOCKED or fullname.startswith(self._BLOCKED + "."):
+            raise ImportError(
+                f"{fullname} is blocked in the Basic Pitch inference child: the ONNX "
+                "backend produces identical notes for ~460MB less RSS. "
+                "See CLAUDE.md 'Basic Pitch runs on ONNX'."
+            )
+        return None  # not ours — let the normal finders handle it
+
+
+# The importable module behind each backend in _PITCH_BACKENDS.
+_PITCH_BACKEND_MODULES = {
+    "onnx": "onnxruntime",
+    "tflite": "tflite_runtime",
+    "coreml": "coremltools",
+}
+
+
+def _force_onnx_backend():
+    """Block TensorFlow before basic_pitch can probe for it.
+
+    Refuses to block when blocking would break things rather than improve them:
+
+    - **No non-TF runtime installed.** basic_pitch's __init__ picks its default
+      suffix with a bare if/elif chain and no else, so with all four backends
+      absent `import basic_pitch` dies on `NameError: _default_model_type`.
+      Blocking a TF-only environment therefore turns a slow-but-working install
+      into a hard failure with an error that names nothing. Degrade noisily
+      instead — same call as _warn_if_tensorflow_installed() in app.py.
+    - **TF already imported.** The memory is spent; blocking now is theatre.
+
+    Idempotent. Returns True if the block is in place.
+    """
+    import importlib.util
+    import sys
+    if any(isinstance(f, _BlockTensorFlowImport) for f in sys.meta_path):
+        return True
+
+    def _installed(mod):
+        try:
+            return importlib.util.find_spec(mod) is not None
+        except (ImportError, ValueError):
+            return False
+
+    if not any(_installed(m) for m in _PITCH_BACKEND_MODULES.values()):
+        print("[processor] WARNING: no ONNX/TFLite/CoreML runtime installed — "
+              "leaving TensorFlow importable so Basic Pitch can still run. "
+              "This costs ~460MB per inference child; install onnxruntime.")
+        return False
+    if "tensorflow" in sys.modules:
+        print("[processor] WARNING: tensorflow was already imported before "
+              "_ensure_pitch_imports() — its memory is already spent in this process")
+        return False
+
+    sys.meta_path.insert(0, _BlockTensorFlowImport())
+    return True
 
 
 def _ensure_pitch_imports():
@@ -81,14 +164,18 @@ def _ensure_pitch_imports():
     Call this ONLY from code that genuinely runs inference in the current
     process. Today that is extract_note_events(), which app.py invokes in a
     child process. Calling it in the parent puts ~360MB into a worker that has
-    to stay lean while that child is alive, which is how the OOMs happened —
-    and if `tensorflow` is ever reinstalled, importing basic_pitch alone drags
-    TF in on top of that.
+    to stay lean while that child is alive, which is how the OOMs happened.
+
+    The backend is forced, not preferred: _force_onnx_backend() blocks
+    `import tensorflow` for this process *before* basic_pitch is imported, so
+    an environment that mistakenly ships TF alongside onnxruntime still runs
+    ONNX and still never pays TF's memory. See _BlockTensorFlowImport.
     """
     global ICASSP_2022_MODEL_PATH, predict, PITCH_BACKEND
     if predict is not None:
         return
     _ensure_imports()
+    _force_onnx_backend()
     import basic_pitch as _bp
     from basic_pitch.inference import predict as _predict
 
@@ -110,13 +197,24 @@ def _ensure_pitch_imports():
         PITCH_BACKEND = _name
         break
     else:
-        # Nothing but TensorFlow. Still works, but it is the memory regression
-        # this preference list exists to avoid — say so loudly.
+        # for/else: no preferred backend was usable.
+        if not _bp.TF_PRESENT:
+            # Nothing can run the model. Name the fix; basic_pitch's own error
+            # here is a generic "cannot be loaded into either TensorFlow,
+            # CoreML, TFLite or ONNX".
+            raise RuntimeError(
+                "No Basic Pitch backend available: none of onnxruntime, "
+                "tflite-runtime, coremltools or tensorflow is installed. "
+                "Install onnxruntime (see requirements.txt)."
+            )
+        # Only reachable when _force_onnx_backend() declined to block, i.e. no
+        # non-TF runtime exists. Works, but it is the memory regression this
+        # module exists to avoid — say so loudly rather than silently.
         ICASSP_2022_MODEL_PATH = _bp.build_icassp_2022_model_path(_bp.FilenameSuffix.tf)
         PITCH_BACKEND = "tensorflow"
-        print("[processor] WARNING: no ONNX/TFLite/CoreML backend for Basic Pitch — "
-              "falling back to TensorFlow (~460MB extra per inference child). "
-              "Install onnxruntime.")
+        print("[processor] WARNING: falling back to TensorFlow "
+              "(~460MB extra per inference child, ~3x slower, identical notes). "
+              "Install onnxruntime — see CLAUDE.md 'Basic Pitch runs on ONNX'.")
 
     predict = _predict
     print(f"[processor] pitch imports loaded (basic_pitch, {PITCH_BACKEND} backend, "

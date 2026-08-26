@@ -1,0 +1,24 @@
+# Render Blueprint — source-controls the build command.
+#
+# Why this file exists (Codex review, finding 2): build.sh is the only place the
+# `--no-deps` basic-pitch install and the TensorFlow/ONNX build gate live. If a
+# deploy runs a plain `pip install -r requirements.txt` instead, basic-pitch is
+# never installed at all and the job fails at first inference — after separation
+# has already succeeded, which is exactly the "partial analysis cached with an
+# instrument missing" failure CLAUDE.md warns about. The build command belongs in
+# the repo, not only in a dashboard field nobody can review.
+#
+# Secrets and tuning env vars (REPLICATE_API_TOKEN, ANTHROPIC_API_KEY,
+# SPOTIFY_*, FLASK_SECRET_KEY, MEMORY_GUARD_MB, ...) are deliberately NOT
+# declared here — they stay dashboard-managed. Check the dashboard before
+# syncing this blueprint to an existing service.
+services:
+  - type: web
+    name: riffd
+    runtime: python
+    plan: standard              # 2048 MB / 1 vCPU — see CLAUDE.md "Deploy target"
+    buildCommand: ./build.sh
+    startCommand: gunicorn app:app --config gunicorn.conf.py   # matches Procfile
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.11"           # matches .python-version

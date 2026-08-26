@@ -491,6 +491,44 @@ def allowed_file(filename: str) -> bool:
 
 _log_memory("startup")
 
+
+def _warn_if_tensorflow_installed():
+    """Warn loudly at startup if the `tensorflow` package is present.
+
+    The memory architecture depends on TF being absent from the environment,
+    not merely unused: `basic_pitch` probes for it at import and prefers it,
+    which is why the inference child forces ONNX (processor._force_onnx_backend).
+    That force holds, so a TF-carrying environment still works — it is just a
+    packaging regression that build.sh was supposed to have caught, and it means
+    something is dragging ~475MB of wheel into the image.
+
+    Warning, not a hard failure: an env where ONNX still runs should degrade
+    noisily, not take the service down at boot.
+
+    find_spec() only reads metadata — it does not import TF, so this stays cheap
+    and does not itself violate the rule it is checking.
+    """
+    import importlib.util
+    try:
+        found = importlib.util.find_spec("tensorflow") is not None
+    except (ImportError, ValueError):
+        return  # broken/partial install — not our problem to diagnose here
+    if not found:
+        return
+    print("=" * 78)
+    print("[startup] WARNING: the `tensorflow` package is installed.")
+    print("[startup]   Riffd's memory budget assumes it is absent. basic_pitch")
+    print("[startup]   prefers TF on sight (~460MB extra per inference child, ~3x")
+    print("[startup]   the wall clock, identical notes). Inference forces ONNX so")
+    print("[startup]   this is not fatal, but the environment is mispackaged:")
+    print("[startup]   build.sh's gate should have failed the build.")
+    print("[startup]   Find the culprit: pip show tensorflow -> Required-by")
+    print("[startup]   See CLAUDE.md 'Basic Pitch runs on ONNX'.")
+    print("=" * 78)
+
+
+_warn_if_tensorflow_installed()
+
 # Run disk cleanup immediately on startup rather than waiting for first request
 _last_disk_prune = 0
 threading.Thread(target=_prune_old_disk_dirs, daemon=True).start()
@@ -1110,11 +1148,16 @@ def process_audio(job_id):
         #
         # 1400 is a starting value, not a tuned one. The binding constraint is the
         # Basic Pitch CHILD process running alongside the parent. On the ONNX
-        # backend that child peaks at ~360MB (measured), so the parent has
-        # roughly 2048-360 = ~1690MB at that stage and 1400 finally sits below
-        # the ceiling it is supposed to defend. Under TensorFlow the child was
+        # backend that child peaks at ~360MB, so the parent has roughly
+        # 2048-360 = ~1690MB at that stage and 1400 finally sits below the
+        # ceiling it is supposed to defend. Under TensorFlow the child was
         # ~820MB+ and the real budget was ~1200MB, so this guard was already
         # looser than the constraint — the ONNX switch is what made it sound.
+        #
+        # CAVEAT: those child figures are measured on macOS arm64, NOT on this
+        # Linux instance. The ordering (child shrank, guard is now below the
+        # budget) holds either way, but 1690 is not a verified Linux number.
+        # See CLAUDE.md "Render verification checklist".
         #
         # A lean parent is ~40MB (heavy imports are deferred), so anything above
         # ~1400MB at job start means something has already leaked. The known
@@ -1142,8 +1185,11 @@ def process_audio(job_id):
             # This used to `import tensorflow` and call clear_session() first —
             # in the parent, the one process that must stay lean, and one that
             # has never run inference. It could only ever add memory to a path
-            # whose whole job is to free some. TF is no longer installed at all
-            # (see build.sh); do not reintroduce either the import or the call.
+            # whose whole job is to free some. TF should not be installed at
+            # all (build.sh gates on it, and _warn_if_tensorflow_installed()
+            # says so at boot if it slipped through); and the inference child
+            # blocks the import outright. Do not reintroduce either the import
+            # or the call.
             print(f"[job {job_id}] memory high (RSS={_current_rss:.1f}MB > {MEMORY_GUARD_MB}MB) — attempting cleanup")
             for _ in range(3):
                 gc.collect()
@@ -1639,6 +1685,17 @@ with open({_result_path!r}, "wb") as f:
                         if _proc.returncode != 0:
                             raise RuntimeError(f"Basic Pitch subprocess failed: {_proc.stderr[-500:]}")
 
+                        # Forward the child's stdout into the parent log.
+                        # capture_output swallows it, so on the success path the
+                        # backend line, the [mem] RSS lines and the [notes]
+                        # confidence stats were all invisible in production —
+                        # which made "check backend=onnx in the logs" impossible
+                        # to actually do. Tail-bounded so a chatty child can't
+                        # flood the log.
+                        for _line in (_proc.stdout or "").splitlines()[-40:]:
+                            if _line.strip():
+                                print(f"[job {job_id}] [bp:{stem_key}] {_line}")
+
                         with open(_result_path, "rb") as _rf:
                             ne = _pickle.load(_rf)
                     finally:
@@ -1691,7 +1748,8 @@ with open({_result_path!r}, "wb") as f:
                 # that never ran inference. Inference happens in the child
                 # spawned above, and the child's RSS is already gone the moment
                 # it exits. All the import achieved was pulling TF into the one
-                # process that must stay lean. TF is no longer installed at all.
+                # process that must stay lean — and TF should not be in the
+                # environment at all now (build.sh gates on it).
                 print(f"[job {job_id}] [{_elapsed()}] NOTE EXTRACTION finished → {len(note_events_all)} stems with notes")
             except Exception as e:
                 _fail("note_extraction", e)
