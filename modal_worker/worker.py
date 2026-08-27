@@ -144,6 +144,31 @@ CATALOG_FILES = ("download_checks.json",)
 POPULATE_HINT = ("run `modal run modal_worker/worker.py::populate_models` "
                  "to (re)populate the Volume")
 
+# Container memory request, MiB. One constant because it is reported back in
+# _meta as well as requested, and the two drifted apart when they were separate
+# literals.
+#
+# MEASURED, not calculated. A real 20.65-minute track (Rush, "2112" — just past
+# riffd's MAX_TRACK_MINUTES = 20), run twice, peaked at 13,537.0 MB and
+# 13,628.7 MB — reproducible to within 0.7%, ~490 s of GPU each:
+#
+#     eval/out/long_track/_meta.json
+#
+# An earlier version of this file requested 8192, derived from a first-principles
+# count of the resident float32 audio arrays. That was 1.65x too low, because the
+# arrays are not the dominant term — the loaded models plus the torch/CUDA
+# runtime are, and those do not shrink for a short track. Do not re-derive this
+# number from array sizes; re-measure it.
+#
+# 16384 is the measured worst case (13,628.7 MB) plus 20.2%, and the second of
+# those two runs was made AT 16384 to confirm it survives there. Note Modal bills whichever is
+# HIGHER of request or usage, so this is not free for short tracks (~$0.003 of a
+# ~$0.026 track); it is bought deliberately, because the request is also a
+# scheduling guarantee and under-requesting risks placement on a node without
+# the headroom to finish. Passing a tuple (request, limit) would add a hard OOM
+# cap; not used here, since a legitimate long track must not be killed.
+MEMORY_MB = 16384
+
 
 def _sha256(path, chunk=1 << 20):
     import hashlib
@@ -162,6 +187,7 @@ def verify_weights(hash_check=True):
     message naming the file — not thirty seconds into someone's request with a
     shape error from deep inside a model loader.
     """
+    t0 = time.time()
     problems = []
     for rel, meta in WEIGHTS_MANIFEST.items():
         path = os.path.join(MODEL_DIR, rel)
@@ -189,8 +215,13 @@ def verify_weights(hash_check=True):
             + "\n  ".join(problems)
             + f"\nVolume={MODEL_DIR!r}. Nothing is downloaded on the serving "
               f"path by design, so this will not self-heal: " + POPULATE_HINT)
-    print(f"[verify] {len(WEIGHTS_MANIFEST)} weight files OK "
-          f"({sum(m['bytes'] for m in WEIGHTS_MANIFEST.values()) / 1e6:.0f} MB)")
+    mb = sum(m["bytes"] for m in WEIGHTS_MANIFEST.values()) / 1e6
+    dt = time.time() - t0
+    # Timed because it is on the cold-start path, which is the one latency axis
+    # this worker beats Replicate on — a verification that costs more than it is
+    # worth would quietly give that back.
+    print(f"[verify] {len(WEIGHTS_MANIFEST)} weight files OK ({mb:.0f} MB) "
+          f"in {dt:.1f}s ({mb / max(dt, 1e-6):.0f} MB/s)")
 
 
 class _DownloadsBlocked(RuntimeError):
@@ -383,34 +414,14 @@ def _test_corrupt_weight(name: str = "htdemucs_ft.yaml", keep: int = 40):
     # choice and the fastest one wins. L40S and A100 are faster still but are
     # gated behind a payment method on this account.
     gpu=os.environ.get("RIFFD_GPU", "A10G"),
-    # Modal's DEFAULT memory guarantee is 128 MiB. This function holds most of a
-    # track in RAM several times over, so the default is nowhere near enough and
-    # a long input would be OOM-killed rather than merely slow.
-    #
-    # Sized for MAX_TRACK_MINUTES = 20, which riffd already permits. At 44.1 kHz
-    # stereo float32 one full-length array is 20*60*44100*2*4 = 423 MB, and the
-    # worst moment is stage 3:
-    #
-    #   BS-Roformer-SW full-track output buffer, 6 stems   2.54 GB
-    #   mix + vocals + instrumental + drums + bass          2.12 GB
-    #   audio-separator's own input copy                    0.42 GB
-    #                                                      --------
-    #                                                      ~5.1 GB
-    #
-    # The return path is close behind: eight resident arrays (3.39 GB) plus six
-    # 24-bit FLACs held as bytes before returning (~1.1 GB) plus the decode used
-    # for the delivered-reconstruction check.
-    #
-    # 8 GiB is that ~5.1 GB with ~60% headroom, and costs ~$0.004 for a 200 s
-    # request at $0.00000222/GiB/s — negligible against ~$0.036 of GPU.
-    #
-    # ⚠️ This is a CALCULATION, not a measurement: the 20-minute run that would
-    # confirm it is blocked (eval/BLOCKED.md). _meta["peak_rss_mb"] reports the
-    # real figure on every request, so the first long run settles it.
-    memory=8192,
-    # 20 min at the measured warm rate (0.385x realtime) is ~460 s of GPU, ~520 s
-    # cold. 1800 s leaves ~3.5x headroom without letting a wedged container bill
-    # for half an hour.
+    # Modal's default memory request is 128 MiB, which is a scheduling
+    # guarantee rather than a cap — a single `memory=` value does not OOM-kill,
+    # it reserves. Leaving it at the default would have this function scheduled
+    # as though it were tiny while it actually peaks above 13 GB. See MEMORY_MB.
+    memory=MEMORY_MB,
+    # Measured: the 20.65-minute track took 492 s of GPU, 573 s wall. 1800 s is
+    # ~3.1x that, which absorbs a slow cold start without letting a wedged
+    # container bill for half an hour.
     timeout=1800,
     scaledown_window=240,
 )
@@ -625,7 +636,7 @@ class Cascade:
             out["_meta"] = {
                 "sample_rate": sr,
                 "peak_rss_mb": round(peak_rss_mb, 1),
-                "memory_request_mb": 8192,
+                "memory_request_mb": MEMORY_MB,
                 "samples": int(mix.shape[0]),
                 "duration_s": round(mix.shape[0] / sr, 2),
                 "model_load_s": round(self.load_s, 1),

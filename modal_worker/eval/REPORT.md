@@ -2,7 +2,7 @@
 
 **Verdict: the owner's listening test confirms the cascade is clearly better on
 piano and on vocals. Energy allocation independently shows the incumbent losing
-the piano entirely. It is ~2.3–2.5× slower, and its checkpoint licences are
+the piano entirely. It is 2.25–3.20× slower, and its checkpoint licences are
 unresolved — as are the incumbent's. Phase B is justified on that evidence; the
 licence is a human decision.**
 
@@ -36,44 +36,32 @@ timestamps for a human to actually listen to.
 
 Every row below is reproducible from a retained artifact:
 `out/cascade/<slug>/_meta.json` and `out/incumbent/<slug>/_timing.json`. The
-`container` column is reported by the worker itself, not inferred.
+`container` column is reported by the worker itself, not inferred. **All four
+cascade rows are now genuine warm runs**, re-measured after the earlier table
+was found to be quoting a warm time for a run whose artifact said cold.
 
 | track | length | incumbent wall | cascade wall | cascade GPU | container | ratio |
 |---|---|---|---:|---:|---|---:|
-| Livin' Thing | 3:33 | 44.0 s | 99.5 s | 82.9 s | warm | 2.26× |
-| One More Time | 5:20 | 61.0 s | 154.2 s | 121.9 s | warm | 2.53× |
-| Take It Easy | 3:32 | 39.4 s | 96.6 s | 82.2 s | warm | 2.45× |
-| Layla | 7:04 | 66.2 s | **208.4 s** | **181.5 s** | **cold** | — |
+| Livin' Thing | 3:33 | 44.0 s | 99.0 s | 84.1 s | warm | 2.25× |
+| One More Time | 5:20 | 61.0 s | 147.9 s | 125.3 s | warm | 2.42× |
+| Take It Easy | 3:32 | 39.4 s | 106.7 s | 84.1 s | warm | 2.71× |
+| Layla | 7:04 | 66.2 s | 211.6 s | 163.2 s | warm | 3.20× |
 
-**Corrections from an earlier version of this table.** Layla was listed as
-*warm, 186.0 s / 158.1 s*. Those numbers came from an ad-hoc single-track re-run
-whose artifact was later overwritten, so nothing in the repo supported them. The
-retained `_meta.json` says **cold, 208.4 s**, and that is what now appears. A
-cold row cannot be divided by a warm one, so Layla's ratio is withheld rather
-than quoted as a 2.81× or 3.15× slowdown.
+**Warm end to end, the cascade is 2.25–3.20× slower**, and it is structural
+rather than a tuning problem: three models over the whole track where
+htdemucs_6s runs one, and `htdemucs_ft` is itself a bag of four. GPU-only the
+spread is tighter (1.91–2.47×); the wall figures additionally carry 15–48 s of
+upload/download per request, which is why Layla — the largest payload — has the
+worst wall ratio. Warm GPU time is **0.390× the track's own duration**.
 
-Two caveats that limit all four ratios:
+The previous version of this table listed Layla as *warm, 186.0 s / 158.1 s*
+from an ad-hoc run whose artifact was overwritten, then (after the first
+correction) as *cold, 208.4 s*. It is now warm and measured: **211.6 s / 163.2 s**.
 
-- The **incumbent's** cold/warm state was never recorded — `run_incumbent.py`
-  does not capture it, and Replicate does not report it in the prediction body.
-  So the denominators may mix cold and warm runs.
-- A genuine warm pass per track was **not** re-run; see `BLOCKED.md`.
-
-**On the three warm rows the cascade is ~2.3–2.5× slower end to end, and that is
-structural, not a tuning problem.** It runs three models over the whole track where htdemucs_6s
-runs one, and one of the three (`htdemucs_ft`) is itself a bag of four models.
-Warm, it costs 0.38× the track's own duration in GPU time.
-
-Two things were tuned and measured rather than assumed:
-
-- `demucs shifts=2 → 0` cut the drums/bass stage 39.7 s → 26.2 s. The default
-  runs the model twice on shifted copies *and* htdemucs_ft is four models, so it
-  was eight passes over the track.
-- `mdxc batch_size` does nothing. audio-separator ignores it for RoFormer models
-  by design (`mdxc_separator.py:490`: *"for Roformer models, `batch_size` is not
-  utilized due to negligible performance improvements"*). Those two stages are
-  68% of the runtime and run one chunk at a time. Raising that means forking the
-  demix loop — the largest remaining speedup available, and untried here.
+One caveat still bounds every ratio: the **incumbent's** cold/warm state was
+never captured — `run_incumbent.py` does not record it and Replicate does not
+report it in the prediction body — so the denominators may mix cold and warm
+runs.
 
 ### Cold start — the one latency dimension the cascade wins
 
@@ -90,26 +78,19 @@ all of it uploading the mix and downloading six FLACs.
 ## Cost per track
 
 Modal A10G at **$0.000306/s** (modal.com/pricing), GPU seconds from each
-track's retained `_meta.json` (`total_s`):
+track's retained `_meta.json` (`total_s`), all warm:
 
-| track | GPU s | cost | container |
-|---|---:|---:|---|
-| Livin' Thing | 82.9 | $0.0254 | warm |
-| One More Time | 121.9 | $0.0373 | warm |
-| Take It Easy | 82.2 | $0.0252 | warm |
-| Layla | 181.5 | $0.0555 | cold |
+| track | GPU s | cost |
+|---|---:|---:|
+| Livin' Thing | 84.1 | $0.0257 |
+| Take It Easy | 84.1 | $0.0257 |
+| One More Time | 125.3 | $0.0383 |
+| Layla | 163.2 | $0.0499 |
 
-**Mean $0.0358/track** across all four. An earlier version said $0.034, which
-came from averaging an inconsistent subset. CPU and memory add a fraction of a
-cent on top; the `memory=8192` request added in finding 6 is ~$0.004 for a
-200 s request.
-
-The incumbent's cost could **not** be pinned down: Replicate's API reports
-`predict_time` (15.1–34.9 s across the runs here) but does not expose the
-hardware tier for `ryan5453/demucs`, and Replicate's rates span $0.000225/s (T4)
-to $0.0014/s (A100-80GB). That puts the incumbent somewhere between **$0.004 and
-$0.049** per track — an order of magnitude of uncertainty that straddles the
-cascade's $0.034. Stated as a range rather than guessed at.
+**Mean $0.0349/track.** (Earlier figures: $0.034 from an inconsistent subset,
+then $0.0358 from a table with one cold row. This one is four warm runs.)
+Memory is billed at whichever is higher, request or usage — see "Memory" below,
+where the request is now sized from measurement.
 
 ### GPU choice, by measurement
 
@@ -239,6 +220,43 @@ measures reconstruction on the *decoded FLACs* it actually returns, not only on
 the float arrays, because the second number is the only one that is a promise to
 a caller.
 
+## Long track — does it survive `MAX_TRACK_MINUTES`?
+
+riffd permits 20-minute inputs, so the worker has to survive one. Measured on
+Rush, *2112* (20.65 min, deliberately just past the cap), artifact in
+`out/long_track/_meta.json`:
+
+Run twice — once at a deliberately oversized `memory=24576` to measure safely,
+then again at the production `memory=16384` to confirm it survives there:
+
+| | measurement run | production-setting run |
+|---|---|---|
+| memory requested | 24,576 MB | **16,384 MB** |
+| wall / GPU | 573.0 s / 492.0 s | 561.0 s / 489.5 s |
+| **peak RSS** | **13,537.0 MB** | **13,628.7 MB** |
+| headroom | — | **2,755 MB (20.2%)** |
+| returned | 423.9 MB FLAC | 423.9 MB FLAC |
+| reconstruction | −128.7 dB, 0 clipped | −128.7 dB, 0 clipped |
+| stages (v/db/gp) | 105.7 / 130.1 / 217.6 s | 104.8 / 130.3 / 220.1 s |
+
+Both cold containers, input 1,239.0 s (20.65 min) 44.1 kHz stereo. Peak RSS
+reproduces to within 0.7%, so 13.6 GB is a stable figure rather than one
+sample. Realtime factor 0.395×, consistent with the 0.390× measured warm on
+short tracks.
+
+It survives, and scaling is linear rather than cliff-shaped — the realtime
+factor barely moves between a 3½-minute track and a 20-minute one.
+
+**The memory request was wrong before this ran.** It had been calculated at
+8192 MB from the resident float32 audio arrays; the truth is 13,537 MB, 1.65×
+higher, because the dominant term is the loaded models and the torch/CUDA
+runtime rather than the audio. A 3:32 track already peaks near 8.4 GB. The
+request is now `memory=16384` — the measured worst case (13,628.7 MB) plus 20.2%.
+
+Note `peak_rss_mb` is `ru_maxrss`, a **container lifetime** high-water mark. The
+four short-track runs all report an identical 8,375.1 MB because they shared one
+warm container; that is the maximum across all four, not any one track's figure.
+
 ## Licensing — the actual blocker
 
 Fully covered in [`../README.md`](../README.md). The short version:
@@ -285,13 +303,34 @@ to relabel what the incumbent gets wrong.
 Before Phase B:
 
 1. **Resolve the BS-RoFormer-SW licence.** Everything else is contingent on it.
-2. Decide whether 2.3–2.5× latency is acceptable. riffd's measured p50 is ~147 s
+2. Decide whether 2.25–3.20× latency is acceptable. riffd's measured p50 is ~147 s
    end to end and `MAX_WAIT` bounds one separation attempt at 420 s base, so a
    ~160 s separation fits the existing budget — but it roughly doubles the
    separation share of a job and eats headroom the retry path currently relies
    on (CLAUDE.md, "`MAX_WAIT` is not a duration estimate").
 3. If latency matters more than the piano, the RoFormer chunk loop is the
    untapped 68% — batching it needs a fork of audio-separator's `demix`.
+
+## Deferred items, now closed
+
+Three items in this report were deferred in an earlier round because the Modal
+workspace hit its spend limit mid-session (`Workspace ... has exceeded its spend
+limit`). They were recorded in `eval/BLOCKED.md` rather than estimated. Billing
+was restored and all three have been run; BLOCKED.md is deleted.
+
+| item | outcome |
+|---|---|
+| corrupt-Volume startup test | **passes.** Truncating `htdemucs_ft.yaml` to 40 bytes on the real Volume makes the container fail in `@modal.enter` before any inference, naming the file, the −109-byte delta and the fix. `populate_models` then removed, refetched, verified and committed it, and the worker served again. |
+| warm re-measure | **done.** All four tracks re-run warm; the latency and cost tables above are rebuilt from the new artifacts. |
+| 20-minute track | **done, and it corrected the memory request** — see "Long track" above. |
+
+One operational finding came out of the corruption test and is worth keeping:
+**when `@modal.enter` raises, Modal retries the container rather than failing the
+caller fast.** The client hung until killed, and the first successful request
+afterwards spent **377.5 s of scheduling backoff** for 84.5 s of GPU. So a
+corrupted Volume in production presents as hung requests and a long recovery
+tail, not as fast errors. The failure is loud in the logs — which is what the
+manifest work set out to achieve — but it is not loud to the caller.
 
 ## Reproducing
 

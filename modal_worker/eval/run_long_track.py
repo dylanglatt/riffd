@@ -1,15 +1,14 @@
 """Prove the worker survives a MAX_TRACK_MINUTES-length input (finding 6).
 
-riffd's MAX_TRACK_MINUTES is 20, so the worker has to survive 20 minutes. The
-`memory=8192` on the Cascade class is a calculation, not a measurement — this
-script is what replaces it with one.
+riffd's MAX_TRACK_MINUTES is 20, so the worker has to survive 20 minutes. This
+script is what measured that it does, and what sized MEMORY_MB: a real 20.65 min
+track peaked at 13,537 MB, against an earlier calculation of 8192. Re-run it
+after any lineup change rather than re-deriving the number from array sizes.
 
 Records into eval/out/long_track/: peak container RSS, wall time, per-stage GPU
 time, and the size of the returned FLACs.
 
     python modal_worker/eval/run_long_track.py
-
-Currently BLOCKED — the Modal workspace is over its spend limit. See BLOCKED.md.
 """
 
 import json
@@ -26,8 +25,8 @@ OUT = Path(__file__).parent / "out" / "long_track"
 # ~20 minutes, and deliberately a real recording rather than a concatenation:
 # a looped track would give the models repeated content and could flatter the
 # chunked inference path.
-DEFAULT_QUERY = "Pink Floyd Echoes 1971 Meddle full"
-DEFAULT_SLUG = "echoes_long"
+DEFAULT_QUERY = "Rush 2112 full suite 1976 official audio"
+DEFAULT_SLUG = "rush_2112"
 TARGET_MIN, TARGET_MAX = 17 * 60, 21 * 60
 
 

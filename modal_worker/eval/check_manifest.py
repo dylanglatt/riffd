@@ -1,9 +1,9 @@
 """Tests for the weights manifest — both directions, run locally.
 
 These exercise the real verify_weights() / _block_downloads() code against a
-temporary MODEL_DIR, so they need neither a GPU nor a Modal container. What they
-do NOT cover is the container-start integration (that verify_weights() is what
-runs in @modal.enter before any request) — see eval/BLOCKED.md.
+temporary MODEL_DIR, so they need neither a GPU nor a Modal container. They complement the
+container-start integration test (corrupt the real Volume, watch it refuse to
+start, repair with populate_models), which is recorded in REPORT.md.
 
     python modal_worker/eval/check_manifest.py
 

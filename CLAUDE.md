@@ -340,10 +340,16 @@ in `modal_worker/eval/REPORT.md`. Don't re-derive them:
 - **Piano is the win.** On Layla the incumbent puts 1.3% of separated energy in
   the piano stem against the cascade's 19.7% — it effectively misses a
   two-minute piano coda. On Livin' Thing, 0.1% vs 2.3%.
-- **Latency is the cost.** ~2.3–2.5× slower end to end on the three tracks
-  measured warm-vs-incumbent, structurally: three models over the whole track,
-  one of them a bag of four. Cold start is the one axis it wins (26.9 s vs
-  Replicate boot gaps up to 50 s).
+- **Latency is the cost.** 2.25–3.20× slower end to end across four tracks all
+  measured warm, structurally: three models over the whole track, one of them a
+  bag of four. Warm GPU time is 0.390× the track's own duration. Cold start is
+  the one axis it wins (~27–31 s, of which only ~2 s is the checkpoint
+  verification, vs Replicate boot gaps up to 50 s).
+- **It survives a 20-minute track**, which `MAX_TRACK_MINUTES` permits: 20.65 min
+  in ~490 s of GPU, peaking at **13.6 GB** — so it needs `memory=16384`, not
+  Modal's 128 MiB default. That figure is measured; an earlier calculation from
+  audio-array sizes said 8192 and was 1.65× too low, because the loaded models
+  and the torch/CUDA runtime dominate, not the audio.
 - **It is blocked on a licence**, not on quality. BS-RoFormer-SW is the only
   open checkpoint that emits guitar and piano at all, its author deleted their
   HuggingFace account, and the surviving copy is a third-party re-upload whose

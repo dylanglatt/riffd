@@ -8,7 +8,7 @@ htdemucs_6s-on-Replicate, and at what latency and cost?*
 
 The answer, in short: **the owner's listening test confirms it is clearly better
 on piano and vocals; energy allocation shows the incumbent losing the piano
-entirely; guitar and `other` are not yet judged.** It is ~2.3-2.5x slower, and
+entirely; guitar and `other` are not yet judged.** It is 2.25-3.20x slower, and
 its checkpoint licences are unresolved — as are the incumbent's. Cost is
 ~$0.036/track measured; the incumbent's could not be priced, so no cost ratio is
 claimed. Full numbers: [`eval/REPORT.md`](eval/REPORT.md), licences:
@@ -77,20 +77,28 @@ out = cascade.separate.remote(audio_bytes, "song.mp3")
 
 ### Resources
 
-`memory=8192` (Modal's default guarantee is **128 MiB** — nowhere near enough).
-Sized for `MAX_TRACK_MINUTES = 20`: one full-length 44.1 kHz stereo float32
-array is 423 MB, and the worst moment is stage 3 at roughly 5.1 GB
-(BS-RoFormer-SW's 6-stem full-track buffer 2.54 GB + five resident arrays
-2.12 GB + audio-separator's input copy). 8 GiB leaves ~60% headroom for ~$0.004
-a request.
+`memory=16384`, **measured**. A real 20.65-minute track (Rush, *2112* — just
+past riffd's `MAX_TRACK_MINUTES = 20`) peaked at **13,537 MB** and took 492 s of
+GPU; the artifact is `eval/out/long_track/_meta.json`.
 
-⚠️ That is a **calculation, not a measurement** — the 20-minute run that would
-confirm it is blocked ([`eval/BLOCKED.md`](eval/BLOCKED.md)). Every response
-reports `_meta["peak_rss_mb"]`, so the first long run settles it;
-`eval/run_long_track.py` is written and waiting.
+An earlier version requested `8192`, derived by counting resident float32 audio
+arrays. That was **1.65× too low**: the arrays are not the dominant term — the
+loaded models plus the torch/CUDA runtime are, and those do not shrink for a
+short track (a 3:32 track already peaks around 8.4 GB). Do not re-derive this
+from array sizes; re-measure it with `eval/run_long_track.py`, which records
+`peak_rss_mb` on every request.
 
-`timeout=1800` — 20 min at the measured warm rate (0.385× realtime) is ~460 s of
-GPU, ~520 s cold, so ~3.5× headroom.
+Two things worth knowing about `memory=`:
+
+- A single value is a **scheduling guarantee, not a cap** — it does not OOM-kill.
+  Modal bills whichever is higher of request or usage, so 16384 is not free for
+  short tracks (~$0.003 of a ~$0.026 track). It is bought deliberately:
+  under-requesting risks placement on a node without the headroom to finish.
+- Passing a tuple `(request, limit)` would add a hard OOM cap. Not used here,
+  because a legitimate long track must not be killed.
+
+`timeout=1800` — measured 492 s of GPU / 573 s wall on the 20.65-minute track,
+so ~3.1× headroom without letting a wedged container bill for half an hour.
 
 ### GPU
 
