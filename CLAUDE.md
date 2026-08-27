@@ -325,6 +325,36 @@ Treat every additional generation as a real cost.
 - If you switch Demucs to FLAC output, **pair it with parallel stem downloads** — FLAC
   is ~32 MB/stem vs ~5.6 MB for MP3, so alone it adds ~25 s of sequential download.
 
+## Separation backend — an evaluated alternative exists, not wired in
+
+`modal_worker/` is a standalone Modal GPU worker (Phase A). It imports nothing
+from riffd and riffd imports nothing from it; the live pipeline still runs
+htdemucs_6s on Replicate. It exists because it was measured, and the numbers are
+in `modal_worker/eval/REPORT.md`. Don't re-derive them:
+
+- **Cascade** — MelBand RoFormer (vocals) → htdemucs_ft (drums/bass) →
+  BS-RoFormer-SW (guitar/piano) → `other` by subtraction. Same six stem names,
+  FLAC, and the stems sum to the mix exactly by construction.
+- **Piano is the win.** On Layla the incumbent puts 1.3% of separated energy in
+  the piano stem against the cascade's 19.7% — it effectively misses a
+  two-minute piano coda. On Livin' Thing, 0.1% vs 2.3%.
+- **Latency is the cost.** ~2.3–2.8× slower end to end, structurally: three
+  models over the whole track, one of them a bag of four. Cold start is the one
+  axis it wins (26.9 s vs Replicate boot gaps up to 50 s).
+- **It is blocked on a licence**, not on quality. BS-RoFormer-SW is the only
+  open checkpoint that emits guitar and piano at all, its author deleted their
+  HuggingFace account, and the surviving copy is a third-party re-upload whose
+  MIT tag is the re-uploader's claim to make. Read the README before building on
+  it.
+
+One finding applies to the **current** pipeline regardless of any of that:
+`_separate_stems_replicate()` requests `output_format: "mp3"` (processor.py
+~340), so today's stems are lossy, independently per stem — measured, they
+reconstruct the mix to only −13.7 to −23.0 dB where the cascade's FLAC manages
+−133 dB. Switching that one field to `flac` is the cheap independent win, but
+see the signal-chain note above: FLAC is ~32 MB/stem vs ~5.6 MB, so it must be
+paired with parallel stem downloads.
+
 ## Known-deliberate deletions — do not reintroduce
 
 These were removed on purpose. If you find yourself re-adding one, stop and ask.
