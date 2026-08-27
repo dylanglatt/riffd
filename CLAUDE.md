@@ -277,6 +277,13 @@ channels carry real audio but whose downmix is exactly 0.0 (verified with
 anti-phase input), and `read_crops()` downmixes too — so the floor cannot reject
 anything the tagger would have labelled confidently.
 
+**Child log bounds are UTF-8 bytes, not `len(str)`.** `forward_child_log()`
+caps 40 lines, 400 bytes per line, 8192 bytes per child, and truncates on a
+codepoint boundary so a cut multibyte sequence never reaches the log. Counting
+codepoints instead forwarded **23,147 bytes against the 8,192 cap** on a CJK
+probe — nearly 3x, since the point of the cap is what the log transport costs.
+The per-line marker is inside the per-line budget, not added on top.
+
 **Tagging can never fail a job.** `run_tagger()` returns `{}` on a missing
 checkpoint, a non-zero child, a timeout or any exception, and every component
 then keeps the label it arrived with. Verified for all of those.

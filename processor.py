@@ -358,33 +358,61 @@ def warm_replicate_model() -> bool:
 
 
 # Bounds for forwarding a child process's captured stdout into the parent log.
-# Both dimensions are load-bearing: a tail of N lines is not a byte bound on its
-# own — one giant single-line write would forward megabytes into the Render log.
+# All three are load-bearing: a tail of N lines is not a size bound on its own —
+# one giant single-line write would forward megabytes into the Render log.
+#
+# These are UTF-8 BYTES, not characters, because bytes are what the log
+# transport actually costs. len(str) counts codepoints, so a child logging a
+# track title in CJK or an error with box-drawing characters forwarded up to 3x
+# the intended cap — measured at 23,147 bytes against the 8,192 "byte" cap.
 CHILD_LOG_MAX_LINES = 40     # tail kept per child
-CHILD_LOG_MAX_LINE = 400     # chars kept per line
-CHILD_LOG_MAX_TOTAL = 8192   # chars kept per child in total
+CHILD_LOG_MAX_LINE = 400     # UTF-8 bytes kept per line, marker included
+CHILD_LOG_MAX_TOTAL = 8192   # UTF-8 bytes kept per child in total
+
+
+def _truncate_utf8(raw: bytes, limit: int) -> str:
+    """Decode at most `limit` bytes of `raw`, cutting on a codepoint boundary.
+
+    errors="ignore" is doing real work: slicing bytes can land mid-sequence,
+    and emitting the partial sequence would put invalid UTF-8 into the log.
+    """
+    if len(raw) <= limit:
+        return raw.decode("utf-8", errors="ignore")
+    return raw[:limit].decode("utf-8", errors="ignore")
 
 
 def forward_child_log(prefix: str, stdout: str, printer=print) -> None:
-    """Print a child's captured stdout into the parent log, bounded.
+    """Print a child's captured stdout into the parent log, bounded in bytes.
 
     subprocess.run(capture_output=True) swallows the child's stdout, which is
     where its backend line, [mem] RSS lines and per-stem stats live — without
     this they are invisible in production and "check X in the logs" cannot
     actually be done. Shared by the Basic Pitch and PANNs children so the two
     can't drift into different (or absent) bounds.
+
+    `prefix` is parent-generated and does not count against the caps; only the
+    child's own bytes do.
     """
     forwarded = 0
     for line in (stdout or "").splitlines()[-CHILD_LOG_MAX_LINES:]:
         line = line.strip()
         if not line:
             continue
-        if len(line) > CHILD_LOG_MAX_LINE:
-            line = line[:CHILD_LOG_MAX_LINE] + f"…[+{len(line) - CHILD_LOG_MAX_LINE} chars]"
-        if forwarded + len(line) > CHILD_LOG_MAX_TOTAL:
+        raw = line.encode("utf-8")
+        if len(raw) > CHILD_LOG_MAX_LINE:
+            # Reserve room for the marker so the emitted line — marker and all
+            # — still fits the cap. Size the reservation from the worst case
+            # (every byte dropped); the real count can only be smaller, so the
+            # real marker can only be shorter.
+            marker = f"…[+{len(raw)} bytes]"
+            keep = max(0, CHILD_LOG_MAX_LINE - len(marker.encode("utf-8")))
+            head = _truncate_utf8(raw, keep)
+            line = head + f"…[+{len(raw) - len(head.encode('utf-8'))} bytes]"
+            raw = line.encode("utf-8")
+        if forwarded + len(raw) > CHILD_LOG_MAX_TOTAL:
             printer(f"{prefix} …log cap reached, remaining lines dropped")
             break
-        forwarded += len(line)
+        forwarded += len(raw)
         printer(f"{prefix} {line}")
 
 
