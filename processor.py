@@ -32,6 +32,7 @@ import sys
 import threading
 import wave
 from pathlib import Path
+from typing import NamedTuple
 
 # Heavy imports deferred to first use — saves ~200MB at boot
 np = None
@@ -1251,15 +1252,39 @@ def _hint_labels(instrument_hints: dict | None) -> set:
     return labels
 
 
+class TaggerDecision(NamedTuple):
+    """What the tagger concluded about one component.
+
+    `label` is None whenever the current label stands — but that covers two
+    very different outcomes, and conflating them was a bug:
+
+      - abstained (confident=False): the tagger has no opinion, so the
+        heuristic + song-level hint path runs exactly as it always did.
+      - confirmed (confident=True): the tagger cleared its bar and *agrees*
+        with the label already there, or with a less specific version of it.
+
+    A confirmation is a positive result. It must lock the label against
+    apply_instrument_hints() just as firmly as a change does, otherwise a
+    component the tagger confidently heard as a synth (0.80) is still rewritten
+    to "Strings" by a song-level hint that never listened to anything.
+    """
+    label: str | None
+    audioset_class: str | None
+    score: float
+    reason: str
+    confident: bool
+
+
 def decide_component_label(current_label: str, ranked: list, hint_labels: set,
-                           min_confidence: float = TAGGER_MIN_CONFIDENCE) -> tuple:
-    """(new_label, audioset_class, score, reason) or (None, ...) to abstain."""
+                           min_confidence: float = TAGGER_MIN_CONFIDENCE) -> TaggerDecision:
+    """Decide one component's label. See TaggerDecision for the outcomes."""
     if not ranked:
-        return None, None, 0.0, "no mapped class"
+        return TaggerDecision(None, None, 0.0, "no mapped class", False)
 
     top_label, top_class, top_score = ranked[0]
     if top_score < min_confidence:
-        return None, top_class, top_score, f"below {min_confidence:.2f}"
+        return TaggerDecision(None, top_class, top_score,
+                              f"below {min_confidence:.2f}", False)
 
     label, cls, score, reason = top_label, top_class, top_score, "tagger"
     if hint_labels and top_label not in hint_labels:
@@ -1279,8 +1304,8 @@ def decide_component_label(current_label: str, ranked: list, hint_labels: set,
     label_words = set(label.lower().split())
     if label_words and label_words <= current_words:
         reason = "already correct" if label_words == current_words else "confirms existing"
-        return None, cls, score, reason
-    return label, cls, score, reason
+        return TaggerDecision(None, cls, score, reason, True)
+    return TaggerDecision(label, cls, score, reason, True)
 
 
 def tag_components_child(items_path: str, result_path: str) -> None:
@@ -1416,16 +1441,26 @@ def _apply_component_tagging(refined: dict, component_sources: dict, candidates:
         if ranked is None:
             continue
         old = data.get("label", key)
-        new, cls, score, reason = decide_component_label(
+        d = decide_component_label(
             old, ranked, hint_labels, tagger_min_confidence(component_sources.get(key, "")))
-        if new:
-            data["label"] = new
-            data["tagged"] = True          # apply_instrument_hints() must not undo this
+
+        # Set on a confident CHANGE *and* a confident CONFIRMATION: both mean
+        # the tagger owns this label now, and apply_instrument_hints() must not
+        # undo either. Only an abstain leaves the label up for grabs.
+        if d.confident:
+            data["tagged"] = True
+
+        if d.label:
+            data["label"] = d.label
             changed += 1
-            print(f'[tagger] {key}: "{old}" -> "{new}" ({cls} p={score:.2f}, {reason})')
+            print(f'[tagger] {key}: "{old}" -> "{d.label}" '
+                  f'({d.audioset_class} p={d.score:.2f}, {d.reason})')
+        elif d.confident:
+            print(f'[tagger] {key}: "{old}" confirmed '
+                  f'({d.audioset_class} p={d.score:.2f}, {d.reason}) — locked against hints')
         else:
             best = f"{ranked[0][0]} p={ranked[0][2]:.2f}" if ranked else "nothing mapped"
-            print(f'[tagger] {key}: keeping "{old}" (abstain: {reason}; best {best})')
+            print(f'[tagger] {key}: keeping "{old}" (abstain: {d.reason}; best {best})')
 
     for cand_key, cand in cand_by_key.items():
         path = Path(cand["path"])

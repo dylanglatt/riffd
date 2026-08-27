@@ -199,6 +199,16 @@ So the order of authority is now:
 3. **Hints as tie-breaker only** → when the tagger's top two mapped labels are
    within `TAGGER_TIE_MARGIN`, prefer the one the LLM also predicted.
 
+**The axis is confident-vs-abstained, not changed-vs-unchanged.** A confident
+tagger *confirmation* — PANNs agreeing with the label already there, or with a
+less specific version of it — is a positive result and locks the label just as
+firmly as a change does. `TaggerDecision.confident` carries that, and
+`_apply_component_tagging()` sets `tagged: True` on both. Conflating the two was
+a bug: a component confidently heard as a synth at 0.80 was still rewritten to
+"Strings" by a song-level hint that never listened to anything. On the 38
+components in `static/demo` this locks 9 that were previously open to the hint
+chain.
+
 `apply_instrument_hints()` skips any stem carrying `tagged: True`. That key is
 private to the in-process `stems` dict — app.py projects to
 `{label, energy, active}` before anything is cached or served, so it never
