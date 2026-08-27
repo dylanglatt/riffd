@@ -260,6 +260,23 @@ one is kept, subject to `MAX_REFINED_STEMS` — a rescue never breaks the cap.
 Unrescued candidates are deleted, and the `finally` in `separate_stems()` sweeps
 `_cand_*` on the crash path.
 
+`TAGGER_RESCUE_ENERGY_FLOOR` (`0.05 × MIN_ABSOLUTE_ENERGY` = 4.0e-4) is the
+backstop under that. `read_crops()` peak-normalises deliberately — components in
+one song span ~30 dB and PANNs is level sensitive — and the price is that
+normalisation cannot tell quiet from *absent*. Measured: a side component 33 dB
+below the centre of the same stem scored **Guitar=0.55 against the centre's
+0.54**. Level is simply not in the answer. Below the floor a component is never
+staged, never written, never seen by the child.
+
+The floor is sized from measurement, not from a round number. Across 7 full
+local separations the components reaching the staging branch had mono RMS
+9.2e-4 .. 1.4e-2; `0.25 × MIN_ABSOLUTE_ENERGY` would have rejected more than
+half of them. Both the floor and the tagger judge the **mono downmix**, which is
+what keeps them consistent: `_stereo_separate()` can emit a component whose
+channels carry real audio but whose downmix is exactly 0.0 (verified with
+anti-phase input), and `read_crops()` downmixes too — so the floor cannot reject
+anything the tagger would have labelled confidently.
+
 **Tagging can never fail a job.** `run_tagger()` returns `{}` on a missing
 checkpoint, a non-zero child, a timeout or any exception, and every component
 then keeps the label it arrived with. Verified for all of those.

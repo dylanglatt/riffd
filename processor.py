@@ -1165,6 +1165,37 @@ TAGGER_TIE_MARGIN = 0.10
 # and were correctly dropped), so this is deliberately conservative.
 TAGGER_RESCUE_MIN_CONFIDENCE = 0.60
 
+# A component quieter than this is never staged for rescue at all — not tagged,
+# not written to disk.
+#
+# read_crops() peak-normalises before inference, deliberately: components in one
+# song span ~30dB and PANNs scores are level sensitive, so a quiet real
+# instrument has to be brought up to be heard at all. The cost is that
+# normalisation does not know the difference between quiet and *absent* —
+# measured, a side component 33dB below the centre of the same stem scored
+# Guitar=0.55 against the centre's 0.54. Level is not in the answer at all, so
+# without a floor an inaudible component can be rescued into a mixer channel.
+#
+# Sized from measurement, not from the round number. Across 7 full local
+# separations the 15 components that reached the staging branch had mono RMS
+# 9.2e-4 .. 1.4e-2; the quietest genuine one was 9.221e-4. So:
+#
+#     0.25x MIN_ABSOLUTE_ENERGY = 2.0e-3   rejects 8 of the 15 — too blunt
+#     0.05x MIN_ABSOLUTE_ENERGY = 4.0e-4   rejects 0 of the 15, 2.3x below the
+#                                          quietest real one, 755x above the
+#                                          pathological case
+#
+# 4.0e-4 is about -68 dBFS, or ~13 LSB of the 16-bit file the stem is written
+# into — still audible when soloed. Anything below it quantises to near-nothing
+# on the way to disk, so rejecting it costs a user nothing.
+#
+# Both this floor and the tagger judge the MONO DOWNMIX, which is what keeps
+# them consistent: _stereo_separate() can emit a component whose channels carry
+# real audio but whose downmix is exactly 0.0 (verified with anti-phase input),
+# and read_crops() downmixes too. So the floor cannot reject audio the tagger
+# would have labelled confidently.
+TAGGER_RESCUE_ENERGY_FLOOR = MIN_ABSOLUTE_ENERGY * 0.05
+
 # Stem categories whose labels the tagger must not touch. Demucs has dedicated
 # heads for these three and they are more reliable than AudioSet tagging of the
 # result; there is nothing to gain and a mislabelled lead vocal to lose.
@@ -2166,17 +2197,25 @@ def separate_stems(audio_path: str, song_id: str, progress_callback=None,
                 # under a full band is both. Stage it so the tagger gets a
                 # listen; _apply_component_tagging() keeps it only if the
                 # tagger is confident, and deletes the file otherwise.
-                if stem_name not in TAGGER_SKIP_CATEGORIES:
-                    cand_path = out_dir / f"_cand_{stem_name}_{position}.wav"
-                    try:
-                        _write_wav(cand_path, comp_l, comp_r, sr)
-                        tagger_candidates.append({
-                            "path": cand_path, "stem_name": stem_name,
-                            "position": position, "energy": energy,
-                        })
-                    except Exception as _cand_e:
-                        print(f"[tagger] could not stage {stem_name}/{position} "
-                              f"for rescue: {type(_cand_e).__name__}: {_cand_e}")
+                if stem_name in TAGGER_SKIP_CATEGORIES:
+                    continue
+                if energy < TAGGER_RESCUE_ENERGY_FLOOR:
+                    # Not "quiet" — inaudible. Skipping here rather than after
+                    # tagging also means the WAV is never written and the child
+                    # never sees it.
+                    print(f"[tagger] not staging {stem_name}/{position}: rms={energy:.2e} "
+                          f"is below the {TAGGER_RESCUE_ENERGY_FLOOR:.1e} rescue floor")
+                    continue
+                cand_path = out_dir / f"_cand_{stem_name}_{position}.wav"
+                try:
+                    _write_wav(cand_path, comp_l, comp_r, sr)
+                    tagger_candidates.append({
+                        "path": cand_path, "stem_name": stem_name,
+                        "position": position, "energy": energy,
+                    })
+                except Exception as _cand_e:
+                    print(f"[tagger] could not stage {stem_name}/{position} "
+                          f"for rescue: {type(_cand_e).__name__}: {_cand_e}")
                 continue
 
             feat = _spectral_features(mono, sr)
