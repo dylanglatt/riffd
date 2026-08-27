@@ -1,4 +1,4 @@
-"""Riffd stem separation on Modal — a cascade of MIT-licensed source separators.
+"""Riffd stem separation on Modal — a cascade of open source separators.
 
 Phase A: standalone. Nothing in this directory is imported by the riffd app, and
 this worker imports nothing from it. The output contract is chosen to make the
@@ -83,13 +83,19 @@ app = modal.App(APP_NAME)
 
 # ── The cascade lineup ───────────────────────────────────────────────────────
 #
-# Every checkpoint here is MIT. That is a hard constraint, not a preference:
-# most community RoFormer checkpoints (becruily, Gabox, several unwa) ship with
-# no declared license at all — which means all rights reserved, not "free" — and
-# at least one sibling repo is explicitly CC-BY-NC-4.0. See README.md.
-VOCAL_MODEL = "vocals_mel_band_roformer.ckpt"      # Kimberley Jensen, MIT
-DEMUCS_MODEL = "htdemucs_ft.yaml"                  # Meta, MIT
-SIX_STEM_MODEL = "BS-Roformer-SW.ckpt"             # jarredou, MIT (see README)
+# NONE of these has a verified licence permitting commercial use, and neither
+# does the htdemucs_6s riffd runs in production today. Read LICENSES.md before
+# building on any of it — in particular do not restore the "all MIT" claim that
+# used to sit here, which was wrong about two of the three:
+#
+#   vocals   declared MIT first-party, but training data undisclosed
+#   demucs   code is MIT; the AUTHOR states the weights are not, and are
+#            "provided only for scientific purposes" (demucs#327)
+#   SW       licence never established; the MIT tag is a re-uploader's claim,
+#            contradicted by two other redistributors of the same weights
+VOCAL_MODEL = "vocals_mel_band_roformer.ckpt"      # see LICENSES.md §1
+DEMUCS_MODEL = "htdemucs_ft.yaml"                  # see LICENSES.md §2
+SIX_STEM_MODEL = "BS-Roformer-SW.ckpt"             # see LICENSES.md §3
 
 ALL_MODELS = [VOCAL_MODEL, DEMUCS_MODEL, SIX_STEM_MODEL]
 

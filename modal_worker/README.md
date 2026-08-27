@@ -6,9 +6,11 @@ nothing in riffd imports this. Phase A exists to answer one question with
 measurements — *is a cascade of specialist separators better than the incumbent
 htdemucs_6s-on-Replicate, and at what latency and cost?*
 
-The answer, in short: **better on vocals and drums/bass, decisively better on
-guitar/piano, ~2.3x slower, ~1.6x the cost, and blocked on a licensing
-question.** Full numbers and the honest read: [`eval/REPORT.md`](eval/REPORT.md).
+The answer, in short: **the owner's listening test confirms it is clearly better
+on piano and vocals; it is ~2.3-2.8x slower; and its checkpoint licences are
+unresolved (as are the incumbent's).** Cost is ~$0.036/track measured; the
+incumbent's could not be priced, so no cost ratio is claimed. Full numbers:
+[`eval/REPORT.md`](eval/REPORT.md), licences: [`LICENSES.md`](LICENSES.md).
 
 ## Output contract
 
@@ -61,11 +63,11 @@ speed), so the tier is a pure latency choice.
 
 ## The cascade
 
-| stage | model | takes | license |
+| stage | model | takes | licence |
 |---|---|---|---|
-| 1 | MelBand RoFormer (Kimberley Jensen) | `vocals`, instrumental | MIT |
-| 2 | Demucs `htdemucs_ft` (Meta) | `drums`, `bass` | MIT |
-| 3 | BS-RoFormer-SW 6-stem (jarredou) | `guitar`, `piano` | MIT (see below) |
+| 1 | MelBand RoFormer (Kimberley Jensen) | `vocals`, instrumental | unverified — [LICENSES.md](LICENSES.md) |
+| 2 | Demucs `htdemucs_ft` (Meta) | `drums`, `bass` | research-only per the author |
+| 3 | BS-RoFormer-SW 6-stem (jarredou) | `guitar`, `piano` | never established |
 | 4 | subtraction | `other` | — |
 
 Stages 2 and 3 run on the instrumental from stage 1, not on the raw mix, so
@@ -101,49 +103,36 @@ silent quantisations before anything reaches the caller. The input is therefore
 decoded once to 32-bit float WAV, every intermediate stays float32, and the only
 quantisation is the final 24-bit FLAC encode.
 
-## Licenses — read this before Phase B
+## Licences — read this before Phase B
 
-`audio-separator` is MIT. The checkpoints are the problem, and this was the
-sharpest constraint on the design.
+Full detail, with the provenance chains and the quotes, is in
+[`LICENSES.md`](LICENSES.md). The summary:
 
-**Most community RoFormer checkpoints cannot be used here.** becruily's and
-Gabox's repos, and several of unwa's, declare **no license at all** — which is
-all rights reserved, not "free" — and becruily's `mel-band-roformer-deux` is
-explicitly **CC-BY-NC-4.0**. becruily's guitar checkpoint, which the task
-suggested, is in that no-license group. They are all excluded on that basis, not
-on quality.
+| checkpoint | declared | established? |
+|---|---|---|
+| `htdemucs_ft` (Meta) | code MIT, **weights not** | ❌ author states weights are "provided only for scientific purposes" ([demucs#327](https://github.com/facebookresearch/demucs/issues/327)) |
+| `vocals_mel_band_roformer.ckpt` | MIT, first-party | ⚠️ declaration is real; training data undisclosed, so entitlement to grant it is unverified |
+| `BS-Roformer-SW.ckpt` | MIT, by a re-uploader | ❌ contradicted — upstream repo says `unknown`, author's account deleted |
 
-What is actually used:
+**No checkpoint here has a verified licence permitting commercial use — and
+neither does the `htdemucs_6s` riffd already runs in production.** This worker
+inherits that exposure rather than creating it.
 
-| checkpoint | source | license | confidence |
-|---|---|---|---|
-| `htdemucs_ft` | `dl.fbaipublicfiles.com` (Meta) | MIT | **solid** — first-party, permissive, commercial use explicit |
-| `vocals_mel_band_roformer.ckpt` | `KimberleyJSN/melbandroformer` | MIT | **solid** — declared by the author on their own repo |
-| `BS-Roformer-SW.ckpt` | `Blakus/bs_roformer_sw_6stem` | MIT | ⚠️ **unverifiable** |
+Most other community RoFormer checkpoints (becruily, Gabox, several unwa)
+declare no licence at all, and becruily's `mel-band-roformer-deux` is explicitly
+CC-BY-NC-4.0. They were excluded on licence, not quality.
 
-⚠️ **The BS-RoFormer-SW license cannot be verified, and it is the only
-checkpoint in the ecosystem that emits guitar and piano at all.** The original
-author (jarredou) deleted their HuggingFace account. The copy in use is a
-third-party re-upload whose README says, verbatim: *"This is a restoration and
-re-upload of the bs_roformer_sw_6stem model created by jarredou, whose
-HugginFace account no longer exists."* The MIT tag is the **re-uploader's**
-claim, and a re-uploader cannot grant a license they never held. No primary
-source survives to check it against.
-
-So the guitar/piano win this whole cascade is built on rests on a checkpoint
-with no verifiable licence. That is a decision for a human, not a code change:
-
-- accept the risk (it is widely redistributed and was released publicly), or
-- ship stages 1–2 only and keep htdemucs_6s for guitar/piano — which throws away
-  the largest measured quality gain, or
-- train or commission a replacement guitar/piano model.
-
-Everything else in the cascade is clean.
+**Practical position:** riffd is free today, so these commercial restrictions do
+not currently bite. This is a documented, accepted risk with a **revisit trigger
+— any monetisation** — at which point `LICENSES.md` names the alternatives
+(ZFTurbo's first-party Mega release; commercial APIs). Switching back to the
+incumbent is not an escape route, since it carries the same constraint.
 
 ## Files
 
 ```
-worker.py              the Modal app: image, volume, download_models, Cascade
+worker.py              the Modal app: image, volume, populate_models, Cascade
+LICENSES.md            per-checkpoint provenance and what is actually established
 eval/run_incumbent.py  baseline — raw htdemucs_6s via the existing Replicate path
 eval/run_cascade.py    runs the deployed cascade; also the Phase B call shape
 eval/compare.py        objective proxies + which timestamps to listen to
