@@ -920,8 +920,8 @@ def prefetch_full_track():
     # job usually lands on a warm instance. Cooldown-gated inside processor.
     def _warm_gpu():
         try:
-            from processor import warm_replicate_model
-            warm_replicate_model()
+            from processor import warm_separation_backend
+            warm_separation_backend()
         except Exception as _w_e:
             print(f"[prefetch {prefetch_id}] warmup skipped: {_w_e}")
     threading.Thread(target=_warm_gpu, daemon=True).start()
@@ -957,11 +957,11 @@ def upload_file():
     jobs[job_id] = {"status": "ready", "audio_path": str(save_path), "progress": "File uploaded"}
     upsert_job_checkpoint(job_id, "ready", progress="File uploaded")
 
-    # Warm the Replicate GPU — user will likely hit Analyze within seconds.
+    # Warm the active separation backend — user will likely hit Analyze in seconds.
     def _warm_gpu_upload():
         try:
-            from processor import warm_replicate_model
-            warm_replicate_model()
+            from processor import warm_separation_backend
+            warm_separation_backend()
         except Exception as _w_e:
             print(f"[upload {job_id}] warmup skipped: {_w_e}")
     threading.Thread(target=_warm_gpu_upload, daemon=True).start()

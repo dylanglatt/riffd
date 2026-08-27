@@ -325,47 +325,97 @@ Treat every additional generation as a real cost.
 - If you switch Demucs to FLAC output, **pair it with parallel stem downloads** — FLAC
   is ~32 MB/stem vs ~5.6 MB for MP3, so alone it adds ~25 s of sequential download.
 
-## Separation backend — an evaluated alternative exists, not wired in
+## Separation backend — `SEPARATION_BACKEND`, default Replicate
 
-`modal_worker/` is a standalone Modal GPU worker (Phase A). It imports nothing
-from riffd and riffd imports nothing from it; the live pipeline still runs
-htdemucs_6s on Replicate. It exists because it was measured, and the numbers are
-in `modal_worker/eval/REPORT.md`. Don't re-derive them:
+Two hosted backends now exist behind one env var. `USE_HOSTED_SEPARATION` still
+gates hosted-vs-local; `SEPARATION_BACKEND` picks which hosted one.
 
-- **Cascade** — MelBand RoFormer (vocals) → htdemucs_ft (drums/bass) →
-  BS-RoFormer-SW (guitar/piano) → `other` by subtraction. Same six stem names,
-  FLAC, and the stems sum back to the mix — exactly in the float domain, ~−80 dB
-  worst case as delivered (24-bit FLAC quantises, and the residual clips where
-  it overshoots full scale). −80 dB is far beyond audibility.
-- **Piano is the win.** On Layla the incumbent puts 1.3% of separated energy in
-  the piano stem against the cascade's 19.7% — it effectively misses a
-  two-minute piano coda. On Livin' Thing, 0.1% vs 2.3%.
-- **Latency is the cost.** 2.25–3.20× slower end to end across four tracks all
-  measured warm, structurally: three models over the whole track, one of them a
-  bag of four. Warm GPU time is 0.390× the track's own duration. Cold start is
-  the one axis it wins (~27–31 s, of which only ~2 s is the checkpoint
-  verification, vs Replicate boot gaps up to 50 s).
-- **It survives a 20-minute track**, which `MAX_TRACK_MINUTES` permits: 20.65 min
-  in ~490 s of GPU, peaking at **13.6 GB** — so it needs `memory=16384`, not
-  Modal's 128 MiB default. That figure is measured; an earlier calculation from
-  audio-array sizes said 8192 and was 1.65× too low, because the loaded models
-  and the torch/CUDA runtime dominate, not the audio.
-- **It is blocked on a licence**, not on quality. BS-RoFormer-SW is the only
-  open checkpoint that emits guitar and piano at all, its author deleted their
-  HuggingFace account, and the surviving copy is a third-party re-upload whose
-  MIT tag is the re-uploader's claim to make. Read the README before building on
-  it.
+| value | path | code |
+|---|---|---|
+| `replicate` (**default**) | htdemucs_6s on Replicate | `_separate_stems_replicate()` |
+| `modal` | the Phase A cascade on Modal A10G | `_separate_stems_modal()` |
 
-A claim that used to sit here has been **retracted**: it said today's Replicate
-stems are lossy MP3, citing `output_format: "mp3"` at processor.py ~340. That
-line is in `_warmup_replicate()`, which boots a container with silence and
-throws the result away. Production is `_separate_stems_replicate()` at ~1779 and
-already requests **`flac`**. Nothing to switch.
+Both return the same `(raw_stems, model_name)` and the same `report` semantics
+(`omitted` vs `stem_failures` — see "Caching a partial job"). **Deploying the
+integration flips nothing**: the default is `replicate` and the Replicate path
+is untouched.
 
-The incumbent's −13.7 to −23.0 dB reconstruction is structural, not codec:
-Demucs emits six independent estimates with nothing forcing them to sum to the
-input, whereas the cascade *defines* `other` as the residual so its sum closes
-by construction. That row compares stem definitions, not separation quality.
+### Rollback is a pure env change, no deploy
+
+Set `SEPARATION_BACKEND=replicate` and restart. That reverts the code path *and*
+the cache, because `ANALYSIS_VERSION` is backend-aware: `cache_version.py`
+resolves to `v7` on Replicate and `v7-modal` on Modal. A flat bump to `v8` would
+have invalidated every cached track on a deploy that changes nothing; this way
+the cache turns over exactly when the output actually changes, and flipping back
+makes the pre-existing entries valid again rather than re-analysing the world
+twice. **Consequence of switching TO modal:** every cached track re-analyses
+once, by design — the separation genuinely differs.
+
+### Measured, both backends, same track (Take It Easy, 3:32)
+
+End to end through the real HTTP path, `scripts/e2e_backend_check.py`:
+
+| | replicate | modal |
+|---|---:|---:|
+| wall, upload → complete | **90.3 s** | **171.6 s** |
+| separation stage | 33.6 s | 138.4 s (103.9 s GPU, cold container) |
+| parent RSS peak | 831 MB | **820 MB** |
+| refined stems / with notes | 7 / 5 | 5 / 3 |
+| watchdog, memory guard | never fired, untouched | never fired, untouched |
+
+Parent memory is the number that mattered going in: the Modal worker returns
+FLAC **bytes inline** rather than URLs, so the fear was a large transient in the
+one process that has to stay lean. Measured, it is not — 820 MB against the
+Replicate path's 831 MB. A 20-minute track would return ~424 MB rather than
+~6 MB, so that headroom is worth re-checking before raising `MAX_TRACK_MINUTES`.
+
+### Three things the integration had to get right
+
+- **Heartbeats.** The cascade is one 100–500 s phase with nothing to say. It is
+  driven with `spawn()` + poll rather than a blocking `remote()` precisely so
+  `progress_callback` (and through it `_touch_job`) fires every 3 s — the same
+  shape as the Replicate poll loop, for the reason in "`_touch_job()` is the
+  heartbeat". A blocking call here would be killed by the watchdog on any track
+  over ~5 minutes.
+- **`MAX_WAIT` from measurement.** `min(300 + 1.5 × duration, 1500)`. Phase A
+  measured Modal wall at ~0.46× track duration, linear from 3:33 to 20:39, so
+  this is ~6× headroom on a short track and ~2.6× on a 20-minute one. Same
+  1500 s cap as Replicate, and the same known edge: a long track that retries
+  can still exceed `JOB_MAX_SECONDS`.
+- **Permanent vs retryable.** The classifier now short-circuits on failures a
+  human has to fix — spend limit, missing payment method, `lookup failed` (app
+  not deployed), and a Volume that fails `WEIGHTS_MANIFEST` verification.
+  Retrying those costs three attempts plus backoff and still fails; worse, a bad
+  Volume makes Modal retry the *container* underneath us too. Modal transients
+  (gRPC, preemption, cancelled task) are retryable as before.
+
+### Client dependency and auth
+
+`modal>=1.0` is in requirements.txt — a gRPC client, not a model runtime, and
+imported lazily inside `_separate_stems_modal()` so the default path never pays
+for it. On Render, auth is `MODAL_TOKEN_ID` / `MODAL_TOKEN_SECRET`; locally it
+reads `~/.modal.toml`. Missing credentials surface as a lookup failure, which
+the classifier treats as permanent rather than retrying three times.
+
+The GPU worker itself lives in `modal_worker/` and deploys separately
+(`modal deploy modal_worker/worker.py`). Its licence position is unresolved and
+applies to the incumbent too — read `modal_worker/LICENSES.md` before treating
+either backend as commercially clear.
+
+### Two conclusions not to re-derive
+
+Both were got wrong once already:
+
+- **Replicate output is FLAC, not MP3.** `_separate_stems_replicate()` at
+  processor.py ~1779 requests `"output_format": "flac"`. The `"mp3"` at ~340 is
+  inside `_warmup_replicate()`, which boots a container with silence and throws
+  the result away. An earlier note here claimed today's stems were lossy on the
+  strength of that line; they are not.
+- **The incumbent's −13.7 to −23.0 dB reconstruction is structural, not codec.**
+  Demucs emits six independent estimates with nothing forcing them to sum to the
+  input; the cascade *defines* `other` as the residual, so its sum closes by
+  identity. That figure compares how each system defines its stems, not how well
+  either separates — a cascade of pure noise would reconstruct just as exactly.
 
 ## Known-deliberate deletions — do not reintroduce
 

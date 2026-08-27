@@ -357,6 +357,78 @@ def warm_replicate_model() -> bool:
         return False
 
 
+def warm_modal_model() -> bool:
+    """Modal twin of warm_replicate_model(): boot the cascade container early.
+
+    Same reasoning, different dominant cost. Measured in Phase A, a cold Modal
+    container costs ~27-31 s (container start + loading 1,949 MB of checkpoints
+    off the Volume) against ~2 s for the manifest verification — small next to
+    Replicate's 1-4 min cold boots, but still the largest fixed cost on the
+    request path, and worth paying while the user is still choosing.
+
+    Fire-and-forget: spawns and never collects the result. One second of silence
+    still walks all three cascade stages, so the container ends up fully warm.
+    Never raises. Returns True if a warm-up was sent.
+    """
+    global _warmup_last
+    import os as _os
+    import tempfile as _tmp
+    import time as _time
+
+    if _os.getenv("USE_HOSTED_SEPARATION", "false").strip().lower() not in ("true", "1", "yes"):
+        return False
+    if _separation_backend() != "modal":
+        return False
+
+    now = _time.time()
+    if now - _warmup_last < WARMUP_COOLDOWN_S:
+        return False
+    _warmup_last = now  # set optimistically — a failed warm-up waits out the cooldown
+
+    silence_path = None
+    try:
+        import modal
+
+        with _tmp.NamedTemporaryFile(suffix=".mp3", delete=False) as _f:
+            silence_path = _f.name
+        gen = subprocess.run(
+            ["ffmpeg", "-y", "-f", "lavfi", "-i", "anullsrc=r=44100:cl=stereo",
+             "-t", "1", "-b:a", "32k", silence_path],
+            capture_output=True, timeout=15,
+        )
+        if gen.returncode != 0:
+            print(f"[warmup] silence generation failed (rc={gen.returncode}) — skipping")
+            return False
+        with open(silence_path, "rb") as _sf:
+            silence = _sf.read()
+
+        cascade = modal.Cls.from_name(MODAL_APP_NAME, MODAL_CLASS_NAME)()
+        cascade.separate.spawn(silence, "warmup.mp3")
+        print("[warmup] Modal cascade warm-up spawned — container booting")
+        return True
+    except Exception as e:
+        print(f"[warmup] Modal warm-up skipped (non-fatal): {e}")
+        return False
+    finally:
+        if silence_path:
+            try:
+                Path(silence_path).unlink(missing_ok=True)
+            except Exception:
+                pass
+
+
+def warm_separation_backend() -> bool:
+    """Warm whichever backend SEPARATION_BACKEND selects.
+
+    The prewarm call sites should not have to know which backend is live —
+    that is the whole point of the env switch. Both twins are cooldown-gated
+    and never raise.
+    """
+    if _separation_backend() == "modal":
+        return warm_modal_model()
+    return warm_replicate_model()
+
+
 # Bounds for forwarding a child process's captured stdout into the parent log.
 # All three are load-bearing: a tail of N lines is not a size bound on its own —
 # one giant single-line write would forward megabytes into the Render log.
@@ -1986,6 +2058,206 @@ def _separate_stems_replicate(audio_path: Path, out_dir: Path, progress_callback
     return raw_stems, "replicate_htdemucs"
 
 
+# ─── Modal cascade backend ───────────────────────────────────────────────────
+#
+# The Phase A worker (modal_worker/), integrated behind SEPARATION_BACKEND.
+# Default is "replicate": deploying this file flips nothing until the env var is
+# set, and setting it back is a pure env change with no deploy — which is the
+# whole rollback story. See CLAUDE.md "Separation backend".
+MODAL_APP_NAME = "riffd-separation"
+MODAL_CLASS_NAME = "Cascade"
+
+
+def _separation_backend() -> str:
+    """"replicate" (default) or "modal"."""
+    import os as _os
+    return (_os.getenv("SEPARATION_BACKEND", "replicate").strip().lower()
+            or "replicate")
+
+
+def _is_poll_timeout(exc) -> bool:
+    """True if this exception just means "not finished yet".
+
+    Modal has raised builtin TimeoutError for FunctionCall.get(timeout=) and
+    also ships its own timeout types; matching on the class name as well keeps
+    the poll loop working if that changes underneath us. Getting this wrong in
+    the other direction would be bad — a real error swallowed as "still
+    running" would spin until MAX_WAIT — so it matches narrowly on Timeout.
+    """
+    return isinstance(exc, TimeoutError) or "timeout" in type(exc).__name__.lower()
+
+
+def _separate_stems_modal(audio_path: Path, out_dir: Path, progress_callback=None,
+                          report: dict | None = None) -> tuple[dict, str]:
+    """Run the Modal cascade. Returns (raw_stems, model_name).
+
+    Same contract as _separate_stems_replicate(): raw_stems is
+    {stem_name: path_to_raw_wav}, and `report` distinguishes
+
+      "omitted"       [stem, ...]   — the cascade produced no such stem. Not a
+                                      failure. Should normally be empty, since
+                                      the cascade defines `other` as the
+                                      residual and therefore always emits six.
+      "stem_failures" {stem: error} — bytes arrived and we could not turn them
+                                      into a WAV. A missing instrument, and the
+                                      caller must not cache the result as
+                                      complete. See CLAUDE.md "Caching a
+                                      partial job".
+
+    Unlike the Replicate path there is no per-stem download: the worker returns
+    the FLAC bytes inline. So a stem failure here is a local ffmpeg failure on
+    bytes we already hold, which is deterministic rather than transient — hence
+    no per-stem retry, where Replicate has one.
+    """
+    import os
+    import time as _time
+
+    # Cleared per attempt: separate_stems() may call this up to MAX_RETRIES
+    # times, and a later attempt must not inherit an earlier one's failures.
+    if report is not None:
+        report.clear()
+
+    _t0 = _time.time()
+    POLL_INTERVAL = 3
+
+    # Duration-aware ceiling for ONE attempt, from Phase A measurements rather
+    # than a guess. Measured end-to-end wall on A10G (modal_worker/eval/REPORT.md):
+    #
+    #     3:33 track   99.0 s      5:20 track  147.9 s
+    #     7:04 track  211.6 s     20:39 track  561-573 s
+    #
+    # i.e. almost exactly 0.46x the track's own duration, linear across scales.
+    # 300 + 1.5x duration is ~6x headroom on a short track and ~2.6x on a
+    # 20-minute one, which leaves room for a cold container (~30 s) and queueing
+    # without letting a wedged call sit for the full JOB_MAX_SECONDS.
+    # Capped at 1500 s to match the Replicate path — see CLAUDE.md's note that a
+    # long track that retries can still exceed JOB_MAX_SECONDS.
+    _track_dur_s = _probe_duration_s(audio_path)
+    MAX_WAIT = int(min(300 + 1.5 * _track_dur_s, 1500))
+    if _track_dur_s > 0:
+        print(f"[modal] track duration {_track_dur_s:.0f}s → MAX_WAIT={MAX_WAIT}s")
+    else:
+        print(f"[modal] track duration unknown → MAX_WAIT={MAX_WAIT}s (default)")
+
+    EXPECTED_STEMS = {"vocals", "drums", "bass", "guitar", "piano", "other"}
+
+    # Deferred: only the Modal backend pays this import, and the parent worker
+    # never imports it at all on the default path.
+    import modal
+
+    src = Path(audio_path)
+    audio_bytes = src.read_bytes()
+    print(f"[modal] app={MODAL_APP_NAME}.{MODAL_CLASS_NAME} "
+          f"uploading {len(audio_bytes) / 1e6:.1f} MB")
+    if progress_callback:
+        progress_callback("Separating stems on GPU...")
+
+    try:
+        cascade = modal.Cls.from_name(MODAL_APP_NAME, MODAL_CLASS_NAME)()
+    except Exception as e:
+        raise RuntimeError(f"Modal app {MODAL_APP_NAME!r} lookup failed: {e}")
+
+    # spawn + poll rather than a blocking .remote(): the cascade is 80-570 s of
+    # silence, and the watchdog measures silence, not elapsed time. Polling is
+    # what lets progress_callback (and through it _touch_job) fire every few
+    # seconds — the same shape as the Replicate poll loop, and for the same
+    # reason. See CLAUDE.md "_touch_job() is the heartbeat".
+    call = cascade.separate.spawn(audio_bytes, src.name)
+    del audio_bytes                      # the upload copy is no longer needed
+
+    result = None
+    while True:
+        elapsed = _time.time() - _t0
+        if elapsed > MAX_WAIT:
+            try:
+                call.cancel()
+            except Exception:
+                pass
+            raise RuntimeError(
+                f"Modal separation timed out after {elapsed:.0f}s (MAX_WAIT={MAX_WAIT}s)")
+        try:
+            result = call.get(timeout=POLL_INTERVAL)
+            break
+        except Exception as e:
+            if not _is_poll_timeout(e):
+                raise
+            if progress_callback:
+                progress_callback(f"Separating stems on GPU ({int(elapsed)}s)...")
+
+    meta = (result.pop("_meta", None) or {}) if isinstance(result, dict) else {}
+    if not isinstance(result, dict) or not result:
+        raise RuntimeError("Modal worker returned no stems")
+
+    if meta:
+        _recon = (meta.get("reconstruction") or {}).get("delivered", {})
+        print(f"[modal] worker: {meta.get('total_s')}s gpu on {meta.get('gpu')} "
+              f"({meta.get('container')}), peak_rss={meta.get('peak_rss_mb')}MB of "
+              f"{meta.get('memory_request_mb')}MB, stages={meta.get('stage_s')}")
+        print(f"[modal] reconstruction {_recon.get('rms_err_db')} dB delivered, "
+              f"clipped={(meta.get('reconstruction') or {}).get('clipped_samples')}")
+
+    omitted = sorted(EXPECTED_STEMS - set(result))
+    stem_failures = {}
+    raw_stems = {}
+
+    # Sequential on purpose. The Replicate path thread-pools this because it is
+    # dominated by network wait; here the bytes are already local, so all that
+    # is left is ffmpeg — CPU work, which CLAUDE.md is explicit about NOT
+    # parallelising on 1 vCPU.
+    _names = sorted(result)
+    for _i, stem_name in enumerate(_names, start=1):
+        data = result.pop(stem_name)     # drop the reference as we go
+        flac_tmp = out_dir / f"_raw_{stem_name}.flac"
+        wav_dest = out_dir / f"_raw_{stem_name}.wav"
+        wav_tmp = out_dir / f"_raw_{stem_name}.wav.part"
+        try:
+            if not data:
+                raise RuntimeError("worker returned empty bytes")
+            flac_tmp.write_bytes(data)
+            del data
+            _conv = subprocess.run(
+                ["ffmpeg", "-y", "-i", str(flac_tmp), "-ar", "44100", "-ac", "2",
+                 "-f", "wav", str(wav_tmp)],
+                capture_output=True, timeout=120,
+            )
+            if _conv.returncode != 0:
+                raise RuntimeError(f"ffmpeg → WAV failed: {_conv.stderr[-300:]}")
+            if not wav_tmp.exists() or wav_tmp.stat().st_size <= 1000:
+                raise RuntimeError("ffmpeg produced an empty or truncated WAV")
+            os.replace(wav_tmp, wav_dest)   # atomic within the same directory
+            raw_stems[stem_name] = str(wav_dest)
+            print(f"[modal] saved: {stem_name}")
+        except Exception as e:
+            print(f"[modal] stem {stem_name!r} FAILED: {e}")
+            stem_failures[stem_name] = str(e)
+        finally:
+            for _tmp in (flac_tmp, wav_tmp):
+                try:
+                    _tmp.unlink(missing_ok=True)
+                except Exception:
+                    pass
+        if progress_callback:
+            progress_callback(f"Converting stems ({_i}/{len(_names)})...")
+
+    if omitted:
+        print(f"[modal] cascade produced no: {omitted}")
+    if report is not None:
+        report["stem_failures"] = dict(stem_failures)
+        report["omitted"] = omitted
+
+    if not raw_stems:
+        detail = "; ".join(f"{k}: {v}" for k, v in sorted(stem_failures.items())) \
+            or "worker returned no stems"
+        raise RuntimeError(f"Modal returned no usable stems ({detail})")
+    if stem_failures:
+        print(f"[modal] INCOMPLETE — {len(stem_failures)} stem(s) missing: "
+              f"{sorted(stem_failures)}")
+
+    print(f"[modal] COMPLETE in {_time.time() - _t0:.1f}s → {len(raw_stems)} stems: "
+          f"{sorted(raw_stems)}")
+    return raw_stems, "modal_cascade"
+
+
 def separate_stems(audio_path: str, song_id: str, progress_callback=None,
                    instrument_hints: dict | None = None, report: dict | None = None) -> dict:
     """
@@ -2014,15 +2286,22 @@ def separate_stems(audio_path: str, song_id: str, progress_callback=None,
     use_hosted = hosted_raw.lower() in ("true", "1", "yes")
     has_token = bool(os.getenv("REPLICATE_API_TOKEN", "").strip())
 
+    backend = _separation_backend()
+
     print(f"[separation] USE_HOSTED_SEPARATION = {hosted_raw!r} → use_hosted={use_hosted}")
+    print(f"[separation] SEPARATION_BACKEND = {backend!r}")
     print(f"[separation] HAS_REPLICATE_TOKEN = {has_token}")
 
-    if use_hosted and not has_token:
+    # Only the Replicate backend needs the Replicate token. Checking it
+    # unconditionally would make SEPARATION_BACKEND=modal fail on a box that has
+    # no Replicate credentials at all, which is a perfectly valid deployment.
+    if use_hosted and backend == "replicate" and not has_token:
         raise RuntimeError("USE_HOSTED_SEPARATION is enabled but REPLICATE_API_TOKEN is missing. "
                            "Set the token or disable hosted separation.")
 
     if use_hosted:
-        print(f"[separation] path = replicate (hosted-only, no local fallback)")
+        _hosted_fn = _separate_stems_modal if backend == "modal" else _separate_stems_replicate
+        print(f"[separation] path = {backend} (hosted-only, no local fallback)")
         MAX_RETRIES = 3
         last_error = None
         for attempt in range(1, MAX_RETRIES + 1):
@@ -2034,8 +2313,8 @@ def separate_stems(audio_path: str, song_id: str, progress_callback=None,
                     if progress_callback:
                         progress_callback(f"Retrying stem separation (attempt {attempt})...")
                     _retry_time.sleep(wait)
-                raw_stems, model = _separate_stems_replicate(audio_path, out_dir, progress_callback,
-                                                             report=report)
+                raw_stems, model = _hosted_fn(audio_path, out_dir, progress_callback,
+                                              report=report)
                 if attempt > 1:
                     print(f"[separation] succeeded on attempt {attempt}")
                 last_error = None
@@ -2043,7 +2322,24 @@ def separate_stems(audio_path: str, song_id: str, progress_callback=None,
             except Exception as e:
                 last_error = e
                 err_str = str(e)
+                low = err_str.lower()
                 import re as _re
+
+                # Permanent failures, checked FIRST. Several of them contain
+                # words the retryable patterns match ("disabled", "internal"),
+                # and burning three attempts with 10s/15s backoff on something a
+                # human has to fix costs minutes and still fails. Learned the
+                # hard way in Phase A: a Volume whose checkpoints fail
+                # verification makes every container refuse to start, and Modal
+                # retries the container underneath us as well, so a retry here
+                # multiplies an already-slow failure.
+                is_permanent = (
+                    "exceeded its spend limit" in low
+                    or "please add a payment method" in low
+                    or "failed verification against weights_manifest" in low
+                    or "lookup failed" in low
+                    or ("workspace" in low and "disabled" in low)
+                )
                 # Retry on GPU preemption (code: PA), transient API failures, or network errors.
                 # "timed out" / "connection aborted" cover socket write timeouts during upload.
                 # "director" / "(E####)" cover Replicate-internal worker crashes like
@@ -2061,7 +2357,33 @@ def separate_stems(audio_path: str, song_id: str, progress_callback=None,
                     or "director" in err_str.lower()
                     or "unexpected error" in err_str.lower()
                     or bool(_re.search(r"\(E\d{3,5}\)", err_str))
+                    # HTTP 429. A throttle is the definition of retryable, and
+                    # the classifier was missing it: observed in production as
+                    # an instant, permanent-looking failure —
+                    #   "Request was throttled. Your rate limit ... is reduced to
+                    #    6 requests per minute with a burst of 1 requests while
+                    #    you have less than $5.0 in credit ... resets in ~2s."
+                    # The 10s/15s backoff already clears a reset measured in
+                    # seconds, so this turns a hard failure into a retry that
+                    # succeeds. Note the burst of 1: under low credit the
+                    # prewarm prediction itself can consume the allowance and
+                    # throttle the real request that follows it.
+                    or "429" in err_str
+                    or "throttled" in low
+                    or "rate limit" in low
+                    # Modal-side transients: gRPC hiccups, a preempted or
+                    # recycled container, a cancelled task. Same class as
+                    # Replicate's "code: PA" — a retry lands on a new worker.
+                    or "grpc" in low
+                    or "unavailable" in low
+                    or "deadline exceeded" in low
+                    or "task was cancelled" in low
+                    or "preempted" in low
+                    or "connection reset" in low
                 )
+                if is_permanent:
+                    print(f"[separation] attempt {attempt} failed (PERMANENT, not retrying): {e}")
+                    raise RuntimeError(f"Cloud stem separation failed: {e}")
                 if is_retryable and attempt < MAX_RETRIES:
                     print(f"[separation] attempt {attempt} failed (retryable): {e}")
                     continue

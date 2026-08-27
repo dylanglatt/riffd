@@ -43,6 +43,19 @@ torch
 gunicorn
 torchcodec
 replicate
+
+# ── Separation backend: Modal (SEPARATION_BACKEND=modal) ──────────────────────
+# Client only — the GPU worker and its checkpoints live in modal_worker/ and are
+# deployed separately (`modal deploy modal_worker/worker.py`). Importing this in
+# the parent is cheap: it is a gRPC client, not a model runtime, and
+# _separate_stems_modal() imports it lazily so the default Replicate path never
+# pays for it at all.
+#
+# Auth on Render is via MODAL_TOKEN_ID / MODAL_TOKEN_SECRET env vars (locally it
+# reads ~/.modal.toml). Without them the modal backend fails at lookup, which the
+# retry classifier treats as PERMANENT — it will not burn three attempts on it.
+modal>=1.0
+
 soundfile
 anthropic>=0.40.0
 essentia
