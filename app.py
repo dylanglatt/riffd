@@ -1690,11 +1690,24 @@ with open({_result_path!r}, "wb") as f:
                         # backend line, the [mem] RSS lines and the [notes]
                         # confidence stats were all invisible in production —
                         # which made "check backend=onnx in the logs" impossible
-                        # to actually do. Tail-bounded so a chatty child can't
-                        # flood the log.
+                        # to actually do. Bounded in BOTH dimensions: the
+                        # 40-line tail alone was no byte bound — one giant
+                        # single-line write would have forwarded megabytes into
+                        # the Render log. Per-line and per-child caps close that.
+                        _BP_MAX_LINE = 400     # chars kept per forwarded line
+                        _BP_MAX_TOTAL = 8192   # chars kept per child in total
+                        _bp_forwarded = 0
                         for _line in (_proc.stdout or "").splitlines()[-40:]:
-                            if _line.strip():
-                                print(f"[job {job_id}] [bp:{stem_key}] {_line}")
+                            _line = _line.strip()
+                            if not _line:
+                                continue
+                            if len(_line) > _BP_MAX_LINE:
+                                _line = _line[:_BP_MAX_LINE] + f"…[+{len(_line) - _BP_MAX_LINE} chars]"
+                            if _bp_forwarded + len(_line) > _BP_MAX_TOTAL:
+                                print(f"[job {job_id}] [bp:{stem_key}] …log cap reached, remaining lines dropped")
+                                break
+                            _bp_forwarded += len(_line)
+                            print(f"[job {job_id}] [bp:{stem_key}] {_line}")
 
                         with open(_result_path, "rb") as _rf:
                             ne = _pickle.load(_rf)

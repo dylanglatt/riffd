@@ -29,6 +29,7 @@ import struct as _struct
 import shutil
 import subprocess
 import sys
+import threading
 import wave
 from pathlib import Path
 
@@ -117,6 +118,13 @@ _PITCH_BACKEND_MODULES = {
     "coreml": "coremltools",
 }
 
+# _force_onnx_backend()'s check-then-insert on sys.meta_path is not atomic on
+# its own: concurrent callers could install duplicate blockers, or return True
+# while another thread imports TF between the check and the insert. Today's
+# inference child is single-threaded, so this is belt-and-braces — but it is
+# what makes the "idempotent" claim below true rather than assumed.
+_force_backend_lock = threading.Lock()
+
 
 def _force_onnx_backend():
     """Block TensorFlow before basic_pitch can probe for it.
@@ -131,31 +139,51 @@ def _force_onnx_backend():
       instead — same call as _warn_if_tensorflow_installed() in app.py.
     - **TF already imported.** The memory is spent; blocking now is theatre.
 
-    Idempotent. Returns True if the block is in place.
+    Idempotent and thread-safe (guarded by _force_backend_lock). A thread that
+    finished importing TF before the block landed stays loaded — that case is
+    detection-at-startup's job, not this function's. Returns True if the block
+    is in place.
     """
+    import importlib
     import importlib.util
     import sys
-    if any(isinstance(f, _BlockTensorFlowImport) for f in sys.meta_path):
-        return True
 
-    def _installed(mod):
+    def _usable(mod):
+        # find_spec() proves the package exists, not that it loads: a broken
+        # onnxruntime (missing/incompatible native lib) passes find_spec, and
+        # blocking TF on its evidence would leave basic_pitch with no backend
+        # at all (its __init__ dies on NameError with every probe failing).
+        # Import for real; native-lib failures raise more than ImportError,
+        # hence the broad except.
         try:
-            return importlib.util.find_spec(mod) is not None
-        except (ImportError, ValueError):
+            importlib.import_module(mod)
+            return True
+        except Exception as e:
+            try:
+                if importlib.util.find_spec(mod) is not None:
+                    print(f"[processor] WARNING: {mod} is installed but failed "
+                          f"to import ({type(e).__name__}: {e}) — treating as "
+                          "unavailable")
+            except Exception:
+                pass
             return False
 
-    if not any(_installed(m) for m in _PITCH_BACKEND_MODULES.values()):
-        print("[processor] WARNING: no ONNX/TFLite/CoreML runtime installed — "
-              "leaving TensorFlow importable so Basic Pitch can still run. "
-              "This costs ~460MB per inference child; install onnxruntime.")
-        return False
-    if "tensorflow" in sys.modules:
-        print("[processor] WARNING: tensorflow was already imported before "
-              "_ensure_pitch_imports() — its memory is already spent in this process")
-        return False
+    with _force_backend_lock:
+        if any(isinstance(f, _BlockTensorFlowImport) for f in sys.meta_path):
+            return True
 
-    sys.meta_path.insert(0, _BlockTensorFlowImport())
-    return True
+        if not any(_usable(m) for m in _PITCH_BACKEND_MODULES.values()):
+            print("[processor] WARNING: no usable ONNX/TFLite/CoreML runtime — "
+                  "leaving TensorFlow importable so Basic Pitch can still run. "
+                  "This costs ~460MB per inference child; install onnxruntime.")
+            return False
+        if "tensorflow" in sys.modules:
+            print("[processor] WARNING: tensorflow was already imported before "
+                  "_ensure_pitch_imports() — its memory is already spent in this process")
+            return False
+
+        sys.meta_path.insert(0, _BlockTensorFlowImport())
+        return True
 
 
 def _ensure_pitch_imports():
