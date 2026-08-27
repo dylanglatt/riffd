@@ -334,7 +334,9 @@ in `modal_worker/eval/REPORT.md`. Don't re-derive them:
 
 - **Cascade** — MelBand RoFormer (vocals) → htdemucs_ft (drums/bass) →
   BS-RoFormer-SW (guitar/piano) → `other` by subtraction. Same six stem names,
-  FLAC, and the stems sum to the mix exactly by construction.
+  FLAC, and the stems sum back to the mix — exactly in the float domain, ~−80 dB
+  worst case as delivered (24-bit FLAC quantises, and the residual clips where
+  it overshoots full scale). −80 dB is far beyond audibility.
 - **Piano is the win.** On Layla the incumbent puts 1.3% of separated energy in
   the piano stem against the cascade's 19.7% — it effectively misses a
   two-minute piano coda. On Livin' Thing, 0.1% vs 2.3%.

@@ -25,10 +25,23 @@ claimed. Full numbers: [`eval/REPORT.md`](eval/REPORT.md), licences:
 ```
 
 Six stems, the same names riffd already uses, FLAC, 44.1 kHz stereo. `other` is
-computed as `mix - (vocals + drums + bass + guitar + piano)`, so **the stems sum
-to the input exactly** — measured at **-168 dB** RMS error, which is float32
-rounding and nothing else. That is the same contract htdemucs gives riffd today,
-so Phase B is a swap rather than a rework.
+computed as `mix - (vocals + drums + bass + guitar + piano)`, so the stems sum
+back to the input:
+
+| | reconstruction error |
+|---|---|
+| float domain (the arithmetic) | **−168 to −183 dB** — float32 rounding, nothing else |
+| **as delivered** (24-bit FLAC) | **−133 to −136 dB**, and **−83.6 dB worst case** |
+
+The delivered figure is the weaker one and it is the one to rely on. Delivery
+quantises to 24-bit, and integer PCM cannot represent a sample above full scale,
+so the residual `other` is clipped where it overshoots — on Layla, 31 samples
+out of 18.7 M, which is what pulls that track to −83.6 dB.
+
+**−80 dB is about one ten-thousandth of the signal amplitude — far beyond
+audibility**, and well below the noise floor of the lossy audio the pipeline is
+fed to begin with. This is stated for accuracy, not because it is a defect.
+`_meta["reconstruction"]` reports both numbers on every request.
 
 ## Deploy
 

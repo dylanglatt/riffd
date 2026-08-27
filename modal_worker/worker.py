@@ -21,10 +21,22 @@ stage use the best available model for its own stem:
      piano    checkpoint that emits guitar and piano stems at all.
   4. other    = mix - (vocals + drums + bass + guitar + piano), by subtraction.
 
-Step 4 is what makes the stems sum to the mix *exactly* rather than
-approximately: `other` absorbs the arithmetic, so reconstruction error is bounded
-by float32 rounding and nothing else. It is also the same contract htdemucs
-already gives riffd, so downstream code sees no change.
+Step 4 makes the sum close in the FLOAT DOMAIN: `other` absorbs the arithmetic,
+so error there is bounded by float32 rounding (-168 to -183 dB measured).
+
+What the CALLER gets is weaker, and the difference is real. The stems are
+delivered as 24-bit FLAC, so delivery quantises; and integer PCM cannot hold a
+sample above full scale, so the residual is clipped where it overshoots. Layla
+measured -83.6 dB delivered with 31 samples clipped out of 18.7 M; the other
+three tracks measured -133 to -136 dB. So the honest contract is:
+
+    float domain   exact to float32 rounding
+    as delivered   ~ -80 dB worst case, with rare residual clipping
+
+-80 dB is about one ten-thousandth of the signal amplitude — far below audible,
+and far below the noise floor of the lossy source this pipeline is fed in the
+first place. It is stated because it is the number a caller can actually rely
+on, not because it is a defect.
 
 Signal chain (CLAUDE.md "Audio signal-chain rules")
 ---------------------------------------------------
@@ -506,8 +518,10 @@ class Cascade:
     def separate(self, audio_bytes: bytes, filename: str = "input") -> dict:
         """bytes in -> {stem: FLAC bytes} plus a `_meta` dict of measurements.
 
-        The six stems sum to the decoded input to within float32 rounding;
-        `_meta["reconstruction"]` reports the measured error.
+        The six stems sum back to the decoded input: exactly in the float
+        domain, and to ~-80 dB worst case once quantised to 24-bit FLAC and
+        clipped where the residual overshoots full scale.
+        `_meta["reconstruction"]` reports both, measured per request.
         """
         import subprocess
         import tempfile
