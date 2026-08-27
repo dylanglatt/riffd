@@ -62,6 +62,23 @@ cascade = modal.Cls.from_name("riffd-separation", "Cascade")()
 out = cascade.separate.remote(audio_bytes, "song.mp3")
 ```
 
+### Resources
+
+`memory=8192` (Modal's default guarantee is **128 MiB** — nowhere near enough).
+Sized for `MAX_TRACK_MINUTES = 20`: one full-length 44.1 kHz stereo float32
+array is 423 MB, and the worst moment is stage 3 at roughly 5.1 GB
+(BS-RoFormer-SW's 6-stem full-track buffer 2.54 GB + five resident arrays
+2.12 GB + audio-separator's input copy). 8 GiB leaves ~60% headroom for ~$0.004
+a request.
+
+⚠️ That is a **calculation, not a measurement** — the 20-minute run that would
+confirm it is blocked ([`eval/BLOCKED.md`](eval/BLOCKED.md)). Every response
+reports `_meta["peak_rss_mb"]`, so the first long run settles it;
+`eval/run_long_track.py` is written and waiting.
+
+`timeout=1800` — 20 min at the measured warm rate (0.385× realtime) is ~460 s of
+GPU, ~520 s cold, so ~3.5× headroom.
+
 ### GPU
 
 `A10G`, chosen by measurement — see the report. Override with `RIFFD_GPU=L4

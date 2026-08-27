@@ -371,6 +371,34 @@ def _test_corrupt_weight(name: str = "htdemucs_ft.yaml", keep: int = 40):
     # choice and the fastest one wins. L40S and A100 are faster still but are
     # gated behind a payment method on this account.
     gpu=os.environ.get("RIFFD_GPU", "A10G"),
+    # Modal's DEFAULT memory guarantee is 128 MiB. This function holds most of a
+    # track in RAM several times over, so the default is nowhere near enough and
+    # a long input would be OOM-killed rather than merely slow.
+    #
+    # Sized for MAX_TRACK_MINUTES = 20, which riffd already permits. At 44.1 kHz
+    # stereo float32 one full-length array is 20*60*44100*2*4 = 423 MB, and the
+    # worst moment is stage 3:
+    #
+    #   BS-Roformer-SW full-track output buffer, 6 stems   2.54 GB
+    #   mix + vocals + instrumental + drums + bass          2.12 GB
+    #   audio-separator's own input copy                    0.42 GB
+    #                                                      --------
+    #                                                      ~5.1 GB
+    #
+    # The return path is close behind: eight resident arrays (3.39 GB) plus six
+    # 24-bit FLACs held as bytes before returning (~1.1 GB) plus the decode used
+    # for the delivered-reconstruction check.
+    #
+    # 8 GiB is that ~5.1 GB with ~60% headroom, and costs ~$0.004 for a 200 s
+    # request at $0.00000222/GiB/s — negligible against ~$0.036 of GPU.
+    #
+    # ⚠️ This is a CALCULATION, not a measurement: the 20-minute run that would
+    # confirm it is blocked (eval/BLOCKED.md). _meta["peak_rss_mb"] reports the
+    # real figure on every request, so the first long run settles it.
+    memory=8192,
+    # 20 min at the measured warm rate (0.385x realtime) is ~460 s of GPU, ~520 s
+    # cold. 1800 s leaves ~3.5x headroom without letting a wedged container bill
+    # for half an hour.
     timeout=1800,
     scaledown_window=240,
 )
@@ -575,8 +603,15 @@ class Cascade:
             recon["delivered"] = _err_db(decoded - mix)
             recon["clipped_samples"] = clipped
 
+            import resource
+            # Linux: ru_maxrss is KiB. Peak for the whole container process, so
+            # it covers audio-separator's buffers as well as ours.
+            peak_rss_mb = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024
+
             out["_meta"] = {
                 "sample_rate": sr,
+                "peak_rss_mb": round(peak_rss_mb, 1),
+                "memory_request_mb": 8192,
                 "samples": int(mix.shape[0]),
                 "duration_s": round(mix.shape[0] / sr, 2),
                 "model_load_s": round(self.load_s, 1),
