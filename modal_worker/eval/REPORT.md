@@ -167,11 +167,27 @@ few dB differently. Both are given rather than blended:
 | cascade, as delivered (24-bit FLAC) | **−133 to −136 dB**; Layla **−84 dB** | −122.8 dB; Layla −85.7 dB |
 | incumbent, as delivered | — | **−13.7 to −23.0 dB** |
 
-The incumbent's stems reconstruct badly because `processor.py:340` requests
-`output_format: "mp3"` from Replicate — **the incumbent's stems are lossy**, and
-lossy per stem, independently. The cascade returns FLAC. That is a real quality
-difference on top of separation quality, and it costs the incumbent nothing to
-fix (CLAUDE.md already notes the FLAC option and its download-time trade).
+**Correction.** An earlier version of this report blamed the incumbent's figure
+on MP3, citing `output_format: "mp3"` at `processor.py:340`. That was wrong. Line
+340 is inside `_warmup_replicate()`, which sends a clip of silence purely to boot
+a Replicate container and discards the result. The production call is
+`_separate_stems_replicate()` at `processor.py:1779`, and it requests
+**`"output_format": "flac"`** — lossless, and has been for some time. The
+incumbent's stems are not lossy, and there is nothing to "switch".
+
+The real explanation is structural, and it is not a quality difference at all:
+
+- The cascade's `other` is **defined** as `mix - (the other five)`. Its sum
+  closes because it is an identity, not because the separation is good. A
+  cascade of pure noise would reconstruct just as exactly.
+- Demucs emits six **independent estimates**. Nothing constrains them to sum to
+  the input, so whatever energy the model assigns to no stem — or to two — shows
+  up here.
+
+So this row measures *how each system defines its stems*, not how well either
+separates. It is reported because the sum-to-mix property matters to riffd
+downstream (it is what makes unity faders correct), not as evidence for the
+cascade.
 
 Layla's delivered figure is −84 dB rather than −134 dB because **31 samples** of
 its residual `other` stem exceeded full scale and were clipped by the 24-bit FLAC
@@ -225,16 +241,13 @@ Before Phase B:
    ~160 s separation fits the existing budget — but it roughly doubles the
    separation share of a job and eats headroom the retry path currently relies
    on (CLAUDE.md, "`MAX_WAIT` is not a duration estimate").
-3. Consider the cheap independent win first: **switching the incumbent to FLAC
-   output** removes the lossy-stem problem for one line of config, with no model
-   change and no licence question.
-4. If latency matters more than the piano, the RoFormer chunk loop is the
+3. If latency matters more than the piano, the RoFormer chunk loop is the
    untapped 68% — batching it needs a fork of audio-separator's `demix`.
 
 ## Reproducing
 
 ```bash
-modal run    modal_worker/worker.py::download_models
+modal run    modal_worker/worker.py::populate_models
 modal deploy modal_worker/worker.py
 python modal_worker/eval/fetch_audio.py      # via riffd's own downloader
 python modal_worker/eval/run_incumbent.py    # Replicate baseline

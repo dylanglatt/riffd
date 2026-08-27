@@ -32,14 +32,19 @@ so Phase B is a swap rather than a rework.
 
 ```bash
 modal token new                                    # once per machine
-modal run    modal_worker/worker.py::download_models   # once per model change
+modal run    modal_worker/worker.py::populate_models    # once per model change
 modal deploy modal_worker/worker.py
 ```
 
-`download_models` populates a Modal Volume (`riffd-sep-models`, 1,949 MB) with
-the three checkpoints. Weights are **never** fetched during a request — same
-reasoning as riffd's own `build.sh` fetching the PANNs checkpoint at build time
-rather than on the first job.
+`populate_models` is the **only** code path allowed to download. It fetches the
+three checkpoints onto a Modal Volume (`riffd-sep-models`, 1,949 MB) and
+verifies them against `WEIGHTS_MANIFEST` before committing.
+
+The serving path verifies and loads, and cannot fetch: `@modal.enter()` runs
+`verify_weights()` (size + SHA-256 of all nine files) and then `_block_downloads()`,
+which replaces audio-separator's download helper with one that raises. A missing
+or corrupted checkpoint therefore fails at **container start**, naming the file
+and the fix — not thirty seconds into a request.
 
 Run one file locally:
 
