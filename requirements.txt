@@ -27,6 +27,19 @@ yt-dlp-ejs
 bgutil-ytdlp-pot-provider
 numpy>=1.24
 pandas>=2.0
+
+# ── Component tagging (PANNs CNN10) ───────────────────────────────────────────
+# torch already arrives via demucs/torchcodec; it is named here because
+# panns_tagger.py depends on it directly and would break silently if demucs
+# were ever dropped. The 25MB CNN10 checkpoint is NOT a pip dependency —
+# build.sh fetches it into models/panns. See CLAUDE.md "Component labels come
+# from a PANNs audio tagger".
+#
+# torchlibrosa is deliberately absent: PANNs' own front end pulls librosa+numba
+# into the tagging child for matrices the checkpoint already carries, so
+# panns_tagger.py reimplements those three layers and loads their weights from
+# the checkpoint instead. Measured: -193MB of child RSS, identical scores.
+torch
 gunicorn
 torchcodec
 replicate

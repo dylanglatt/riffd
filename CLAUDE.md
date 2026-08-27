@@ -20,8 +20,19 @@ exit. The child is the binding memory constraint: while it runs, the parent must
 stay under roughly `2048 − 360 ≈ 1690 MB`. Any code path that calls `predict()`
 inline is a bug, not an optimization.
 
-⚠️ **Every child-RSS figure on this page (~360 MB, ~820 MB) is measured on
-macOS arm64, not on Render.** They are the right order of magnitude and the
+**`torch` must never be imported in the parent process either**, for exactly the
+same reason. `panns_tagger.py` imports it at module scope on purpose — so that
+importing that module anywhere is loud rather than accidental — and it is only
+ever imported by `processor.tag_components_child()`, which runs in the child
+`run_tagger()` spawns. Torch alone is ~190 MB; the tagging child peaks at
+~478 MB, so while *it* runs the parent must stay under roughly
+`2048 − 480 ≈ 1570 MB`. See "Component labels come from a PANNs audio tagger".
+
+The two children never overlap: tagging finishes inside `separate_stems()`,
+Basic Pitch starts after it returns.
+
+⚠️ **Every child-RSS figure on this page (~360 MB, ~478 MB, ~820 MB) is measured
+on macOS arm64, not on Render.** They are the right order of magnitude and the
 *relative* result is solid, but no Linux measurement exists yet — see the
 "Render verification checklist" below before treating them as production
 numbers.
@@ -98,6 +109,18 @@ The Linux numbers are still unmeasured. To close that out:
 7. Replace the macOS table above with the Linux numbers, and delete the ⚠️ caveat
    in the memory-architecture section.
 
+The PANNs tagger has the same gap — every number in "Component labels come from
+a PANNs audio tagger" is macOS arm64. While you are there:
+
+8. Confirm `[build] OK: PANNs CNN10 loaded, 527 classes, N mapped to riffd
+   labels` in the build log, and that the checksum step passed.
+9. Record the `[tagger] tagged N/M component(s) in Xs` line and the child's peak
+   RSS from `[tagger:child] [mem] [tag_components] post-tag`. Expect ~3 s and
+   ~478 MB; a 1 vCPU Render core will be slower.
+10. Spot-check the per-component `[tagger] <key>: ...` lines on the first few
+    real songs. That log line exists precisely so the thresholds can be
+    re-calibrated on production audio rather than on `static/demo`.
+
 Until step 7 is done, `MEMORY_GUARD_MB` and the ~1690 MB parent budget are
 derived from macOS figures.
 
@@ -157,6 +180,76 @@ Note also `setuptools<81` in requirements.txt: resampy 0.4.2 (a basic-pitch dep 
 now own) imports `pkg_resources`, which setuptools 81 removed. Without the pin a
 fresh build installs setuptools 82 and every inference child dies on import.
 
+### Component labels come from a PANNs audio tagger — heuristics are the fallback
+
+`_classify_component()` labels a component by thresholding its spectral
+centroid. It never listens for *what* the instrument is. `apply_instrument_hints()`
+then rewrites vague labels by first-keyword-matching the LLM's **song-level**
+instrument list, called with `features=None` — so it does not listen either, and
+whichever branch of `_match_predicted_label()` comes first wins for every vague
+component in the song. A song predicting both "strings" and "horns" therefore
+labelled all of them "Horns", because that branch was first. Observed in
+production on ELO's "Livin' Thing": the string intro, labelled Horns.
+
+So the order of authority is now:
+
+1. **PANNs tagger**, if confident → it wins outright.
+2. **Abstain** otherwise → the heuristic + hint path runs exactly as before.
+   This is the common outcome and it is a first-class one, not a failure.
+3. **Hints as tie-breaker only** → when the tagger's top two mapped labels are
+   within `TAGGER_TIE_MARGIN`, prefer the one the LLM also predicted.
+
+`apply_instrument_hints()` skips any stem carrying `tagged: True`. That key is
+private to the in-process `stems` dict — app.py projects to
+`{label, energy, active}` before anything is cached or served, so it never
+reaches the API.
+
+**Model: PANNs CNN10**, 25 MB, AudioSet mAP 0.380 (CNN14 is 327 MB for 0.431 —
+13x the download for 0.05 mAP on a 527-class problem we use ~40 family-level
+classes of). Fetched by build.sh into `models/panns/` (gitignored) and
+checksummed; **never downloaded during a job**. `torch` already ships via
+demucs. There is no `panns_inference` dependency and no `torchlibrosa`
+dependency — see "Known-deliberate deletions".
+
+**Thresholds are calibrated, not guessed.** Over the 38 components in the 18
+analysed songs under `static/demo`, top mapped scores are sharply bimodal:
+
+| bucket | evidence | bar |
+|---|---|---|
+| `other` (label was a centroid guess) | true positives at 0.54 and 0.78; every score ≤ 0.25 was wrong; one false positive at 0.42 | `TAGGER_MIN_CONFIDENCE = 0.50` |
+| `guitar`, `piano` (dedicated Demucs heads) | tagger was wrong on *every* confident call — 0.55 "Organ" on Kill Bill's guitar, 0.41 "Strings" on Bohemian Rhapsody's piano | `TAGGER_DEDICATED_HEAD_MIN_CONFIDENCE = 0.60` |
+| `vocals`, `drums`, `bass` | dedicated heads, nothing to gain | never tagged |
+| below-energy-gate rescue | no real rescue observed yet to calibrate on | `TAGGER_RESCUE_MIN_CONFIDENCE = 0.60` |
+
+The absolute numbers are low because an isolated Demucs stem is nothing like
+AudioSet's training distribution of full mixes. **0.5 is a confident call here.**
+Do not "fix" these by raising them toward 0.9 — that switches the tagger off.
+
+Net effect on those 38 components: 2 labels change. Bohemian Rhapsody's
+"Synth" → "Strings" (the song famously has no synthesiser) and Take It Easy's
+hint-assigned "Banjo" → "Guitar" (Banjo scored 0.003). Everything else abstains.
+That ratio is the design working, not the tagger idling.
+
+Two rules that exist because measurement said so:
+
+- **A confirmation is not a correction.** If the tagger's label is a word-subset
+  of the current one ("Rhythm Guitar" → "Guitar", "Synth Pad" → "Synth"), abstain.
+  Four of ten changes at the first threshold were this, all of them losing
+  specificity.
+- **Generic AudioSet parents are absent from `AUDIOSET_TO_LABEL`, not outranked.**
+  PANNs scores "Music" ~0.85 on any musical input. The map is an explicit
+  allow-list of exact `display_name` strings; build.sh fails if one drifts.
+
+**Threshold rescue.** A component that fails `MIN_RELATIVE_ENERGY` /
+`MIN_ABSOLUTE_ENERGY` is staged as `_cand_*.wav` and tagged anyway; a confident
+one is kept, subject to `MAX_REFINED_STEMS` — a rescue never breaks the cap.
+Unrescued candidates are deleted, and the `finally` in `separate_stems()` sweeps
+`_cand_*` on the crash path.
+
+**Tagging can never fail a job.** `run_tagger()` returns `{}` on a missing
+checkpoint, a non-zero child, a timeout or any exception, and every component
+then keeps the label it arrived with. Verified for all of those.
+
 ### 1 vCPU changes what "parallelize" means
 
 - **Do parallelize network I/O** — stem downloads from Replicate, external API calls.
@@ -205,7 +298,14 @@ These were removed on purpose. If you find yourself re-adding one, stop and ask.
    separation: it tiled a 90-second mask across the whole song (so >50% of a 4-min
    track was unrelated to the audio), kept only 4 harmonics in ±100 Hz windows
    (deleting everything above ~1.4 kHz), and loaded TensorFlow *in-process*.
-4. **The `tensorflow` package**, in any form — including as a transitive dependency,
+4. **`torchlibrosa`** as the PANNs front end. It is the package PANNs trains
+   with, and it recomputes the STFT/mel matrices with `librosa` in `__init__` —
+   dragging librosa + numba into the tagging child for matrices the 25 MB
+   checkpoint already carries. `panns_tagger.py` reimplements those three
+   layers (~40 lines) and lets `load_state_dict()` fill them instead. Measured:
+   **−193 MB of child RSS, bit-identical scores** on all 527 classes. Adding
+   the dependency back undoes exactly that.
+5. **The `tensorflow` package**, in any form — including as a transitive dependency,
    including `basic-pitch[tf]`, including "just to call `clear_session()`". Basic
    Pitch runs on ONNX for identical note output at a third of the wall clock and
    460 MB less per child; `basic_pitch` reverts to TF the moment TF is importable,
@@ -259,6 +359,8 @@ thing standing between a long phase and the watchdog. It is called from:
   through its own Replicate poll loop), key/structure, and insight
 - the `"Stems ready — analyzing..."` transition
 - the `"Waiting for inference slot..."` branch
+- the PANNs tagging child, before and after (`run_tagger(..., heartbeat=)`),
+  via the `"Identifying instruments..."` progress string
 - the Basic Pitch loop, **twice per stem** (before and after each child)
 
 That last one is the point of the rule:
@@ -271,6 +373,11 @@ Basic Pitch is the live example: a child process per stem, up to 120 s each,
 with no progress-string change for the whole loop. Without its per-stem
 heartbeats a six-stem track would go silent for far longer than
 `STALL_TIMEOUT_S` and be killed mid-inference.
+
+The PANNs tagging child is the cheap case — measured 2.5-3.0 s for one song's
+components — but it is bounded at 120 s and prints nothing the parent sees
+until it exits, so it heartbeats on both sides rather than relying on being
+fast.
 
 There is one known gap, currently unreachable: the blocking
 `_inference_lock.acquire()` heartbeats once and then waits indefinitely. Safe
@@ -343,6 +450,14 @@ of two parents. That is more survivable than it was under TensorFlow, where the
 same mistake meant two ~820 MB children, but the job-ID problem is fatal on its
 own. Making job state external (the `job_checkpoints` table already exists) is the
 precondition for scaling.
+
+The PANNs tagging child is **not** serialised by `_inference_lock` — it is
+spawned from `separate_stems()` in processor.py, which knows nothing about
+app.py's locks. That is safe only because `MAX_CONCURRENT_JOBS` defaults to 1,
+so there is one job and one tagging child. Raising that env var puts two
+~478 MB children in flight concurrently with no lock between them; either take
+`_inference_lock` around `run_tagger()` (and heartbeat while blocked, see the
+known gap above) or don't raise it.
 
 `threading.Lock` has no ownership — `release()` from a thread that never acquired it
 silently frees another thread's lock. Track acquisition with an explicit flag.

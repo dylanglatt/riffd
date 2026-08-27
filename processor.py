@@ -356,6 +356,37 @@ def warm_replicate_model() -> bool:
         return False
 
 
+# Bounds for forwarding a child process's captured stdout into the parent log.
+# Both dimensions are load-bearing: a tail of N lines is not a byte bound on its
+# own — one giant single-line write would forward megabytes into the Render log.
+CHILD_LOG_MAX_LINES = 40     # tail kept per child
+CHILD_LOG_MAX_LINE = 400     # chars kept per line
+CHILD_LOG_MAX_TOTAL = 8192   # chars kept per child in total
+
+
+def forward_child_log(prefix: str, stdout: str, printer=print) -> None:
+    """Print a child's captured stdout into the parent log, bounded.
+
+    subprocess.run(capture_output=True) swallows the child's stdout, which is
+    where its backend line, [mem] RSS lines and per-stem stats live — without
+    this they are invisible in production and "check X in the logs" cannot
+    actually be done. Shared by the Basic Pitch and PANNs children so the two
+    can't drift into different (or absent) bounds.
+    """
+    forwarded = 0
+    for line in (stdout or "").splitlines()[-CHILD_LOG_MAX_LINES:]:
+        line = line.strip()
+        if not line:
+            continue
+        if len(line) > CHILD_LOG_MAX_LINE:
+            line = line[:CHILD_LOG_MAX_LINE] + f"…[+{len(line) - CHILD_LOG_MAX_LINE} chars]"
+        if forwarded + len(line) > CHILD_LOG_MAX_TOTAL:
+            printer(f"{prefix} …log cap reached, remaining lines dropped")
+            break
+        forwarded += len(line)
+        printer(f"{prefix} {line}")
+
+
 def _log_mem(label=""):
     """Log current RSS from /proc/self/status (Linux). Lightweight — no imports."""
     try:
@@ -856,8 +887,16 @@ def apply_instrument_hints(stems: dict, instrument_hints: dict | None) -> dict:
     predicted_str = " ".join(predicted)
 
     reclassified = 0
+    skipped_tagged = 0
     for key, stem in stems.items():
         label = stem["label"].lower()
+
+        # The tagger listened to this component and was confident. This
+        # function has not listened to anything — it matches keywords against
+        # the LLM's song-level list — so it does not get to overrule that.
+        if stem.get("tagged"):
+            skipped_tagged += 1
+            continue
 
         # Only reclassify vague labels from the "other" bucket
         if label not in ("pad", "atmosphere", "synth", "other"):
@@ -870,6 +909,8 @@ def apply_instrument_hints(stems: dict, instrument_hints: dict | None) -> dict:
             print(f'[hints] reclassified "{old_label}" → "{new_label}" (stem: {key})')
             reclassified += 1
 
+    if skipped_tagged:
+        print(f"[hints] left {skipped_tagged} tagger-identified stem(s) alone")
     if reclassified:
         print(f"[hints] reclassified {reclassified} stem(s) using instrument predictions")
     else:
@@ -915,16 +956,22 @@ def _match_predicted_label(predicted: list, predicted_str: str, category: str, f
         return "Rhodes"
     if any(s in predicted for s in ("vibraphone", "vibes", "marimba")):
         return "Vibraphone" if "vibraphone" in predicted_str or "vibes" in predicted_str else "Marimba"
-    if any(s in predicted for s in ("horn section", "horns")):
-        return "Horns"
-
     # ── Classical / orchestral ──
+    # These sit ABOVE the horn-section branch on purpose. This whole function is
+    # first-keyword-match over a song-level list, so when a song predicts both
+    # "strings" and "horns" the order alone decides, for every vague component
+    # in the song. With horns first, ELO's "Livin' Thing" labelled its string
+    # intro "Horns". Neither order is right in general — which is why the PANNs
+    # tagger now decides and this is only the fallback — but strings are the
+    # more common filler in an "other" bucket, so this way is wrong less often.
     if any(s in predicted for s in ("violin section", "violin", "viola")):
         return "Strings"
     if any(s in predicted for s in ("cello section", "cello", "contrabass")):
         return "Strings"
     if any(s in predicted for s in ("strings", "string section", "orchestra", "orchestral strings")):
         return "Strings"
+    if any(s in predicted for s in ("horn section", "horns")):
+        return "Horns"
     if any(s in predicted for s in ("french horn", "timpani")):
         return "Brass" if "french horn" in predicted_str else "Percussion"
     if any(s in predicted for s in ("harp",)):
@@ -966,6 +1013,473 @@ def _match_predicted_label(predicted: list, predicted_str: str, category: str, f
 
     return None
 
+
+
+# ─── Component tagging (PANNs / AudioSet) ────────────────────────────────────
+#
+# _classify_component() above never listens for *what* an instrument is — it
+# thresholds a spectral centroid — and apply_instrument_hints() then reassigns
+# vague labels from the LLM's song-level instrument list by first-keyword-match,
+# with no reference to the audio at all. A song whose hint list contains both
+# "strings" and "horns" therefore labelled every vague component "Horns",
+# because that branch comes first (ELO, "Livin' Thing": the string intro).
+#
+# So a real tagger decides, and those two demote to tie-breakers:
+#   - tagger confident            -> its label wins outright
+#   - tagger not confident        -> abstain, existing label path is untouched
+#   - tagger's top two are close  -> prefer the one the LLM also predicted
+#
+# Abstaining is a first-class outcome, not a failure: on an isolated Demucs stem
+# (which is nothing like AudioSet's training distribution) low scores across the
+# board are the normal result for synth/pad material, and the heuristic label is
+# usually right there.
+
+# AudioSet display name -> riffd display label.
+#
+# Explicit allow-list, not a prefix match: PANNs scores "Music" ~0.85 and
+# "Musical instrument" ~0.4 on literally any musical input, so the generic
+# parents have to be absent rather than outranked. Keys must be exact
+# display_name strings from class_labels_indices.csv — _tagger_label_scores()
+# validates them against the loaded label set and says so if one drifts.
+#
+# The right-hand side stays inside _match_predicted_label()'s vocabulary so the
+# tagger and the hint path can't disagree about spelling: saxophone -> "Brass",
+# electric piano -> "Rhodes", orchestra -> "Strings".
+#
+# Deliberately absent:
+#   - "Singing" / "Male singing" / "Female singing": vocal bleed into the other
+#     stem is routine, and a component labelled "Vocals" collides with the real
+#     vocal stem. "Choir" is kept — it is distinctive enough to be worth having.
+#   - "Bass guitar": same argument. Demucs' bass head already owns that label,
+#     and bass bleed is what actually fires this class on an "other" component
+#     (measured: 0.57 on a bass stem, 0.20 on the guitar stem of the same song).
+#   - "Keyboard (musical)", "Plucked string instrument", "Wind instrument…" and
+#     the other umbrella classes: they carry no more information than the
+#     stem category we already have.
+AUDIOSET_TO_LABEL = {
+    # Guitars
+    "Guitar": "Guitar",
+    "Electric guitar": "Guitar",
+    "Acoustic guitar": "Acoustic Guitar",
+    "Strum": "Acoustic Guitar",
+    "Steel guitar, slide guitar": "Pedal Steel",
+    "Banjo": "Banjo",
+    "Mandolin": "Mandolin",
+    "Ukulele": "Ukulele",
+    "Sitar": "Sitar",
+    # Keys
+    "Piano": "Piano",
+    "Electric piano": "Rhodes",
+    "Harpsichord": "Harpsichord",
+    "Organ": "Organ",
+    "Electronic organ": "Organ",
+    "Hammond organ": "Organ",
+    "Synthesizer": "Synth",
+    "Sampler": "Sample",
+    # Strings
+    "Bowed string instrument": "Strings",
+    "String section": "Strings",
+    "Violin, fiddle": "Strings",
+    "Cello": "Strings",
+    "Pizzicato": "Strings",
+    "Double bass": "Strings",
+    "Orchestra": "Strings",
+    "Harp": "Harp",
+    # Brass / woodwind. Saxophone is a woodwind, but it reads "Brass" in a horn
+    # section and that is what _match_predicted_label() already returns for it.
+    "Brass instrument": "Brass",
+    "Trumpet": "Brass",
+    "Trombone": "Brass",
+    "French horn": "Brass",
+    "Saxophone": "Brass",
+    "Wind instrument, woodwind instrument": "Woodwind",
+    "Flute": "Woodwind",
+    "Clarinet": "Woodwind",
+    "Bagpipes": "Bagpipes",
+    # Free reed
+    "Harmonica": "Harmonica",
+    "Accordion": "Accordion",
+    # Tuned + untuned percussion. Drum classes map to "Percussion", not
+    # "Drums": the drum stem is never tagged, so a drum class firing here is a
+    # loop or a percussion overdub inside another stem.
+    "Marimba, xylophone": "Marimba",
+    "Vibraphone": "Vibraphone",
+    "Glockenspiel": "Bells",
+    "Tubular bells": "Bells",
+    "Chime": "Bells",
+    "Steelpan": "Steel Drums",
+    "Tabla": "Tabla",
+    "Percussion": "Percussion",
+    "Drum kit": "Percussion",
+    "Drum": "Percussion",
+    "Drum machine": "Percussion",
+    "Snare drum": "Percussion",
+    "Bass drum": "Percussion",
+    "Hi-hat": "Percussion",
+    "Cymbal": "Percussion",
+    "Timpani": "Percussion",
+    "Tambourine": "Percussion",
+    "Maraca": "Percussion",
+    "Wood block": "Percussion",
+    "Gong": "Percussion",
+    "Mallet percussion": "Percussion",
+    # Voices — see the note above about what is missing here.
+    "Choir": "Choir",
+}
+
+# Sigmoid score at or above which the tagger overrides the existing label.
+#
+# Calibrated on the 17 "other"-bucket components across the 18 analysed songs in
+# static/demo. Their top mapped scores are sharply bimodal, and 0.40 sits in the
+# empty band between the two modes:
+#
+#   0.783  take_it_easy/banjo          -> Guitar      right (Banjo scored 0.003)
+#   0.540  bohemian_rhapsody/synth     -> Strings     right (the song has no synth)
+#   ------------------------------------------------------ 0.50: nothing real
+#   0.252  locked_out_of_heaven/synth  -> Strings     wrong  lands in this band
+#   0.250  when_it_rains/other         -> Strings     wrong
+#    ...   twelve more, all <= 0.25,   all wrong
+#
+# So this is not a knob trading precision against recall along a continuum:
+# there is an empty band from 0.25 to 0.54, and the threshold goes in it. It
+# sits at the TOP of that band rather than the middle because the one false
+# positive seen anywhere near it landed at 0.42 — an "other" component read as
+# Harmonica when re-separating Kiss Me — while both true positives are >= 0.54.
+# Under-claiming is cheap here (the existing label survives) and a wrong
+# instrument name in the mixer is not.
+#
+# Note how low the absolute numbers are. An isolated Demucs stem is nothing
+# like AudioSet's training distribution of full mixes, so 0.5 is a confident
+# call here, not a weak one; do not "fix" this by raising it toward 0.9.
+TAGGER_MIN_CONFIDENCE = 0.50
+
+# Two candidate labels this close are "close enough that the LLM's song-level
+# instrument list should break the tie".
+TAGGER_TIE_MARGIN = 0.10
+
+# Keeping a component the energy thresholds rejected is a stronger claim than
+# relabelling one we were keeping anyway — it adds a fader to the mixer rather
+# than renaming one. Ask for more than the relabel bar. No real rescue has been
+# observed yet to calibrate against (the candidates seen so far scored 0.14-0.17
+# and were correctly dropped), so this is deliberately conservative.
+TAGGER_RESCUE_MIN_CONFIDENCE = 0.60
+
+# Stem categories whose labels the tagger must not touch. Demucs has dedicated
+# heads for these three and they are more reliable than AudioSet tagging of the
+# result; there is nothing to gain and a mislabelled lead vocal to lose.
+TAGGER_SKIP_CATEGORIES = frozenset({"vocals", "drums", "bass"})
+
+# htdemucs_6s also has dedicated guitar and piano heads. Their labels are not
+# guesses either, so overriding one takes more evidence than overriding the
+# "other" bucket's spectral guess — measured, not assumed. Over the 20
+# guitar/piano components in static/demo the tagger's top label was wrong on
+# every one it was confident about:
+#
+#   bohemian_rhapsody/piano   Piano=0.03  ->  it wanted Strings=0.41
+#   kill_bill/guitar          Guitar=0.10 ->  it wanted Organ=0.55
+#   kiss_me/lead_guitar       Guitar=0.02 ->  it wanted Organ=0.47
+#
+# An isolated, heavily-processed Demucs stem is a long way outside AudioSet's
+# training distribution of full mixes, and these two heads are where that shows.
+# At 0.60 none of those fire and the Demucs heads keep their labels; the
+# "other" bucket, where the label really is a centroid guess, still moves at
+# 0.30. If a later measurement shows the tagger beating the guitar head, lower
+# this — but measure first.
+TAGGER_DEDICATED_HEAD_CATEGORIES = frozenset({"guitar", "piano"})
+TAGGER_DEDICATED_HEAD_MIN_CONFIDENCE = 0.60
+
+
+def tagger_min_confidence(stem_category: str) -> float:
+    """Confidence the tagger needs to override this category's existing label."""
+    if stem_category in TAGGER_DEDICATED_HEAD_CATEGORIES:
+        return TAGGER_DEDICATED_HEAD_MIN_CONFIDENCE
+    return TAGGER_MIN_CONFIDENCE
+
+
+def _tagger_label_scores(class_scores: dict, known_classes=None) -> list:
+    """[(riffd_label, audioset_class, score)] over AUDIOSET_TO_LABEL, best first.
+
+    A label's score is the **max** over its AudioSet classes, not the sum.
+    AudioSet is multi-label and hierarchical — a string section clip is
+    genuinely "Orchestra" and "String section" and "Bowed string instrument"
+    and "Violin, fiddle" at once — so summing correlated siblings would give
+    families with many mapped classes (Strings: 7, Percussion: 13) a structural
+    advantage over families with one (Harp, Accordion). Max compares like with
+    like.
+    """
+    if known_classes is not None:
+        unknown = [c for c in AUDIOSET_TO_LABEL if c not in known_classes]
+        if unknown:
+            print(f"[tagger] WARNING: {len(unknown)} AUDIOSET_TO_LABEL key(s) are not "
+                  f"AudioSet display names and can never fire: {unknown[:5]}")
+
+    best: dict = {}
+    for cls, label in AUDIOSET_TO_LABEL.items():
+        score = class_scores.get(cls)
+        if score is None:
+            continue
+        if label not in best or score > best[label][1]:
+            best[label] = (cls, float(score))
+    ranked = [(label, cls, score) for label, (cls, score) in best.items()]
+    ranked.sort(key=lambda r: r[2], reverse=True)
+    return ranked
+
+
+def _hint_labels(instrument_hints: dict | None) -> set:
+    """The riffd labels the LLM's song-level instrument list implies.
+
+    Each hint is matched on its own, so the set is order-independent — unlike
+    _match_predicted_label() on the whole list, which returns whichever branch
+    comes first and is the bug this whole module exists to demote.
+    """
+    if not instrument_hints:
+        return set()
+    predicted = [i.lower() for i in instrument_hints.get("instruments", []) or []]
+    if not predicted:
+        return set()
+    category = (instrument_hints.get("category") or "").lower()
+    labels = set()
+    for hint in predicted:
+        # category is passed empty: its only job in _match_predicted_label is a
+        # genre-based "Synth" fallback, which would put "Synth" in this set for
+        # every electronic track regardless of what was predicted.
+        matched = _match_predicted_label([hint], hint, "", features=None)
+        if matched:
+            labels.add(matched)
+    if not labels and category in ("electronic", "hiphop", "ambient"):
+        labels.add("Synth")
+    return labels
+
+
+def decide_component_label(current_label: str, ranked: list, hint_labels: set,
+                           min_confidence: float = TAGGER_MIN_CONFIDENCE) -> tuple:
+    """(new_label, audioset_class, score, reason) or (None, ...) to abstain."""
+    if not ranked:
+        return None, None, 0.0, "no mapped class"
+
+    top_label, top_class, top_score = ranked[0]
+    if top_score < min_confidence:
+        return None, top_class, top_score, f"below {min_confidence:.2f}"
+
+    label, cls, score, reason = top_label, top_class, top_score, "tagger"
+    if hint_labels and top_label not in hint_labels:
+        for alt_label, alt_class, alt_score in ranked[1:]:
+            if top_score - alt_score > TAGGER_TIE_MARGIN:
+                break
+            if alt_label in hint_labels:
+                label, cls, score, reason = alt_label, alt_class, alt_score, "tagger+hint"
+                break
+
+    # The tagger naming a family the current label already names is a
+    # confirmation, not a correction: "Rhythm Guitar" -> "Guitar" and
+    # "Synth Pad" -> "Synth" would both throw away the more specific label the
+    # stereo/hint path worked out. Measured on static/demo, this is what four
+    # of the tagger's ten changes at threshold 0.30 were.
+    current_words = set((current_label or "").lower().split())
+    label_words = set(label.lower().split())
+    if label_words and label_words <= current_words:
+        reason = "already correct" if label_words == current_words else "confirms existing"
+        return None, cls, score, reason
+    return label, cls, score, reason
+
+
+def tag_components_child(items_path: str, result_path: str) -> None:
+    """Child-process entry point. Never call this in the parent worker.
+
+    Imports panns_tagger, which imports torch (~190MB) — the whole reason this
+    runs behind a subprocess boundary. See CLAUDE.md "Memory architecture".
+    """
+    import pickle
+
+    with open(items_path, "rb") as f:
+        items = pickle.load(f)
+
+    _log_mem("[tag_components] pre-load")
+    import panns_tagger
+
+    scores = panns_tagger.tag_files(items)
+    _log_mem("[tag_components] post-tag")
+
+    known = set(panns_tagger.load_labels())
+    ranked = {key: _tagger_label_scores(cs, known_classes=known)[:5]
+              for key, cs in scores.items()}
+    with open(result_path, "wb") as f:
+        pickle.dump(ranked, f)
+
+
+TAGGER_TIMEOUT_S = 120
+
+
+def run_tagger(items: dict, heartbeat=None) -> dict:
+    """{key: wav_path} -> {key: [(label, audioset_class, score), ...]}.
+
+    Runs ONE child process for the whole job — the model load is ~1.3s and the
+    per-component work is ~0.4s, so a child per component would be almost all
+    overhead. Returns {} on any failure: tagging is an improvement to labels,
+    never a reason to fail a job that has audio.
+
+    heartbeat: called immediately before and after the child. The child is
+    silent for its whole run and the watchdog measures silence, so a job with
+    many components would otherwise look wedged. See CLAUDE.md "_touch_job()".
+    """
+    if not items:
+        return {}
+
+    import os as _os
+    import pickle
+    import tempfile
+    import time as _time
+
+    if heartbeat:
+        heartbeat()
+
+    items_path = result_path = None
+    t0 = _time.time()
+    try:
+        fd, items_path = tempfile.mkstemp(suffix="_tag_items.pkl")
+        _os.close(fd)
+        with open(items_path, "wb") as f:
+            pickle.dump(items, f)
+        fd, result_path = tempfile.mkstemp(suffix="_tag_result.pkl")
+        _os.close(fd)
+
+        script = (
+            "import sys\n"
+            "sys.path.insert(0, '.')\n"
+            "from processor import tag_components_child\n"
+            f"tag_components_child({items_path!r}, {result_path!r})\n"
+        )
+        proc = subprocess.run(
+            [sys.executable, "-c", script],
+            capture_output=True, text=True, timeout=TAGGER_TIMEOUT_S,
+            cwd=str(Path(__file__).parent),
+        )
+        forward_child_log("[tagger:child]", proc.stdout)
+        if proc.returncode != 0:
+            print(f"[tagger] child failed (rc={proc.returncode}) — keeping heuristic labels")
+            forward_child_log("[tagger:child:err]", proc.stderr)
+            return {}
+        with open(result_path, "rb") as f:
+            ranked = pickle.load(f)
+        print(f"[tagger] tagged {len(ranked)}/{len(items)} component(s) in {_time.time() - t0:.1f}s")
+        return ranked
+    except subprocess.TimeoutExpired:
+        print(f"[tagger] child timed out after {TAGGER_TIMEOUT_S}s — keeping heuristic labels")
+        return {}
+    except Exception as e:
+        print(f"[tagger] unavailable ({type(e).__name__}: {e}) — keeping heuristic labels")
+        return {}
+    finally:
+        for tmp in (items_path, result_path):
+            if tmp:
+                try:
+                    _os.remove(tmp)
+                except OSError:
+                    pass
+        if heartbeat:
+            heartbeat()
+
+
+
+def _apply_component_tagging(refined: dict, component_sources: dict, candidates: list,
+                             out_dir, instrument_hints=None, max_stems=None,
+                             heartbeat=None) -> int:
+    """Relabel components by what they sound like; rescue confident rejects.
+
+    Best-effort by construction — run_tagger() returns {} on any failure, and
+    every component then falls through to "keep the label you came in with".
+    Tagging must never be able to fail a job that has audio.
+
+    Returns the number of labels changed. Mutates `refined` (labels, plus any
+    rescued component) and `component_sources`.
+    """
+    items = {key: data["path"] for key, data in refined.items()
+             if component_sources.get(key, "") not in TAGGER_SKIP_CATEGORIES}
+
+    # Rescue candidates ride along in the same child — the model load is the
+    # expensive part and it is already paid for.
+    cand_by_key = {}
+    for i, cand in enumerate(candidates):
+        cand_key = f"_cand{i}"
+        cand_by_key[cand_key] = cand
+        items[cand_key] = str(cand["path"])
+
+    ranked_all = run_tagger(items, heartbeat=heartbeat) if items else {}
+
+    hint_labels = _hint_labels(instrument_hints)
+    if hint_labels:
+        print(f"[tagger] hint tie-breakers available: {sorted(hint_labels)}")
+
+    changed = 0
+    for key, data in refined.items():
+        ranked = ranked_all.get(key)
+        if ranked is None:
+            continue
+        old = data.get("label", key)
+        new, cls, score, reason = decide_component_label(
+            old, ranked, hint_labels, tagger_min_confidence(component_sources.get(key, "")))
+        if new:
+            data["label"] = new
+            data["tagged"] = True          # apply_instrument_hints() must not undo this
+            changed += 1
+            print(f'[tagger] {key}: "{old}" -> "{new}" ({cls} p={score:.2f}, {reason})')
+        else:
+            best = f"{ranked[0][0]} p={ranked[0][2]:.2f}" if ranked else "nothing mapped"
+            print(f'[tagger] {key}: keeping "{old}" (abstain: {reason}; best {best})')
+
+    for cand_key, cand in cand_by_key.items():
+        path = Path(cand["path"])
+        ranked = ranked_all.get(cand_key) or []
+        where = f'{cand["stem_name"]}/{cand["position"]}'
+        label, cls, score = ranked[0] if ranked else (None, None, 0.0)
+        rescued = False
+        already_explained = False
+
+        if label and score >= TAGGER_RESCUE_MIN_CONFIDENCE:
+            if max_stems is not None and len(refined) >= max_stems:
+                # The cap exists to bound disk and memory; a rescue is not
+                # allowed to be the thing that breaks it.
+                print(f'[tagger] rescue declined for {where} ("{label}" {cls} '
+                      f'p={score:.2f}) — stem cap {max_stems} already reached')
+                already_explained = True
+            else:
+                key = base = _label_to_key(label)
+                n = 2
+                while key in refined:
+                    key = f"{base}_{n}"
+                    n += 1
+                try:
+                    dest = out_dir / f"{key}.wav"
+                    path.rename(dest)
+                    refined[key] = {
+                        "path": str(dest),
+                        "energy": round(cand["energy"], 6),
+                        "active": True,
+                        "label": label,
+                        "tagged": True,
+                    }
+                    component_sources[key] = cand["stem_name"]
+                    rescued = True
+                    print(f'[tagger] rescued {where} as "{label}" ({cls} p={score:.2f}) — '
+                          f'below the energy gate at rms={cand["energy"]:.5f}')
+                except Exception as e:
+                    print(f"[tagger] rescue failed for {where}: {type(e).__name__}: {e}")
+                    already_explained = True
+
+        if not rescued:
+            # Don't restate the threshold when the score cleared it and
+            # something else (the cap, a rename failure) declined the rescue —
+            # that read as "0.54 < 0.50" in the log.
+            if label and not already_explained:
+                print(f'[tagger] dropped {where} as before (best "{label}" p={score:.2f} '
+                      f'< {TAGGER_RESCUE_MIN_CONFIDENCE:.2f})')
+            try:
+                path.unlink()
+            except OSError:
+                pass
+
+    print(f"[tagger] {changed} label(s) changed, {len(refined)} stem(s) after tagging")
+    return changed
 
 # ─── Main Separation Pipeline ────────────────────────────────────────────────
 
@@ -1503,6 +2017,14 @@ def separate_stems(audio_path: str, song_id: str, progress_callback=None,
     # Drums and bass always get slots; remaining 8 slots go to pitched stems by energy.
     MAX_REFINED_STEMS = 10
 
+    # Which Demucs stem each refined component came from. Kept beside `refined`
+    # rather than inside it: that dict's shape is a downstream contract
+    # ({path, energy, active, label}) and app.py projects it into the cache.
+    component_sources: dict = {}
+    # Components the energy gate rejected, staged on disk for the tagger to
+    # listen to. Rescued or deleted in _apply_component_tagging().
+    tagger_candidates: list = []
+
     import gc as _gc
 
     try:  # try/finally ensures _raw_* intermediates are cleaned even on crash
@@ -1520,6 +2042,7 @@ def separate_stems(audio_path: str, song_id: str, progress_callback=None,
                 "active": energy > SILENCE_THRESHOLD,
                 "label": "Drums" if stem_name == "drums" else "Bass",
             }
+            component_sources[stem_name] = stem_name
             continue
 
         # For vocals, guitar, piano, other: do stereo analysis
@@ -1535,6 +2058,7 @@ def separate_stems(audio_path: str, song_id: str, progress_callback=None,
                 "active": True,
                 "label": stem_name.title(),
             }
+            component_sources[stem_name] = stem_name
             continue
 
         stem_energy = _rms((left + right) / 2)
@@ -1560,6 +2084,7 @@ def separate_stems(audio_path: str, song_id: str, progress_callback=None,
                 "active": True,
                 "label": stem_name.title(),
             }
+            component_sources[stem_name] = stem_name
             print(f"[processor] stem cap reached ({MAX_REFINED_STEMS}) — keeping {stem_name} as-is")
             continue
 
@@ -1578,6 +2103,7 @@ def separate_stems(audio_path: str, song_id: str, progress_callback=None,
                 "active": True,
                 "label": label,
             }
+            component_sources[stem_name] = stem_name
             continue
         del left, right  # No longer needed after stereo separation
 
@@ -1593,6 +2119,21 @@ def separate_stems(audio_path: str, song_id: str, progress_callback=None,
             _rel_thresh = _overrides.get("min_relative", MIN_RELATIVE_ENERGY)
             _abs_thresh = _overrides.get("min_absolute", MIN_ABSOLUTE_ENERGY)
             if energy < stem_energy * _rel_thresh or energy < _abs_thresh:
+                # "Quiet" and "not there" are different things — a string pad
+                # under a full band is both. Stage it so the tagger gets a
+                # listen; _apply_component_tagging() keeps it only if the
+                # tagger is confident, and deletes the file otherwise.
+                if stem_name not in TAGGER_SKIP_CATEGORIES:
+                    cand_path = out_dir / f"_cand_{stem_name}_{position}.wav"
+                    try:
+                        _write_wav(cand_path, comp_l, comp_r, sr)
+                        tagger_candidates.append({
+                            "path": cand_path, "stem_name": stem_name,
+                            "position": position, "energy": energy,
+                        })
+                    except Exception as _cand_e:
+                        print(f"[tagger] could not stage {stem_name}/{position} "
+                              f"for rescue: {type(_cand_e).__name__}: {_cand_e}")
                 continue
 
             feat = _spectral_features(mono, sr)
@@ -1616,6 +2157,7 @@ def separate_stems(audio_path: str, song_id: str, progress_callback=None,
                 "active": True,
                 "label": stem_name.title(),
             }
+            component_sources[stem_name] = stem_name
             continue
 
         # If only one component, don't split — just relabel
@@ -1630,6 +2172,7 @@ def separate_stems(audio_path: str, song_id: str, progress_callback=None,
                 "active": True,
                 "label": part["label"],
             }
+            component_sources[key] = stem_name
             continue
 
         # Multiple components — save each, but respect the cap.
@@ -1639,9 +2182,26 @@ def separate_stems(audio_path: str, song_id: str, progress_callback=None,
             # Keep the loudest components when trimming
             sub_parts = sorted(sub_parts, key=lambda p: p["energy"], reverse=True)[:remaining_slots]
             print(f"[processor] trimmed {stem_name} to {remaining_slots} sub-parts (cap={MAX_REFINED_STEMS})")
-        _save_sub_parts(sub_parts, sr, out_dir, refined)
+        _save_sub_parts(sub_parts, sr, out_dir, refined,
+                        sources=component_sources, stem_name=stem_name)
         del sub_parts, components
         _gc.collect()
+
+      # ── Component tagging ──
+      # Inside the try so a crash here still hits the cleanup below, and so the
+      # _cand_* files never outlive this call.
+      def _tag_heartbeat():
+          # The tagging child is silent for its whole run and the watchdog
+          # measures silence, not elapsed time. See CLAUDE.md "_touch_job()".
+          if progress_callback:
+              progress_callback("Identifying instruments...")
+
+      _tag_heartbeat()
+      _apply_component_tagging(
+          refined, component_sources, tagger_candidates, out_dir,
+          instrument_hints=instrument_hints, max_stems=MAX_REFINED_STEMS,
+          heartbeat=_tag_heartbeat,
+      )
 
     finally:
       # Clean up intermediate files to save disk/memory — ALWAYS runs, even on crash.
@@ -1658,14 +2218,18 @@ def separate_stems(audio_path: str, song_id: str, progress_callback=None,
       # ".wav.part" catches a conversion temp orphaned by a hard kill — the
       # normal failure paths already unlink it in _fetch_stem's finally.
       _raw_cleaned = 0
-      for raw_file in list(out_dir.glob("_raw_*.wav")) + list(out_dir.glob("_raw_*.wav.part")):
+      # _cand_* are the tagger's rescue candidates. On the normal path
+      # _apply_component_tagging() has already renamed or deleted every one;
+      # this catches a crash between staging them and getting there.
+      for raw_file in (list(out_dir.glob("_raw_*.wav")) + list(out_dir.glob("_raw_*.wav.part"))
+                       + list(out_dir.glob("_cand_*.wav"))):
           try:
               raw_file.unlink()
               _raw_cleaned += 1
           except Exception:
               pass
       if _raw_cleaned:
-          print(f"[processor] cleaned {_raw_cleaned} _raw_* intermediate files")
+          print(f"[processor] cleaned {_raw_cleaned} _raw_*/_cand_* intermediate files")
 
     _log_mem(f"[separate_stems] post-refine ({len(refined)} stems)")
     _log_mem(f"[separate_stems] done ({len(refined)} stems)")
@@ -1701,7 +2265,7 @@ def _label_to_key(label):
     return label.lower().replace(" ", "_")
 
 
-def _save_sub_parts(parts, sr, out_dir, refined):
+def _save_sub_parts(parts, sr, out_dir, refined, sources=None, stem_name=None):
     """Save sub-parts, merging components with the same label into a single stem.
 
     When stereo refinement produces multiple components with identical classifications
@@ -1774,6 +2338,8 @@ def _save_sub_parts(parts, sr, out_dir, refined):
             "active": True,
             "label": label,
         }
+        if sources is not None and stem_name is not None:
+            sources[key] = stem_name
 
 
 # ─── Tab Generation ──────────────────────────────────────────────────────────

@@ -9,6 +9,9 @@ __pycache__/
 # Runtime data
 uploads/
 outputs/
+# PANNs CNN10 weights — fetched by build.sh, not committed.
+# (.gitignore has no inline comments: a trailing '# ...' becomes part of the pattern.)
+models/
 history.json
 riffd.db
 *.db-shm

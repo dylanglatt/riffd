@@ -66,6 +66,64 @@ print(f"[build] OK: no tensorflow; backend={processor.PITCH_BACKEND} "
       f"model={processor.ICASSP_2022_MODEL_PATH.name}")
 PYCHECK
 
+# PANNs CNN10 weights for component tagging.
+#
+# Fetched ONCE here, never during a job: a 25MB download on the request path is
+# a multi-second stall the watchdog cannot see through, and it would land on
+# whichever user happens to be first after a deploy. Files written into the
+# project directory during build are present at runtime.
+echo "[build] Fetching PANNs CNN10 weights..."
+PANNS_DIR="${PANNS_MODEL_DIR:-models/panns}"
+mkdir -p "${PANNS_DIR}"
+PANNS_CKPT="${PANNS_DIR}/Cnn10_mAP=0.380.pth"
+PANNS_LABELS="${PANNS_DIR}/class_labels_indices.csv"
+PANNS_SHA="5240bdc47444e331bbeb54fd741d2b3f933a4526e84b0c17bf3593df94b13962"
+
+if [ ! -f "${PANNS_CKPT}" ]; then
+    curl -fsSL --retry 3 -o "${PANNS_CKPT}.part" \
+        "https://zenodo.org/records/3987831/files/Cnn10_mAP%3D0.380.pth"
+    mv "${PANNS_CKPT}.part" "${PANNS_CKPT}"
+fi
+if [ ! -f "${PANNS_LABELS}" ]; then
+    curl -fsSL --retry 3 -o "${PANNS_LABELS}.part" \
+        "https://storage.googleapis.com/us_audioset/youtube_corpus/v1/csv/class_labels_indices.csv"
+    mv "${PANNS_LABELS}.part" "${PANNS_LABELS}"
+fi
+
+# Checksum the checkpoint. A truncated or redirected download would otherwise
+# surface as load_state_dict blowing up inside a job, long after the build said OK.
+echo "${PANNS_SHA}  ${PANNS_CKPT}" | sha256sum -c - || {
+    echo "[build] FAIL: PANNs checkpoint checksum mismatch at ${PANNS_CKPT}"
+    exit 1
+}
+
+# Gate: prove the tagger actually loads and runs before shipping. Same reasoning
+# as the Basic Pitch gate above — a missing checkpoint or a renamed layer is
+# silent until the first analysis, which is far too late.
+echo "[build] Verifying PANNs tagger..."
+python3 - <<'PYCHECK'
+import sys
+
+sys.path.insert(0, ".")
+import torch  # noqa: E402  (build process only — never the gunicorn worker)
+import panns_tagger  # noqa: E402
+
+model = panns_tagger.load_model()
+labels = panns_tagger.load_labels()
+
+import processor  # noqa: E402
+unknown = [c for c in processor.AUDIOSET_TO_LABEL if c not in set(labels)]
+if unknown:
+    sys.exit(f"[build] FAIL: AUDIOSET_TO_LABEL keys are not AudioSet class names: {unknown}")
+
+with torch.no_grad():
+    out = model(torch.zeros(1, panns_tagger.SAMPLE_RATE, dtype=torch.float32))
+if out.shape != (1, panns_tagger.CLASSES_NUM):
+    sys.exit(f"[build] FAIL: tagger output shape {tuple(out.shape)}")
+print(f"[build] OK: PANNs CNN10 loaded, {len(labels)} classes, "
+      f"{len(processor.AUDIOSET_TO_LABEL)} mapped to riffd labels")
+PYCHECK
+
 # Install Playwright Chromium for cookie refresh
 echo "[build] Installing Playwright Chromium browser..."
 # Run with full output so failures are visible in Render build logs
