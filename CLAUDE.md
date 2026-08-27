@@ -347,13 +347,16 @@ in `modal_worker/eval/REPORT.md`. Don't re-derive them:
   MIT tag is the re-uploader's claim to make. Read the README before building on
   it.
 
-One finding applies to the **current** pipeline regardless of any of that:
-`_separate_stems_replicate()` requests `output_format: "mp3"` (processor.py
-~340), so today's stems are lossy, independently per stem — measured, they
-reconstruct the mix to only −13.7 to −23.0 dB where the cascade's FLAC manages
-−133 dB. Switching that one field to `flac` is the cheap independent win, but
-see the signal-chain note above: FLAC is ~32 MB/stem vs ~5.6 MB, so it must be
-paired with parallel stem downloads.
+A claim that used to sit here has been **retracted**: it said today's Replicate
+stems are lossy MP3, citing `output_format: "mp3"` at processor.py ~340. That
+line is in `_warmup_replicate()`, which boots a container with silence and
+throws the result away. Production is `_separate_stems_replicate()` at ~1779 and
+already requests **`flac`**. Nothing to switch.
+
+The incumbent's −13.7 to −23.0 dB reconstruction is structural, not codec:
+Demucs emits six independent estimates with nothing forcing them to sum to the
+input, whereas the cascade *defines* `other` as the residual so its sum closes
+by construction. That row compares stem definitions, not separation quality.
 
 ## Known-deliberate deletions — do not reintroduce
 
