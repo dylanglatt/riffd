@@ -1,9 +1,13 @@
 # Phase A evaluation — Modal cascade vs. Replicate htdemucs_6s
 
-**Verdict: the cascade wins clearly on guitar/piano and on bleed, loses on
-latency and cost, and is blocked on a licensing question that has nothing to do
-with quality. Phase B is justified on the evidence — but the licence has to be
-resolved by a human first.**
+**Verdict: the owner's listening test confirms the cascade is clearly better on
+piano and on vocals. Energy allocation independently shows the incumbent losing
+the piano entirely. It is ~2.3–2.8× slower, and its checkpoint licences are
+unresolved — as are the incumbent's. Phase B is justified on that evidence; the
+licence is a human decision.**
+
+Guitar and `other` have **not** been judged by ear yet, and no objective metric
+here settles them.
 
 ## Method
 
@@ -106,8 +110,19 @@ GPU functions`), so A10G is also the ceiling currently available.
 
 ## Quality
 
-`energy dB/mix` = stem RMS relative to the mix. `bleed` = correlation of the stem
-with that system's *own* vocals stem — needs no ground truth, lower is better.
+`energy dB/mix` = stem RMS relative to the mix.
+
+⚠️ **`bleed` is a within-system diagnostic, not a score, and it must not be
+compared across separators.** It correlates each stem with *that same system's
+own* vocals estimate. If a separator under-extracts vocals, its vocals stem is
+weak, and everything correlates less with it — so **missing the vocal scores as
+"clean"**. The number tells you where a given system is leaking relative to
+itself; it cannot tell you which system leaks less. An earlier version of this
+report used it for exactly that, and those verdicts have been withdrawn.
+
+The claims that survive rest on two things only: **energy allocation** (how much
+of the mix each system put in each stem, which needs no ground truth and no
+cross-system normalisation) and **the owner's controlled listening test**.
 
 ### Guitar and piano — the question Phase A exists to answer
 
@@ -120,9 +135,11 @@ with that system's *own* vocals stem — needs no ground truth, lower is better.
 
 The incumbent effectively **misses Layla's piano**: 1.3% of the separated energy
 for a coda that is half the record. Its guitar stem instead holds 42% of all
-energy with the highest vocal bleed in the whole study (0.208) — it is acting as
-a dumping ground, with the piano and some vocal inside it. The cascade splits the
-two almost evenly (19.9% / 19.7%) and carries a third of the vocal bleed.
+energy — consistent with it acting as a dumping ground that has absorbed the
+piano. The cascade splits the two almost evenly (19.9% / 19.7%).
+
+(Its bleed figure is the highest in the study at 0.208, but per the caveat above
+that is a within-system diagnostic and is not offered as a comparison.)
 
 **Livin' Thing**: incumbent piano −33.3 dB (0.1%); cascade −17.2 dB (2.3%) —
 about 23× more piano energy recovered.
@@ -141,18 +158,22 @@ is nothing; the incumbent hallucinates a little.
 - Layla guitar, incumbent `0:12, 2:19, 3:37` — listen for piano and vocal inside
   the guitar stem.
 
-### Vocal bleed, all tracks
+### Vocal bleed — diagnostic only
 
-The cascade is cleaner on every *extracted* stem: drums 0.009 vs 0.031, bass
-0.000 vs 0.008, guitar 0.061 vs 0.208 (Layla). That is the MelBand RoFormer vocal
-model doing its job before anything else sees the audio.
+Recorded because it is useful *within* a system, and withdrawn as a
+cross-system comparison. The figures are in `out/comparison.json`.
 
-**It is dirtier on `other`** — 0.225 vs 0.032 on Layla, 0.569 vs 0.047 on Take It
-Easy. This is structural, not a bug: `other` is defined as the residual, so every
-error the five extracted stems make lands in it. The cascade buys clean specific
-stems by concentrating the mess in the one stem labelled "everything else".
-Whether that is a good trade is a product call — for riffd's mixer it probably is,
-since `other` is the stem users are least likely to solo.
+Read within the incumbent, its guitar stem (0.208 on Layla) leaks far more than
+its drums (0.031) or bass (0.008) — which corroborates, from a second angle,
+that its guitar stem is where unassigned content ends up.
+
+Read within the cascade, `other` is its leakiest stem (0.225 on Layla, 0.569 on
+Take It Easy) and its extracted stems are its cleanest. That is structural
+rather than surprising: `other` is defined as the residual, so every error the
+five extracted stems make is deposited there by construction.
+
+What cannot be said from these numbers — and was previously said — is that
+either system is "cleaner" than the other.
 
 ### Stems sum back to the mix
 
@@ -217,14 +238,20 @@ unverifiable checkpoint.** That is a decision for a human.
 
 ## Honest read, per stem
 
-| stem | verdict |
-|---|---|
-| vocals | **cascade better.** Lower bleed everywhere downstream; energy share within 1–2 pts. |
-| drums | **cascade slightly better.** Bleed 0.009 vs 0.031; otherwise near-identical. |
-| bass | **wash.** Both clean, bleed ~0 for both. |
-| guitar | **cascade better**, mainly by *not* being a dumping ground — 3× less vocal bleed on Layla. |
-| piano | **cascade decisively better.** The incumbent misses it: 1.3% vs 19.7% of energy on Layla, 0.1% vs 2.3% on Livin' Thing. This is the single strongest result here. |
-| other | **incumbent better.** The cascade's residual absorbs every upstream error; bleed 0.569 vs 0.047 on Take It Easy. |
+Two sources of evidence, both stated: **L** = the owner's controlled listening
+test, **E** = energy allocation. The bleed metric is deliberately absent.
+
+| stem | verdict | basis |
+|---|---|---|
+| vocals | **cascade clearly better** | L |
+| piano | **cascade decisively better.** The incumbent misses it: 1.3% vs 19.7% of separated energy on Layla, 0.1% vs 2.3% on Livin' Thing | L + E |
+| drums | **no verdict.** Energy shares within ~1.5 pts; not judged by ear | E only, inconclusive |
+| bass | **no verdict.** Energy shares within ~5 pts; not judged by ear | E only, inconclusive |
+| guitar | **not yet judged.** Energy allocation differs sharply (42.1% vs 19.9% on Layla) but that is a *reallocation*, not a quality ordering — the incumbent's share is inflated by the piano it absorbed. Needs a listening pass | E, ambiguous |
+| other | **not yet judged.** The cascade's residual necessarily carries the cascade's errors; whether that is audibly worse is unknown | — |
+
+On the electronic negative control both systems correctly find ~no guitar and no
+piano (cascade 0.0%/0.0%, incumbent 0.3%/0.1%).
 
 ## Recommendation
 

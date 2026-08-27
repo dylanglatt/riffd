@@ -8,18 +8,23 @@ computes *proxies*, not SDR, and says so. Three of them:
                     or piano stem on tracks that plainly contain both, which
                     shows up directly here.
 
-  vocal bleed       Correlation between each instrumental stem and that same
-                    separator's own vocals stem. A guitar stem that correlates
-                    with the vocals it was separated from still contains them.
-                    Self-referential on purpose: it needs no ground truth, and
-                    each separator is judged against its own vocal estimate.
+  vocal bleed       WITHIN-SYSTEM DIAGNOSTIC ONLY -- do not compare across
+                    separators. Correlation between each stem and *that same
+                    system's own* vocals estimate. The flaw is structural: a
+                    separator that under-extracts vocals has a weak vocals stem,
+                    so everything correlates less with it and MISSING THE VOCAL
+                    SCORES AS CLEAN. Useful for "where is this system leaking,
+                    relative to itself"; useless for "which system leaks less".
 
-  spectral overlap  Cosine similarity of mean magnitude spectra between stem
-                    pairs. Catches bleed that waveform correlation misses when
-                    the leaked copy is phase-shifted.
+  spectral overlap  Same caveat, same reason -- it is also measured against the
+                    system's own vocals stem. Cosine similarity of mean
+                    magnitude spectra, which catches leakage that waveform
+                    correlation misses when the leaked copy is phase-shifted.
 
-Lower is better for the last two. All of it is circumstantial: the report pairs
-it with timestamps for a human to listen to, which is the actual test.
+Only `energy share` supports cross-system comparison, because it is measured
+against the input mix rather than against either system's own output. The rest
+is circumstantial and is paired with timestamps for a human to listen to, which
+is the actual test.
 """
 
 import json

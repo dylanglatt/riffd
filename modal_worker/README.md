@@ -7,10 +7,12 @@ measurements — *is a cascade of specialist separators better than the incumben
 htdemucs_6s-on-Replicate, and at what latency and cost?*
 
 The answer, in short: **the owner's listening test confirms it is clearly better
-on piano and vocals; it is ~2.3-2.8x slower; and its checkpoint licences are
-unresolved (as are the incumbent's).** Cost is ~$0.036/track measured; the
-incumbent's could not be priced, so no cost ratio is claimed. Full numbers:
-[`eval/REPORT.md`](eval/REPORT.md), licences: [`LICENSES.md`](LICENSES.md).
+on piano and vocals; energy allocation shows the incumbent losing the piano
+entirely; guitar and `other` are not yet judged.** It is ~2.3-2.8x slower, and
+its checkpoint licences are unresolved — as are the incumbent's. Cost is
+~$0.036/track measured; the incumbent's could not be priced, so no cost ratio is
+claimed. Full numbers: [`eval/REPORT.md`](eval/REPORT.md), licences:
+[`LICENSES.md`](LICENSES.md).
 
 ## Output contract
 
