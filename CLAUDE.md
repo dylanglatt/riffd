@@ -197,7 +197,11 @@ So the order of authority is now:
 2. **Abstain** otherwise → the heuristic + hint path runs exactly as before.
    This is the common outcome and it is a first-class one, not a failure.
 3. **Hints as tie-breaker only** → when the tagger's top two mapped labels are
-   within `TAGGER_TIE_MARGIN`, prefer the one the LLM also predicted.
+   within `TAGGER_TIE_MARGIN`, prefer the one the LLM also predicted — but only
+   if that alternative *also* clears the confidence bar. Being inside the margin
+   makes a label a candidate, not evidence for it. Without that check the margin
+   leaks the threshold: at a 0.50 bar, Strings=0.50 beside Horns=0.41 handed the
+   label to Horns purely because a hint said "horns".
 
 **The axis is confident-vs-abstained, not changed-vs-unchanged.** A confident
 tagger *confirmation* — PANNs agreeing with the label already there, or with a

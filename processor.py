@@ -1291,6 +1291,14 @@ def decide_component_label(current_label: str, ranked: list, hint_labels: set,
         for alt_label, alt_class, alt_score in ranked[1:]:
             if top_score - alt_score > TAGGER_TIE_MARGIN:
                 break
+            # Being inside the tie margin makes an alternative a *candidate*,
+            # not evidence for it. It still has to clear the same bar the top
+            # class cleared — including the stricter dedicated-head bar, which
+            # arrives here as min_confidence. Without this the margin leaks the
+            # threshold: with a 0.50 bar, Strings=0.50 beside Horns=0.41 handed
+            # the label to Horns purely because a hint mentioned horns.
+            if alt_score < min_confidence:
+                continue
             if alt_label in hint_labels:
                 label, cls, score, reason = alt_label, alt_class, alt_score, "tagger+hint"
                 break
