@@ -338,9 +338,10 @@ in `modal_worker/eval/REPORT.md`. Don't re-derive them:
 - **Piano is the win.** On Layla the incumbent puts 1.3% of separated energy in
   the piano stem against the cascade's 19.7% — it effectively misses a
   two-minute piano coda. On Livin' Thing, 0.1% vs 2.3%.
-- **Latency is the cost.** ~2.3–2.8× slower end to end, structurally: three
-  models over the whole track, one of them a bag of four. Cold start is the one
-  axis it wins (26.9 s vs Replicate boot gaps up to 50 s).
+- **Latency is the cost.** ~2.3–2.5× slower end to end on the three tracks
+  measured warm-vs-incumbent, structurally: three models over the whole track,
+  one of them a bag of four. Cold start is the one axis it wins (26.9 s vs
+  Replicate boot gaps up to 50 s).
 - **It is blocked on a licence**, not on quality. BS-RoFormer-SW is the only
   open checkpoint that emits guitar and piano at all, its author deleted their
   HuggingFace account, and the surviving copy is a third-party re-upload whose
@@ -538,6 +539,12 @@ silently frees another thread's lock. Track acquisition with an explicit flag.
 - **No test suite.** Verify by running the app and exercising the real path; don't
   claim something works because it compiles. `python -m py_compile` is a floor, not
   a check.
+- **Eval claims keep the artifacts that prove them.** Every number in a report
+  must be reproducible from a file checked in or retained beside it, and must say
+  which conditions produced it (cold/warm, which GPU, which input). A number from
+  a run whose artifact was overwritten is not evidence — the Phase A latency
+  table quoted a warm Layla time for a run that the retained `_meta.json` says
+  was cold, and nothing in the repo could have caught it.
 - `main` is the trunk and tracks `origin/main`; the `pipeline-fixes` work has
   been merged and the branch deleted. It is currently clean, so check
   `git status` before assuming otherwise rather than branching reflexively.

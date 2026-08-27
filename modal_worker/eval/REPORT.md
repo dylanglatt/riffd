@@ -2,7 +2,7 @@
 
 **Verdict: the owner's listening test confirms the cascade is clearly better on
 piano and on vocals. Energy allocation independently shows the incumbent losing
-the piano entirely. It is ~2.3–2.8× slower, and its checkpoint licences are
+the piano entirely. It is ~2.3–2.5× slower, and its checkpoint licences are
 unresolved — as are the incumbent's. Phase B is justified on that evidence; the
 licence is a human decision.**
 
@@ -34,15 +34,33 @@ timestamps for a human to actually listen to.
 
 ## Latency
 
-| track | length | incumbent wall | cascade warm wall | cascade GPU | ratio |
-|---|---|---|---:|---:|---:|
-| Layla | 7:04 | 66.2 s | 186.0 s | 158.1 s | 2.81× |
-| Livin' Thing | 3:33 | 44.0 s | 99.5 s | 82.9 s | 2.26× |
-| One More Time | 5:20 | 61.0 s | 154.2 s | 121.9 s | 2.53× |
-| Take It Easy | 3:32 | 39.4 s | 96.6 s | 82.2 s | 2.45× |
+Every row below is reproducible from a retained artifact:
+`out/cascade/<slug>/_meta.json` and `out/incumbent/<slug>/_timing.json`. The
+`container` column is reported by the worker itself, not inferred.
 
-**The cascade is ~2.3–2.8× slower end to end, and that is structural, not a
-tuning problem.** It runs three models over the whole track where htdemucs_6s
+| track | length | incumbent wall | cascade wall | cascade GPU | container | ratio |
+|---|---|---|---:|---:|---|---:|
+| Livin' Thing | 3:33 | 44.0 s | 99.5 s | 82.9 s | warm | 2.26× |
+| One More Time | 5:20 | 61.0 s | 154.2 s | 121.9 s | warm | 2.53× |
+| Take It Easy | 3:32 | 39.4 s | 96.6 s | 82.2 s | warm | 2.45× |
+| Layla | 7:04 | 66.2 s | **208.4 s** | **181.5 s** | **cold** | — |
+
+**Corrections from an earlier version of this table.** Layla was listed as
+*warm, 186.0 s / 158.1 s*. Those numbers came from an ad-hoc single-track re-run
+whose artifact was later overwritten, so nothing in the repo supported them. The
+retained `_meta.json` says **cold, 208.4 s**, and that is what now appears. A
+cold row cannot be divided by a warm one, so Layla's ratio is withheld rather
+than quoted as a 2.81× or 3.15× slowdown.
+
+Two caveats that limit all four ratios:
+
+- The **incumbent's** cold/warm state was never recorded — `run_incumbent.py`
+  does not capture it, and Replicate does not report it in the prediction body.
+  So the denominators may mix cold and warm runs.
+- A genuine warm pass per track was **not** re-run; see `BLOCKED.md`.
+
+**On the three warm rows the cascade is ~2.3–2.5× slower end to end, and that is
+structural, not a tuning problem.** It runs three models over the whole track where htdemucs_6s
 runs one, and one of the three (`htdemucs_ft`) is itself a bag of four models.
 Warm, it costs 0.38× the track's own duration in GPU time.
 
@@ -71,16 +89,20 @@ all of it uploading the mix and downloading six FLACs.
 
 ## Cost per track
 
-Modal A10G at **$0.000306/s** (modal.com/pricing), warm, GPU seconds only:
+Modal A10G at **$0.000306/s** (modal.com/pricing), GPU seconds from each
+track's retained `_meta.json` (`total_s`):
 
-| track | GPU s | cost |
-|---|---:|---:|
-| Layla | 158.1 | $0.048 |
-| Livin' Thing | 82.9 | $0.025 |
-| One More Time | 121.9 | $0.037 |
-| Take It Easy | 82.2 | $0.025 |
+| track | GPU s | cost | container |
+|---|---:|---:|---|
+| Livin' Thing | 82.9 | $0.0254 | warm |
+| One More Time | 121.9 | $0.0373 | warm |
+| Take It Easy | 82.2 | $0.0252 | warm |
+| Layla | 181.5 | $0.0555 | cold |
 
-**≈ $0.034/track mean.** CPU and memory add a fraction of a cent.
+**Mean $0.0358/track** across all four. An earlier version said $0.034, which
+came from averaging an inconsistent subset. CPU and memory add a fraction of a
+cent on top; the `memory=8192` request added in finding 6 is ~$0.004 for a
+200 s request.
 
 The incumbent's cost could **not** be pinned down: Replicate's API reports
 `predict_time` (15.1–34.9 s across the runs here) but does not expose the
@@ -263,7 +285,7 @@ to relabel what the incumbent gets wrong.
 Before Phase B:
 
 1. **Resolve the BS-RoFormer-SW licence.** Everything else is contingent on it.
-2. Decide whether 2.3–2.8× latency is acceptable. riffd's measured p50 is ~147 s
+2. Decide whether 2.3–2.5× latency is acceptable. riffd's measured p50 is ~147 s
    end to end and `MAX_WAIT` bounds one separation attempt at 420 s base, so a
    ~160 s separation fits the existing budget — but it roughly doubles the
    separation share of a job and eats headroom the retry path currently relies
