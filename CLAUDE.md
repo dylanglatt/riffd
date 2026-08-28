@@ -657,14 +657,19 @@ Backlog. Keep each line short; history lives in git, not here.
 - **Modal separation backend** — branch `modal-integration` (contains the
   Phase A worker in modal_worker/). RoFormer cascade: vocals → drums/bass →
   guitar/piano → other-as-residual. Owner's listening verdict: piano and
-  vocals clearly better than htdemucs_6s; 2.3–3.2× slower warm; wins cold
-  start; ~$0.035/track A10G. Behind SEPARATION_BACKEND (default replicate;
-  cache key v7/v7-modal makes rollback a pure env change).
-  Remaining before merge: PROMPT_modal_final.md (six items: licensing-doc
-  truth, committed eval evidence, corrupt-Volume fails the request not the
-  caller, stale cold-start number, >12-min tracks route to Replicate,
-  peak-RSS field label). Then: merge → deploy (inert) → set
-  SEPARATION_BACKEND=modal on Render → verify with a real track.
+  vocals clearly better than htdemucs_6s; 2.25–3.20× slower warm; wins cold
+  start (34.6 s vs Replicate boot gaps up to 50 s); ~$0.035/track A10G.
+  Behind SEPARATION_BACKEND (default replicate; cache key v7/v7-modal makes
+  rollback a pure env change).
+  **2026-08-28 — PROMPT_modal_final.md all six items done; the branch is
+  ready to merge.** A corrupt Volume now fails a request in 10.6 s instead of
+  hanging ~10 min; tracks over `LONG_TRACK_ROUTE_MINUTES` (12) route to
+  Replicate rather than pulling a ~424 MB inline payload into the parent; the
+  eval JSON evidence is committed and reruns no longer overwrite it; the
+  licensing docs no longer claim anything unbacked.
+  Next: merge → deploy (inert, default is replicate) → set
+  SEPARATION_BACKEND=modal on Render → verify with a real track → then decide
+  whether to keep it.
 - **Uncommitted in the working tree**: templates/decompose.html +
   templates/demo.html carry the Orchestral mixer family (strings/brass no
   longer grouped under Keys) plus the owner's own edits. Commit with the
@@ -682,10 +687,26 @@ Backlog. Keep each line short; history lives in git, not here.
    more [tagger] log examples before tuning thresholds/mapping.
 
 ### Backlog / known debts
-- Modal 20-min tracks: ~424 MB inline payload projected; routed to
-  Replicate for now. Lift only after one measured 20-min run through riffd.
+- Modal 20-min tracks: ~424 MB inline payload projected; `separate_stems()`
+  routes anything over `LONG_TRACK_ROUTE_MINUTES` (12) to Replicate. Lifting
+  the guard requires one measured 20-min run **through riffd** — the Phase A
+  eval measures the worker's own container and says nothing about the parent.
+  `MAX_TRACK_MINUTES` allows 20, so the 12–20 gap is deliberate.
 - Cascade speed headroom: mdxc stages are ~68% of GPU time at batch 1
   (audio-separator design); untapped.
+- **Checkpoint licences are unresolved for BOTH backends** and that is the
+  merge-blocking business question, not a code one. Demucs weights are
+  research-only per the author, which covers today's htdemucs_6s too. Known
+  alternative: ZFTurbo's MVSep Mega 53 Stems — first-party, emits guitar and
+  piano, but still no explicit weight-licence grant, and it is 53 single-stem
+  checkpoints so adopting it redesigns the cascade. See
+  `modal_worker/LICENSES.md`; revisit trigger is any monetisation.
+- Replicate account is under $5, which throttles it to 6 req/min burst 1. The
+  prewarm can consume that allowance and throttle the real request behind it;
+  the 429 retry absorbs it, but the fallback path is degraded until topped up.
+- Modal Volume corruption is invisible to already-running containers (they
+  hold the version mounted at start). Only new containers verify, so after a
+  repair you may need `modal app stop` to retire a stale one.
 - Licensing: BS-RoFormer-SW provenance chain is unverifiable (see
   modal_worker/LICENSES.md); htdemucs weights research-use statement
   applies to the incumbent too. Accepted risk while riffd is free;
