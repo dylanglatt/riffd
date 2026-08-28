@@ -67,13 +67,21 @@ runs.
 
 | | cold-start overhead |
 |---|---|
-| cascade (Modal, weights on a Volume) | **26.9 s** — container boot + 10.0 s to load 1,949 MB of checkpoints |
+| cascade (Modal, weights on a Volume) | **34.6 s** — container boot + 5.9 s loading 1,949 MB of checkpoints + 1.8 s verifying them |
 | incumbent (Replicate) | up to **50 s** observed — one prediction recorded `predict_time` 15.1 s against `total_time` 65.2 s |
 
+**Re-measured.** An earlier version of this table said 26.9 s, taken before the
+SHA-256 manifest verification existed. The current number is one cold start on
+the current worker: 140.2 s wall against 105.6 s of GPU. Verification is *not*
+what moved it — that costs 1.6–2.5 s across four observations (1,104–1,242 MB/s
+off the Volume) — the rest is container-start variance.
+
 Replicate's own metrics separate compute from boot+queue, and the gap is where
-its cold boots hide. Modal's 26.9 s is roughly half the worst gap seen, and well
-under the 1–4 min the task cites. Warm-container overhead is 14.4–32.3 s, almost
-all of it uploading the mix and downloading six FLACs.
+its cold boots hide. Modal's 34.6 s is still comfortably under the worst gap
+seen and well under the 1–4 min the task cites, so the qualitative conclusion is
+unchanged: cold start is the one latency axis the cascade wins. Warm-container
+overhead is 14.4–32.3 s, almost all of it uploading the mix and downloading six
+FLACs.
 
 ## Cost per track
 
