@@ -2299,6 +2299,40 @@ def separate_stems(audio_path: str, song_id: str, progress_callback=None,
         raise RuntimeError("USE_HOSTED_SEPARATION is enabled but REPLICATE_API_TOKEN is missing. "
                            "Set the token or disable hosted separation.")
 
+    # ── Long-track payload guard ──
+    #
+    # The Modal worker returns FLAC BYTES inline rather than URLs, so the whole
+    # result lands in the parent gunicorn worker at once. Measured on normal
+    # tracks that is a non-event — 820 MB parent peak on a 3:32 track, against
+    # the Replicate path's 831 MB. But payload scales with duration: a
+    # 20.65-minute track returned 423.9 MB of FLAC in the Phase A worker eval,
+    # and PROJECTED (not measured) into riffd's parent that is ~+424 MB of
+    # transient in the one process CLAUDE.md requires to stay lean, against a
+    # ~1690 MB budget that Basic Pitch children are also drawing on.
+    #
+    # Nobody has run a 20-minute track through riffd itself, so this routes
+    # rather than gambles: over the threshold, use Replicate, which streams each
+    # stem to disk and never holds a whole track in memory.
+    #
+    # LIFTING THIS REQUIRES ONE MEASURED 20-MINUTE RUN THROUGH RIFFD — not
+    # through modal_worker/eval, which measures the worker's own container.
+    if use_hosted and backend == "modal":
+        _long_min = float(os.getenv("LONG_TRACK_ROUTE_MINUTES", "12"))
+        _dur_s = _probe_duration_s(audio_path)
+        if _dur_s > _long_min * 60:
+            if has_token:
+                print(f"[separation] LONG TRACK: {_dur_s / 60:.1f} min exceeds "
+                      f"LONG_TRACK_ROUTE_MINUTES={_long_min:.0f} — routing to Replicate "
+                      f"instead of Modal (Modal returns ~{_dur_s / 60 * 20:.0f}MB of FLAC "
+                      f"inline; Replicate streams per stem to disk)")
+                backend = "replicate"
+            else:
+                print(f"[separation] LONG TRACK WARNING: {_dur_s / 60:.1f} min exceeds "
+                      f"LONG_TRACK_ROUTE_MINUTES={_long_min:.0f} but REPLICATE_API_TOKEN "
+                      f"is missing, so there is nothing to route to — proceeding on Modal. "
+                      f"Expect ~{_dur_s / 60 * 20:.0f}MB of FLAC to arrive inline in the "
+                      f"parent worker; watch MEMORY_GUARD_MB.")
+
     if use_hosted:
         _hosted_fn = _separate_stems_modal if backend == "modal" else _separate_stems_replicate
         print(f"[separation] path = {backend} (hosted-only, no local fallback)")

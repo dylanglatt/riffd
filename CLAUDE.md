@@ -366,8 +366,28 @@ End to end through the real HTTP path, `scripts/e2e_backend_check.py`:
 Parent memory is the number that mattered going in: the Modal worker returns
 FLAC **bytes inline** rather than URLs, so the fear was a large transient in the
 one process that has to stay lean. Measured, it is not — 820 MB against the
-Replicate path's 831 MB. A 20-minute track would return ~424 MB rather than
-~6 MB, so that headroom is worth re-checking before raising `MAX_TRACK_MINUTES`.
+Replicate path's 831 MB.
+
+### Long tracks route to Replicate — `LONG_TRACK_ROUTE_MINUTES` (default 12)
+
+That 820 MB is a 3:32 track. The inline payload scales with duration, and the
+Phase A worker eval returned **423.9 MB of FLAC for a 20.65-minute track**. Into
+riffd's parent that is a **projected** ~+424 MB of transient — projected, not
+measured, because nobody has run a 20-minute track through riffd itself — in the
+one process that must stay under ~1690 MB while Basic Pitch children draw on the
+same budget.
+
+So `separate_stems()` routes rather than gambles: on the Modal backend, a track
+longer than `LONG_TRACK_ROUTE_MINUTES` goes to Replicate instead, which streams
+each stem to disk and never holds a whole track in memory. With no
+`REPLICATE_API_TOKEN` there is nothing to route to, so it proceeds on Modal with
+a loud warning naming the projected payload. The guard is Modal-only; the
+Replicate path is unaffected by duration.
+
+**Lifting this requires one measured 20-minute run through riffd** — not through
+`modal_worker/eval`, which measures the worker's own container and says nothing
+about the parent. `MAX_TRACK_MINUTES` allows 20, so the gap between 12 and 20 is
+real and deliberate.
 
 ### Three things the integration had to get right
 
@@ -614,3 +634,78 @@ silently frees another thread's lock. Track acquisition with an explicit flag.
   `templates/demo.html` (~45% of JS byte-identical). **Any audio fix must be applied
   to both**, or extract to `/static/js/mixer.js` first.
 - Secrets belong in env vars with no hardcoded fallback.
+
+## Project status — the running state of the work
+
+**This section is the cross-session memory. Every task updates it as its
+last step** (the /execute-task ceremony requires it): move finished items to
+Shipped with the date, adjust In flight, add anything new you discovered to
+Backlog. Keep each line short; history lives in git, not here.
+
+### Shipped (production, main)
+- 2026-08-27 — Basic Pitch TF→ONNX: ~3× faster note children, ~460 MB less
+  RSS, TF excluded via --no-deps + build gate + import blocker. Regressions
+  to watch: reinstalling `tensorflow` (backend preference), skipping
+  build.sh (render.yaml + dashboard build command guard it).
+- 2026-08-27 — PANNs component tagger: labels components by listening
+  (child process, torch never in parent), hints demoted to tie-breaker,
+  threshold rescue with energy floor. Fixed the ELO strings-as-Horns bug.
+- 2026-08-28 — HTTP 429 added to the Replicate retry classifier (was an
+  instant hard failure under low-credit throttling).
+
+### In flight
+- **Modal separation backend** — branch `modal-integration` (contains the
+  Phase A worker in modal_worker/). RoFormer cascade: vocals → drums/bass →
+  guitar/piano → other-as-residual. Owner's listening verdict: piano and
+  vocals clearly better than htdemucs_6s; 2.3–3.2× slower warm; wins cold
+  start; ~$0.035/track A10G. Behind SEPARATION_BACKEND (default replicate;
+  cache key v7/v7-modal makes rollback a pure env change).
+  Remaining before merge: PROMPT_modal_final.md (six items: licensing-doc
+  truth, committed eval evidence, corrupt-Volume fails the request not the
+  caller, stale cold-start number, >12-min tracks route to Replicate,
+  peak-RSS field label). Then: merge → deploy (inert) → set
+  SEPARATION_BACKEND=modal on Render → verify with a real track.
+- **Uncommitted in the working tree**: templates/decompose.html +
+  templates/demo.html carry the Orchestral mixer family (strings/brass no
+  longer grouped under Keys) plus the owner's own edits. Commit with the
+  next template change; apply mixer fixes to BOTH files.
+
+### Next up (agreed order)
+1. scripts/smoke.py — PROMPT_smoke_test.md exists, never run. Cheap
+   self-verification for every future agent pass; do it soon.
+2. Note-level lead/rhythm guitar split — cluster the guitar stem's Basic
+   Pitch note events (register, polyphony, onset density) into Lead and
+   Rhythm tab lanes. No audio split, no new models. This ships original
+   ask C.
+3. Tagger calibration round: observed acoustic_guitar → "Accordion" on
+   Take It Easy (accordion/guitar are AudioSet neighbors). Collect a few
+   more [tagger] log examples before tuning thresholds/mapping.
+
+### Backlog / known debts
+- Modal 20-min tracks: ~424 MB inline payload projected; routed to
+  Replicate for now. Lift only after one measured 20-min run through riffd.
+- Cascade speed headroom: mdxc stages are ~68% of GPU time at batch 1
+  (audio-separator design); untapped.
+- Licensing: BS-RoFormer-SW provenance chain is unverifiable (see
+  modal_worker/LICENSES.md); htdemucs weights research-use statement
+  applies to the incumbent too. Accepted risk while riffd is free;
+  REVISIT TRIGGER: any monetization. Alternatives: ZFTurbo Mega 53-stem
+  (first-party), commercial APIs (Music.AI/AudioShake).
+- Replicate account under $5 → burst-of-1 throttling degrades the
+  fallback path until topped up.
+- Lead/rhythm audio separation (the ambitious version): DadaGP-rendered
+  synthetic training data + fine-tuned RoFormer/Banquet. Scoped, not
+  started — see conversation notes; months, not weekends.
+- Ghostty on macOS may lose Desktop-folder TCC access (reads fail with
+  EPERM while writes work). Fix: Full Disk Access for the terminal app,
+  full quit, reopen. Terminal.app is the fallback.
+
+### Working with agents on this repo
+- Prompt-file workflow: task prompts live in repo root as PROMPT_*.md
+  (gitignored). /execute-task <file> runs one with the ceremony in
+  .claude/commands/execute-task.md; reviews follow AGENTS.md.
+- One task per session. Freeze the branch while a review runs — writer
+  commits during review cost a full re-anchor once.
+- Review depth by blast radius: full adversarial review for anything
+  touching dependencies, memory, caching, watchdog, or the separation
+  path; quick diff sanity for the rest; nothing for one-liners.
