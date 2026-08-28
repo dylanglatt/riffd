@@ -57,17 +57,27 @@ Code is the easy part. The weights are the problem.
 
 ### 3. `BS-Roformer-SW.ckpt` — guitar/piano stage
 
-The only open checkpoint that emits guitar and piano at all, and the one every
-guitar/piano result in `eval/REPORT.md` depends on.
+The checkpoint every guitar/piano result in `eval/REPORT.md` depends on. It is
+**not** the only one that emits those stems — see ZFTurbo's Mega 53 Stems under
+"Alternatives" — but it was the only one in `audio-separator`'s catalogue, which
+is a much narrower claim than the one this file used to make.
 
 **Provenance chain, as far as it can be traced:**
 
 | # | who | what | declared licence |
 |---|---|---|---|
-| 1 | **jarredou** | original author | — HuggingFace account deleted; nothing survives to check |
+| 0 | **unknown** | the actual origin: a checkpoint circulated on Discord. Whoever trained it has never been identified. | — nothing to check |
+| 1 | **jarredou** | **re-host, not the author.** jarredou stated they were rehosting a model from Discord and were not involved in training it, and marked it `license: unknown`. HuggingFace account since deleted. | **`unknown`** |
 | 2 | [`enerjazzer/BS-ROFO-SW-Fixed`](https://huggingface.co/enerjazzer/BS-ROFO-SW-Fixed) | *"Edited version of that checkpoint to allow its use with UVR and MSST"* | **`license: unknown`** |
-| 3 | [`Blakus/bs_roformer_sw_6stem`](https://huggingface.co/Blakus/bs_roformer_sw_6stem) | *"a restoration and re-upload of the bs_roformer_sw_6stem model created by jarredou, whose HugginFace account no longer exists"* | **`license: mit`** ← what this worker downloads |
+| 3 | [`Blakus/bs_roformer_sw_6stem`](https://huggingface.co/Blakus/bs_roformer_sw_6stem) | *"a restoration and re-upload of the bs_roformer_sw_6stem model created by jarredou, whose HugginFace account no longer exists"* — note it calls jarredou the creator, which per #1 is itself wrong | **`license: mit`** ← what this worker downloads |
 | — | [`MrSimmo/BS_Roformer_SW-MLX`](https://huggingface.co/MrSimmo/BS_Roformer_SW-MLX) | independent conversion of the same weights, sourced from #2 | **`license: unknown`**, and states *"Upstream licence: undeclared"* |
+
+**What is first-hand here:** rows 2, 3 and MrSimmo were read directly from the
+live HuggingFace repos, and the SHA-256 of the file this worker downloads
+(`24e7d35e…c775916e`) matches the hash MrSimmo publishes for row 2 — so the
+chain from #2 downward is confirmed byte-for-byte. Rows 0 and 1 come from a
+reviewer's account of jarredou's own (now deleted) statement and could not be
+re-verified against a live source.
 
 - **Status:** ❌ **not established, and the MIT tag is contradicted.** Blakus is
   the only party in the chain claiming MIT. They are downstream of a repo that
@@ -95,9 +105,16 @@ incumbent `htdemucs_6s` path, so switching back is not an escape route.
 
 **Alternatives for that day:**
 
-- **ZFTurbo Mega 53-stem** — a first-party release from an author who publishes
-  licence terms directly, rather than a chain of re-uploads. The most promising
-  route to a checkpoint that is actually clearable.
+- **ZFTurbo MVSep Mega 53 Stems** —
+  [MSST release v1.0.21](https://github.com/ZFTurbo/Music-Source-Separation-Training/releases/tag/v1.0.21),
+  first-party from the author of a 1,512-star repo whose code is MIT, and it
+  emits `guitar`, `acoustic-guitar`, `electric-guitar`, `piano` and
+  `digital-piano`. **Much better provenance — but still no explicit weight
+  licence:** the release notes do not mention one and the HF mirror
+  ([`noblebarkrr/BS-Roformer-MVSep-Mega-53-stems`](https://huggingface.co/noblebarkrr/BS-Roformer-MVSep-Mega-53-stems))
+  declares `license: NONE`. It is also 53 single-stem checkpoints, so adopting it
+  redesigns the cascade rather than swapping a file. The most promising route,
+  not a solved one.
 - **Commercial separation APIs** (LALAL.AI, Audioshake, Moises and similar) —
   licensed for commercial use by contract, at a per-track cost that would need to
   be weighed against the ~$0.036/track this worker measures.
@@ -114,3 +131,11 @@ For the record, so the earlier claims are not quietly reinstated:
 - ~~"MIT — **solid** — declared by the author on their own repo"~~ (`README.md`,
   the vocals model) — the declaration is real, the entitlement to make it is not
   verified.
+- ~~"htdemucs_ft ... MIT with solid first-party provenance. No concern"~~
+  (`eval/REPORT.md`) — the Demucs author states the weights are *not* MIT.
+  REPORT.md had drifted from this file; this file was the correct one.
+- ~~"the only checkpoint in the ecosystem that emits guitar and piano at all"~~
+  (both files) — false. ZFTurbo's Mega 53 Stems emits guitar, acoustic-guitar,
+  electric-guitar, piano and digital-piano, from a first-party release.
+- ~~"jarredou, original author"~~ (this file) — jarredou was a re-host, not the
+  trainer; the real origin is an unidentified Discord upload.

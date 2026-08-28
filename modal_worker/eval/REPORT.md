@@ -259,15 +259,33 @@ warm container; that is the maximum across all four, not any one track's figure.
 
 ## Licensing — the actual blocker
 
-Fully covered in [`../README.md`](../README.md). The short version:
+Fully covered in [`../LICENSES.md`](../LICENSES.md), which is authoritative —
+this is the summary, and where the two have disagreed in the past LICENSES.md
+was the correct one.
 
-- `htdemucs_ft` (Meta) and the MelBand RoFormer vocal model (KimberleyJSN) are
-  **MIT with solid first-party provenance**. No concern.
-- **`BS-Roformer-SW` — the only checkpoint in the ecosystem that emits guitar and
-  piano at all — has an unverifiable licence.** Its author (jarredou) deleted
-  their HuggingFace account; the copy in use is a third-party re-upload whose
-  README says so explicitly, and the MIT tag is the *re-uploader's* claim. A
-  re-uploader cannot grant a licence they never held.
+- **`htdemucs_ft` (Meta): the code is MIT, the WEIGHTS are not.** Alexandre
+  Défossez, the Demucs author, in
+  [demucs#327](https://github.com/facebookresearch/demucs/issues/327): *"The
+  model weights are not covered by the MIT license, and are provided only for
+  scientific purposes."* An earlier version of this report called this "MIT with
+  solid first-party provenance. No concern" — that was wrong, and it contradicted
+  LICENSES.md. **The same statement covers the `htdemucs_6s` riffd runs today.**
+- **The MelBand RoFormer vocal model (KimberleyJSN)** declares MIT first-party,
+  which is real, but its card discloses no training data — so whether the author
+  was entitled to grant MIT is unverified, not "no concern".
+- **`BS-Roformer-SW` has an unverifiable licence.** The copy in use is a
+  re-upload of a re-upload; the MIT tag is the last re-uploader's claim and is
+  contradicted upstream. Details and the full chain in LICENSES.md.
+- **It is *not* the only checkpoint that emits guitar and piano.** An earlier
+  version of this report said so; that is false. ZFTurbo's **MVSep Mega 53 Stems**
+  ([MSST release v1.0.21](https://github.com/ZFTurbo/Music-Source-Separation-Training/releases/tag/v1.0.21))
+  emits `guitar`, `acoustic-guitar`, `electric-guitar`, `piano` and
+  `digital-piano` among its 53. Its provenance is much better — a first-party
+  release from the author of a 1,512-star repo whose *code* is MIT — but the
+  release notes still grant no explicit weight licence, and the HF mirror
+  declares `license: NONE`. It is the known alternative, not a solved problem,
+  and it is 53 single-stem checkpoints rather than one file, so adopting it is a
+  redesign of the cascade rather than a swap.
 - Most community RoFormer checkpoints (becruily, Gabox, several unwa) declare no
   licence at all, and becruily's `mel-band-roformer-deux` is explicitly
   CC-BY-NC-4.0. They were excluded on licence, not on quality — including
