@@ -15,6 +15,10 @@ Four real commercial mixes, fetched through riffd's own `downloader.py` — the
 same yt-dlp path every riffd track already uses, so the input is exactly the
 generation production sees (44.1 kHz stereo, VBR mp3 ~208–247 kbps).
 
+All the JSON evidence behind the numbers below is committed under `out/` — the
+`_meta.json` / `_timing.json` per run, plus `comparison.json`. Only the audio is
+gitignored (2 GB); it is regenerable with `fetch_audio.py` and the runners.
+
 | track | length | why |
 |---|---|---|
 | Derek and the Dominos — *Layla* | 7:04 | the guitar-and-piano-heavy case; layered guitars + a two-minute piano coda |
@@ -249,7 +253,13 @@ then again at the production `memory=16384` to confirm it survives there:
 
 Both cold containers, input 1,239.0 s (20.65 min) 44.1 kHz stereo. Peak RSS
 reproduces to within 0.7%, so 13.6 GB is a stable figure rather than one
-sample. Realtime factor 0.395×, consistent with the 0.390× measured warm on
+sample.
+
+⚠️ **Only the 16,384 MB run's artifact survives.** `run_long_track.py` wrote to a
+fixed path, so the confirmation run overwrote the 24,576 MB measurement run that
+sized `MEMORY_MB`; its numbers here come from the run log, not from a retained
+file. The runners now write an immutable timestamped copy alongside the stable
+`_meta.json` so a rerun cannot destroy committed evidence again. Realtime factor 0.395×, consistent with the 0.390× measured warm on
 short tracks.
 
 It survives, and scaling is linear rather than cliff-shaped — the realtime

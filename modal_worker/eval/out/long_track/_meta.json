@@ -1,0 +1,50 @@
+{
+ "sample_rate": 44100,
+ "peak_rss_mb": 13628.7,
+ "memory_request_mb": 16384,
+ "samples": 54640640,
+ "duration_s": 1239.02,
+ "model_load_s": 5.4,
+ "container": "cold",
+ "stage_s": {
+  "vocals": 104.8,
+  "drums_bass": 130.3,
+  "guitar_piano": 220.1
+ },
+ "total_s": 489.5,
+ "reconstruction": {
+  "float32": {
+   "rms_err": 1.7478003673536694e-10,
+   "max_abs_err": 1.4901161193847656e-08,
+   "rms_err_db": -174.65880737019376
+  },
+  "delivered": {
+   "rms_err": 3.461825189874684e-08,
+   "max_abs_err": 7.450580596923828e-08,
+   "rms_err_db": -128.72254122136496
+  },
+  "clipped_samples": {}
+ },
+ "gpu": "A10G",
+ "mdxc_batch": 4,
+ "demucs_shifts": 0,
+ "energy_rms": {
+  "vocals": 0.03744651942161727,
+  "drums": 0.04042542720822323,
+  "bass": 0.03692377045578183,
+  "guitar": 0.05684846190388068,
+  "piano": 5.2209582154537725e-05,
+  "other": 0.018648261170833295
+ },
+ "client_wall_s": 561.0,
+ "input_duration_s": 1239.0,
+ "output_bytes": {
+  "vocals": 41811364,
+  "drums": 82278395,
+  "bass": 43320856,
+  "guitar": 67356476,
+  "piano": 517528,
+  "other": 188654822
+ },
+ "output_total_mb": 423.9
+}

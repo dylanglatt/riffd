@@ -1,0 +1,16 @@
+{
+ "wall_s": 66.2,
+ "model": "replicate_htdemucs",
+ "stems": [
+  "bass",
+  "drums",
+  "guitar",
+  "other",
+  "piano",
+  "vocals"
+ ],
+ "report": {
+  "stem_failures": {},
+  "omitted": []
+ }
+}

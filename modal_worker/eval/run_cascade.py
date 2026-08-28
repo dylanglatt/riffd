@@ -14,6 +14,7 @@ The first track pays container start (cold); the rest reuse it (warm).
 import json
 import sys
 import time
+from datetime import datetime, timezone
 from pathlib import Path
 
 import modal
@@ -46,6 +47,14 @@ def main(slugs):
         meta["startup_overhead_s"] = round(wall - meta["total_s"], 1)
         for name, data in out.items():
             (dest / f"{name}.flac").write_bytes(data)
+        # Two writes on purpose. `_meta.json` is the stable name compare.py and
+        # the report read. `_meta-<UTC>.json` is immutable: an eval rerun must
+        # never overwrite the artifact behind a number already committed to
+        # REPORT.md — that is exactly how the 24,576 MB long-track measurement
+        # was lost.
+        stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+        meta["recorded_at"] = stamp
+        (dest / f"_meta-{stamp}.json").write_text(json.dumps(meta, indent=1))
         (dest / "_meta.json").write_text(json.dumps(meta, indent=1))
 
         results[slug] = meta

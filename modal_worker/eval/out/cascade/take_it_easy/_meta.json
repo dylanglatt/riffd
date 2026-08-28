@@ -1,0 +1,41 @@
+{
+ "sample_rate": 44100,
+ "peak_rss_mb": 8375.1,
+ "memory_request_mb": 8192,
+ "samples": 9362432,
+ "duration_s": 212.3,
+ "model_load_s": 5.7,
+ "container": "warm",
+ "stage_s": {
+  "vocals": 15.6,
+  "drums_bass": 25.1,
+  "guitar_piano": 37.1
+ },
+ "total_s": 84.1,
+ "reconstruction": {
+  "float32": {
+   "rms_err": 1.441916249325837e-10,
+   "max_abs_err": 1.4901161193847656e-08,
+   "rms_err_db": -183.37653339486852
+  },
+  "delivered": {
+   "rms_err": 3.551593671042943e-08,
+   "max_abs_err": 7.450580596923828e-08,
+   "rms_err_db": -135.54686864750417
+  },
+  "clipped_samples": {}
+ },
+ "gpu": "A10G",
+ "mdxc_batch": 4,
+ "demucs_shifts": 0,
+ "energy_rms": {
+  "vocals": 0.10349654181456742,
+  "drums": 0.06023601839655722,
+  "bass": 0.06527909359063692,
+  "guitar": 0.08962528114845476,
+  "piano": 2.5788490468427415e-06,
+  "other": 0.046935429711032914
+ },
+ "client_wall_s": 106.7,
+ "startup_overhead_s": 22.6
+}

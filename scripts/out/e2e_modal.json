@@ -1,0 +1,229 @@
+{
+ "backend": "modal",
+ "audio": "modal_worker/eval/audio/take_it_easy.mp3",
+ "server_boot_s": 1.4,
+ "job_id": "bc94bd10",
+ "wall_s": 171.6,
+ "status": "complete",
+ "error": null,
+ "failed_steps": null,
+ "progress_timeline": [
+  [
+   0.1,
+   "Separating stems..."
+  ],
+  [
+   6.1,
+   "Separating stems on GPU..."
+  ],
+  [
+   12.1,
+   "Separating stems on GPU (3s)..."
+  ],
+  [
+   15.1,
+   "Separating stems on GPU (6s)..."
+  ],
+  [
+   18.1,
+   "Separating stems on GPU (9s)..."
+  ],
+  [
+   21.1,
+   "Separating stems on GPU (12s)..."
+  ],
+  [
+   24.1,
+   "Separating stems on GPU (15s)..."
+  ],
+  [
+   27.2,
+   "Separating stems on GPU (18s)..."
+  ],
+  [
+   30.2,
+   "Separating stems on GPU (22s)..."
+  ],
+  [
+   33.2,
+   "Separating stems on GPU (25s)..."
+  ],
+  [
+   36.2,
+   "Separating stems on GPU (28s)..."
+  ],
+  [
+   39.2,
+   "Separating stems on GPU (31s)..."
+  ],
+  [
+   42.2,
+   "Separating stems on GPU (34s)..."
+  ],
+  [
+   45.2,
+   "Separating stems on GPU (37s)..."
+  ],
+  [
+   48.2,
+   "Separating stems on GPU (40s)..."
+  ],
+  [
+   51.2,
+   "Separating stems on GPU (43s)..."
+  ],
+  [
+   54.2,
+   "Separating stems on GPU (46s)..."
+  ],
+  [
+   57.3,
+   "Separating stems on GPU (49s)..."
+  ],
+  [
+   60.3,
+   "Separating stems on GPU (52s)..."
+  ],
+  [
+   63.3,
+   "Separating stems on GPU (56s)..."
+  ],
+  [
+   66.3,
+   "Separating stems on GPU (59s)..."
+  ],
+  [
+   69.3,
+   "Separating stems on GPU (62s)..."
+  ],
+  [
+   72.3,
+   "Separating stems on GPU (65s)..."
+  ],
+  [
+   75.3,
+   "Separating stems on GPU (68s)..."
+  ],
+  [
+   81.3,
+   "Separating stems on GPU (71s)..."
+  ],
+  [
+   84.3,
+   "Separating stems on GPU (74s)..."
+  ],
+  [
+   87.4,
+   "Separating stems on GPU (77s)..."
+  ],
+  [
+   90.4,
+   "Separating stems on GPU (80s)..."
+  ],
+  [
+   93.4,
+   "Separating stems on GPU (83s)..."
+  ],
+  [
+   96.4,
+   "Separating stems on GPU (86s)..."
+  ],
+  [
+   99.4,
+   "Separating stems on GPU (89s)..."
+  ],
+  [
+   102.4,
+   "Separating stems on GPU (92s)..."
+  ],
+  [
+   105.4,
+   "Separating stems on GPU (96s)..."
+  ],
+  [
+   108.4,
+   "Separating stems on GPU (99s)..."
+  ],
+  [
+   111.4,
+   "Separating stems on GPU (102s)..."
+  ],
+  [
+   114.4,
+   "Separating stems on GPU (105s)..."
+  ],
+  [
+   117.5,
+   "Separating stems on GPU (108s)..."
+  ],
+  [
+   120.5,
+   "Separating stems on GPU (111s)..."
+  ],
+  [
+   123.5,
+   "Separating stems on GPU (114s)..."
+  ],
+  [
+   126.5,
+   "Separating stems on GPU (117s)..."
+  ],
+  [
+   129.5,
+   "Separating stems on GPU (120s)..."
+  ],
+  [
+   132.5,
+   "Separating stems on GPU (123s)..."
+  ],
+  [
+   135.5,
+   "Separating stems on GPU (127s)..."
+  ],
+  [
+   144.5,
+   "Analyzing guitar..."
+  ],
+  [
+   147.5,
+   "Analyzing vocals..."
+  ],
+  [
+   150.6,
+   "Identifying instruments..."
+  ],
+  [
+   153.6,
+   "Stems ready \u2014 analyzing..."
+  ],
+  [
+   171.6,
+   "Done!"
+  ]
+ ],
+ "stems": {
+  "bass": "Bass",
+  "drums": "Drums",
+  "guitar": "Guitar",
+  "synth": "Synth",
+  "vocals": "Vocals"
+ },
+ "key": "G Major",
+ "bpm": 139.0,
+ "harmonic_sections": 0,
+ "log_path": "/Users/dylanglatt/Desktop/Projects/stem-tab-app/scripts/out/app_modal.log",
+ "separation_path": [
+  "modal"
+ ],
+ "backend_echo": [
+  "'modal'"
+ ],
+ "tagger_lines": 10,
+ "tagger_changed": [],
+ "watchdog_fired": false,
+ "memory_guard_hit": false,
+ "parent_rss_peak_mb": 820.0,
+ "parent_rss_hwm_mb": null,
+ "stems_with_notes": 3,
+ "separation_s": 138.4
+}

@@ -15,6 +15,7 @@ import json
 import subprocess
 import sys
 import time
+from datetime import datetime, timezone
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
@@ -78,9 +79,17 @@ def main():
     meta["output_bytes"] = {k: len(v) for k, v in out.items()}
     meta["output_total_mb"] = round(sum(len(v) for v in out.values()) / 1e6, 1)
 
+    # Timestamped, never overwritten. The measurement run at memory=24576 that
+    # sized MEMORY_MB was lost precisely because this wrote to a fixed path and
+    # the confirmation run at 16384 overwrote it.
+    stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    meta["recorded_at"] = stamp
+    run_dir = OUT / stamp
+    run_dir.mkdir(parents=True, exist_ok=True)
     for name, data in out.items():
-        (OUT / f"{name}.flac").write_bytes(data)
-    (OUT / "_meta.json").write_text(json.dumps(meta, indent=1))
+        (run_dir / f"{name}.flac").write_bytes(data)
+    (run_dir / "_meta.json").write_text(json.dumps(meta, indent=1))
+    (OUT / "_meta.json").write_text(json.dumps(meta, indent=1))   # stable "latest"
 
     print(f"[long] wall={wall:.1f}s  gpu={meta['total_s']}s  "
           f"peak_rss={meta.get('peak_rss_mb')} MB of "

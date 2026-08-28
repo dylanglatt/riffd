@@ -1,0 +1,112 @@
+{
+ "backend": "replicate",
+ "audio": "modal_worker/eval/audio/take_it_easy.mp3",
+ "server_boot_s": 1.4,
+ "job_id": "19754e37",
+ "wall_s": 90.3,
+ "status": "complete",
+ "error": null,
+ "failed_steps": null,
+ "progress_timeline": [
+  [
+   0.1,
+   "Separating stems..."
+  ],
+  [
+   6.1,
+   "Running stem separation (cloud)..."
+  ],
+  [
+   9.1,
+   "Retrying stem separation (attempt 2)..."
+  ],
+  [
+   21.1,
+   "Running stem separation (cloud)..."
+  ],
+  [
+   27.2,
+   "Separating stems (0s)..."
+  ],
+  [
+   30.2,
+   "Separating stems (3s)..."
+  ],
+  [
+   33.2,
+   "Separating stems (6s)..."
+  ],
+  [
+   36.2,
+   "Separating stems (9s)..."
+  ],
+  [
+   42.2,
+   "Separating stems (12s)..."
+  ],
+  [
+   45.2,
+   "Downloading stems (0/6)..."
+  ],
+  [
+   48.2,
+   "Downloading stems (1/6)..."
+  ],
+  [
+   51.2,
+   "Downloading stems (4/6)..."
+  ],
+  [
+   54.2,
+   "Analyzing other..."
+  ],
+  [
+   57.2,
+   "Analyzing vocals..."
+  ],
+  [
+   60.3,
+   "Analyzing guitar..."
+  ],
+  [
+   63.3,
+   "Identifying instruments..."
+  ],
+  [
+   66.3,
+   "Stems ready \u2014 analyzing..."
+  ],
+  [
+   90.3,
+   "Done!"
+  ]
+ ],
+ "stems": {
+  "acoustic_guitar": "Accordion",
+  "bass": "Bass",
+  "drums": "Drums",
+  "guitar": "Guitar",
+  "guitar_2": "Guitar",
+  "synth": "Synth",
+  "vocals": "Vocals"
+ },
+ "key": "G Major",
+ "bpm": 139.0,
+ "log_path": "/Users/dylanglatt/Desktop/Projects/stem-tab-app/scripts/out/app_replicate.log",
+ "separation_path": [
+  "replicate"
+ ],
+ "backend_echo": [
+  "'replicate'"
+ ],
+ "tagger_lines": 12,
+ "tagger_changed": [
+  "[tagger] acoustic_guitar: \"Acoustic Guitar\" -> \"Accordion\""
+ ],
+ "watchdog_fired": false,
+ "memory_guard_hit": false,
+ "parent_rss_peak_mb": 831.0,
+ "parent_rss_hwm_mb": null,
+ "separation_s": 33.6,
+ "stems_with_notes": 5
+}
