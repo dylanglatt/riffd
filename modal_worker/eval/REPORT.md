@@ -253,9 +253,13 @@ higher, because the dominant term is the loaded models and the torch/CUDA
 runtime rather than the audio. A 3:32 track already peaks near 8.4 GB. The
 request is now `memory=16384` — the measured worst case (13,628.7 MB) plus 20.2%.
 
-Note `peak_rss_mb` is `ru_maxrss`, a **container lifetime** high-water mark. The
-four short-track runs all report an identical 8,375.1 MB because they shared one
-warm container; that is the maximum across all four, not any one track's figure.
+⚠️ **`peak_rss_mb` / `container_peak_rss_mb` is `ru_maxrss` — a CONTAINER
+LIFETIME high-water mark, not a per-song figure. Do not average these across
+songs.** The four short-track `_meta.json` files all record an identical
+8,375.1 MB because they were served by one warm container; that is the maximum
+over all four requests, not any one track's cost. The worker now emits it as
+`container_peak_rss_mb` for exactly this reason, keeping `peak_rss_mb` as an
+alias so the already-committed artifacts still read.
 
 ## Licensing — the actual blocker
 

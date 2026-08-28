@@ -655,13 +655,19 @@ class Cascade:
             recon["clipped_samples"] = clipped
 
             import resource
-            # Linux: ru_maxrss is KiB. Peak for the whole container process, so
-            # it covers audio-separator's buffers as well as ours.
-            peak_rss_mb = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024
+            # Linux: ru_maxrss is KiB. Peak for the whole CONTAINER PROCESS over
+            # its whole life — not this request. A warm container serving four
+            # tracks reports the same number for all four (the max across them),
+            # so the name says "container" to stop a future reader averaging
+            # these across songs as if they were per-song figures.
+            container_peak_rss_mb = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024
 
             out["_meta"] = {
                 "sample_rate": sr,
-                "peak_rss_mb": round(peak_rss_mb, 1),
+                "container_peak_rss_mb": round(container_peak_rss_mb, 1),
+                # Kept under the old name too so already-committed artifacts and
+                # any reader written against them keep working.
+                "peak_rss_mb": round(container_peak_rss_mb, 1),
                 "memory_request_mb": MEMORY_MB,
                 "samples": int(mix.shape[0]),
                 "duration_s": round(mix.shape[0] / sr, 2),
