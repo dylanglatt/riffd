@@ -443,7 +443,27 @@ class Cascade:
         # Verify BEFORE loading and block downloads BEFORE constructing any
         # Separator: together these make "the serving path only ever verifies
         # and loads" a property of the code rather than a convention.
-        verify_weights()
+        #
+        # A verification failure is STORED, not raised. Raising here is what an
+        # operator wants — it is loud in the logs — but it is the worst possible
+        # outcome for a caller: Modal treats a failing @modal.enter as a sick
+        # container and restarts it, so the request never fails, it HANGS until
+        # the client's own MAX_WAIT, and a scheduling backoff tail (~6 min
+        # measured) persists even after the Volume is repaired.
+        #
+        # Storing it and re-raising from separate() turns that into an immediate,
+        # clean error carrying the repair command. riffd's permanent-failure
+        # classifier already matches "failed verification against
+        # weights_manifest", so the job dies in seconds with an actionable
+        # message instead of burning a retry budget on a hang.
+        self.startup_error = None
+        try:
+            verify_weights()
+        except Exception as e:
+            self.startup_error = e
+            print(f"[cascade] STARTUP FAILED (stored, will fail the next request "
+                  f"immediately rather than restart-looping): {e}")
+            return
         _block_downloads()
 
         t0 = time.time()
@@ -539,6 +559,12 @@ class Cascade:
 
         import numpy as np
         import soundfile as sf
+
+        # Checked FIRST, before anything touches the audio: a container that
+        # could not verify its weights has no models loaded, and every other
+        # failure mode downstream would be a confusing symptom of this one.
+        if getattr(self, "startup_error", None) is not None:
+            raise RuntimeError(str(self.startup_error))
 
         t_start = time.time()
         was_cold = self.first_call
