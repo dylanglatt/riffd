@@ -1,0 +1,240 @@
+--- a/processor.py
++++ b/processor.py
+@@ -185,7 +185,7 @@
+ OUTPUT_DIR = Path("outputs")
+ 
+ # ─── Demucs Configuration ────────────────────────────────────────────────────
+-DEMUCS_MODEL = "htdemucs_6stems"
++DEMUCS_MODEL = "htdemucs_6s"  # was "htdemucs_6stems" — not a real model name, so the first run always failed
+ STEM_NAMES_6 = ["vocals", "drums", "bass", "guitar", "piano", "other"]
+ STEM_NAMES_4 = ["vocals", "drums", "bass", "other"]
+ 
+@@ -396,7 +396,12 @@
+ def _write_wav(filepath, left, right, sr):
+     """Write stereo 16-bit WAV."""
+     interleaved = np.column_stack([left, right])
+-    data = (np.clip(interleaved, -1.0, 1.0) * 32767).astype(np.int16)
++    # Round (not truncate) and apply 1-LSB TPDF dither. .astype(int16) alone
++    # truncates toward zero — ~6 dB worse than rounding, and the error is
++    # DC-correlated rather than a flat noise floor (audible grunge on fades).
++    _scaled = np.clip(interleaved, -1.0, 1.0) * 32767.0
++    _dither = (np.random.random(_scaled.shape) - np.random.random(_scaled.shape)).astype(np.float32)
++    data = np.clip(np.round(_scaled + _dither), -32768, 32767).astype(np.int16)
+     del interleaved
+     with wave.open(str(filepath), "wb") as wf:
+         wf.setnchannels(2)
+@@ -435,17 +440,22 @@
+ 
+     n_frames = (out_len - N) // hop + 1
+ 
+-    # Output accumulators — float16 halves memory (~177MB savings for 5-min song).
+-    # Per-frame STFT math stays float32; results are cast to float16 before accumulation.
+-    # Final output is normalized and truncated to 16-bit PCM, so float16 precision suffices.
+-    c_l = np.zeros(out_len, dtype=np.float16)
+-    c_r = np.zeros(out_len, dtype=np.float16)
+-    p_ll = np.zeros(out_len, dtype=np.float16)
+-    p_lr = np.zeros(out_len, dtype=np.float16)
+-    p_rl = np.zeros(out_len, dtype=np.float16)
+-    p_rr = np.zeros(out_len, dtype=np.float16)
+-    win_sq = np.zeros(out_len, dtype=np.float16)
+-    win_f16 = win.astype(np.float16)
++    # Output accumulators — float32.
++    # NOTE: these were float16 to save ~177MB on a 5-min song. Measured cost of
++    # that: overlap-add reconstruction SNR drops from 141 dB to 66 dB — roughly
++    # 11-bit audio, i.e. 30 dB WORSE than the 16-bit PCM container it is written
++    # into. The error is signal-correlated, so it sounds like gritty distortion
++    # riding on the music (loudest in solo'd stems and decays), not like hiss.
++    # If memory becomes the constraint again, block-process in 30s chunks with
++    # N-sample overlap rather than reducing precision.
++    c_l = np.zeros(out_len, dtype=np.float32)
++    c_r = np.zeros(out_len, dtype=np.float32)
++    p_ll = np.zeros(out_len, dtype=np.float32)
++    p_lr = np.zeros(out_len, dtype=np.float32)
++    p_rl = np.zeros(out_len, dtype=np.float32)
++    p_rr = np.zeros(out_len, dtype=np.float32)
++    win_sq = np.zeros(out_len, dtype=np.float32)
++    win_f16 = win.astype(np.float32)
+ 
+     # Gaussian mask parameters
+     sigma_c = 0.12   # center width
+@@ -478,13 +488,13 @@
+         lm /= total
+         rm /= total
+ 
+-        # Reconstruct and overlap-add (compute in float32, accumulate in float16)
+-        c_l[s:s + N] += (np.fft.irfft(L * cm, n=N) * win).astype(np.float16)
+-        c_r[s:s + N] += (np.fft.irfft(R * cm, n=N) * win).astype(np.float16)
+-        p_ll[s:s + N] += (np.fft.irfft(L * lm, n=N) * win).astype(np.float16)
+-        p_lr[s:s + N] += (np.fft.irfft(R * lm, n=N) * win).astype(np.float16)
+-        p_rl[s:s + N] += (np.fft.irfft(L * rm, n=N) * win).astype(np.float16)
+-        p_rr[s:s + N] += (np.fft.irfft(R * rm, n=N) * win).astype(np.float16)
++        # Reconstruct and overlap-add (float32 throughout)
++        c_l[s:s + N] += (np.fft.irfft(L * cm, n=N) * win).astype(np.float32)
++        c_r[s:s + N] += (np.fft.irfft(R * cm, n=N) * win).astype(np.float32)
++        p_ll[s:s + N] += (np.fft.irfft(L * lm, n=N) * win).astype(np.float32)
++        p_lr[s:s + N] += (np.fft.irfft(R * lm, n=N) * win).astype(np.float32)
++        p_rl[s:s + N] += (np.fft.irfft(L * rm, n=N) * win).astype(np.float32)
++        p_rr[s:s + N] += (np.fft.irfft(R * rm, n=N) * win).astype(np.float32)
+         win_sq[s:s + N] += win_f16 ** 2
+ 
+     # Release padded inputs
+@@ -1314,7 +1324,7 @@
+         raise RuntimeError(f"Demucs timed out after {DEMUCS_TIMEOUT}s")
+ 
+     # Fallback to 4-stem if 6-stem fails
+-    if result.returncode != 0 and model == "htdemucs_6stems":
++    if result.returncode != 0 and model == "htdemucs_6s":
+         print(f"[separation] 6-stem failed, trying 4-stem fallback. stderr: {result.stderr[-200:]}")
+         model = "htdemucs"
+         stem_names = STEM_NAMES_4
+@@ -1409,27 +1419,16 @@
+     print(f"[replicate] version = {VERSION[:16]}...")
+ 
+     # ── Step 1: Upload audio file to Replicate ──
+-    # Pre-transcode to 128kbps MP3 to halve upload size (Demucs doesn't need higher bitrate for separation)
++    # Upload the source as-is. This used to pre-transcode to 128kbps MP3 "to
++    # halve upload size". That was a bad trade on both axes:
++    #   quality — 128k CBR lowpasses ~16kHz AND applies intensity stereo above
++    #     ~6kHz, which collapses HF stereo imaging. Those are exactly the cues
++    #     Demucs uses to pull sources apart, and exactly the information
++    #     _stereo_separate() later tries to read back out of the panning field.
++    #   speed  — measured ~3s on a fast core (est. 8-15s on Render) to save
++    #     ~3.5MB of upload, i.e. well under 1s of transfer. Net slower.
+     upload_path = audio_path
+     _transcode_tmp = None
+-    try:
+-        import subprocess as _sp
+-        _transcode_tmp = audio_path.parent / f"_upload_{audio_path.stem}_128k.mp3"
+-        _tc = _sp.run(
+-            ["ffmpeg", "-y", "-i", str(audio_path), "-b:a", "128k", "-ac", "2", str(_transcode_tmp)],
+-            capture_output=True, timeout=60,
+-        )
+-        if _tc.returncode == 0 and _transcode_tmp.exists() and _transcode_tmp.stat().st_size > 0:
+-            orig_size = audio_path.stat().st_size
+-            new_size = _transcode_tmp.stat().st_size
+-            print(f"[replicate] transcoded to 128kbps: {orig_size:,} → {new_size:,} bytes ({new_size*100//orig_size}%)")
+-            upload_path = _transcode_tmp
+-        else:
+-            print(f"[replicate] transcode failed (rc={_tc.returncode}), uploading original")
+-            _transcode_tmp = None
+-    except Exception as _te:
+-        print(f"[replicate] transcode skipped: {_te}")
+-        _transcode_tmp = None
+ 
+     file_size = upload_path.stat().st_size
+     suffix = upload_path.suffix.lower().lstrip(".")
+@@ -1465,7 +1464,11 @@
+         "input": {
+             "audio": file_url,
+             "model": "htdemucs_6s",  # 6-stem: vocals/drums/bass/guitar/piano/other
+-            "output_format": "mp3",  # mp3 is ~10x smaller than wav; we convert locally after download
++            # flac, not mp3: lossless and typically ~50-60% of WAV size. Separator
++            # output is full of residue/artifacts, which is exactly the signal MP3
++            # handles worst — and we were spending a whole lossy generation here
++            # to save a few MB per stem.
++            "output_format": "flac",
+             "shifts": 1,
+         },
+     }
+@@ -1547,7 +1550,8 @@
+             print(f"[replicate] skipping stem '{stem_key}': no URL")
+             continue
+         stem_name = stem_key if stem_key in _KNOWN_STEMS else stem_key
+-        mp3_tmp = out_dir / f"_raw_{stem_name}.mp3"
++        # extension follows output_format above; ffmpeg sniffs content either way
++        mp3_tmp = out_dir / f"_raw_{stem_name}.flac"
+         wav_dest = out_dir / f"_raw_{stem_name}.wav"
+         print(f"[replicate] downloading: {stem_name} → {mp3_tmp.name}")
+         try:
+--- a/app.py
++++ b/app.py
+@@ -47,12 +47,12 @@
+ 
+ # Crash reporting → Sentry (alerts land in Discord #stem-tab-app).
+ # Errors only — no performance tracing, no PII. Override DSN with SENTRY_DSN.
++import hmac
+ import sentry_sdk
+ sentry_sdk.init(
+-    dsn=os.environ.get(
+-        "SENTRY_DSN",
+-        "https://<REDACTED-SENTRY-KEY>@<REDACTED-ORG>.ingest.us.sentry.io/<REDACTED-PROJECT>",
+-    ),
++    # No hardcoded fallback: a DSN is a write credential, and this one is in a
++    # public repo. init(dsn=None) is a valid no-op. ROTATE THE OLD DSN.
++    dsn=os.environ.get("SENTRY_DSN") or None,
+ )
+ 
+ # Heavy processing modules deferred — loaded on first job, not at boot
+@@ -1041,10 +1041,20 @@
+ 
+         # Memory guard — reject only if RSS is dangerously high.
+         # Prevents starting a job that will inevitably OOM and take down the service.
+-        # Tunable via MEMORY_GUARD_MB env var. Default 2200MB: TF baseline is ~1470MB
+-        # and a single job peaks around 1900MB, so 2200MB leaves real headroom while
+-        # still catching runaway memory before it crashes the dyno.
+-        MEMORY_GUARD_MB = int(os.getenv("MEMORY_GUARD_MB", "2200"))
++        #
++        # WAS 2200. Render Standard is a 2048MB instance, so a 2200MB threshold sits
++        # ABOVE the ceiling: the Linux OOM killer always fires first and this guard
++        # can never trigger. It has been inoperative, not lenient.
++        #
++        # 1400 is a starting value, not a tuned one. The binding constraint is the
++        # Basic Pitch CHILD process (~1.2GB, app.py:1505) running alongside the
++        # parent, so the parent must stay under roughly 2048-1200 = ~850MB at that
++        # stage. A lean parent is ~40MB (heavy imports are deferred), so anything
++        # above ~1400MB at job start means something has already leaked — most
++        # likely the in-process TensorFlow load in _melodic_split_pass
++        # (processor.py:1129), which is the one path that loads TF into the parent
++        # instead of a child. Instrument with _log_memory and tune from real data.
++        MEMORY_GUARD_MB = int(os.getenv("MEMORY_GUARD_MB", "1400"))
+ 
+         def _get_current_rss_mb():
+             try:
+@@ -1322,6 +1332,9 @@
+                     print(f"[job {job_id}] [{_elapsed()}] instrument hints: none")
+ 
+                 # Wait for Demucs (the slow one)
++                _demucs_exc = None  # bound here so the `if not stems` branch below
++                                    # can't NameError when Demucs returns empty
++                                    # without raising
+                 try:
+                     stems = fut_demucs.result()
+                 except Exception as _demucs_err:
+@@ -1848,12 +1861,16 @@
+     """Shared admin auth gate. Returns None if OK, or a Flask response to short-circuit."""
+     admin_secret = os.environ.get("ADMIN_SECRET", "").strip()
+     if not admin_secret:
+-        return None
++        # Fail CLOSED. This used to `return None` (= everyone is admin) when the
++        # env var was missing, which left /api/admin/refresh-cookies (spawns
++        # Playwright), /cookie-status (dumps cookie names) and /diag-audio
++        # (arbitrary yt-dlp fetch, errors echoed back) open to the internet.
++        return jsonify({"error": "admin endpoints disabled (ADMIN_SECRET unset)"}), 403
+     provided = (
+         request.args.get("secret", "")
+         or request.headers.get("Authorization", "").removeprefix("Bearer ").strip()
+     )
+-    if provided != admin_secret:
++    if not hmac.compare_digest(provided, admin_secret):
+         return jsonify({"error": "unauthorized"}), 401
+     return None
+ 
+--- a/templates/decompose.html
++++ b/templates/decompose.html
+@@ -910,10 +910,12 @@
+ }
+ 
+ function _energyToVolume(energy) {
+-  if (energy == null || energy === 0) return 85;
+-  if (energy >= 0.15) return 100;
+-  if (energy >= 0.05) return Math.round(60 + ((energy - 0.05) / 0.10) * 40);
+-  return 40;
++  // Start every fader at unity. Demucs stems already sum back to the original
++  // mix, so unity IS the balanced starting point. The old curve pushed quiet
++  // stems DOWN (a lead guitar at RMS 0.04 opened at 40%), which is backwards —
++  // a low-RMS stem is already quiet in the mix, and attenuating it further is
++  // what makes users think the instrument was never separated out.
++  return 100;
+ }
+ 
+ function _getStemRoot(stemKey) {
