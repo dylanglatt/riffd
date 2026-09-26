@@ -68,7 +68,8 @@ def _lazy_music_intelligence():
 
 from spotify_search import search_spotify, get_recommendations_for_track, RateLimitError, _DISCOVERY_TRACKS
 from external_apis import get_lyrics, get_track_tags, enrich_recommendations_with_lastfm, _get_art_for_track
-from downloader import download_audio_from_youtube, resolve_audio, AudioUnavailableError
+from downloader import (download_audio_from_youtube, resolve_audio, AudioUnavailableError,
+                        UnsafeSourceURLError, looks_like_url, normalize_youtube_url)
 from analytics import log_event
 from history import (add_to_history, get_recent, get_cached_result, get_cached_result_by_job,
                      cached_result_path, save_cached_result, touch_history)
@@ -728,6 +729,18 @@ def download_track():
     if not query and not url:
         return jsonify({"error": "Provide 'query' or 'url'"}), 400
 
+    # SSRF guard (review B2): a URL in either field is fetched by this server
+    # via yt-dlp, so it must be a YouTube video link, and from here on it is
+    # the canonical URL downloader builds, never the client's string. Reject
+    # with a 400 before a job exists; downloader re-validates at the sink.
+    try:
+        if url:
+            url = normalize_youtube_url(url)
+        if query and looks_like_url(query):
+            query = normalize_youtube_url(query)
+    except UnsafeSourceURLError as e:
+        return jsonify({"error": str(e)}), 400
+
     # Check if background prefetch has (or will soon have) the full track
     if track_id:
         with _bg_lock:
@@ -796,8 +809,10 @@ def download_track():
             }
 
             print(f"[job {job_id}] downloading full track...")
-            is_direct_yt = (url and url.startswith("http") and
-                            ("youtube.com" in url or "youtu.be" in url))
+            # url, if present, is already a validated canonical YouTube URL.
+            # (This was a substring test — "http://169.254.169.254/?youtube.com"
+            # passed it.)
+            is_direct_yt = bool(url)
 
             if is_direct_yt:
                 _on_progress("Downloading full track...")
@@ -860,6 +875,12 @@ def prefetch_full_track():
 
     if not yt_query:
         return jsonify({"error": "No yt_query provided"}), 400
+    # Same SSRF guard as /api/download: this reaches the same yt-dlp sink.
+    if looks_like_url(yt_query):
+        try:
+            yt_query = normalize_youtube_url(yt_query)
+        except UnsafeSourceURLError as e:
+            return jsonify({"error": str(e)}), 400
 
     # Don't start duplicate downloads for the same track
     with _bg_lock:

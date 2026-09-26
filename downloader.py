@@ -100,6 +100,113 @@ class AudioUnavailableError(Exception):
     pass
 
 
+# ---------------------------------------------------------------------------
+# Source URL validation (SSRF guard)
+#
+# Anything that reaches yt-dlp as a URL is fetched BY THIS SERVER. Before this
+# guard, any string starting with "http" was handed to yt-dlp's generic
+# extractor, so POST /api/download {"url": "http://169.254.169.254/..."} read
+# cloud metadata from inside the network (review finding B2), and the error
+# text came back through /api/status.
+#
+# Allowlist, not blocklist: the frontend never sends a URL at all (it sends
+# "Artist - Name official audio" search strings built server-side), so the
+# only legitimate URL input is a YouTube video link. We extract the video ID
+# and hand yt-dlp a URL WE construct — the client's scheme, host, path,
+# userinfo, port and query never reach it, which also rules out open-redirect
+# and "evil.com/?youtube.com" tricks.
+#
+# The post-resolution IP check is defence in depth: yt-dlp re-resolves the
+# host itself, so it cannot close a rebinding race on its own — the allowlist
+# does that, because an attacker does not control youtube.com's DNS. What it
+# does catch is a resolver that maps an allowed name somewhere internal
+# (hosts file, split-horizon or poisoned DNS).
+# ---------------------------------------------------------------------------
+
+class UnsafeSourceURLError(ValueError):
+    """A client-supplied source URL failed validation. Message is safe to show."""
+
+
+_YOUTUBE_HOSTS = frozenset({
+    "youtube.com", "www.youtube.com", "m.youtube.com", "music.youtube.com",
+    "youtu.be",
+})
+_YOUTUBE_ID_RE = re.compile(r"^[A-Za-z0-9_-]{11}$")
+_URL_SCHEME_RE = re.compile(r"^\s*[A-Za-z][A-Za-z0-9+.-]*:")
+
+
+def looks_like_url(value: str) -> bool:
+    """True if `value` carries a URL scheme (http:, file:, gopher:, ...).
+
+    Deliberately broader than "starts with http": every scheme-bearing value
+    is routed through validation so non-http schemes are rejected rather than
+    treated as search text by one caller and fetched by another. Search
+    queries ("Artist - Name official audio") never contain "<scheme>:" at the
+    start.
+    """
+    return bool(value) and bool(_URL_SCHEME_RE.match(value))
+
+
+def _is_public_ip(addr: str) -> bool:
+    import ipaddress
+    ip = ipaddress.ip_address(addr.split("%", 1)[0])   # drop IPv6 zone id
+    if ip.version == 6 and ip.ipv4_mapped is not None:  # ::ffff:169.254.169.254
+        ip = ip.ipv4_mapped
+    return not (ip.is_private or ip.is_loopback or ip.is_link_local
+                or ip.is_multicast or ip.is_reserved or ip.is_unspecified
+                or not ip.is_global)
+
+
+def normalize_youtube_url(value: str, resolver=None) -> str:
+    """Validate a client-supplied URL and return a canonical YouTube watch URL.
+
+    Raises UnsafeSourceURLError unless `value` is an http(s) link to a
+    YouTube video whose host resolves only to public addresses. `resolver`
+    defaults to socket.getaddrinfo; it is a parameter so the check can be
+    exercised without network access.
+    """
+    from urllib.parse import urlsplit, parse_qs
+    import socket
+
+    reject = UnsafeSourceURLError(
+        "Only YouTube video links are supported (youtube.com/watch?v=... or youtu.be/...).")
+    try:
+        parts = urlsplit((value or "").strip())
+        host = (parts.hostname or "").rstrip(".").lower()
+        port = parts.port                      # raises ValueError if malformed
+    except ValueError:
+        raise reject from None
+    if parts.scheme.lower() not in ("http", "https"):
+        raise reject
+    if parts.username is not None or parts.password is not None:
+        raise reject
+    if port not in (None, 80, 443) or host not in _YOUTUBE_HOSTS:
+        raise reject
+
+    path_parts = [p for p in parts.path.split("/") if p]
+    if host == "youtu.be":
+        vid = path_parts[0] if path_parts else ""
+    elif path_parts[:1] == ["watch"]:
+        vid = (parse_qs(parts.query).get("v") or [""])[0]
+    elif len(path_parts) >= 2 and path_parts[0] in ("shorts", "embed", "live", "v"):
+        vid = path_parts[1]
+    else:
+        vid = ""
+    if not _YOUTUBE_ID_RE.match(vid):
+        raise reject
+
+    resolver = resolver or socket.getaddrinfo
+    try:
+        infos = resolver(host, 443, proto=socket.IPPROTO_TCP)
+    except OSError:
+        raise UnsafeSourceURLError(f"Could not resolve {host}.") from None
+    addrs = {info[4][0] for info in infos}
+    if not addrs or not all(_is_public_ip(a) for a in addrs):
+        raise UnsafeSourceURLError(f"{host} does not resolve to a public address.")
+
+    return f"https://www.youtube.com/watch?v={vid}"
+
+
 def _simplify_query(query: str) -> str | None:
     """
     Strip noise from a YouTube search query for retry.
@@ -361,7 +468,10 @@ def download_audio_from_youtube(query_or_url: str, job_id: str) -> Path:
     if not shutil.which("yt-dlp"):
         raise RuntimeError("yt-dlp not found. Install it with: pip install yt-dlp")
 
-    is_url = query_or_url.startswith("http")
+    # Never pass a raw client string to yt-dlp as a URL — see normalize_youtube_url.
+    is_url = looks_like_url(query_or_url)
+    if is_url:
+        query_or_url = normalize_youtube_url(query_or_url)
     source = query_or_url if is_url else f"ytsearch1:{query_or_url}"
 
     # First attempt
@@ -808,6 +918,12 @@ def resolve_audio(track_data: dict, job_id: str, on_progress=None) -> Path:
     query = track_data.get("query")
     artist = track_data.get("artist", "")
     name = track_data.get("name", "")
+
+    # Validate once, up front, so the Cobalt/Piped fallbacks below only ever
+    # see the canonical URL too. Raises UnsafeSourceURLError — deliberately not
+    # AudioUnavailableError, which would invite an upload for a rejected input.
+    if query and looks_like_url(query):
+        query = normalize_youtube_url(query)
 
     # 1. YouTube via yt-dlp (full audio)
     if query:
