@@ -7,8 +7,10 @@ DNS lookup, let alone a fetch.
     venv/bin/python scripts/check_ssrf_guard.py
 
 Covers: downloader.normalize_youtube_url (allowlist + canonicalisation +
-post-resolution IP check), the two downloader sinks, and the real Flask
-endpoints /api/download and /api/prefetch returning 400 without creating a job.
+post-resolution IP check), the downloader sinks (incl. _download_via_cobalt),
+the real Flask endpoints /api/download and /api/prefetch returning 400 without
+creating a job, and /api/admin/diag-audio (network edges stubbed) sending only
+the canonical URL to yt-dlp and Cobalt.
 """
 import json
 import os
@@ -81,6 +83,9 @@ def main():
         f"https://www.youtube.com:8080/watch?v={VID}",
         "https://www.youtube.com/redirect?q=http://169.254.169.254/",
         "https://www.youtube.com/watch?v=tooshort",
+        f"https://www.youtube.com/watch?v={VID}%0A",           # "$" let a trailing \n through
+        f"https://www.youtube.com/watch?v={VID}%0D%0A",
+        f"https://www.youtube.com/watch?v={VID}x",             # 12 chars
         "https://www.youtube.com/",
         "file:///etc/passwd",
         f"ftp://www.youtube.com/watch?v={VID}",
@@ -132,10 +137,13 @@ def main():
 
     print("\n[5] downloader sinks refuse before fetching")
     for fn, arg in [("resolve_audio", {"query": "http://169.254.169.254/latest/meta-data/"}),
-                    ("download_audio_from_youtube", "http://localhost:5001/")]:
+                    ("download_audio_from_youtube", "http://localhost:5001/"),
+                    ("_download_via_cobalt", "http://169.254.169.254/?youtube.com")]:
         try:
             if fn == "resolve_audio":
                 downloader.resolve_audio(arg, "ssrfcheck")
+            elif fn == "_download_via_cobalt":   # direct caller: admin diag-audio
+                downloader._download_via_cobalt(arg, "ssrfcheck")
             else:
                 downloader.download_audio_from_youtube(arg, "ssrfcheck")
             check(f"{fn} rejects", False, "returned without raising")
@@ -146,6 +154,9 @@ def main():
 
     print("\n[6] real endpoints return 400 and create no job")
     check_endpoints()
+
+    print("\n[7] admin diag-audio: normalize-then-sink, like the public endpoints")
+    check_diag()
 
     print(f"\n{'FAIL' if fails else 'PASS'}: {len(fails)} failure(s)")
     for f in fails:
@@ -195,6 +206,80 @@ def check_endpoints():
         check(f"POST {r['path']} {field}={val}",
               r["status"] == 400 and r["new_jobs"] == 0,
               f"HTTP {r['status']}, new jobs {r['new_jobs']}, error={r['error']!r}")
+
+
+# The diag route calls the downloader sinks directly. Stub every network edge
+# (DNS, yt-dlp, Cobalt, Piped) and record what reaches each, so the check
+# proves which URL each sink received and which hosts were DNS-checked.
+_DIAG_PROBE = r'''
+import json, socket, sys
+sys.path.insert(0, REPO)
+import app, downloader
+
+resolved, ytdlp_sources, cobalt_urls = [], [], []
+def fake_getaddrinfo(host, port, *a, **k):
+    resolved.append(host)
+    return [(socket.AF_INET, socket.SOCK_STREAM, 6, "", ("142.250.72.14", port))]
+def fake_run_ytdlp(source, job_id, **k):
+    ytdlp_sources.append(source); raise RuntimeError("stub: yt-dlp not run")
+class _Req:
+    @staticmethod
+    def post(url, json=None, **k):
+        cobalt_urls.append((json or {}).get("url")); raise RuntimeError("stub: cobalt not called")
+    get = staticmethod(lambda *a, **k: (_ for _ in ()).throw(RuntimeError("stub: no GET")))
+socket.getaddrinfo = fake_getaddrinfo
+downloader._run_ytdlp = fake_run_ytdlp
+downloader.requests = _Req
+downloader._get_cobalt_instances = lambda: ["https://cobalt.invalid"]
+downloader._get_piped_instances = lambda: []
+downloader._resolve_youtube_id = lambda q: None
+
+c = app.app.test_client()
+out = []
+for q in ("http://169.254.169.254/latest/meta-data/",
+          "http://169.254.169.254/?youtube.com",
+          "http://localhost:5001/",
+          "https://youtu.be/" + VID + "?si=abc",
+          "Eagles - Take It Easy official audio"):
+    del resolved[:], ytdlp_sources[:], cobalt_urls[:]
+    r = c.get("/api/admin/diag-audio", query_string={"secret": "diag-secret", "q": q})
+    out.append({"q": q, "status": r.status_code, "resolved": list(resolved),
+                "ytdlp": list(ytdlp_sources), "cobalt": list(cobalt_urls)})
+print("DIAG_RESULT " + json.dumps(out))
+'''
+
+
+def check_diag():
+    env = dict(os.environ, SENTRY_DSN="", SITE_PASSWORD="", ADMIN_SECRET="diag-secret")
+    env.setdefault("FLASK_SECRET_KEY", "riffd-ssrf-check-only")
+    code = f"REPO = {str(REPO)!r}\nVID = {VID!r}\n" + _DIAG_PROBE
+    with tempfile.TemporaryDirectory(prefix="riffd_ssrf_") as cwd:
+        proc = subprocess.run([sys.executable, "-c", code], cwd=cwd, env=env,
+                              capture_output=True, text=True, timeout=120)
+    line = next((l for l in proc.stdout.splitlines() if l.startswith("DIAG_RESULT ")), None)
+    if line is None:
+        check("diag probe", False, f"exit {proc.returncode}: {proc.stderr[-800:]}")
+        return
+    res = {r["q"]: r for r in json.loads(line[len("DIAG_RESULT "):])}
+    for q in ("http://169.254.169.254/latest/meta-data/",
+              "http://169.254.169.254/?youtube.com", "http://localhost:5001/"):
+        r = res[q]
+        check(f"diag rejects {q}", r["status"] == 400 and not r["ytdlp"] and not r["cobalt"],
+              f"HTTP {r['status']}, yt-dlp got {r['ytdlp']}, cobalt got {r['cobalt']}")
+    r = res[f"https://youtu.be/{VID}?si=abc"]
+    check("diag youtu.be link: 200", r["status"] == 200, f"HTTP {r['status']}")
+    check("diag: yt-dlp receives only the canonical URL", r["ytdlp"] == [CANON], str(r["ytdlp"]))
+    check("diag: Cobalt receives only the canonical URL", r["cobalt"] == [CANON], str(r["cobalt"]))
+    check("diag: DNS check covers the host yt-dlp fetches",
+          "youtu.be" in r["resolved"] and "www.youtube.com" in r["resolved"],
+          f"resolved {r['resolved']}")
+    r = res["Eagles - Take It Easy official audio"]
+    # The sink retries a failed search once with a simplified query, so there
+    # may be two sources; both must be searches, the first the query verbatim.
+    check("diag search query still a search", r["status"] == 200 and
+          r["ytdlp"][:1] == ["ytsearch1:Eagles - Take It Easy official audio"] and
+          all(src.startswith("ytsearch1:") for src in r["ytdlp"]),
+          f"HTTP {r['status']}, yt-dlp got {r['ytdlp']}")
 
 
 if __name__ == "__main__":

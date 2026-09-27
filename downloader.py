@@ -131,7 +131,9 @@ _YOUTUBE_HOSTS = frozenset({
     "youtube.com", "www.youtube.com", "m.youtube.com", "music.youtube.com",
     "youtu.be",
 })
-_YOUTUBE_ID_RE = re.compile(r"^[A-Za-z0-9_-]{11}$")
+# \Z, not $: "$" also matches before a trailing newline, so watch?v=<id>%0A
+# (parse_qs decodes it) passed and the "canonical" URL ended in "\n".
+_YOUTUBE_ID_RE = re.compile(r"^[A-Za-z0-9_-]{11}\Z")
 _URL_SCHEME_RE = re.compile(r"^\s*[A-Za-z][A-Za-z0-9+.-]*:")
 
 
@@ -612,8 +614,11 @@ def _download_via_cobalt(query: str, job_id: str) -> Path:
     # Cobalt needs a direct YouTube URL, not a search query.
     # Resolve via yt-dlp --get-id (with cookies) or Piped search as fallback.
     video_url = None
-    if query.startswith("http") and ("youtube.com" in query or "youtu.be" in query):
-        video_url = query
+    if looks_like_url(query):
+        # Was a substring test ("youtube.com" anywhere in an http string).
+        # Canonicalise like every other path, so a direct caller (admin
+        # diag-audio) cannot hand a Cobalt instance an arbitrary URL.
+        video_url = normalize_youtube_url(query)
     else:
         vid_id = _resolve_youtube_id(query)
         if vid_id:

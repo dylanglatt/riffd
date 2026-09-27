@@ -2268,6 +2268,17 @@ def admin_diag_audio():
     if not query:
         return jsonify({"error": "missing 'q' query parameter"}), 400
 
+    # Same normalize-then-sink shape as /api/download: canonicalise here so the
+    # steps below (which call the sinks directly, bypassing resolve_audio) all
+    # receive the URL we built, and the sink's own re-validation DNS-checks the
+    # host yt-dlp will actually fetch (www.youtube.com), not the discarded
+    # original (e.g. youtu.be).
+    if looks_like_url(query):
+        try:
+            query = normalize_youtube_url(query)
+        except UnsafeSourceURLError as e:
+            return jsonify({"error": str(e)}), 400
+
     import time
     import shutil as _shutil
     from downloader import (
