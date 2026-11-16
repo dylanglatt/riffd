@@ -71,7 +71,7 @@ from external_apis import get_lyrics, get_track_tags, enrich_recommendations_wit
 from downloader import (download_audio_from_youtube, resolve_audio, AudioUnavailableError,
                         UnsafeSourceURLError, looks_like_url, normalize_youtube_url)
 from analytics import log_event
-from history import (add_to_history, get_recent, get_cached_result, get_cached_result_by_job,
+from history import (add_to_history, get_cached_result, get_cached_result_by_job,
                      cached_result_path, save_cached_result, touch_history)
 from db import (init_db, migrate_from_history_json, get_track, upsert_track, set_track_status,
                 touch_track, get_recent_tracks, get_analysis_for_track, upsert_job_checkpoint,
@@ -534,6 +534,69 @@ _warn_if_tensorflow_installed()
 _last_disk_prune = 0
 threading.Thread(target=_prune_old_disk_dirs, daemon=True).start()
 
+# ─── Rate limiting ────────────────────────────────────────────────────────────
+#
+# Several endpoints spend real money per call (Replicate GPU time, Claude
+# tokens). With one gunicorn worker (see gunicorn.conf.py) an in-process
+# sliding window is exact, needs no new dependency, and resets on restart,
+# which is fine for abuse protection. Limits are per client IP plus an
+# optional global daily cap, all overridable by env var.
+
+import time as _rl_time
+from functools import wraps as _rl_wraps
+
+_rl_lock = threading.Lock()
+_rl_hits: dict = {}  # (bucket, key) -> deque of timestamps
+
+
+def _client_ip() -> str:
+    """Best-effort client IP behind Cloudflare -> Render."""
+    ip = request.headers.get("CF-Connecting-IP", "").strip()
+    if not ip:
+        xff = request.headers.get("X-Forwarded-For", "")
+        ip = xff.split(",")[0].strip() if xff else ""
+    return ip or (request.remote_addr or "unknown")
+
+
+def _rl_allow(bucket: str, key: str, limit: int, window_s: int) -> bool:
+    if limit <= 0:
+        return True
+    now = _rl_time.time()
+    with _rl_lock:
+        dq = _rl_hits.setdefault((bucket, key), collections.deque())
+        while dq and dq[0] <= now - window_s:
+            dq.popleft()
+        if len(dq) >= limit:
+            return False
+        dq.append(now)
+        return True
+
+
+def rate_limited(bucket: str, per_ip_hour: int, global_day: int = 0):
+    """Decorator: per-IP hourly limit and optional global 24h cap.
+
+    Env overrides: RATE_<BUCKET>_PER_IP_HOUR, RATE_<BUCKET>_GLOBAL_DAY
+    (0 disables that limit).
+    """
+    env = bucket.upper()
+    ip_limit = int(os.getenv(f"RATE_{env}_PER_IP_HOUR", per_ip_hour))
+    day_limit = int(os.getenv(f"RATE_{env}_GLOBAL_DAY", global_day))
+
+    def deco(fn):
+        @_rl_wraps(fn)
+        def wrapper(*args, **kwargs):
+            ip = _client_ip()
+            if not _rl_allow(bucket, ip, ip_limit, 3600):
+                print(f"[ratelimit] {bucket}: per-IP limit hit")
+                return jsonify({"error": "You're doing that a lot. Please wait a bit and try again."}), 429
+            if not _rl_allow(bucket, "*", day_limit, 86400):
+                print(f"[ratelimit] {bucket}: global daily cap hit")
+                return jsonify({"error": "Riffd has hit its daily limit for this. Try the demo library, or come back tomorrow."}), 429
+            return fn(*args, **kwargs)
+        return wrapper
+    return deco
+
+
 # ─── Authentication ───────────────────────────────────────────────────────────
 
 @app.before_request
@@ -598,7 +661,7 @@ def login():
     error = None
     if request.method == "POST":
         pw = request.form.get("password", "")
-        if pw == SITE_PASSWORD:
+        if hmac.compare_digest(pw.encode(), SITE_PASSWORD.encode()):
             session.clear()  # Clear any stale session data
             session["authenticated"] = True
             session.permanent = False  # Ensure browser-session only
@@ -710,6 +773,7 @@ def track_lookup(track_id):
 
 
 @app.route("/api/download", methods=["POST"])
+@rate_limited("download", per_ip_hour=30)
 def download_track():
     """
     Audio acquisition endpoint. Always downloads full track via YouTube.
@@ -860,6 +924,7 @@ def download_track():
 
 
 @app.route("/api/prefetch", methods=["POST"])
+@rate_limited("prefetch", per_ip_hour=60)
 def prefetch_full_track():
     """
     Start downloading the full YouTube track in the background.
@@ -964,6 +1029,7 @@ def prefetch_status(prefetch_id):
 
 
 @app.route("/api/upload", methods=["POST"])
+@rate_limited("upload", per_ip_hour=10)
 def upload_file():
     if "file" not in request.files:
         return jsonify({"error": "No file provided"}), 400
@@ -1053,6 +1119,7 @@ def _match_upload_metadata(filename: str, filepath: str) -> dict | None:
 
 
 @app.route("/api/process/<job_id>", methods=["POST"])
+@rate_limited("process", per_ip_hour=6, global_day=60)
 def process_audio(job_id):
     """
     Processing endpoint. Runs deep analysis pipeline in background thread.
@@ -2405,6 +2472,7 @@ def download_stem_audio(job_id, stem_name):
 
 
 @app.route("/api/refresh-recs/<job_id>", methods=["POST"])
+@rate_limited("refresh_recs", per_ip_hour=10, global_day=200)
 def refresh_recs(job_id):
     """Re-generate LLM recommendations without re-running analysis."""
     from insight import generate_insight
@@ -2457,12 +2525,6 @@ def refresh_recs(job_id):
 
 # ─── History endpoints ────────────────────────────────────────────────────────
 
-@app.route("/api/history")
-def history_list():
-    """Get recent songs."""
-    return jsonify(get_recent(8))
-
-
 @app.route("/api/cache/<track_id>")
 def cache_check(track_id):
     """Check if a cached result exists for a track. Returns the result or 404."""
@@ -2504,6 +2566,7 @@ def _load_theory(name):
 
 
 @app.route("/api/theory/ask", methods=["POST"])
+@rate_limited("theory_ask", per_ip_hour=30, global_day=500)
 def theory_ask():
     """LLM-powered natural language search over theory data."""
     data = request.get_json(silent=True) or {}
