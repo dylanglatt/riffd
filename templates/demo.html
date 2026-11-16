@@ -920,7 +920,12 @@ function _renderSmartRecs(recs) {
   const artistSongs = recs['more_by_artist'] || [];
   const hasAny = categories.some(c => (recs[c.key] || []).length > 0) || artistSongs.length > 0;
   if (!hasAny) { el.innerHTML = '<div class="smart-recs-empty">No recommendations available.</div>'; return; }
-  let html = '<div class="smart-recs"><div class="smart-recs-header"><span class="smart-recs-title">Songs with Similar Musical DNA</span><span class="smart-recs-subtitle">Based on harmony, not genre</span></div>';
+  // Demo data ships only the artist list (the AI harmony picks were removed
+  // from the curated demos), so only claim "harmony" when harmony picks exist.
+  const hasHarmony = categories.some(c => c.key !== 'same_style' && (recs[c.key] || []).length > 0);
+  let html = hasHarmony
+    ? '<div class="smart-recs"><div class="smart-recs-header"><span class="smart-recs-title">Songs with Similar Musical DNA</span><span class="smart-recs-subtitle">Based on harmony, not genre</span></div>'
+    : '<div class="smart-recs"><div class="smart-recs-header"><span class="smart-recs-title">Keep Exploring</span></div>';
   const currentArtist = selectedTrack ? selectedTrack.artist.toLowerCase().trim() : '';
   for (const cat of categories) {
     const songs = (recs[cat.key] || []).filter(s => !currentArtist || !s.artist || s.artist.toLowerCase().trim() !== currentArtist);

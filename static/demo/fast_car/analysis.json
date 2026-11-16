@@ -44,53 +44,18 @@
   "insight": {
     "progression_names": {},
     "smart_recs": {
-      "same_progression": [
-        {
-          "title": "Black Hole Sun",
-          "artist": "Soundgarden",
-          "reason": "I-V-vi-IV progression, open major key feel",
-          "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music221/v4/ae/b6/d6/aeb6d672-2004-41eb-ccba-e2964643a2bc/06UMGIM18607.rgb.jpg/300x300bb.jpg"
-        }
-      ],
-      "same_key_tempo": [
-        {
-          "title": "Wonderwall",
-          "artist": "Oasis",
-          "reason": "A Major, 104 BPM, acoustic folk-rock",
-          "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music113/v4/04/92/e0/0492e08b-cbcc-9969-9ad6-8f5a0888068c/5051961007107.jpg/300x300bb.jpg"
-        },
-        {
-          "title": "Champagne Supernova",
-          "artist": "Oasis",
-          "reason": "A Major, ~100 BPM, similar tempo range",
-          "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music113/v4/04/92/e0/0492e08b-cbcc-9969-9ad6-8f5a0888068c/5051961007107.jpg/300x300bb.jpg"
-        }
-      ],
-      "similar_harmony": [
-        {
-          "title": "The Boxer",
-          "artist": "Simon & Garfunkel",
-          "reason": "Diatonic major key with descending bass patterns",
-          "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music125/v4/a3/84/0a/a3840a6d-44e8-0afe-fc3e-316c517dddfe/5099749521421.jpg/300x300bb.jpg"
-        }
-      ],
+      "same_progression": [],
+      "same_key_tempo": [],
+      "similar_harmony": [],
       "more_by_artist": [
         {
           "title": "Give Me One Reason",
           "artist": "Tracy Chapman",
-          "reason": "Similar fingerpicking acoustic guitar technique",
           "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music114/v4/38/fe/e5/38fee58f-6ba6-c51b-2718-7cf0a38007bf/mzi.dtywsjpm.jpg/300x300bb.jpg"
-        },
-        {
-          "title": "Behind the Wheel",
-          "artist": "Tracy Chapman",
-          "reason": "Narrative storytelling, folk acoustic arrangement",
-          "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music126/v4/b8/c4/31/b8c431e9-a67d-3917-72e5-be9f5a1ebc46/075596077460.jpg/300x300bb.jpg"
         },
         {
           "title": "Crossroads",
           "artist": "Tracy Chapman",
-          "reason": "Open-tuned acoustic guitar, introspective narrative",
           "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music125/v4/37/b3/eb/37b3ebb9-1973-8cc3-a790-74bce6d086da/mzi.derclzjc.jpg/300x300bb.jpg"
         }
       ]

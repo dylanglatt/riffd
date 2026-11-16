@@ -32,8 +32,8 @@
     "mode_num": 1,
     "bpm": 123.0,
     "bpm_confidence": 0.5,
-    "progression": "vi \u2013 IV \u2013 I \u2013 V",
-    "progression_confidence": 0.57,
+    "progression": null,
+    "progression_confidence": 0,
     "progression_source": "web",
     "confidence": 0.92,
     "harmonic_sections": []
@@ -50,75 +50,25 @@
     "house md"
   ],
   "insight": {
-    "progression_names": {
-      "main": "Axis of Awesome"
-    },
+    "progression_names": {},
     "smart_recs": {
-      "same_progression": [
-        {
-          "title": "Don't Stop Believin'",
-          "artist": "Journey",
-          "reason": "Identical vi-IV-I-V progression pattern",
-          "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music116/v4/71/2d/61/712d617d-f4a4-5904-1b11-d4b4b45c47c5/828768588925.jpg/300x300bb.jpg"
-        },
-        {
-          "title": "Someone Like You",
-          "artist": "Adele",
-          "reason": "Same vi-IV-I-V chord loop throughout",
-          "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music221/v4/eb/ca/25/ebca2596-cd1e-b295-91a3-771c868d0a79/191404113868.png/300x300bb.jpg"
-        }
-      ],
-      "same_key_tempo": [
-        {
-          "title": "Wonderwall",
-          "artist": "Oasis",
-          "reason": "G Major, approximately 120 BPM",
-          "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music113/v4/04/92/e0/0492e08b-cbcc-9969-9ad6-8f5a0888068c/5051961007107.jpg/300x300bb.jpg"
-        },
-        {
-          "title": "Yellow",
-          "artist": "Coldplay",
-          "reason": "G Major at ~120 BPM tempo range",
-          "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music221/v4/f5/93/8c/f5938c49-964c-31d1-4b33-78b634f71fb7/190295978075.jpg/300x300bb.jpg"
-        }
-      ],
-      "similar_harmony": [
-        {
-          "title": "The Lemon Song",
-          "artist": "Led Zeppelin",
-          "reason": "Blues progression with minor vi borrowed chord",
-          "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music125/v4/1a/3d/bb/1a3dbb86-c1f8-737e-571f-d6b647a230be/dj.rhubuvkd.jpg/300x300bb.jpg"
-        },
-        {
-          "title": "Layla",
-          "artist": "Derek and the Dominos",
-          "reason": "vi-IV movement in classic blues-rock form",
-          "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music124/v4/89/ed/29/89ed29be-8412-0b5a-1df0-295fb5337dd6/00600753314289.rgb.jpg/300x300bb.jpg"
-        }
-      ],
+      "same_progression": [],
+      "same_key_tempo": [],
+      "similar_harmony": [],
       "more_by_artist": [
         {
           "title": "Your Body Is a Wonderland",
           "artist": "John Mayer",
-          "reason": "Fingerstyle acoustic arrangement in waltz time",
           "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music125/v4/0b/01/40/0b014055-6f12-94f6-6be6-35bb27676253/mzi.tciowflu.jpg/300x300bb.jpg"
         },
         {
           "title": "Slow Dancing in a Burning Room",
           "artist": "John Mayer",
-          "reason": "Minor key blues progression with distorted guitar",
-          "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music124/v4/7a/a0/f4/7aa0f487-f983-390e-73ef-005115eea1e0/dj.oqpplyfm.jpg/300x300bb.jpg"
-        },
-        {
-          "title": "Continuum",
-          "artist": "John Mayer",
-          "reason": "Extended jazz harmonies and looped percussion base",
           "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music124/v4/7a/a0/f4/7aa0f487-f983-390e-73ef-005115eea1e0/dj.oqpplyfm.jpg/300x300bb.jpg"
         },
         {
           "title": "Stop This Train",
           "artist": "John Mayer",
-          "reason": "Complex time signature with fingerpicking focus",
           "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music124/v4/7a/a0/f4/7aa0f487-f983-390e-73ef-005115eea1e0/dj.oqpplyfm.jpg/300x300bb.jpg"
         }
       ]

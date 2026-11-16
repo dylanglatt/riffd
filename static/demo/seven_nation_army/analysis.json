@@ -49,59 +49,23 @@
   "insight": {
     "progression_names": {},
     "smart_recs": {
-      "same_progression": [
-        {
-          "title": "Sunshine of Your Love",
-          "artist": "Cream",
-          "reason": "Repeating i-VII-VI power chord loop",
-          "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/9f/3f/da/9f3fdaab-98af-bec1-633c-212a2705ccf3/00602537802913.rgb.jpg/300x300bb.jpg"
-        },
-        {
-          "title": "Whole Lotta Love",
-          "artist": "Led Zeppelin",
-          "reason": "Similar minor pentatonic riff-based progression",
-          "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music125/v4/1a/3d/bb/1a3dbb86-c1f8-737e-571f-d6b647a230be/dj.rhubuvkd.jpg/300x300bb.jpg"
-        }
-      ],
-      "same_key_tempo": [
-        {
-          "title": "Nothing Else Matters",
-          "artist": "Metallica",
-          "reason": "E Minor, 120-125 BPM range",
-          "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music125/v4/9e/80/1b/9e801b06-67fa-0990-2d15-85480ad3cd46/850007452025.png/300x300bb.jpg"
-        }
-      ],
-      "similar_harmony": [
-        {
-          "title": "Black",
-          "artist": "Pearl Jam",
-          "reason": "Minimal harmonic movement, sustained minor drone",
-          "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music221/v4/e0/e1/7c/e0e17cf0-62e5-6312-f3df-2462960cc8f1/884977724745.jpg/300x300bb.jpg"
-        },
-        {
-          "title": "Come Together",
-          "artist": "The Beatles",
-          "reason": "Dominant minor riff with chromatic bass movement",
-          "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music112/v4/df/db/61/dfdb615d-47f8-06e9-9533-b96daccc029f/18UMGIM31076.rgb.jpg/300x300bb.jpg"
-        }
-      ],
+      "same_progression": [],
+      "same_key_tempo": [],
+      "similar_harmony": [],
       "more_by_artist": [
         {
           "title": "Ball and Biscuit",
           "artist": "The White Stripes",
-          "reason": "Minor pentatonic blues structure throughout",
           "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music114/v4/07/25/09/0725098a-09f4-f240-e551-94384a590371/886448799009.jpg/300x300bb.jpg"
         },
         {
           "title": "Fell in Love with a Girl",
           "artist": "The White Stripes",
-          "reason": "I-IV progression, similar raw production",
           "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/1c/fb/1d/1cfb1dec-aa4c-1cd7-da73-9d8b27e0ac41/886448798040.jpg/300x300bb.jpg"
         },
         {
           "title": "Hotel Yorba",
           "artist": "The White Stripes",
-          "reason": "Waltz time 3/4, rare arrangement choice",
           "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/1c/fb/1d/1cfb1dec-aa4c-1cd7-da73-9d8b27e0ac41/886448798040.jpg/300x300bb.jpg"
         }
       ]

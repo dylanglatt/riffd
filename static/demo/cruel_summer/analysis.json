@@ -49,59 +49,28 @@
   "insight": {
     "progression_names": {},
     "smart_recs": {
-      "same_progression": [
-        {
-          "title": "Levitating",
-          "artist": "Dua Lipa",
-          "reason": "Same I-V-vi-IV progression loop",
-          "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music116/v4/6c/11/d6/6c11d681-aa3a-d59e-4c2e-f77e181026ab/190295092665.jpg/300x300bb.jpg"
-        },
-        {
-          "title": "Blinding Lights",
-          "artist": "The Weeknd",
-          "reason": "Identical I-V-vi-IV harmonic pattern",
-          "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music125/v4/a6/6e/bf/a66ebf79-5008-8948-b352-a790fc87446b/19UM1IM04638.rgb.jpg/300x300bb.jpg"
-        }
-      ],
-      "same_key_tempo": [
-        {
-          "title": "Walking on Sunshine",
-          "artist": "Katrina and the Waves",
-          "reason": "A Major at 84 BPM, synth-pop adjacent",
-          "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music124/v4/f6/b6/37/f6b6378c-9b34-72fb-9abe-4a6d6042ad53/13ULAIM49571.rgb.jpg/300x300bb.jpg"
-        }
-      ],
-      "similar_harmony": [
-        {
-          "title": "Don't Start Now",
-          "artist": "Dua Lipa",
-          "reason": "Steady I-chord vamp with vi-IV tension",
-          "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music116/v4/41/ee/66/41ee66fa-f8dd-7e82-155a-3a1b360dc562/190295322175.jpg/300x300bb.jpg"
-        }
-      ],
+      "same_progression": [],
+      "same_key_tempo": [],
+      "similar_harmony": [],
       "more_by_artist": [
         {
           "title": "Style",
           "artist": "Taylor Swift",
-          "reason": "Minor-key exploration, synthesizer-driven production",
           "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music221/v4/a7/98/d8/a798d867-344d-2bf2-fbfe-d2d1412dcef8/14UMDIM03793.rgb.jpg/300x300bb.jpg"
         },
         {
           "title": "Delicate",
           "artist": "Taylor Swift",
-          "reason": "Sparse arrangement, major key vulnerability",
           "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music221/v4/eb/e6/06/ebe606da-e00f-82d3-47f3-b79904eed541/17UM1IM24651.rgb.jpg/300x300bb.jpg"
         },
         {
           "title": "Lover",
           "artist": "Taylor Swift",
-          "reason": "Lush production, I-IV-V classic pop structure",
           "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music125/v4/49/3d/ab/493dab54-f920-9043-6181-80993b8116c9/19UMGIM53909.rgb.jpg/300x300bb.jpg"
         },
         {
           "title": "Lavender Haze",
           "artist": "Taylor Swift",
-          "reason": "Synth-pop production, chromatic vocal phrasing",
           "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music122/v4/67/b5/01/67b501d5-362e-797e-7dbd-942b9e273084/22UM1IM24801.rgb.jpg/300x300bb.jpg"
         }
       ]

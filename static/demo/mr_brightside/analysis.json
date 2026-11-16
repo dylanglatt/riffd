@@ -44,65 +44,23 @@
   "insight": {
     "progression_names": {},
     "smart_recs": {
-      "same_progression": [
-        {
-          "title": "Somebody Told Me",
-          "artist": "The Killers",
-          "reason": "I-V-vi-IV progression, identical harmonic loop",
-          "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music116/v4/07/1a/5a/071a5aee-6e42-060c-35b9-6a6e45b9ea59/06UMGIM10441.rgb.jpg/300x300bb.jpg"
-        },
-        {
-          "title": "Last Nite",
-          "artist": "The Strokes",
-          "reason": "I-V-vi-IV progression, same harmonic foundation",
-          "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Features115/v4/ea/04/d4/ea04d45d-6f5d-ede6-fb64-71f3e6a6e62f/dj.ojkzzidd.jpg/300x300bb.jpg"
-        }
-      ],
-      "same_key_tempo": [
-        {
-          "title": "Take Me Out",
-          "artist": "Franz Ferdinand",
-          "reason": "C# Major, 144-152 BPM range",
-          "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music112/v4/83/c6/54/83c6541f-3b90-b46a-b46a-17bf8fd9af16/5034202113645.png/300x300bb.jpg"
-        },
-        {
-          "title": "Reptilia",
-          "artist": "The Strokes",
-          "reason": "C# Major, ~154 BPM, similar tempo",
-          "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music124/v4/f7/e9/2a/f7e92a48-0e20-8286-bbbf-80bd85fbb1af/mzi.gcledsjj.jpg/300x300bb.jpg"
-        }
-      ],
-      "similar_harmony": [
-        {
-          "title": "Use Somebody",
-          "artist": "Kings of Leon",
-          "reason": "I-V-vi progression with minor plagal inflection",
-          "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Features125/v4/74/25/4c/74254c8b-e03d-44e8-304d-4cde508b8cfb/dj.swemfdrr.jpg/300x300bb.jpg"
-        },
-        {
-          "title": "Sex on Fire",
-          "artist": "Kings of Leon",
-          "reason": "Borrows iv from parallel minor key",
-          "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Features125/v4/74/25/4c/74254c8b-e03d-44e8-304d-4cde508b8cfb/dj.swemfdrr.jpg/300x300bb.jpg"
-        }
-      ],
+      "same_progression": [],
+      "same_key_tempo": [],
+      "similar_harmony": [],
       "more_by_artist": [
         {
           "title": "When You Were Young",
           "artist": "The Killers",
-          "reason": "Only minor-key single, orchestral arrangement",
           "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music116/v4/0d/d8/d7/0dd8d755-2147-9954-8b2e-991b25e49f51/17UM1IM06934.rgb.jpg/300x300bb.jpg"
         },
         {
           "title": "Spaceman",
           "artist": "The Killers",
-          "reason": "Synthesizer-driven, B-major key, 128 BPM",
           "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music126/v4/3c/92/f4/3c92f4ee-056a-1263-da82-59e2cef01ffe/17UM1IM06936.rgb.jpg/300x300bb.jpg"
         },
         {
           "title": "The Man",
           "artist": "The Killers",
-          "reason": "Funk-influenced groove, A major, 104 BPM",
           "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music124/v4/c7/6d/d2/c76dd248-4387-109c-4d87-511abbb9b002/17UM1IM16584.rgb.jpg/300x300bb.jpg"
         }
       ]

@@ -49,65 +49,28 @@
   "insight": {
     "progression_names": {},
     "smart_recs": {
-      "same_progression": [
-        {
-          "title": "Uptown Funk",
-          "artist": "Mark Ronson ft. Bruno Mars",
-          "reason": "I-V-vi-IV progression with funk groove",
-          "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/7e/30/c5/7e30c572-aa47-5f7b-c6fd-42d50cd2c56d/886444959797.jpg/300x300bb.jpg"
-        },
-        {
-          "title": "Treasure",
-          "artist": "Bruno Mars",
-          "reason": "Similar I-V-vi-IV loop in C Major",
-          "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music125/v4/15/63/53/156353b8-d45b-a17d-f553-2d125aeb3cb3/075679957474.jpg/300x300bb.jpg"
-        }
-      ],
-      "same_key_tempo": [
-        {
-          "title": "Billie Jean",
-          "artist": "Michael Jackson",
-          "reason": "C Major at approximately 144 BPM",
-          "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/32/4f/fd/324ffda2-9e51-8f6a-0c2d-c6fd2b41ac55/074643811224.jpg/300x300bb.jpg"
-        },
-        {
-          "title": "When Doves Cry",
-          "artist": "Prince",
-          "reason": "C Major, mid-140s BPM range",
-          "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music125/v4/9d/14/10/9d141037-6ad8-4847-6622-bcff54e8584e/886448962830.jpg/300x300bb.jpg"
-        }
-      ],
-      "similar_harmony": [
-        {
-          "title": "I Will Follow You Into the Dark",
-          "artist": "Death Cab for Cutie",
-          "reason": "Descending bass line under stable major harmony",
-          "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/03/0d/0c/030d0c02-4186-a22a-ada6-a13348069d8d/075679930491.jpg/300x300bb.jpg"
-        }
-      ],
+      "same_progression": [],
+      "same_key_tempo": [],
+      "similar_harmony": [],
       "more_by_artist": [
         {
           "title": "Treasure",
           "artist": "Bruno Mars",
-          "reason": "12-string acoustic, open tuning arrangement",
           "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music125/v4/15/63/53/156353b8-d45b-a17d-f553-2d125aeb3cb3/075679957474.jpg/300x300bb.jpg"
         },
         {
           "title": "When I Was Your Man",
           "artist": "Bruno Mars",
-          "reason": "Only minor-key single from main catalog",
           "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/e0/a4/7c/e0a47c6f-005a-9f9f-ce29-8e858e2bcfcb/075679957283.jpg/300x300bb.jpg"
         },
         {
           "title": "Uptown Funk",
           "artist": "Bruno Mars",
-          "reason": "Extended syncopation in off-beat rhythm",
           "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/7e/30/c5/7e30c572-aa47-5f7b-c6fd-42d50cd2c56d/886444959797.jpg/300x300bb.jpg"
         },
         {
           "title": "24K Magic",
           "artist": "Bruno Mars",
-          "reason": "Rare 80s synth-funk production style",
           "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music125/v4/e3/47/a0/e347a0cc-87ce-5d05-d560-176c7d48f66e/075679904119.jpg/300x300bb.jpg"
         }
       ]

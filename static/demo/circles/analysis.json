@@ -49,58 +49,18 @@
   "insight": {
     "progression_names": {},
     "smart_recs": {
-      "same_progression": [
-        {
-          "title": "Blinding Lights",
-          "artist": "The Weeknd",
-          "reason": "Same I-V-vi-IV looping progression",
-          "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music125/v4/a6/6e/bf/a66ebf79-5008-8948-b352-a790fc87446b/19UM1IM04638.rgb.jpg/300x300bb.jpg"
-        },
-        {
-          "title": "Someone You Loved",
-          "artist": "Lewis Capaldi",
-          "reason": "Identical vi-IV-I-V chord cycle",
-          "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music116/v4/92/d7/8f/92d78fb1-df3d-049e-c81d-7022808b151f/19UMGIM02973.rgb.jpg/300x300bb.jpg"
-        }
-      ],
-      "same_key_tempo": [
-        {
-          "title": "Levitating",
-          "artist": "Dua Lipa",
-          "reason": "C Major at ~103 BPM, adjacent tempo range",
-          "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music116/v4/6c/11/d6/6c11d681-aa3a-d59e-4c2e-f77e181026ab/190295092665.jpg/300x300bb.jpg"
-        }
-      ],
-      "similar_harmony": [
-        {
-          "title": "The Night We Met",
-          "artist": "Lord Huron",
-          "reason": "Pedal tone under shifting harmonic progression",
-          "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music221/v4/55/41/4a/55414a18-861a-79d1-e575-5bf8cf205dbe/886445056839_Cover.jpg/300x300bb.jpg"
-        },
-        {
-          "title": "Midnight City",
-          "artist": "M83",
-          "reason": "Synth pedal tone anchoring harmonic movement",
-          "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/cb/7b/a9/cb7ba903-b5f1-cc21-90db-7a81b7aa0997/724596951057.jpg/300x300bb.jpg"
-        }
-      ],
+      "same_progression": [],
+      "same_key_tempo": [],
+      "similar_harmony": [],
       "more_by_artist": [
-        {
-          "title": "Sunroof",
-          "artist": "Post Malone",
-          "reason": "Major-key uplifting production, similar BPM"
-        },
         {
           "title": "Congratulations",
           "artist": "Post Malone",
-          "reason": "Hip-hop foundation with major-key harmonic blend",
           "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music122/v4/94/09/25/9409251c-ea9e-040c-7649-52a66ac533ac/16UMGIM76041.rgb.jpg/300x300bb.jpg"
         },
         {
           "title": "Psycho",
           "artist": "Post Malone",
-          "reason": "Pop-rap hybrid with repetitive melodic hook",
           "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music124/v4/55/9f/fb/559ffb75-3c00-abd6-7b1f-8b6b1518b173/18UMGIM22101.rgb.jpg/300x300bb.jpg"
         }
       ]

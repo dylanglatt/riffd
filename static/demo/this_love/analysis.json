@@ -37,8 +37,8 @@
     "mode_num": 1,
     "bpm": 95.7,
     "bpm_confidence": 0.5,
-    "progression": "iii \u2013 ii \u2013 vii\u00b0",
-    "progression_confidence": 0.4,
+    "progression": null,
+    "progression_confidence": 0,
     "progression_source": "audio",
     "confidence": 0.65,
     "harmonic_sections": []
@@ -57,65 +57,28 @@
   "insight": {
     "progression_names": {},
     "smart_recs": {
-      "same_progression": [
-        {
-          "title": "Bitter Sweet Symphony",
-          "artist": "The Verve",
-          "reason": "iii-ii-vii\u00b0 descending chromatic bass pattern",
-          "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/5c/b1/85/5cb18512-9cbd-7b84-4042-37f23bc2ae45/17UMGIM89555.rgb.jpg/300x300bb.jpg"
-        },
-        {
-          "title": "No Scrubs",
-          "artist": "TLC",
-          "reason": "Similar iii-ii movement with diminished seventh resolution",
-          "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/2d/19/0c/2d190ce6-a157-6364-b5b4-e9b00265d313/mzi.ucefobwj.jpg/300x300bb.jpg"
-        }
-      ],
-      "same_key_tempo": [
-        {
-          "title": "Toxic",
-          "artist": "Britney Spears",
-          "reason": "D# Major at approximately 96 BPM",
-          "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music125/v4/38/8b/7a/388b7a8f-10ff-a4e0-7624-65e29ac6a793/828765374828.jpg/300x300bb.jpg"
-        }
-      ],
-      "similar_harmony": [
-        {
-          "title": "Teardrop",
-          "artist": "Massive Attack",
-          "reason": "Chromatic bass descent with sustained harmonic tension",
-          "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/0a/98/55/0a98555b-8d9d-3b46-660a-b91261557d17/00724384559953.rgb.jpg/300x300bb.jpg"
-        },
-        {
-          "title": "The Night We Met",
-          "artist": "Lord Huron",
-          "reason": "Descending chromatic progression creates melancholic movement",
-          "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music221/v4/55/41/4a/55414a18-861a-79d1-e575-5bf8cf205dbe/886445056839_Cover.jpg/300x300bb.jpg"
-        }
-      ],
+      "same_progression": [],
+      "same_key_tempo": [],
+      "similar_harmony": [],
       "more_by_artist": [
         {
           "title": "She Will Be Loved",
           "artist": "Maroon 5",
-          "reason": "Chorus features I-V-vi-IV progression, major key",
           "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/d0/3e/25/d03e255d-e205-0e66-20f6-01e251896c25/14UMGIM27076.rgb.jpg/300x300bb.jpg"
         },
         {
           "title": "Sunday Morning",
           "artist": "Maroon 5",
-          "reason": "Rare 3/4 waltz time signature for the band",
           "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/d0/3e/25/d03e255d-e205-0e66-20f6-01e251896c25/14UMGIM27076.rgb.jpg/300x300bb.jpg"
         },
         {
           "title": "Memories",
           "artist": "Maroon 5",
-          "reason": "Minor-key single with descending chord movement",
           "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music125/v4/22/58/58/225858c4-ef47-2b91-723a-47af3e99699a/19UMGIM64502.rgb.jpg/300x300bb.jpg"
         },
         {
           "title": "Moves Like Jagger",
           "artist": "Maroon 5",
-          "reason": "Prominent seventh chords with rhythmic syncopation",
           "image_url": "https://is1-ssl.mzstatic.com/image/thumb/Music122/v4/61/53/15/61531592-3e8b-1e85-b434-73a991d8143c/14UMGIM27067.rgb.jpg/300x300bb.jpg"
         }
       ]
