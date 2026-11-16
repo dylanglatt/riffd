@@ -1230,8 +1230,9 @@ AUDIOSET_TO_LABEL = {
 
 # Sigmoid score at or above which the tagger overrides the existing label.
 #
-# Calibrated on the 17 "other"-bucket components across the 18 analysed songs in
-# static/demo. Their top mapped scores are sharply bimodal, and 0.40 sits in the
+# Calibrated on the 17 "other"-bucket components across the 18 analysed songs:
+# the 17 served demos in static/demo plus calibration_data/kiss_me (a real
+# commercial track, kept outside the Flask-served tree). Their top mapped scores are sharply bimodal, and 0.40 sits in the
 # empty band between the two modes:
 #
 #   0.783  take_it_easy/banjo          -> Guitar      right (Banjo scored 0.003)
@@ -1245,7 +1246,7 @@ AUDIOSET_TO_LABEL = {
 # there is an empty band from 0.25 to 0.54, and the threshold goes in it. It
 # sits at the TOP of that band rather than the middle because the one false
 # positive seen anywhere near it landed at 0.42 — an "other" component read as
-# Harmonica when re-separating Kiss Me — while both true positives are >= 0.54.
+# Harmonica when re-separating Kiss Me (calibration_data/kiss_me) — while both true positives are >= 0.54.
 # Under-claiming is cheap here (the existing label survives) and a wrong
 # instrument name in the mixer is not.
 #
@@ -1304,7 +1305,7 @@ TAGGER_SKIP_CATEGORIES = frozenset({"vocals", "drums", "bass"})
 # htdemucs_6s also has dedicated guitar and piano heads. Their labels are not
 # guesses either, so overriding one takes more evidence than overriding the
 # "other" bucket's spectral guess — measured, not assumed. Over the 20
-# guitar/piano components in static/demo the tagger's top label was wrong on
+# guitar/piano components in static/demo + calibration_data the tagger's top label was wrong on
 # every one it was confident about:
 #
 #   bohemian_rhapsody/piano   Piano=0.03  ->  it wanted Strings=0.41
@@ -1437,7 +1438,8 @@ def decide_component_label(current_label: str, ranked: list, hint_labels: set,
     # The tagger naming a family the current label already names is a
     # confirmation, not a correction: "Rhythm Guitar" -> "Guitar" and
     # "Synth Pad" -> "Synth" would both throw away the more specific label the
-    # stereo/hint path worked out. Measured on static/demo, this is what four
+    # stereo/hint path worked out. Measured on the 18-song calibration set
+    # (static/demo + calibration_data), this is what four
     # of the tagger's ten changes at threshold 0.30 were.
     current_words = set((current_label or "").lower().split())
     label_words = set(label.lower().split())

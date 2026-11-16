@@ -58,6 +58,7 @@ test_*.py
 *.log
 *.mp3
 !static/demo/**/*.mp3
+calibration_data/
 cookies*.txt
 data/analytics.jsonl
 *.bak

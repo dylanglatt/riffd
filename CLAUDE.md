@@ -210,7 +210,7 @@ firmly as a change does. `TaggerDecision.confident` carries that, and
 `_apply_component_tagging()` sets `tagged: True` on both. Conflating the two was
 a bug: a component confidently heard as a synth at 0.80 was still rewritten to
 "Strings" by a song-level hint that never listened to anything. On the 38
-components in `static/demo` this locks 9 that were previously open to the hint
+components in the calibration set this locks 9 that were previously open to the hint
 chain.
 
 `apply_instrument_hints()` skips any stem carrying `tagged: True`. That key is
@@ -226,7 +226,14 @@ demucs. There is no `panns_inference` dependency and no `torchlibrosa`
 dependency — see "Known-deliberate deletions".
 
 **Thresholds are calibrated, not guessed.** Over the 38 components in the 18
-analysed songs under `static/demo`, top mapped scores are sharply bimodal:
+analysed songs — the 17 served demos under `static/demo` plus
+`calibration_data/kiss_me` — top mapped scores are sharply bimodal:
+
+(`calibration_data/` is deliberately outside `static/` and gitignored: it holds
+full-length stems and lyrics of a commercial recording that is evidence, not a
+demo, and must not be web-served or published. It lives on the owner's machine
+only. `/api/demo/<id>/…` falls back to `static/demo/<id>` for *any* id, so
+under `static/` it was reachable two ways.)
 
 | bucket | evidence | bar |
 |---|---|---|
