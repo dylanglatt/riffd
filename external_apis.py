@@ -64,7 +64,79 @@ def _similarity(a: str, b: str) -> float:
 
 # ─── Genius Lyrics ────────────────────────────────────────────────────────────
 
-def get_lyrics(artist: str, track_name: str) -> str | None:
+def get_lyrics(artist: str, track_name: str, duration_s: float | None = None) -> str | None:
+    """
+    Lyrics for a track. Genius first (it carries [Verse]/[Chorus] section
+    labels the Lyrics tab renders), then LRCLIB as a fallback.
+
+    The fallback exists because Genius serves its lyrics pages behind bot
+    protection: the search API still answers, but the page scrape returns 403
+    from server IPs, so every new analysis came back with no lyrics.
+    """
+    lyrics = _genius_lyrics(artist, track_name)
+    if lyrics:
+        return lyrics
+    return _lrclib_lyrics(artist, track_name, duration_s)
+
+
+LRCLIB_UA = "riffd (https://www.riffdlabs.com)"
+
+
+def _lrclib_lyrics(artist: str, track_name: str, duration_s: float | None = None) -> str | None:
+    """
+    LRCLIB (lrclib.net): free, keyless, community lyrics database.
+    Exact lookup first (artist + title, + duration when known, which
+    disambiguates live/alt versions), then a search with the same strict
+    artist/title matching used for Genius. Returns plain lyrics or None.
+    """
+    title = _normalize_title(track_name)
+    clean_title = re.sub(r"\s*[-–]\s*\d{4}\s*remaster(ed)?.*$|\s*[-–]\s*remaster(ed)?.*$", "", track_name, flags=re.I).strip()
+    clean_title = re.sub(r"\s*\((remaster(ed)?|live[^)]*|\d{4}\s*remaster[^)]*)\)", "", clean_title, flags=re.I).strip()
+    first_artist = artist.split(",")[0].strip()
+    headers = {"User-Agent": LRCLIB_UA}
+    try:
+        params = {"artist_name": first_artist, "track_name": clean_title}
+        if duration_s and duration_s > 0:
+            params["duration"] = int(round(duration_s))
+        r = requests.get("https://lrclib.net/api/get", params=params, headers=headers, timeout=10)
+        if r.status_code == 200:
+            d = r.json()
+            if not d.get("instrumental") and (d.get("plainLyrics") or "").strip():
+                print(f"[lrclib] exact match: '{d.get('trackName')}' by '{d.get('artistName')}'")
+                return d["plainLyrics"].strip()
+
+        r = requests.get("https://lrclib.net/api/search",
+                         params={"track_name": clean_title, "artist_name": first_artist},
+                         headers=headers, timeout=10)
+        if r.status_code != 200:
+            print(f"[lrclib] search failed: HTTP {r.status_code}")
+            return None
+        norm_artist = _normalize_artist(artist)
+        best, best_score = None, 0.0
+        for d in r.json()[:10]:
+            if d.get("instrumental") or not (d.get("plainLyrics") or "").strip():
+                continue
+            t_sim = _similarity(title, _normalize_title(d.get("trackName") or ""))
+            a_sim = _similarity(norm_artist, _normalize_artist(d.get("artistName") or ""))
+            if a_sim < 0.7 or t_sim < 0.8:
+                continue
+            score = t_sim * 0.7 + a_sim * 0.3
+            if duration_s and d.get("duration"):
+                if abs(float(d["duration"]) - duration_s) > 15:
+                    score -= 0.2
+            if score > best_score:
+                best, best_score = d, score
+        if best and best_score >= 0.75:
+            print(f"[lrclib] search match: '{best.get('trackName')}' by '{best.get('artistName')}' score={best_score:.2f}")
+            return best["plainLyrics"].strip()
+        print("[lrclib] no confident match")
+        return None
+    except Exception as e:
+        print(f"[lrclib] ERROR: {e}")
+        return None
+
+
+def _genius_lyrics(artist: str, track_name: str) -> str | None:
     """
     Search Genius with strict matching. Returns lyrics only if confidence is high enough.
     """

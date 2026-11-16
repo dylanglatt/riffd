@@ -731,6 +731,49 @@ def spotify_search_route():
         return jsonify({"error": "Search temporarily unavailable. Please try again."}), 500
 
 
+# ─── Lyrics backfill for cached analyses ──────────────────────────────────────
+#
+# Analyses cached while the Genius scrape was being blocked were stored with
+# lyrics=None, and a cached analysis is served to everyone who opens the track.
+# The first time such a cache is read, try the lyrics lookup again (it now
+# falls back to LRCLIB) and write the result back into the cache file. One
+# attempt per job per process, so status polling can't trigger repeat lookups.
+
+_lyrics_backfill_tried: set = set()
+
+
+def _backfill_lyrics(analysis: dict | None, job_id: str | None) -> None:
+    if not analysis or analysis.get("lyrics") or not job_id:
+        return
+    if job_id in _lyrics_backfill_tried:
+        return
+    _lyrics_backfill_tried.add(job_id)
+    meta = analysis.get("track_meta") or {}
+    artist, name = meta.get("artist"), meta.get("name")
+    if not (artist and name):
+        return
+    try:
+        lyrics = get_lyrics(artist, name, duration_s=(meta.get("duration_ms") or 0) / 1000.0 or None)
+    except Exception as e:
+        print(f"[lyrics-backfill] {job_id}: lookup failed: {e}")
+        return
+    if not lyrics:
+        return
+    analysis["lyrics"] = lyrics
+    try:
+        cache_file = OUTPUT_DIR / job_id / "result_cache.json"
+        if cache_file.exists():
+            import json as _json_bf
+            data = _json_bf.loads(cache_file.read_text())
+            data["lyrics"] = lyrics
+            tmp = cache_file.with_suffix(".json.tmp")
+            tmp.write_text(_json_bf.dumps(data))
+            os.replace(tmp, cache_file)
+        print(f"[lyrics-backfill] {job_id}: filled {len(lyrics)} chars")
+    except Exception as e:
+        print(f"[lyrics-backfill] {job_id}: cache write failed: {e}")
+
+
 @app.route("/api/track/<track_id>")
 def track_lookup(track_id):
     """
@@ -763,6 +806,7 @@ def track_lookup(track_id):
                 result["analysis_status"] = "unavailable"
             else:
                 touch_track(track_id)
+                _backfill_lyrics(analysis, track.get("job_id"))
                 result["analysis"] = analysis
                 result["job_id"] = track.get("job_id")
         else:
@@ -1453,7 +1497,7 @@ def process_audio(job_id):
             def _fetch_lyrics():
                 try:
                     if not (artist_name and track_name): return None
-                    return get_lyrics(artist_name, track_name)
+                    return get_lyrics(artist_name, track_name, duration_s=_track_dur_s or None)
                 except Exception as e:
                     _fail("lyrics", e)
                     return None
@@ -2062,6 +2106,7 @@ def _rehydrate_job(job_id):
         return None
 
     cached = get_cached_result_by_job(job_id)   # None on a version mismatch too
+    _backfill_lyrics(cached, job_id)
     stem_keys = _stems_on_disk(job_id)
 
     if cached:
@@ -2530,6 +2575,7 @@ def cache_check(track_id):
     """Check if a cached result exists for a track. Returns the result or 404."""
     result = get_cached_result(track_id)
     if result:
+        _backfill_lyrics(result, result.get("job_id"))
         touch_history(track_id)  # update last_viewed on reopen
         return jsonify(result)
     return jsonify({"error": "No valid cache"}), 404

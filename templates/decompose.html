@@ -2556,6 +2556,12 @@ function _enableTransport() {
 
 function _unlockTabs() {
   document.querySelectorAll('.results-nav-btn.tab-loading').forEach(b => b.classList.remove('tab-loading'));
+  // The job is finished: an empty Lyrics tab means none were found. Say so
+  // rather than leaving a blank panel that looks broken.
+  const lyricsEl = document.getElementById('lyrics-content');
+  if (lyricsEl && !lyricsEl.innerHTML.trim()) {
+    lyricsEl.innerHTML = '<div class="lyrics-empty">Lyrics not available for this track.</div>';
+  }
 }
 
 function _removeSkeletonChannels() {
@@ -3074,7 +3080,7 @@ function _formatLyrics(raw) {
           || l === 'embed' || l === 'you might also like' || trimmed.length > 120) continue;
       // Real lyric line with no section tag — create implicit section
       hitFirst = true;
-      cur = { label: 'Verse', lines: [] };
+      cur = { label: 'Lyrics', lines: [] };  // plain text (no [Section] tags), e.g. LRCLIB
       sections.push(cur);
     }
 

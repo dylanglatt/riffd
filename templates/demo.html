@@ -883,7 +883,7 @@ function _formatLyrics(raw) {
       if (!trimmed) continue;
       const l = trimmed.toLowerCase();
       if (l.includes('read more') || l.includes('contributor') || l.endsWith(' lyrics') || l === 'embed' || l === 'you might also like' || trimmed.length > 120) continue;
-      hitFirst = true; cur = { label: 'Verse', lines: [] }; sections.push(cur);
+      hitFirst = true; cur = { label: 'Lyrics', lines: [] }; sections.push(cur);  // plain text (no [Section] tags), e.g. LRCLIB
     }
     if (!cur) continue;
     const l = trimmed.toLowerCase();
