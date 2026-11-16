@@ -1145,7 +1145,7 @@ async function _preloadDemoStems(demoId) {
 }
 
 // ─── Load demo track ────────────────────────────────────────────────────────
-async function loadDemoTrack(demoId) {
+async function loadDemoTrack(demoId, opts = {}) {
   const generation = ++_loadGeneration;
 
   // Mark active card in grid
@@ -1183,15 +1183,18 @@ async function loadDemoTrack(demoId) {
   document.getElementById('demo-loading').classList.remove('active');
   document.getElementById('demo-results').style.display = 'block';
 
-  // Scroll results into view smoothly
-  document.getElementById('demo-results').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  // Scroll results into view when the user picked a track. The initial
+  // auto-load on page open leaves the library header and filters in view.
+  if (opts.scroll !== false) {
+    document.getElementById('demo-results').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
 
   renderResults(data, generation);
 }
 
 // ─── Init ───────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
-  if (DEMO_IDS.length > 0) loadDemoTrack(DEMO_IDS[0]);
+  if (DEMO_IDS.length > 0) loadDemoTrack(DEMO_IDS[0], { scroll: false });
 
   const MAX_PRELOAD = 3;
   for (let i = 1; i < Math.min(DEMO_IDS.length, MAX_PRELOAD + 1); i++) {

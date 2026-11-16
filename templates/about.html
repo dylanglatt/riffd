@@ -165,7 +165,7 @@
       <div class="tech-card">
         <div class="tech-name">Basic Pitch</div>
         <div class="tech-role">Note Detection</div>
-        <div class="tech-desc">Spotify's pitch detection model converts each stem into note events — the foundation for chord detection, key analysis, and tab generation.</div>
+        <div class="tech-desc">Spotify's pitch detection model converts each stem into note events — the foundation for key analysis and harmonic structure.</div>
       </div>
       <div class="tech-card">
         <div class="tech-name">Essentia</div>
@@ -193,9 +193,9 @@
         <div class="tech-desc">Sources audio from YouTube with automatic fallback across multiple extraction methods — file upload always available as a direct path.</div>
       </div>
       <div class="tech-card">
-        <div class="tech-name">Concurrent Job Queue</div>
+        <div class="tech-name">Job Queue</div>
         <div class="tech-role">Multi-user Processing</div>
-        <div class="tech-desc">A FIFO queue lets multiple users run analyses simultaneously — waitlisted users see live status and are promoted automatically.</div>
+        <div class="tech-desc">Analyses run one at a time to fit a 2 GB server; a FIFO queue holds everyone else, shows live status, and promotes them automatically.</div>
       </div>
       <div class="tech-card">
         <div class="tech-name">Flask + Vanilla JS</div>
@@ -220,7 +220,7 @@
       </div>
       <div class="principle">
         <div class="pr-title">Progressive delivery</div>
-        <div class="pr-desc">The pipeline has five stages. Key and BPM results are pushed to the frontend as soon as Essentia finishes — before GPU stem separation completes. Users see meaningful output within seconds of triggering analysis, not at the end of a 10-minute wait.</div>
+        <div class="pr-desc">The pipeline has five stages. Key and BPM results are pushed to the frontend as soon as Essentia finishes — before GPU stem separation completes. Users see meaningful output while separation is still running, not only at the end of the 2–3 minute analysis.</div>
       </div>
       <div class="principle">
         <div class="pr-title">Prefetch on selection</div>
@@ -228,7 +228,7 @@
       </div>
       <div class="principle">
         <div class="pr-title">Memory-efficient startup</div>
-        <div class="pr-desc">Heavy Python imports — numpy, pandas, Basic Pitch — are deferred to first job execution. Boot time stays around 40MB RSS instead of 300MB, which matters on a 2GB Render instance shared with Gunicorn workers. Note detection runs on ONNX rather than TensorFlow: identical output, a fraction of the memory.</div>
+        <div class="pr-desc">Heavy Python imports — numpy, pandas, Basic Pitch — are deferred to first job execution. Boot time stays around 40MB RSS instead of 300MB, which matters on a 2GB Render instance where inference runs in child processes alongside the web worker. Note detection runs on ONNX rather than TensorFlow: identical output, a fraction of the memory.</div>
       </div>
     </div>
   </div>
