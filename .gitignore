@@ -65,3 +65,6 @@ data/analytics.jsonl
 
 # e2e harness output: logs ignored inside scripts/out/.gitignore, result JSON
 # committed as evidence (see modal_worker/eval/.gitignore for the same policy).
+
+# Private notes, never committed
+docs/PRIVATE_*

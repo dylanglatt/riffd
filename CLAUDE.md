@@ -701,23 +701,10 @@ Backlog. Keep each line short; history lives in git, not here.
    more [tagger] log examples before tuning thresholds/mapping.
 
 ### Backlog / known debts
-- **Cobalt/Piped response-URL trust boundary** (distinct from the fixed
-  SSRF, lower severity; needs its own design pass, not a quick patch). Riffd
-  GETs whatever URL a third-party instance returns — Cobalt's `url`
-  (downloader.py ~l.669) and Piped's `audioStreams[].url` (~l.885) — with no
-  validation and redirects followed, so a compromised or malicious instance
-  can make the server fetch loopback/metadata/RFC1918 addresses. The
-  instance lists themselves come from public registries
-  (instances.cobalt.best, piped-instances.kavin.rocks), so a hostile registry
-  entry reaches the same place via the `{base}/search` calls. The input-URL
-  guard (normalize_youtube_url) does not cover any of this: these are
-  server-to-server responses, not client input, and a host allowlist does
-  not fit CDN/tunnel URLs — likely wants resolve-then-connect-to-the-checked-
-  IP plus per-hop redirect validation.
-- Still open from the same review: yt-dlp runs with --no-check-certificates
-  through a third-party residential proxy, so the proxy operator can MITM
-  requests and read the cookies.txt passed along. docs/riffd-review.html
-  (untracked) details it — keep it out of the public repo until fixed.
+- **Two open security items** from the external review (response-URL trust
+  boundary in the fallback downloaders; TLS handling on the proxied yt-dlp
+  path). Details are kept outside the repo in `docs/PRIVATE_security_backlog.md`
+  (gitignored) until fixed.
 - Modal 20-min tracks: ~424 MB inline payload projected; `separate_stems()`
   routes anything over `LONG_TRACK_ROUTE_MINUTES` (12) to Replicate. Lifting
   the guard requires one measured 20-min run **through riffd** — the Phase A
