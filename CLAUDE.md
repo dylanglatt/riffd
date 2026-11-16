@@ -667,6 +667,12 @@ Backlog. Keep each line short; history lives in git, not here.
   (offline) is the regression check — run it after touching downloader.py.
   Committed on main, not yet pushed or deployed.
 
+- 2026-11-16 — Lyrics: LRCLIB fallback when Genius' page scrape is blocked
+  (403 from server IPs); cached analyses missing lyrics backfill on first
+  read. Also: /api/history removed, per-IP rate limits on cost endpoints,
+  demo AI recs removed (hallucinated artists/chords), orphan demo stems
+  deleted.
+
 ### In flight
 - **Modal separation backend** — branch `modal-integration` (contains the
   Phase A worker in modal_worker/). RoFormer cascade: vocals → drums/bass →
@@ -701,6 +707,17 @@ Backlog. Keep each line short; history lives in git, not here.
    more [tagger] log examples before tuning thresholds/mapping.
 
 ### Backlog / known debts
+- **Modal key detection.** Essentia/librosa key profiles are major/minor
+  only, so a modal song reports the right notes with the wrong tonic:
+  Ramble On (E mixolydian) -> "A Major"; This Love (C minor) -> "D# Major".
+  Two fixes were tried on 2026-11-16 and rejected on the 17 demos:
+  (1) bass-stem tonic (move to the detected key's 5th/2nd when the bass
+  dwells there) fixed Ramble On but flipped This Love and Locked Out of
+  Heaven to wrong keys; (2) a Haiku "known key" prior, gated so the tonic and
+  third must be in the detected scale: Haiku's key knowledge was wrong on
+  most songs (Ramble On "G minor"), 4 false changes. Next idea: cadence /
+  phrase-final bass notes, or a chord-template tonic score, validated on a
+  labelled set. Also: flat keys are spelled as sharps (D#/A# not Eb/Bb).
 - **Two open security items** from the external review (response-URL trust
   boundary in the fallback downloaders; TLS handling on the proxied yt-dlp
   path). Details are kept outside the repo in `docs/PRIVATE_security_backlog.md`
