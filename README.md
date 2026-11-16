@@ -87,9 +87,9 @@ Hearing an isolated bass line is one form of musical insight. Seeing the key, th
 
 ## Features
 
-**Stem separation.** GPU-accelerated neural source separation via Demucs, isolating vocals, bass, drums, guitar, piano, and other instruments. Separation itself takes roughly 20 seconds on cloud GPU; a full analysis — download, separation, stereo refinement, pitch, key/BPM and enrichment — runs about 2–3 minutes end to end.
+**Stem separation.** GPU-accelerated neural source separation via Demucs, isolating vocals, bass, drums, guitar, piano, and other instruments. Separation itself takes about 35 seconds on cloud GPU for a typical song; a full analysis — download, separation, stereo refinement, pitch, key/BPM and enrichment — runs about 2–3 minutes end to end.
 
-**Interactive mixer.** Stems organized by instrument family, with per-stem volume faders, mute, solo, real-time pitch transposition across all stems simultaneously (±12 semitones), loop controls, karaoke mode, and a Full Mix reset that restores energy-balanced defaults.
+**Interactive mixer.** Stems organized by instrument family, with per-stem volume faders, mute, solo, real-time pitch transposition across all stems simultaneously (±12 semitones), loop controls, karaoke mode, and a Full Mix reset that returns every fader to unity (the stems sum back to the original mix).
 
 **Key and tempo detection.** Derived directly from the audio signal via Essentia, not pulled from metadata.
 
@@ -109,11 +109,27 @@ Hearing an isolated bass line is one form of musical insight. Seeing the key, th
 
 ---
 
+## Hard Problems
+
+A few problems that took measurement, not guesswork. Each number comes from a run whose artifacts are kept in the repo or its logs.
+
+**Fitting ML inference into 2 GB.** Production is one 2 GB, 1 vCPU instance. Heavy imports are deferred so the web worker boots at ~40 MB, and every model (Basic Pitch, the instrument tagger) runs in a short-lived child process so the OS reclaims its memory on exit. A memory guard refuses new jobs before the Linux OOM killer would fire.
+
+**TensorFlow to ONNX for note detection.** Basic Pitch ships the same weights for four runtimes and silently prefers TensorFlow whenever it is importable. Moving to ONNX gave identical note events (0.0% drift on onsets, pitches and confidences) at about 3x the speed and ~460 MB less memory per stem. Because the regression is silent, the build fails if TensorFlow is installed, and the inference child blocks the import as a backstop.
+
+**Labelling instruments by listening.** Stem labels used to come from a spectral-centroid guess plus an LLM's song-level instrument list, which once labelled a string section "Horns". A PANNs audio tagger now listens to each component. Its thresholds were calibrated on 38 real components, where confident scores turned out sharply bimodal, so it changes a label only when it is sure and otherwise defers to the old path.
+
+**A watchdog that measures stall, not time.** Long jobs were being killed for being slow rather than stuck. The watchdog now tracks time since the last heartbeat; every quiet phase heartbeats, so a wedged job dies in ~5 minutes while a slow but healthy one (including a retried separation) is allowed to finish.
+
+**Swappable separation backends.** A second GPU backend (a RoFormer cascade on Modal) sits behind one environment variable. The cache key includes the backend, so switching back is a config change with no redeploy and no cache wipe.
+
+---
+
 ## Technical Highlights
 
 **Audio acquisition.** Full-track download via yt-dlp with dual-binary retry, bot detection bypass, and proxy support. Riffd falls back through Cobalt and Piped APIs before surfacing an upload prompt, rather than silently degrading to a short preview. Background prefetch fires on song selection, so the download is typically complete before the user begins analysis.
 
-**GPU stem separation.** Demucs (htdemucs_6s) runs on cloud GPU via Replicate's file API, completing separation in approximately 20 seconds — about a sixth of the ~2–3 minute end-to-end analysis. STFT-domain panning analysis then refines each stem by stereo position — center, left-panned, right-panned — with RMS energy gating to suppress ghost components below threshold.
+**GPU stem separation.** Demucs (htdemucs_6s) runs on cloud GPU via Replicate's file API, completing separation in about 35 seconds on a 3.5-minute track, roughly a quarter of the ~2–3 minute end-to-end analysis. STFT-domain panning analysis then refines each stem by stereo position — center, left-panned, right-panned — with RMS energy gating to suppress ghost components below threshold.
 
 **ML pipeline with progressive delivery.** Stem separation (Demucs), pitch extraction (Basic Pitch, ONNX runtime), and key/BPM detection (Essentia) run as one end-to-end pipeline with per-stage error isolation. Key and BPM results are pushed to the frontend as they complete, so users see them before stems finish loading. Pitch inference runs in a child process so its memory is reclaimed on exit rather than accumulating in the worker.
 
